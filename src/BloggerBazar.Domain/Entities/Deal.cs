@@ -29,7 +29,7 @@ public sealed class Deal
     public DealStatus Status { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? CompletedAtUtc { get; private set; }
-    public IReadOnlyCollection<Review> Reviews { get; private set; } = [];
+    public IReadOnlyCollection<Review> Reviews { get; private set; } = new List<Review>();
 
     public static Deal Create(Guid campaignApplicationId, Guid bloggerId, Guid businessId) => new(campaignApplicationId, null, bloggerId, businessId);
 

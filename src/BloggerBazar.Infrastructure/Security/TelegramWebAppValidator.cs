@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using BloggerBazar.Application.Abstractions.Security;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
@@ -64,5 +65,8 @@ internal sealed class TelegramWebAppValidator(IOptions<TelegramOptions> options)
         return new TelegramWebAppUser(user.Id, user.Username, user.FirstName);
     }
 
-    private sealed record TelegramUserPayload(long Id, string? Username, string FirstName);
+    private sealed record TelegramUserPayload(
+        [property: JsonPropertyName("id")] long Id,
+        [property: JsonPropertyName("username")] string? Username,
+        [property: JsonPropertyName("first_name")] string FirstName);
 }

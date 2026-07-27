@@ -15,7 +15,7 @@ public sealed class CreditAccount
     public long TelegramUserId { get; private set; }
     public int Balance { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
-    public IReadOnlyCollection<CreditLedgerEntry> LedgerEntries { get; private set; } = [];
+    public IReadOnlyCollection<CreditLedgerEntry> LedgerEntries { get; private set; } = new List<CreditLedgerEntry>();
 
     public static CreditAccount Create(long telegramUserId) => new(telegramUserId);
 

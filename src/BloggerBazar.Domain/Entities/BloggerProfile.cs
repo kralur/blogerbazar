@@ -50,12 +50,12 @@ public sealed class BloggerProfile
     public BloggerStatus Status { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
-    public IReadOnlyCollection<CampaignApplication> CampaignApplications { get; private set; } = [];
-    public IReadOnlyCollection<Deal> Deals { get; private set; } = [];
-    public IReadOnlyCollection<Review> Reviews { get; private set; } = [];
-    public IReadOnlyCollection<PortfolioItem> PortfolioItems { get; private set; } = [];
-    public IReadOnlyCollection<SocialPlatform> Platforms { get; private set; } = [];
-    public IReadOnlyCollection<CollaborationRequest> IncomingRequests { get; private set; } = [];
+    public IReadOnlyCollection<CampaignApplication> CampaignApplications { get; private set; } = new List<CampaignApplication>();
+    public IReadOnlyCollection<Deal> Deals { get; private set; } = new List<Deal>();
+    public IReadOnlyCollection<Review> Reviews { get; private set; } = new List<Review>();
+    public IReadOnlyCollection<PortfolioItem> PortfolioItems { get; private set; } = new List<PortfolioItem>();
+    public IReadOnlyCollection<SocialPlatform> Platforms { get; private set; } = new List<SocialPlatform>();
+    public IReadOnlyCollection<CollaborationRequest> IncomingRequests { get; private set; } = new List<CollaborationRequest>();
 
     public static BloggerProfile Create(long telegramUserId, string name, string city, IReadOnlyCollection<string> categories) =>
         new(telegramUserId, name, city, categories);

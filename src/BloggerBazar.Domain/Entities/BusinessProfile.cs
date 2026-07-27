@@ -26,10 +26,10 @@ public sealed class BusinessProfile
     public bool IsVerified { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
-    public IReadOnlyCollection<Campaign> Campaigns { get; private set; } = [];
-    public IReadOnlyCollection<Deal> Deals { get; private set; } = [];
-    public IReadOnlyCollection<Review> Reviews { get; private set; } = [];
-    public IReadOnlyCollection<CollaborationRequest> CollaborationRequests { get; private set; } = [];
+    public IReadOnlyCollection<Campaign> Campaigns { get; private set; } = new List<Campaign>();
+    public IReadOnlyCollection<Deal> Deals { get; private set; } = new List<Deal>();
+    public IReadOnlyCollection<Review> Reviews { get; private set; } = new List<Review>();
+    public IReadOnlyCollection<CollaborationRequest> CollaborationRequests { get; private set; } = new List<CollaborationRequest>();
 
     public static BusinessProfile Create(long telegramUserId, string name, string? city) => new(telegramUserId, name, city);
 

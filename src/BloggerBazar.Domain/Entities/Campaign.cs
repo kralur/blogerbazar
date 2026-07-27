@@ -34,7 +34,7 @@ public sealed class Campaign
     public CampaignStatus Status { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
-    public IReadOnlyCollection<CampaignApplication> Applications { get; private set; } = [];
+    public IReadOnlyCollection<CampaignApplication> Applications { get; private set; } = new List<CampaignApplication>();
 
     public static Campaign Create(Guid businessId, string title, string description, IReadOnlyCollection<string> categories, int? budgetFrom, int? budgetTo, string? city) =>
         new(businessId, title, description, categories, budgetFrom, budgetTo, city);
