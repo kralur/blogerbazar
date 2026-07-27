@@ -1,0 +1,66 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using BloggerBazar.Application.Abstractions.Security;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
+
+namespace BloggerBazar.Infrastructure.Security;
+
+public sealed class TelegramOptions
+{
+    public const string SectionName = "Telegram";
+    public string BotToken { get; init; } = string.Empty;
+    public string WebhookSecret { get; init; } = string.Empty;
+    public int MaxInitDataAgeSeconds { get; init; } = 3600;
+}
+
+internal sealed class TelegramWebAppValidator(IOptions<TelegramOptions> options) : ITelegramWebAppValidator
+{
+    public TelegramWebAppUser Validate(string initData)
+    {
+        var settings = options.Value;
+        if (string.IsNullOrWhiteSpace(settings.BotToken))
+        {
+            throw new InvalidOperationException("Telegram:BotToken is not configured.");
+        }
+
+        var values = QueryHelpers.ParseQuery(initData);
+        if (!values.TryGetValue("hash", out var suppliedHash) || string.IsNullOrWhiteSpace(suppliedHash))
+        {
+            throw new UnauthorizedAccessException("Telegram initData is missing a hash.");
+        }
+
+        var dataCheckString = string.Join("\n", values
+            .Where(pair => !string.Equals(pair.Key, "hash", StringComparison.Ordinal))
+            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => $"{pair.Key}={pair.Value}"));
+
+        using var secretKey = new HMACSHA256(Encoding.UTF8.GetBytes("WebAppData"));
+        var secret = secretKey.ComputeHash(Encoding.UTF8.GetBytes(settings.BotToken));
+        using var signature = new HMACSHA256(secret);
+        var calculatedHash = Convert.ToHexString(signature.ComputeHash(Encoding.UTF8.GetBytes(dataCheckString))).ToLowerInvariant();
+
+        if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(calculatedHash), Encoding.UTF8.GetBytes(suppliedHash.ToString())))
+        {
+            throw new UnauthorizedAccessException("Telegram initData signature is invalid.");
+        }
+
+        if (!values.TryGetValue("auth_date", out var authDate) || !long.TryParse(authDate, out var unixSeconds) ||
+            DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeSeconds(unixSeconds) > TimeSpan.FromSeconds(settings.MaxInitDataAgeSeconds))
+        {
+            throw new UnauthorizedAccessException("Telegram initData has expired.");
+        }
+
+        if (!values.TryGetValue("user", out var userValue))
+        {
+            throw new UnauthorizedAccessException("Telegram initData is missing a user.");
+        }
+
+        var user = JsonSerializer.Deserialize<TelegramUserPayload>(userValue.ToString())
+            ?? throw new UnauthorizedAccessException("Telegram user payload is invalid.");
+        return new TelegramWebAppUser(user.Id, user.Username, user.FirstName);
+    }
+
+    private sealed record TelegramUserPayload(long Id, string? Username, string FirstName);
+}

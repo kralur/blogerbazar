@@ -1,0 +1,12 @@
+{
+  "name": "blogger-marketplace-miniapp",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm --workspace frontend run dev",
+    "build": "npm --workspace frontend run build"
+  }
+}
