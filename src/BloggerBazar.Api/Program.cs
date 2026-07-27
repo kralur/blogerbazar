@@ -1,6 +1,8 @@
 using BloggerBazar.Api.Middleware;
 using BloggerBazar.Application;
 using BloggerBazar.Infrastructure;
+using BloggerBazar.Infrastructure.Caching;
+using BloggerBazar.Infrastructure.Configuration;
 using BloggerBazar.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -12,6 +14,7 @@ Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger()
 
 try
 {
+    DotEnvConfiguration.Load();
     var builder = WebApplication.CreateBuilder(args);
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
@@ -22,7 +25,10 @@ try
     builder.Services.AddProblemDetails();
     builder.Services.AddControllers();
     builder.Services.AddOpenApi();
-    builder.Services.AddHealthChecks();
+    builder.Services.AddHealthChecks()
+        .AddDbContextCheck<BloggerBazarDbContext>("postgres")
+        .AddCheck<DistributedCacheHealthCheck>("cache");
+    builder.Services.AddSwaggerGen();
     var permitLimit = builder.Configuration.GetValue<int?>("RateLimiting:PermitLimit")
         ?? throw new InvalidOperationException("RateLimiting:PermitLimit must be configured.");
     var windowSeconds = builder.Configuration.GetValue<int?>("RateLimiting:WindowSeconds")
@@ -66,6 +72,12 @@ try
         var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
         await dbContext.Database.MigrateAsync();
     }
+    if (app.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("DevelopmentData:Seed"))
+    {
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        await DevelopmentDataSeeder.SeedAsync(dbContext, app.Logger);
+    }
     app.UseSerilogRequestLogging();
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     if (!app.Environment.IsProduction())
@@ -78,6 +90,8 @@ try
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
+        app.UseSwagger();
+        app.UseSwaggerUI();
     }
 
     app.MapHealthChecks("/health");

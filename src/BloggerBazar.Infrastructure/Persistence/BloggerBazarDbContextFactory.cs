@@ -1,3 +1,4 @@
+using BloggerBazar.Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -7,8 +8,9 @@ public sealed class BloggerBazarDbContextFactory : IDesignTimeDbContextFactory<B
 {
     public BloggerBazarDbContext CreateDbContext(string[] args)
     {
+        DotEnvConfiguration.Load();
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Postgres")
-            ?? "Host=localhost;Database=bloggerbazar";
+            ?? throw new InvalidOperationException("ConnectionStrings__Postgres must be configured.");
         var options = new DbContextOptionsBuilder<BloggerBazarDbContext>()
             .UseNpgsql(connectionString)
             .Options;

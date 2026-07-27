@@ -4,6 +4,7 @@ using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Features.Payments;
 using BloggerBazar.Infrastructure.Payments;
+using BloggerBazar.Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -19,6 +20,7 @@ public sealed class TelegramPaymentsWebhookController(
     ITelegramPaymentGateway paymentGateway,
     ITelegramWebhookValidator webhookValidator,
     IOptions<ClickTelegramPaymentOptions> paymentOptions,
+    IOptions<TelegramOptions> telegramOptions,
     ITelegramBotClient botClient,
     ILogger<TelegramPaymentsWebhookController> logger) : ControllerBase
 {
@@ -41,9 +43,9 @@ public sealed class TelegramPaymentsWebhookController(
             return Ok();
         }
 
-        if (update.Message?.Text is "/start" or "/start@BloggerBazarBot")
+        if (update.Message is { } message && IsStartCommand(message.Text, telegramOptions.Value.BotUsername))
         {
-            if (update.Message.Chat is { } chat)
+            if (message.Chat is { } chat)
             {
                 try
                 {
@@ -73,5 +75,17 @@ public sealed class TelegramPaymentsWebhookController(
         }
 
         return Ok();
+    }
+
+    private static bool IsStartCommand(string? text, string botUsername)
+    {
+        if (string.Equals(text, "/start", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var normalizedUsername = botUsername.Trim().TrimStart('@');
+        return !string.IsNullOrWhiteSpace(normalizedUsername)
+            && string.Equals(text, $"/start@{normalizedUsername}", StringComparison.OrdinalIgnoreCase);
     }
 }

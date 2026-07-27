@@ -9,7 +9,8 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
 {
     public async Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken)
     {
-        var botToken = options.Value.BotToken;
+        var telegram = options.Value;
+        var botToken = telegram.BotToken;
         if (string.IsNullOrWhiteSpace(botToken))
         {
             throw new InvalidOperationException("Telegram:BotToken must be configured to send bot messages.");
@@ -18,7 +19,17 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
         using var response = await httpClient.PostAsJsonAsync($"bot{botToken}/sendMessage", new
         {
             chat_id = chatId,
-            text = "Привет! Откройте Mini App, чтобы найти блогера или создать анкету."
+            text = "Откройте Mini App, чтобы найти блогера или создать анкету.",
+            reply_markup = Uri.TryCreate(telegram.MiniAppUrl, UriKind.Absolute, out var miniAppUrl)
+                ? new
+                {
+                    inline_keyboard = new[]
+                    {
+                        new[] { new { text = "Открыть BloggerBazar", web_app = new { url = miniAppUrl.ToString() } }
+                    }
+                    }
+                }
+                : null
         }, cancellationToken);
         response.EnsureSuccessStatusCode();
     }

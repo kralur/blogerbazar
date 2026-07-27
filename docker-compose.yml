@@ -9,6 +9,8 @@ services:
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       ConnectionStrings__Redis: redis:6379
       Telegram__BotToken: ${TELEGRAM_BOT_TOKEN}
+      Telegram__BotUsername: ${TELEGRAM_BOT_USERNAME}
+      Telegram__MiniAppUrl: ${TELEGRAM_MINIAPP_URL}
       Telegram__WebhookSecret: ${TELEGRAM_WEBHOOK_SECRET}
       Payments__ContactUnlockAmountUzs: ${PAYMENTS__CONTACTUNLOCKAMOUNTUZS}
       Click__TelegramProviderToken: ${CLICK__TELEGRAMPROVIDERTOKEN}
