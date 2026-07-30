@@ -8,12 +8,10 @@ namespace BloggerBazar.Infrastructure.Persistence;
 internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) : IBloggerProfileRepository
 {
     public Task<BloggerProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        dbContext.BloggerProfiles.Include(profile => profile.PortfolioItems).Include(profile => profile.Platforms).Include(profile => profile.Reviews).Include(profile => profile.Deals)
-            .SingleOrDefaultAsync(profile => profile.Id == id, cancellationToken);
+        dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.Id == id, cancellationToken);
 
     public Task<BloggerProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) =>
-        dbContext.BloggerProfiles.Include(profile => profile.PortfolioItems).Include(profile => profile.Platforms).Include(profile => profile.Reviews).Include(profile => profile.Deals)
-            .SingleOrDefaultAsync(profile => profile.TelegramUserId == telegramUserId, cancellationToken);
+        dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.TelegramUserId == telegramUserId, cancellationToken);
 
     public Task<BloggerProfile?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>
         dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.Username == username, cancellationToken);
@@ -23,12 +21,12 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
             .OrderBy(profile => profile.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BloggerProfile>> GetAllAsync(int take, CancellationToken cancellationToken) =>
-        await dbContext.BloggerProfiles.AsNoTracking().Include(profile => profile.PortfolioItems).Include(profile => profile.Platforms).Include(profile => profile.Reviews).Include(profile => profile.Deals)
+        await dbContext.BloggerProfiles.AsNoTracking()
             .OrderByDescending(profile => profile.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BloggerProfile>> SearchApprovedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
-        var query = dbContext.BloggerProfiles.AsNoTracking().Include(profile => profile.Reviews).Include(profile => profile.Deals)
+        var query = dbContext.BloggerProfiles.AsNoTracking()
             .Where(profile => profile.Status == BloggerStatus.Approved);
 
         if (!string.IsNullOrWhiteSpace(city))
@@ -53,10 +51,10 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
         var query = dbContext.BloggerProfiles.AsNoTracking().Where(profile => profile.Status == BloggerStatus.Approved);
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
-            var text = search.Query.Trim().ToLowerInvariant();
-            query = query.Where(profile => profile.Name.ToLower().Contains(text)
-                || profile.City.ToLower().Contains(text)
-                || profile.Categories.Any(category => category.ToLower().Contains(text)));
+            var pattern = PostgresSearchPattern.Contains(search.Query.Trim());
+            query = query.Where(profile => EF.Functions.ILike(profile.Name, pattern)
+                || EF.Functions.ILike(profile.City, pattern)
+                || profile.Categories.Any(category => EF.Functions.ILike(category, pattern)));
         }
         if (!string.IsNullOrWhiteSpace(search.City))
         {
@@ -101,7 +99,7 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
             _ => query.OrderByDescending(profile => profile.Deals.Count(deal => deal.Status == DealStatus.Completed)).ThenByDescending(profile => profile.Reviews.Average(review => (decimal?)review.Rating) ?? 0).ThenByDescending(profile => profile.TotalFollowers)
         };
 
-        var profiles = await ordered.Include(profile => profile.PortfolioItems).Include(profile => profile.Platforms).Include(profile => profile.Reviews).Include(profile => profile.Deals)
+        var profiles = await ordered
             .Skip((search.Page - 1) * search.PageSize).Take(search.PageSize).ToListAsync(cancellationToken);
         return new BloggerCatalogPage(profiles, total);
     }

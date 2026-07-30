@@ -40,7 +40,7 @@ public sealed class SearchBloggersValidator : AbstractValidator<SearchBloggersQu
     }
 }
 
-public sealed class SearchBloggersHandler(IBloggerProfileRepository profiles, ICatalogCache cache)
+public sealed class SearchBloggersHandler(IMarketplaceCatalogReadModel catalog, ICatalogCache cache)
     : IRequestHandler<SearchBloggersQuery, SearchBloggersResult>
 {
     public async Task<SearchBloggersResult> Handle(SearchBloggersQuery query, CancellationToken cancellationToken)
@@ -49,11 +49,10 @@ public sealed class SearchBloggersHandler(IBloggerProfileRepository profiles, IC
         var cached = await cache.GetAsync<SearchBloggersResult>(key, cancellationToken);
         if (cached is not null) return cached;
 
-        var page = await profiles.SearchApprovedPageAsync(
+        var result = await catalog.SearchBloggersAsync(
             new BloggerCatalogSearch(query.Query, query.City, query.Category, query.Platform, query.MinFollowers,
                 query.MinEngagementRate, query.MaxEngagementRate, query.MinPrice, query.MaxPrice, query.Sort, query.Page, query.PageSize),
             cancellationToken);
-        var result = new SearchBloggersResult(page.Profiles.Select(BloggerProfileDto.From).ToArray(), page.Total, query.Page, query.PageSize);
         await cache.SetAsync(key, result, TimeSpan.FromMinutes(1), cancellationToken);
         return result;
     }

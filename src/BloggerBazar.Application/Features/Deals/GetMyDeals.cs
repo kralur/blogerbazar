@@ -42,16 +42,12 @@ public sealed record MyDealDto(
 public sealed class GetMyDealsHandler(
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
-    IDealRepository deals) : IRequestHandler<GetMyDealsQuery, IReadOnlyList<MyDealDto>>
+    IMarketplaceCatalogReadModel catalog) : IRequestHandler<GetMyDealsQuery, IReadOnlyList<MyDealDto>>
 {
     public async Task<IReadOnlyList<MyDealDto>> Handle(GetMyDealsQuery query, CancellationToken cancellationToken)
     {
         var blogger = await bloggers.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
         var business = await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
-        var results = await deals.GetForParticipantsAsync(blogger?.Id, business?.Id, cancellationToken);
-
-        return results.Select(deal => MyDealDto.From(deal, query.TelegramUserId))
-            .OrderByDescending(deal => deal.CreatedAtUtc)
-            .ToArray();
+        return await catalog.GetDealsAsync(blogger?.Id, business?.Id, query.TelegramUserId, cancellationToken);
     }
 }

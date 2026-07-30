@@ -1,11 +1,16 @@
 using BloggerBazar.Api.Middleware;
+using BloggerBazar.Api.OpenApi;
+using BloggerBazar.Api.Routing;
 using BloggerBazar.Api.Security;
+using BloggerBazar.Api.Errors;
+using BloggerBazar.Api.Filters;
 using BloggerBazar.Application;
 using BloggerBazar.Infrastructure;
 using BloggerBazar.Infrastructure.Caching;
 using BloggerBazar.Infrastructure.Configuration;
 using BloggerBazar.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using System.Threading.RateLimiting;
 
@@ -22,12 +27,16 @@ try
         .WriteTo.Console());
 
     builder.Services.AddProblemDetails();
-    builder.Services.AddControllers();
+    builder.Services.AddControllers(options =>
+    {
+        options.Conventions.Add(new ApiV1RouteConvention());
+        options.Filters.Add<ProblemDetailsEnrichmentFilter>();
+    });
     builder.Services.AddOpenApi();
     builder.Services.AddHealthChecks()
-        .AddDbContextCheck<BloggerBazarDbContext>("postgres")
-        .AddCheck<DistributedCacheHealthCheck>("cache");
-    builder.Services.AddSwaggerGen();
+        .AddDbContextCheck<BloggerBazarDbContext>("postgres", tags: ["ready", "postgres"])
+        .AddCheck<DistributedCacheHealthCheck>("cache", tags: ["ready", "cache"]);
+    builder.Services.AddSwaggerGen(options => options.OperationFilter<DeprecatedOperationFilter>());
     var permitLimit = builder.Configuration.GetValue<int?>("RateLimiting:PermitLimit")
         ?? throw new InvalidOperationException("RateLimiting:PermitLimit must be configured.");
     var windowSeconds = builder.Configuration.GetValue<int?>("RateLimiting:WindowSeconds")
@@ -64,7 +73,12 @@ try
                 ? value?.ToString() ?? "global"
                 : "global";
             logger.LogWarning("Request rate limited. Path {Path}; TraceId {TraceId}; PartitionKind {PartitionKind}", context.HttpContext.Request.Path, context.HttpContext.TraceIdentifier, partitionKind);
-            return ValueTask.CompletedTask;
+            if (context.HttpContext.Request.Path.StartsWithSegments("/api/webhooks/telegram"))
+            {
+                return ValueTask.CompletedTask;
+            }
+
+            return new ValueTask(ApiProblemWriter.WriteAsync(context.HttpContext, StatusCodes.Status429TooManyRequests));
         };
         options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(_ =>
             RateLimitPartition.GetConcurrencyLimiter("global", _ => new ConcurrencyLimiterOptions
@@ -110,20 +124,36 @@ try
     }));
 
     var app = builder.Build();
+    app.Logger.LogInformation("Starting BloggerBazar API. Environment {Environment}; Version {Version}", app.Environment.EnvironmentName, typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown");
     if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
     {
         using var scope = app.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
         await dbContext.Database.MigrateAsync();
+        app.Logger.LogInformation("Database migrations applied successfully");
     }
     if (app.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("DevelopmentData:Seed"))
     {
         using var scope = app.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
         await DevelopmentDataSeeder.SeedAsync(dbContext, app.Logger);
+        app.Logger.LogInformation("Development data seed completed");
     }
-    app.UseSerilogRequestLogging();
+    app.UseMiddleware<CorrelationIdMiddleware>();
+    app.UseSerilogRequestLogging(options => options.EnrichDiagnosticContext = (diagnosticContext, context) =>
+    {
+        diagnosticContext.Set("TraceId", context.TraceIdentifier);
+        diagnosticContext.Set("CorrelationId", context.Items.TryGetValue(CorrelationIdMiddleware.CorrelationIdItemKey, out var correlationId) ? correlationId ?? "none" : "none");
+    });
     app.UseMiddleware<ExceptionHandlingMiddleware>();
+    app.UseStatusCodePages(async statusContext =>
+    {
+        var context = statusContext.HttpContext;
+        if (!context.Request.Path.StartsWithSegments("/api/webhooks/telegram"))
+        {
+            await ApiProblemWriter.WriteAsync(context, context.Response.StatusCode);
+        }
+    });
     if (!app.Environment.IsProduction())
     {
         app.UseHttpsRedirection();
@@ -141,6 +171,8 @@ try
     }
 
     app.MapHealthChecks("/health");
+    app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+    app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
     app.MapControllers().RequireRateLimiting("api");
     await app.RunAsync();
 }

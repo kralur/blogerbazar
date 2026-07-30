@@ -7,8 +7,6 @@ type ApiOptions = RequestInit;
 
 function friendlyError(status: number, code?: string) {
   const normalizedCode = code?.toLowerCase();
-  if (normalizedCode === "payment_provider_unavailable" || normalizedCode === "payment_provider_invalid") return translate("error.payment_provider_unavailable");
-  if (normalizedCode === "telegram_invoice_unavailable") return translate("error.telegram_invoice_unavailable");
   if (status === 401 || status === 403) return translate("error.access_denied");
   if (status === 404) return translate("error.not_found");
   if (status === 409) return translate("error.conflict");
@@ -43,18 +41,4 @@ export async function api<T>(path: string, options?: ApiOptions): Promise<T> {
   }
 
   return data as T;
-}
-
-export type TelegramInvoiceStatus = "paid" | "cancelled" | "failed" | "pending";
-
-export function openTelegramInvoice(invoiceLink: string): Promise<TelegramInvoiceStatus> {
-  return new Promise((resolve, reject) => {
-    try {
-      telegramBridge.openInvoice(invoiceLink)
-        .then((status) => resolve(status as TelegramInvoiceStatus))
-        .catch(reject);
-    } catch (error) {
-      reject(error);
-    }
-  });
 }

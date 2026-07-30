@@ -20,6 +20,7 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("BloggerBazar.Domain.Entities.AuditLog", b =>
@@ -181,7 +182,24 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Categories")
+                        .HasDatabaseName("IX_blogger_profiles_categories_gin");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Categories"), "gin");
+
+                    b.HasIndex("City")
+                        .HasDatabaseName("IX_blogger_profiles_city_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("City"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("City"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("IsPromoted");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_blogger_profiles_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("TelegramUserId")
                         .IsUnique();
@@ -262,6 +280,23 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Categories")
+                        .HasDatabaseName("IX_brand_face_profiles_categories_gin");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Categories"), "gin");
+
+                    b.HasIndex("City")
+                        .HasDatabaseName("IX_brand_face_profiles_city_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("City"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("City"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_brand_face_profiles_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("TelegramUserId")
                         .IsUnique();

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { applyToCampaign, getCampaign, getUnlockedContact, type CampaignDetails, type ContactDetails } from "../api/marketplace";
+import { applyToCampaign, getCampaign, getPublicContact, type CampaignDetails, type ContactDetails } from "../api/marketplace";
 import { Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
@@ -27,7 +27,7 @@ export function CampaignDetails({ id }: { id: string }) {
     const businessId = campaign?.businessId;
     if (!businessId) return;
 
-    getUnlockedContact("Business", businessId)
+    getPublicContact("Business", businessId)
       .then(setContact)
       .catch(() => undefined);
   }, [campaign?.businessId, id]);

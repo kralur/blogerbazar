@@ -18,24 +18,11 @@ public sealed record GetAdminDashboardQuery(long TelegramUserId) : IRequest<Admi
 
 public sealed class GetAdminDashboardHandler(
     IAdminAccessPolicy access,
-    IPlatformUserRepository users,
-    IBloggerProfileRepository bloggers,
-    IBusinessProfileRepository businesses,
-    ICampaignRepository campaigns) : IRequestHandler<GetAdminDashboardQuery, AdminDashboardDto>
+    IAdminMarketplaceReadModel marketplace) : IRequestHandler<GetAdminDashboardQuery, AdminDashboardDto>
 {
     public async Task<AdminDashboardDto> Handle(GetAdminDashboardQuery query, CancellationToken cancellationToken)
     {
         access.EnsureAllowed(query.TelegramUserId);
-        var bloggerProfiles = await bloggers.GetAllAsync(500, cancellationToken);
-        var businessProfiles = await businesses.GetAllAsync(500, cancellationToken);
-        var allCampaigns = await campaigns.GetAllAsync(500, cancellationToken);
-        return new AdminDashboardDto(
-            await users.CountActiveAsync(cancellationToken),
-            bloggerProfiles.Count,
-            businessProfiles.Count,
-            allCampaigns.Count(campaign => campaign.Status == CampaignStatus.Published),
-            bloggerProfiles.Sum(profile => profile.Deals.Count(deal => deal.Status == DealStatus.Completed)),
-            bloggerProfiles.Count(profile => profile.IsPromoted),
-            allCampaigns.Count(campaign => campaign.IsPromoted));
+        return await marketplace.GetDashboardAsync(cancellationToken);
     }
 }

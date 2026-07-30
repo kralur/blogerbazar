@@ -82,17 +82,6 @@ type ApiCampaign = {
   createdAtUtc: string;
 };
 
-export type ContactUnlockOrder = {
-  reference: string;
-  targetType: number;
-  targetId: string;
-  amountUzs: number;
-  status: number;
-  isUnlocked: boolean;
-};
-
-export type TelegramInvoiceLink = { reference: string; invoiceLink: string };
-
 export type ContactDetails = { phone?: string | null; email?: string | null };
 export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number };
 export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; createdAtUtc: string };
@@ -222,7 +211,6 @@ const asBloggerCard = (blogger: ApiBlogger): BloggerCardData => ({
   rating: blogger.rating ?? null,
   reviewsCount: blogger.reviewsCount,
   completedDealsCount: blogger.completedDealsCount,
-  contactUnlocked: false,
   avatarUrl: blogger.avatarUrl,
   verified: blogger.isVerified,
   averageReach: blogger.averageReach,
@@ -380,19 +368,7 @@ export async function createDealReview(id: string, rating: number, comment: stri
   return api(`/api/deals/${id}/reviews`, { method: "POST", body: JSON.stringify({ rating, comment: comment.trim() || undefined }) });
 }
 
-export async function getContactUnlockStatus(targetType: "Blogger" | "Business", targetId: string) {
-  return api<{ isUnlocked: boolean }>(`/api/payments/contact-unlocks/${targetType}/${targetId}`);
-}
-
-export async function createContactUnlockOrder(targetType: "Blogger" | "Business", targetId: string) {
-  return api<ContactUnlockOrder>("/api/payments/contact-unlocks", { method: "POST", body: JSON.stringify({ targetType: targetType === "Blogger" ? 0 : 1, targetId }) });
-}
-
-export async function createContactUnlockInvoice(reference: string) {
-  return api<TelegramInvoiceLink>(`/api/payments/contact-unlocks/${reference}/invoice`, { method: "POST" });
-}
-
-export async function getUnlockedContact(targetType: "Blogger" | "Business", targetId: string) {
+export async function getPublicContact(targetType: "Blogger" | "Business", targetId: string) {
   return api<ContactDetails>(`/api/contacts/${targetType}/${targetId}`);
 }
 

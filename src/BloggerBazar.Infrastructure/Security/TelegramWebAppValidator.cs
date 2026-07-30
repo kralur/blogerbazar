@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Security.Authentication;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -33,7 +34,7 @@ internal sealed class TelegramWebAppValidator(IOptions<TelegramOptions> options)
         var values = QueryHelpers.ParseQuery(initData);
         if (!values.TryGetValue("hash", out var suppliedHash) || string.IsNullOrWhiteSpace(suppliedHash))
         {
-            throw new UnauthorizedAccessException("Telegram initData is missing a hash.");
+            throw new AuthenticationException("Telegram initData is missing a hash.");
         }
 
         var dataCheckString = string.Join("\n", values
@@ -48,12 +49,12 @@ internal sealed class TelegramWebAppValidator(IOptions<TelegramOptions> options)
 
         if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(calculatedHash), Encoding.UTF8.GetBytes(suppliedHash.ToString())))
         {
-            throw new UnauthorizedAccessException("Telegram initData signature is invalid.");
+            throw new AuthenticationException("Telegram initData signature is invalid.");
         }
 
         if (!values.TryGetValue("auth_date", out var authDate) || !long.TryParse(authDate, out var unixSeconds))
         {
-            throw new UnauthorizedAccessException("Telegram initData has expired.");
+            throw new AuthenticationException("Telegram initData has expired.");
         }
 
         var authenticatedAt = DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
@@ -61,16 +62,16 @@ internal sealed class TelegramWebAppValidator(IOptions<TelegramOptions> options)
         if (authenticatedAt > now.AddSeconds(settings.MaxInitDataClockSkewSeconds)
             || now - authenticatedAt > TimeSpan.FromSeconds(settings.MaxInitDataAgeSeconds))
         {
-            throw new UnauthorizedAccessException("Telegram initData has expired.");
+            throw new AuthenticationException("Telegram initData has expired.");
         }
 
         if (!values.TryGetValue("user", out var userValue))
         {
-            throw new UnauthorizedAccessException("Telegram initData is missing a user.");
+            throw new AuthenticationException("Telegram initData is missing a user.");
         }
 
         var user = JsonSerializer.Deserialize<TelegramUserPayload>(userValue.ToString())
-            ?? throw new UnauthorizedAccessException("Telegram user payload is invalid.");
+            ?? throw new AuthenticationException("Telegram user payload is invalid.");
         return new TelegramWebAppUser(user.Id, user.Username, user.FirstName);
     }
 

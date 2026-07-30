@@ -17,7 +17,7 @@ internal sealed class BusinessProfileRepository(BloggerBazarDbContext dbContext)
         dbContext.BusinessProfiles.SingleOrDefaultAsync(profile => profile.Username == username, cancellationToken);
 
     public async Task<IReadOnlyList<BusinessProfile>> GetAllAsync(int take, CancellationToken cancellationToken) =>
-        await dbContext.BusinessProfiles.AsNoTracking().AsSplitQuery().Include(profile => profile.Campaigns).Include(profile => profile.Deals).Include(profile => profile.Reviews)
+        await dbContext.BusinessProfiles.AsNoTracking()
             .OrderByDescending(profile => profile.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BusinessProfile>> GetPendingAsync(int take, CancellationToken cancellationToken) =>

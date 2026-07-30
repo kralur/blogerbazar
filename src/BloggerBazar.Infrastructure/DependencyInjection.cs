@@ -36,6 +36,10 @@ public static class DependencyInjection
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IBrandFaceProfileRepository, BrandFaceProfileRepository>();
+        services.AddScoped<IMarketplaceHomeReadModel, MarketplaceHomeReadModel>();
+        services.AddScoped<IMarketplaceCatalogReadModel, MarketplaceCatalogReadModel>();
+        services.AddScoped<IAdminMarketplaceReadModel, AdminMarketplaceReadModel>();
+        services.AddScoped<IReviewReadModel, ReviewReadModel>();
         services.AddSingleton<IContactUnlockPricing, ContactUnlockPricing>();
         services.Configure<ClickTelegramPaymentOptions>(configuration.GetSection(ClickTelegramPaymentOptions.SectionName));
         services.AddSingleton<ICatalogCache, DistributedCatalogCache>();

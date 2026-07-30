@@ -56,6 +56,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("pg_trgm");
         var user = modelBuilder.Entity<PlatformUser>();
         user.ToTable("platform_users");
         user.HasKey(entity => entity.Id);
@@ -92,6 +93,9 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         brandFace.Property(entity => entity.Categories).HasColumnType("text[]");
         brandFace.HasIndex(entity => entity.TelegramUserId).IsUnique();
         brandFace.HasIndex(entity => new { entity.City, entity.IsPromoted });
+        brandFace.HasIndex(entity => entity.Name).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_brand_face_profiles_name_trgm");
+        brandFace.HasIndex(entity => entity.City).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_brand_face_profiles_city_trgm");
+        brandFace.HasIndex(entity => entity.Categories).HasMethod("gin").HasDatabaseName("IX_brand_face_profiles_categories_gin");
 
         var profile = modelBuilder.Entity<BloggerProfile>();
         profile.ToTable("blogger_profiles");
@@ -116,6 +120,9 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         profile.Property(entity => entity.EngagementRate).HasPrecision(5, 2);
         profile.HasIndex(entity => new { entity.Status, entity.City });
         profile.HasIndex(entity => entity.IsPromoted);
+        profile.HasIndex(entity => entity.Name).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_blogger_profiles_name_trgm");
+        profile.HasIndex(entity => entity.City).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_blogger_profiles_city_trgm");
+        profile.HasIndex(entity => entity.Categories).HasMethod("gin").HasDatabaseName("IX_blogger_profiles_categories_gin");
 
         var portfolioItem = modelBuilder.Entity<PortfolioItem>();
         portfolioItem.ToTable("portfolio_items");

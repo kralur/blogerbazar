@@ -12,13 +12,5 @@ internal sealed class CampaignApplicationRepository(BloggerBazarDbContext dbCont
     public Task<bool> ExistsAsync(Guid campaignId, Guid bloggerId, CancellationToken cancellationToken) =>
         dbContext.CampaignApplications.AnyAsync(application => application.CampaignId == campaignId && application.BloggerId == bloggerId, cancellationToken);
 
-    public async Task<IReadOnlyList<CampaignApplication>> GetForBloggerAsync(Guid bloggerId, CancellationToken cancellationToken) =>
-        await dbContext.CampaignApplications.AsNoTracking().Include(application => application.Campaign).ThenInclude(campaign => campaign.Business)
-            .Where(application => application.BloggerId == bloggerId).OrderByDescending(application => application.CreatedAtUtc).ToListAsync(cancellationToken);
-
-    public async Task<IReadOnlyList<CampaignApplication>> GetForBusinessAsync(Guid businessId, CancellationToken cancellationToken) =>
-        await dbContext.CampaignApplications.AsNoTracking().Include(application => application.Blogger).Include(application => application.Campaign)
-            .Where(application => application.Campaign.BusinessId == businessId).OrderByDescending(application => application.CreatedAtUtc).ToListAsync(cancellationToken);
-
     public async Task AddAsync(CampaignApplication application, CancellationToken cancellationToken) => await dbContext.CampaignApplications.AddAsync(application, cancellationToken);
 }

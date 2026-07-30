@@ -20,8 +20,10 @@ internal sealed class BrandFaceProfileRepository(BloggerBazarDbContext dbContext
         var profiles = dbContext.BrandFaceProfiles.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(query))
         {
-            var value = query.Trim().ToLowerInvariant();
-            profiles = profiles.Where(profile => profile.Name.ToLower().Contains(value) || profile.City.ToLower().Contains(value) || profile.Categories.Any(categoryValue => categoryValue.ToLower().Contains(value)));
+            var pattern = PostgresSearchPattern.Contains(query.Trim());
+            profiles = profiles.Where(profile => EF.Functions.ILike(profile.Name, pattern)
+                || EF.Functions.ILike(profile.City, pattern)
+                || profile.Categories.Any(categoryValue => EF.Functions.ILike(categoryValue, pattern)));
         }
         if (!string.IsNullOrWhiteSpace(city)) profiles = profiles.Where(profile => profile.City == city.Trim());
         if (!string.IsNullOrWhiteSpace(category)) profiles = profiles.Where(profile => profile.Categories.Contains(category.Trim()));

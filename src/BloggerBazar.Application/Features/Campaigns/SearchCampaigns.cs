@@ -16,7 +16,7 @@ public sealed class SearchCampaignsValidator : AbstractValidator<SearchCampaigns
     }
 }
 
-public sealed class SearchCampaignsHandler(ICampaignRepository campaigns, ICatalogCache cache) : IRequestHandler<SearchCampaignsQuery, IReadOnlyList<CampaignDto>>
+public sealed class SearchCampaignsHandler(IMarketplaceCatalogReadModel catalog, ICatalogCache cache) : IRequestHandler<SearchCampaignsQuery, IReadOnlyList<CampaignDto>>
 {
     public async Task<IReadOnlyList<CampaignDto>> Handle(SearchCampaignsQuery query, CancellationToken cancellationToken)
     {
@@ -27,8 +27,7 @@ public sealed class SearchCampaignsHandler(ICampaignRepository campaigns, ICatal
             return cached;
         }
 
-        var page = await campaigns.SearchPublishedAsync(query.City, query.Category, (query.Page - 1) * query.PageSize, query.PageSize, cancellationToken);
-        var response = page.Select(campaign => CampaignDto.From(campaign, campaign.Business.Name)).ToList();
+        var response = (await catalog.SearchCampaignsAsync(query.City, query.Category, (query.Page - 1) * query.PageSize, query.PageSize, cancellationToken)).ToList();
         await cache.SetAsync(key, response, TimeSpan.FromMinutes(1), cancellationToken);
         return response;
     }

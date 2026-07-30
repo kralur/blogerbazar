@@ -242,26 +242,6 @@ export function PromotionCard({ title, subtitle, audience }: { title: string; su
   return <Card className="overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50"><Badge tone="gray">{t("ui.soon")}</Badge><h3 className="mt-3 text-lg font-extrabold">{title}</h3><p className="mt-2 text-sm leading-5 text-brand-muted">{subtitle}</p><p className="mt-3 text-xs font-bold text-brand-blue">{t("ui.forAudience", { audience })}</p><Button className="mt-4 w-full" disabled title={t("ui.promotionUnavailable")} type="button">{t("ui.soon")}</Button></Card>;
 }
 
-export function UnlockBlock({ title, subtitle, price, cta, disabled = false, onUnlock }: { title?: string; subtitle?: string; price?: string; cta?: string; disabled?: boolean; onUnlock?: () => void }) {
-  const { t } = useI18n();
-  return (
-    <div className="rounded-[28px] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-4">
-      <div className="flex gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-100 text-brand-blue">
-          <Icon name="lock" />
-        </div>
-        <div>
-          <div className="font-extrabold">{title ?? t("campaign.contactLocked")}</div>
-          <div className="mt-1 text-sm text-brand-muted">{subtitle ?? t("campaign.unlockSubtitle")}</div>
-        </div>
-      </div>
-      <Button className="mt-4 w-full" disabled={disabled} onClick={onUnlock} type="button">
-        {cta ?? `${t("details.unlock")} — ${price ?? formatCurrency(29000)}`}
-      </Button>
-    </div>
-  );
-}
-
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cn("shimmer rounded-3xl", className)} />;
 }

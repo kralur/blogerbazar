@@ -10,23 +10,23 @@ namespace BloggerBazar.Application.Features.Admin;
 
 public sealed record GetAdminBloggersQuery(long TelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AdminBloggerProfileDto>>;
 
-public sealed class GetAdminBloggersHandler(IBloggerProfileRepository profiles, IAdminAccessPolicy access) : IRequestHandler<GetAdminBloggersQuery, IReadOnlyList<AdminBloggerProfileDto>>
+public sealed class GetAdminBloggersHandler(IAdminMarketplaceReadModel marketplace, IAdminAccessPolicy access) : IRequestHandler<GetAdminBloggersQuery, IReadOnlyList<AdminBloggerProfileDto>>
 {
     public async Task<IReadOnlyList<AdminBloggerProfileDto>> Handle(GetAdminBloggersQuery query, CancellationToken cancellationToken)
     {
         access.EnsureAllowed(query.TelegramUserId);
-        return (await profiles.GetAllAsync(Math.Clamp(query.Take, 1, 100), cancellationToken)).Select(AdminBloggerProfileDto.From).ToArray();
+        return await marketplace.GetBloggersAsync(Math.Clamp(query.Take, 1, 100), cancellationToken);
     }
 }
 
 public sealed record GetAdminCollaborationRequestsQuery(long TelegramUserId, int Take = 100) : IRequest<IReadOnlyList<CollaborationRequestDto>>;
 
-public sealed class GetAdminCollaborationRequestsHandler(ICollaborationRequestRepository requests, IAdminAccessPolicy access) : IRequestHandler<GetAdminCollaborationRequestsQuery, IReadOnlyList<CollaborationRequestDto>>
+public sealed class GetAdminCollaborationRequestsHandler(IAdminMarketplaceReadModel marketplace, IAdminAccessPolicy access) : IRequestHandler<GetAdminCollaborationRequestsQuery, IReadOnlyList<CollaborationRequestDto>>
 {
     public async Task<IReadOnlyList<CollaborationRequestDto>> Handle(GetAdminCollaborationRequestsQuery query, CancellationToken cancellationToken)
     {
         access.EnsureAllowed(query.TelegramUserId);
-        return (await requests.GetAllAsync(Math.Clamp(query.Take, 1, 100), cancellationToken)).Select(CollaborationRequestDto.From).ToArray();
+        return await marketplace.GetCollaborationRequestsAsync(Math.Clamp(query.Take, 1, 100), cancellationToken);
     }
 }
 
@@ -38,12 +38,12 @@ public sealed record AdminCampaignDto(Guid Id, string Title, string BusinessName
 
 public sealed record GetAdminCampaignsQuery(long TelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AdminCampaignDto>>;
 
-public sealed class GetAdminCampaignsHandler(ICampaignRepository campaigns, IAdminAccessPolicy access) : IRequestHandler<GetAdminCampaignsQuery, IReadOnlyList<AdminCampaignDto>>
+public sealed class GetAdminCampaignsHandler(IAdminMarketplaceReadModel marketplace, IAdminAccessPolicy access) : IRequestHandler<GetAdminCampaignsQuery, IReadOnlyList<AdminCampaignDto>>
 {
     public async Task<IReadOnlyList<AdminCampaignDto>> Handle(GetAdminCampaignsQuery query, CancellationToken cancellationToken)
     {
         access.EnsureAllowed(query.TelegramUserId);
-        return (await campaigns.GetAllAsync(Math.Clamp(query.Take, 1, 100), cancellationToken)).Select(AdminCampaignDto.From).ToArray();
+        return await marketplace.GetCampaignsAsync(Math.Clamp(query.Take, 1, 100), cancellationToken);
     }
 }
 

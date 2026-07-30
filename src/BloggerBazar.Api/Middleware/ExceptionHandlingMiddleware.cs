@@ -1,6 +1,7 @@
 using FluentValidation;
 using BloggerBazar.Application.Exceptions;
-using Microsoft.AspNetCore.Mvc;
+using BloggerBazar.Api.Errors;
+using System.Security.Authentication;
 
 namespace BloggerBazar.Api.Middleware;
 
@@ -14,39 +15,47 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
         }
         catch (ValidationException exception)
         {
-            await WriteProblemAsync(context, StatusCodes.Status400BadRequest, "Validation failed", exception.Errors.Select(error => new { error.PropertyName, error.ErrorMessage }));
+            var errors = exception.Errors.GroupBy(error => error.PropertyName)
+                .ToDictionary(group => group.Key, group => group.Select(error => error.ErrorMessage).ToArray());
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status422UnprocessableEntity, "validation_failed", detail: "One or more validation errors occurred.", errors: errors);
         }
-        catch (UnauthorizedAccessException exception)
+        catch (BadHttpRequestException)
         {
-            await WriteProblemAsync(context, StatusCodes.Status401Unauthorized, "Unauthorized", null);
-            logger.LogWarning(exception, "Unauthorized request to {Path}", context.Request.Path);
+            if (context.Request.Path.StartsWithSegments("/api/webhooks/telegram"))
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.CompleteAsync();
+                return;
+            }
+
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status400BadRequest);
+        }
+        catch (AuthenticationException)
+        {
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status401Unauthorized);
+            logger.LogWarning("Authentication rejected for {Path}", context.Request.Path);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status403Forbidden);
+            logger.LogWarning("Authorization rejected for {Path}", context.Request.Path);
         }
         catch (InvalidOperationException exception)
         {
-            await WriteProblemAsync(context, StatusCodes.Status409Conflict, exception.Message, null);
-            logger.LogInformation(exception, "Business rule conflict on {Path}", context.Request.Path);
+            var isNotFound = exception.Message.Contains("not found", StringComparison.OrdinalIgnoreCase)
+                || exception.Message.Contains("has not registered", StringComparison.OrdinalIgnoreCase);
+            await ApiProblemWriter.WriteAsync(context, isNotFound ? StatusCodes.Status404NotFound : StatusCodes.Status409Conflict);
+            logger.LogInformation("Business request rejected for {Path}; Outcome {Outcome}", context.Request.Path, isNotFound ? "not_found" : "conflict");
         }
-        catch (PaymentProviderUnavailableException exception)
+        catch (PaymentProviderUnavailableException)
         {
-            await WriteProblemAsync(context, StatusCodes.Status503ServiceUnavailable, "Payment provider is temporarily unavailable.", null, "payment_provider_unavailable");
-            logger.LogWarning(exception, "Payment provider unavailable for {Path}", context.Request.Path);
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status503ServiceUnavailable, "payment_provider_unavailable", "Payment provider unavailable");
+            logger.LogWarning("Payment provider unavailable for {Path}", context.Request.Path);
         }
         catch (Exception exception)
         {
             logger.LogError(exception, "Unhandled exception on {Path}", context.Request.Path);
-            await WriteProblemAsync(context, StatusCodes.Status500InternalServerError, "An unexpected server error occurred.", null);
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status500InternalServerError);
         }
-    }
-
-    private static Task WriteProblemAsync(HttpContext context, int statusCode, string title, object? errors, string? code = null)
-    {
-        context.Response.StatusCode = statusCode;
-        context.Response.ContentType = "application/problem+json";
-        return context.Response.WriteAsJsonAsync(new ProblemDetails
-        {
-            Status = statusCode,
-            Title = title,
-            Extensions = { ["errors"] = errors, ["code"] = code }
-        });
     }
 }

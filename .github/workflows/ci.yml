@@ -23,6 +23,8 @@ jobs:
       - name: Build backend
         run: dotnet build BloggerBazar.sln --configuration Release --no-restore
       - name: Run backend tests
+        env:
+          RUN_INTEGRATION_TESTS: "true"
         run: dotnet test BloggerBazar.sln --configuration Release --no-build --no-restore
 
   frontend:

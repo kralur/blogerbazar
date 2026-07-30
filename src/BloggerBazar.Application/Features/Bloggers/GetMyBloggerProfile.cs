@@ -19,12 +19,11 @@ public sealed record MyBloggerProfileDto(
         (int)profile.Status, profile.PortfolioItems.Select(PortfolioItemDto.From).ToArray());
 }
 
-public sealed class GetMyBloggerProfileHandler(IBloggerProfileRepository profiles)
+public sealed class GetMyBloggerProfileHandler(IMarketplaceCatalogReadModel catalog)
     : IRequestHandler<GetMyBloggerProfileQuery, MyBloggerProfileDto?>
 {
     public async Task<MyBloggerProfileDto?> Handle(GetMyBloggerProfileQuery query, CancellationToken cancellationToken)
     {
-        var profile = await profiles.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
-        return profile is null ? null : MyBloggerProfileDto.From(profile);
+        return await catalog.GetMyBloggerAsync(query.TelegramUserId, cancellationToken);
     }
 }

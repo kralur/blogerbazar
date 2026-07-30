@@ -15,9 +15,9 @@ public sealed class GetBloggerReviewsValidator : AbstractValidator<GetBloggerRev
     }
 }
 
-public sealed class GetBloggerReviewsHandler(IReviewRepository reviews)
+public sealed class GetBloggerReviewsHandler(IReviewReadModel reviews)
     : IRequestHandler<GetBloggerReviewsQuery, IReadOnlyList<ReviewDto>>
 {
-    public async Task<IReadOnlyList<ReviewDto>> Handle(GetBloggerReviewsQuery query, CancellationToken cancellationToken) =>
-        (await reviews.GetForBloggerAsync(query.BloggerId, query.Take, cancellationToken)).Select(ReviewDto.From).ToArray();
+    public Task<IReadOnlyList<ReviewDto>> Handle(GetBloggerReviewsQuery query, CancellationToken cancellationToken) =>
+        reviews.GetBloggerReviewsAsync(query.BloggerId, query.Take, cancellationToken);
 }

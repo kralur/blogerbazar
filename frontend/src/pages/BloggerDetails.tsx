@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getBlogger, getBloggerReviews, getUnlockedContact, type BloggerDetails, type BloggerReview } from "../api/marketplace";
+import { getBlogger, getBloggerReviews, getPublicContact, type BloggerDetails, type BloggerReview } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Rating, StatsCard, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
@@ -28,7 +28,7 @@ export function BloggerDetails({ id }: { id: string }) {
   }, [id]);
 
   useEffect(() => {
-    getUnlockedContact("Blogger", id)
+    getPublicContact("Blogger", id)
       .then(setContact)
       .catch(() => undefined);
   }, [id]);

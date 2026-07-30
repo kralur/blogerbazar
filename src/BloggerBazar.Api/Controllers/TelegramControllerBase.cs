@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Security;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Authentication;
 
 namespace BloggerBazar.Api.Controllers;
 
@@ -11,7 +12,7 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
         const string scheme = "tma ";
         if (!authorization.StartsWith(scheme, StringComparison.OrdinalIgnoreCase))
         {
-            throw new UnauthorizedAccessException("Telegram initData authorization is required.");
+            throw new AuthenticationException("Telegram initData authorization is required.");
         }
 
         var user = telegramValidator.Validate(authorization[scheme.Length..]);

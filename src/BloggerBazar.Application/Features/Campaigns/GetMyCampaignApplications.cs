@@ -17,15 +17,12 @@ public sealed record MyCampaignApplicationDto(Guid Id, Guid CampaignId, string C
 public sealed class GetMyCampaignApplicationsHandler(
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
-    ICampaignApplicationRepository applications) : IRequestHandler<GetMyCampaignApplicationsQuery, IReadOnlyList<MyCampaignApplicationDto>>
+    IMarketplaceCatalogReadModel catalog) : IRequestHandler<GetMyCampaignApplicationsQuery, IReadOnlyList<MyCampaignApplicationDto>>
 {
     public async Task<IReadOnlyList<MyCampaignApplicationDto>> Handle(GetMyCampaignApplicationsQuery query, CancellationToken cancellationToken)
     {
         var blogger = await bloggers.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
         var business = await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
-        var response = new List<MyCampaignApplicationDto>();
-        if (blogger is not null) response.AddRange((await applications.GetForBloggerAsync(blogger.Id, cancellationToken)).Select(MyCampaignApplicationDto.ForBlogger));
-        if (business is not null) response.AddRange((await applications.GetForBusinessAsync(business.Id, cancellationToken)).Select(MyCampaignApplicationDto.ForBusiness));
-        return response.OrderByDescending(application => application.CreatedAtUtc).ToArray();
+        return await catalog.GetCampaignApplicationsAsync(blogger?.Id, business?.Id, cancellationToken);
     }
 }

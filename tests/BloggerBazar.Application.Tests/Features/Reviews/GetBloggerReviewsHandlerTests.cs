@@ -1,6 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Reviews;
-using BloggerBazar.Domain.Entities;
 
 namespace BloggerBazar.Application.Tests.Features.Reviews;
 
@@ -10,8 +9,8 @@ public sealed class GetBloggerReviewsHandlerTests
     public async Task Returns_public_review_fields_for_blogger()
     {
         var bloggerId = Guid.NewGuid();
-        var review = Review.ForBlogger(Guid.NewGuid(), 100, bloggerId, 5, "Reliable partner");
-        var handler = new GetBloggerReviewsHandler(new InMemoryReviewRepository(review));
+        var review = new ReviewDto(Guid.NewGuid(), Guid.NewGuid(), 0, 5, "Reliable partner", "Business", DateTime.UtcNow);
+        var handler = new GetBloggerReviewsHandler(new InMemoryReviewReadModel(review));
 
         var result = await handler.Handle(new GetBloggerReviewsQuery(bloggerId), CancellationToken.None);
 
@@ -20,11 +19,9 @@ public sealed class GetBloggerReviewsHandlerTests
         Assert.Equal("Reliable partner", item.Comment);
     }
 
-    private sealed class InMemoryReviewRepository(params Review[] reviews) : IReviewRepository
+    private sealed class InMemoryReviewReadModel(params ReviewDto[] reviews) : IReviewReadModel
     {
-        public Task AddAsync(Review review, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task<bool> ExistsAsync(Guid dealId, long reviewerTelegramUserId, CancellationToken cancellationToken) => Task.FromResult(false);
-        public Task<IReadOnlyList<Review>> GetForBloggerAsync(Guid bloggerId, int take, CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<Review>>(reviews.Where(review => review.BloggerId == bloggerId).Take(take).ToArray());
+        public Task<IReadOnlyList<ReviewDto>> GetBloggerReviewsAsync(Guid bloggerId, int take, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<ReviewDto>>(reviews.Take(take).ToArray());
     }
 }

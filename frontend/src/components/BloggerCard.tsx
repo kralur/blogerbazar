@@ -14,7 +14,6 @@ export type BloggerCardData = {
   rating?: number | null;
   reviewsCount: number;
   completedDealsCount: number;
-  contactUnlocked: boolean;
   avatarUrl?: string | null;
   verified?: boolean;
   averageReach?: number | null;

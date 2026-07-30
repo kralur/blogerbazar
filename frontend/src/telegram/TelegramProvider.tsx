@@ -15,7 +15,6 @@ type TelegramWebApp = {
   viewportStableHeight?: number;
   ready?: () => void;
   expand?: () => void;
-  openInvoice?: (url: string, callback?: (status: string) => void) => void;
   BackButton?: TelegramBackButton;
   MainButton?: TelegramNativeButton;
   SettingsButton?: TelegramNativeButton;
@@ -35,12 +34,7 @@ function webApp(): TelegramWebApp | undefined {
 export const telegramBridge = {
   get initData() { return webApp()?.initData ?? ""; },
   get user() { return webApp()?.initDataUnsafe?.user; },
-  get isTelegram() { return Boolean(webApp()?.initData); },
-  openInvoice(invoiceLink: string) {
-    const app = webApp();
-    if (!app?.openInvoice) throw new Error("telegram_invoice_unavailable");
-    return new Promise<string>((resolve) => app.openInvoice?.(invoiceLink, resolve));
-  }
+  get isTelegram() { return Boolean(webApp()?.initData); }
 };
 
 type TelegramContextValue = {

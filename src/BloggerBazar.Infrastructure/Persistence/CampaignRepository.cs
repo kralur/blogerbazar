@@ -8,12 +8,12 @@ namespace BloggerBazar.Infrastructure.Persistence;
 internal sealed class CampaignRepository(BloggerBazarDbContext dbContext) : ICampaignRepository
 {
     public Task<Campaign?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        dbContext.Campaigns.Include(campaign => campaign.Business).Include(campaign => campaign.Applications)
+        dbContext.Campaigns.Include(campaign => campaign.Business)
             .SingleOrDefaultAsync(campaign => campaign.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<Campaign>> SearchPublishedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
-        var query = dbContext.Campaigns.AsNoTracking().Include(campaign => campaign.Business).Include(campaign => campaign.Applications).Where(campaign => campaign.Status == CampaignStatus.Published);
+        var query = dbContext.Campaigns.AsNoTracking().Where(campaign => campaign.Status == CampaignStatus.Published);
         if (!string.IsNullOrWhiteSpace(city))
         {
             query = query.Where(campaign => campaign.City == city.Trim());
@@ -32,7 +32,7 @@ internal sealed class CampaignRepository(BloggerBazarDbContext dbContext) : ICam
     }
 
     public async Task<IReadOnlyList<Campaign>> GetAllAsync(int take, CancellationToken cancellationToken) =>
-        await dbContext.Campaigns.AsNoTracking().Include(campaign => campaign.Business).Include(campaign => campaign.Applications)
+        await dbContext.Campaigns.AsNoTracking()
             .OrderByDescending(campaign => campaign.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task AddAsync(Campaign campaign, CancellationToken cancellationToken) => await dbContext.Campaigns.AddAsync(campaign, cancellationToken);

@@ -16,7 +16,7 @@ The repository has no Node.js backend or Prisma dependency. EF Core migrations i
 - Blogger and business profiles, portfolio and social-platform links.
 - Blogger search, campaign publishing, campaign applications and direct collaboration requests.
 - Deals, post-deal reviews, profile moderation and administration.
-- Hidden contacts, Telegram invoice payments and credit-based legacy wallet compatibility.
+- Public profile contacts, plus legacy contact-unlock and wallet APIs retained only for existing clients.
 - Server-side Telegram `initData` validation, webhook authentication and rate limiting.
 
 ## Run with Docker Compose
@@ -55,11 +55,9 @@ dotnet tool restore
 dotnet ef database update --project src/BloggerBazar.Infrastructure --startup-project src/BloggerBazar.Api
 ```
 
-## Telegram Payments and Bot Webhook
+## Telegram Bot Webhook
 
-`CLICK__TELEGRAMPROVIDERTOKEN` is read only from local configuration and is never committed. A contact unlock is granted only after the authenticated Telegram webhook processes a successful payment.
-
-Telegram delivers bot commands, pre-checkout queries and successful payments to the single endpoint `/api/webhooks/telegram`. Configure it with the same `TELEGRAM_WEBHOOK_SECRET` value:
+Telegram delivers bot commands and payment-related updates to the single endpoint `/api/webhooks/telegram`. Configure it with the same `TELEGRAM_WEBHOOK_SECRET` value:
 
 ```powershell
 curl.exe -X POST "https://api.telegram.org/bot$env:TELEGRAM_BOT_TOKEN/setWebhook" `
@@ -68,7 +66,18 @@ curl.exe -X POST "https://api.telegram.org/bot$env:TELEGRAM_BOT_TOKEN/setWebhook
   -d "allowed_updates=[\"pre_checkout_query\",\"message\"]"
 ```
 
-Confirm the payment method with Telegram before release: contact unlocks are digital access and may require Telegram Stars (`XTR`) rather than a third-party provider.
+## Deprecated Contact-Unlock APIs
+
+Contacts are public in BloggerBazar v1. New clients must read them through `GET /api/contacts/{targetType}/{targetId}` and must not use the contact-unlock payment flow.
+
+The following endpoints remain available only for backward compatibility and are marked **Deprecated** in Swagger/OpenAPI:
+
+- `POST /api/payments/contact-unlocks`
+- `POST /api/payments/contact-unlocks/{reference}/invoice`
+- `GET /api/payments/contact-unlocks/{targetType}/{targetId}`
+- `POST /api/wallet/contact-unlocks`
+
+They are not used anywhere in the current React user interface. Existing integrations continue to receive the same routes and responses; no new integration should depend on them.
 
 ## Validation
 
