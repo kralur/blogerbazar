@@ -64,6 +64,8 @@ export function ProfileDashboard() {
     localStorage.removeItem(selectedRoleKey);
     localStorage.removeItem("bloggerbazar.preferences");
     localStorage.removeItem(languageKey);
+    localStorage.removeItem("bloggerbazar.onboarding.welcomeViewed");
+    localStorage.removeItem("bloggerbazar.onboarding.completed");
     setLanguage("ru");
     window.location.hash = "/";
     setLogoutOpen(false);

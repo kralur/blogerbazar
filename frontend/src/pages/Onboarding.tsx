@@ -9,7 +9,7 @@ const roleRoutes: Record<MarketplaceRole, string> = {
   Business: "/business"
 };
 
-export function Onboarding() {
+export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: MarketplaceRole) => void }) {
   const { t } = useI18n();
   const [selectedRole, setSelectedRole] = useState<MarketplaceRole>("Blogger");
   const [saving, setSaving] = useState(false);
@@ -26,7 +26,8 @@ export function Onboarding() {
       setError("");
       await selectMarketplaceRole(selectedRole);
       window.dispatchEvent(new Event("bloggerbazar:role-selected"));
-      window.location.hash = roleRoutes[selectedRole];
+      if (onRoleSelected) onRoleSelected(selectedRole);
+      else window.location.hash = roleRoutes[selectedRole];
     } catch {
       setError(t("onboarding.selectionFailed"));
     } finally {

@@ -1,7 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { getCurrentPlatformUser } from "./api/marketplace";
+import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, type MarketplaceRole } from "./api/marketplace";
 import { LoadingState } from "./components/ui";
 import { useTelegram } from "./telegram/TelegramProvider";
+
+const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
+const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
+type OnboardingStep = "welcome" | "telegram" | "checking" | "role" | "profile" | "success" | "complete";
 
 const Admin = lazy(async () => ({ default: (await import("./pages/Admin")).Admin }));
 const BloggerDetails = lazy(async () => ({ default: (await import("./pages/BloggerDetails")).BloggerDetails }));
@@ -15,7 +19,10 @@ const Campaigns = lazy(async () => ({ default: (await import("./pages/Campaigns"
 const Home = lazy(async () => ({ default: (await import("./pages/Home")).Home }));
 const MyRequests = lazy(async () => ({ default: (await import("./pages/MyRequests")).MyRequests }));
 const Onboarding = lazy(async () => ({ default: (await import("./pages/Onboarding")).Onboarding }));
+const OnboardingSuccess = lazy(async () => ({ default: (await import("./pages/OnboardingSuccess")).OnboardingSuccess }));
 const ProfileDashboard = lazy(async () => ({ default: (await import("./pages/ProfileDashboard")).ProfileDashboard }));
+const TelegramAuthorization = lazy(async () => ({ default: (await import("./pages/TelegramAuthorization")).TelegramAuthorization }));
+const Welcome = lazy(async () => ({ default: (await import("./pages/Welcome")).Welcome }));
 
 function useRoute() {
   const [hash, setHash] = useState(() => window.location.hash.replace("#", "") || "/");
@@ -28,32 +35,82 @@ function useRoute() {
   return { path: path ? `/${path}` : "/", id };
 }
 
+function initialOnboardingStep(): OnboardingStep {
+  if (localStorage.getItem(onboardingCompletedKey) === "true") return "complete";
+  return localStorage.getItem(onboardingWelcomeKey) === "true" ? "telegram" : "welcome";
+}
+
+function profileRoute(role: MarketplaceRole) {
+  return role === "Blogger" ? "/blogger-form" : role === "BrandFace" ? "/brand-face" : "/business";
+}
+
+async function selectedProfileExists(role: MarketplaceRole) {
+  try {
+    if (role === "Blogger") await getMyBloggerProfile();
+    else if (role === "BrandFace") await getMyBrandFaceProfile();
+    else await getMyBusinessProfile();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function App() {
   const route = useRoute();
   const { isTelegram, setBackButtonHandler } = useTelegram();
-  const [onboardingRequired, setOnboardingRequired] = useState(false);
-  const [onboardingLoading, setOnboardingLoading] = useState(isTelegram);
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(initialOnboardingStep);
+  const [selectedRole, setSelectedRole] = useState<MarketplaceRole>();
+  const [authorizationFailed, setAuthorizationFailed] = useState(false);
 
-  useEffect(() => {
+  const authorize = async () => {
+    setAuthorizationFailed(false);
     if (!isTelegram) {
-      setOnboardingLoading(false);
+      setOnboardingStep("telegram");
       return;
     }
-    let cancelled = false;
-    const loadUser = () => {
-      setOnboardingLoading(true);
-      getCurrentPlatformUser()
-        .then((user) => { if (!cancelled) setOnboardingRequired(!user.selectedMarketplaceRole); })
-        .catch(() => { if (!cancelled) setOnboardingRequired(false); })
-        .finally(() => { if (!cancelled) setOnboardingLoading(false); });
-    };
-    loadUser();
-    window.addEventListener("bloggerbazar:role-selected", loadUser);
-    return () => { cancelled = true; window.removeEventListener("bloggerbazar:role-selected", loadUser); };
-  }, [isTelegram]);
+
+    try {
+      setOnboardingStep("checking");
+      const user = await getCurrentPlatformUser();
+      if (!user.selectedMarketplaceRole) {
+        setOnboardingStep("role");
+        return;
+      }
+
+      setSelectedRole(user.selectedMarketplaceRole);
+      if (await selectedProfileExists(user.selectedMarketplaceRole)) {
+        localStorage.setItem(onboardingCompletedKey, "true");
+        setOnboardingStep("complete");
+        window.location.hash = "/";
+        return;
+      }
+
+      setOnboardingStep("profile");
+      window.location.hash = profileRoute(user.selectedMarketplaceRole);
+    } catch {
+      setAuthorizationFailed(true);
+      setOnboardingStep("telegram");
+    }
+  };
+
+  const beginAuthorization = () => {
+    localStorage.setItem(onboardingWelcomeKey, "true");
+    setOnboardingStep("telegram");
+  };
+  const handleRoleSelected = (role: MarketplaceRole) => {
+    setSelectedRole(role);
+    setOnboardingStep("profile");
+    window.location.hash = profileRoute(role);
+  };
+  const handleProfileCompleted = () => setOnboardingStep("success");
+  const finishOnboarding = () => {
+    localStorage.setItem(onboardingCompletedKey, "true");
+    setOnboardingStep("complete");
+    window.location.hash = "/";
+  };
 
   useEffect(() => {
-    if (route.path === "/") {
+    if (onboardingStep !== "complete" || route.path === "/") {
       setBackButtonHandler();
       return;
     }
@@ -63,13 +120,21 @@ export function App() {
     };
     setBackButtonHandler(goBack);
     return () => setBackButtonHandler();
-  }, [route.path, route.id, setBackButtonHandler]);
+  }, [onboardingStep, route.path, route.id, setBackButtonHandler]);
 
   const knownRoutes = ["/", "/profile", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/requests", "/admin"];
+  const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
+    : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
+      : onboardingStep === "checking" ? <div className="screen"><LoadingState /></div>
+        : onboardingStep === "role" ? <Onboarding onRoleSelected={handleRoleSelected} />
+          : onboardingStep === "profile" && selectedRole === "Blogger" ? <BloggerProfileForm onCompleted={handleProfileCompleted} />
+            : onboardingStep === "profile" && selectedRole === "BrandFace" ? <BrandFaceProfileForm onCompleted={handleProfileCompleted} />
+              : onboardingStep === "profile" && selectedRole === "Business" ? <BusinessProfileForm onCompleted={handleProfileCompleted} />
+                : onboardingStep === "success" ? <OnboardingSuccess onContinue={finishOnboarding} />
+                  : <div className="screen"><LoadingState /></div>;
+
   return <main className="app-shell bg-soft-radial"><Suspense fallback={<div className="screen"><LoadingState /></div>}>
-    {onboardingLoading && <div className="screen"><LoadingState /></div>}
-    {!onboardingLoading && onboardingRequired && <Onboarding />}
-    {!onboardingLoading && !onboardingRequired && <>
+    {onboardingStep !== "complete" ? onboardingContent : <>
       {route.path === "/" && <Home />}
       {route.path === "/profile" && <ProfileDashboard />}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
