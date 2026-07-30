@@ -1,5 +1,7 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { useI18n } from "../i18n";
+import { formatCurrency } from "../lib/currency";
+import { useTelegram } from "../telegram/TelegramProvider";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -22,11 +24,14 @@ export function Icon({ name, className }: { name: string; className?: string }) 
     bookmark: <path d="M19 21 12 17 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16Z" />,
     heart: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />,
     chart: <path d="M3 3v18h18M7 15l4-4 3 3 5-7" />,
+    home: <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Zm6 11v-7h6v7" />,
     user: <path d="M20 21a8 8 0 1 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />,
     briefcase: <path d="M10 6V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1m7 4v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9m18 0H3m18 0-2-4H5l-2 4" />,
     plus: <path d="M12 5v14m-7-7h14" />,
     back: <path d="m15 18-6-6 6-6" />,
-    dots: <path d="M12 12h.01M19 12h.01M5 12h.01" />
+    dots: <path d="M12 12h.01M19 12h.01M5 12h.01" />,
+    close: <path d="m6 6 12 12M18 6 6 18" />,
+    calendar: <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
   };
 
   return (
@@ -56,6 +61,7 @@ export function Button({
     <button
       className={cn(
         "tap-target inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl px-5 text-[15px] font-bold transition active:scale-[0.98]",
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none",
         variant === "primary" && "bg-brand-gradient text-white shadow-glow",
         variant === "secondary" && "border border-brand-line bg-white text-brand-ink shadow-card",
         variant === "ghost" && "bg-transparent text-brand-blue",
@@ -73,41 +79,62 @@ export function Card({ children, className }: { children: ReactNode; className?:
   return <section className={cn("glass-card p-4", className)}>{children}</section>;
 }
 
-export function Input({ label, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+export function Container({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn("mx-auto w-full max-w-[430px]", className)}>{children}</div>;
+}
+
+export function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
+  return <div className="section-header"><h2 className="section-header__title">{title}</h2>{action && href && <a className="section-header__action" href={href}>{action}</a>}</div>;
+}
+
+export function Divider({ className }: { className?: string }) {
+  return <div className={cn("h-px bg-brand-line", className)} />;
+}
+
+export function Input({ label, error, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string }) {
   return (
     <label className="grid gap-2">
       {label && <span className="text-[13px] font-bold text-brand-muted">{label}</span>}
       <input
         className={cn(
           "h-[52px] rounded-2xl border border-brand-line bg-white px-4 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
+          error && "border-brand-danger focus:border-brand-danger focus:ring-red-100",
           className
         )}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${props.id ?? props.name ?? label}-error` : undefined}
         {...props}
       />
+      {error && <span className="text-xs font-semibold text-brand-danger" id={`${props.id ?? props.name ?? label}-error`}>{error}</span>}
     </label>
   );
 }
 
-export function Textarea({ label, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }) {
+export function Textarea({ label, error, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; error?: string }) {
   return (
     <label className="grid gap-2">
       {label && <span className="text-[13px] font-bold text-brand-muted">{label}</span>}
       <textarea
         className={cn(
           "min-h-28 rounded-2xl border border-brand-line bg-white px-4 py-3 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
+          error && "border-brand-danger focus:border-brand-danger focus:ring-red-100",
           className
         )}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${props.id ?? props.name ?? label}-error` : undefined}
         {...props}
       />
+      {error && <span className="text-xs font-semibold text-brand-danger" id={`${props.id ?? props.name ?? label}-error`}>{error}</span>}
     </label>
   );
 }
 
-export function SearchBar({ placeholder = "Поиск блогеров..." }: { placeholder?: string }) {
+export function SearchBar({ placeholder, value, onChange }: { placeholder?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement> }) {
+  const { t } = useI18n();
   return (
     <div className="flex h-[52px] items-center gap-3 rounded-2xl bg-white px-4 shadow-card ring-1 ring-brand-line/80">
       <Icon className="text-brand-muted" name="search" />
-      <input className="w-full bg-transparent text-[15px] outline-none placeholder:text-slate-400" placeholder={placeholder} />
+      <input aria-label={placeholder ?? t("search.placeholder")} className="w-full bg-transparent text-[15px] outline-none placeholder:text-slate-400" onChange={onChange} placeholder={placeholder ?? t("search.placeholder")} value={value} />
     </div>
   );
 }
@@ -125,7 +152,7 @@ export function Chip({ children, active = false }: { children: ReactNode; active
   );
 }
 
-export function Badge({ children, tone = "blue" }: { children: ReactNode; tone?: "blue" | "purple" | "gold" | "green" | "gray" }) {
+export function Badge({ children, tone = "blue" }: { children: ReactNode; tone?: "blue" | "purple" | "gold" | "green" | "gray" | "orange" }) {
   return (
     <span
       className={cn(
@@ -134,12 +161,22 @@ export function Badge({ children, tone = "blue" }: { children: ReactNode; tone?:
         tone === "purple" && "bg-purple-50 text-brand-premium",
         tone === "gold" && "bg-amber-50 text-amber-600",
         tone === "green" && "bg-green-50 text-brand-success",
-        tone === "gray" && "bg-slate-100 text-brand-muted"
+        tone === "gray" && "bg-slate-100 text-brand-muted",
+        tone === "orange" && "bg-orange-50 text-orange-600"
       )}
     >
       {children}
     </span>
   );
+}
+
+export function StatusBadge({ children, status = "neutral" }: { children: ReactNode; status?: "success" | "warning" | "neutral" | "info" }) {
+  const tone = status === "success" ? "green" : status === "warning" ? "gold" : status === "info" ? "blue" : "gray";
+  return <Badge tone={tone}>{children}</Badge>;
+}
+
+export function Price({ value, className }: { value?: number | null; className?: string }) {
+  return <span className={cn("font-extrabold tracking-tight", className)}>{formatCurrency(value)}</span>;
 }
 
 export function Avatar({ src, name, size = "md", verified = false }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean }) {
@@ -159,11 +196,12 @@ export function Avatar({ src, name, size = "md", verified = false }: { src?: str
 }
 
 export function Rating({ value, count }: { value?: number | null; count?: number }) {
+  const { t } = useI18n();
   return (
     <div className="inline-flex items-center gap-1 text-[13px] font-semibold">
       <span className="text-brand-warning">★</span>
       <span>{value ?? "—"}</span>
-      {count !== undefined && <span className="font-normal text-brand-muted">({count} отзывов)</span>}
+      {count !== undefined && <span className="font-normal text-brand-muted">({t("common.reviews", { count })})</span>}
     </div>
   );
 }
@@ -178,7 +216,8 @@ export function StatsCard({ icon, value, label }: { icon?: string; value: string
   );
 }
 
-export function PaywallCard({ title, subtitle, price = "29 000 сум", cta = "Купить доступ" }: { title: string; subtitle: string; price?: string; cta?: string }) {
+export function PaywallCard({ title, subtitle, price, cta, onClick }: { title: string; subtitle: string; price?: string; cta?: string; onClick?: () => void }) {
+  const { t } = useI18n();
   return (
     <Card className="overflow-hidden p-0">
       <div className="relative p-5 text-center">
@@ -188,16 +227,23 @@ export function PaywallCard({ title, subtitle, price = "29 000 сум", cta = "�
         </div>
         <h3 className="relative mt-4 text-xl font-extrabold leading-tight">{title}</h3>
         <p className="relative mt-2 text-sm leading-5 text-brand-muted">{subtitle}</p>
-        <div className="relative mt-3 text-lg font-extrabold">{price}</div>
-        <Button className="relative mt-4 w-full" type="button">
-          {cta}
+        <div className="relative mt-3 text-lg font-extrabold">{price ?? formatCurrency(29000)}</div>
+        <Button aria-describedby={onClick ? undefined : "paywall-coming-soon"} className="relative mt-4 w-full" disabled={!onClick} onClick={onClick} type="button">
+          {cta ?? t("common.open")}
         </Button>
+        {!onClick && <p className="relative mt-2 text-xs text-brand-muted" id="paywall-coming-soon">{t("ui.paywallSoon")}</p>}
       </div>
     </Card>
   );
 }
 
-export function UnlockBlock({ title = "Контакты скрыты", subtitle = "Разблокируйте, чтобы связаться напрямую", price = "29 000 сум", cta, disabled = false, onUnlock }: { title?: string; subtitle?: string; price?: string; cta?: string; disabled?: boolean; onUnlock?: () => void }) {
+export function PromotionCard({ title, subtitle, audience }: { title: string; subtitle: string; audience: string }) {
+  const { t } = useI18n();
+  return <Card className="overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50"><Badge tone="gray">{t("ui.soon")}</Badge><h3 className="mt-3 text-lg font-extrabold">{title}</h3><p className="mt-2 text-sm leading-5 text-brand-muted">{subtitle}</p><p className="mt-3 text-xs font-bold text-brand-blue">{t("ui.forAudience", { audience })}</p><Button className="mt-4 w-full" disabled title={t("ui.promotionUnavailable")} type="button">{t("ui.soon")}</Button></Card>;
+}
+
+export function UnlockBlock({ title, subtitle, price, cta, disabled = false, onUnlock }: { title?: string; subtitle?: string; price?: string; cta?: string; disabled?: boolean; onUnlock?: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-[28px] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-4">
       <div className="flex gap-3">
@@ -205,19 +251,19 @@ export function UnlockBlock({ title = "Контакты скрыты", subtitle 
           <Icon name="lock" />
         </div>
         <div>
-          <div className="font-extrabold">{title}</div>
-          <div className="mt-1 text-sm text-brand-muted">{subtitle}</div>
+          <div className="font-extrabold">{title ?? t("campaign.contactLocked")}</div>
+          <div className="mt-1 text-sm text-brand-muted">{subtitle ?? t("campaign.unlockSubtitle")}</div>
         </div>
       </div>
       <Button className="mt-4 w-full" disabled={disabled} onClick={onUnlock} type="button">
-        {cta ?? `Разблокировать контакты — ${price}`}
+        {cta ?? `${t("details.unlock")} — ${price ?? formatCurrency(29000)}`}
       </Button>
     </div>
   );
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-3xl bg-slate-200/80", className)} />;
+  return <div className={cn("shimmer rounded-3xl", className)} />;
 }
 
 export function EmptyState({ title, subtitle, icon = "search" }: { title: string; subtitle: string; icon?: string }) {
@@ -230,6 +276,30 @@ export function EmptyState({ title, subtitle, icon = "search" }: { title: string
       <p className="mt-2 text-sm text-brand-muted">{subtitle}</p>
     </Card>
   );
+}
+
+export function LoadingState({ title }: { title?: string }) {
+  const { t } = useI18n();
+  return <section aria-busy="true" className="grid gap-3"><Skeleton className="h-24" /><Skeleton className="h-32" /><p className="text-center text-sm font-semibold text-brand-muted">{title ?? t("common.loading")}</p></section>;
+}
+
+export function ErrorState({ title, subtitle, onRetry }: { title?: string; subtitle?: string; onRetry?: () => void }) {
+  const { t } = useI18n();
+  return <div className="space-y-3"><EmptyState icon="filter" subtitle={subtitle ?? t("ui.errorSubtitle")} title={title ?? t("ui.errorTitle")} />{onRetry && <Button className="w-full" onClick={onRetry} type="button">{t("common.retry")}</Button>}</div>;
+}
+
+export function OfflineState({ onRetry }: { onRetry?: () => void }) {
+  const { t } = useI18n();
+  return <ErrorState onRetry={onRetry} subtitle={t("ui.offlineSubtitle")} title={t("ui.offlineTitle")} />;
+}
+
+export function PermissionDeniedState({ subtitle }: { subtitle?: string }) {
+  const { t } = useI18n();
+  return <EmptyState icon="lock" subtitle={subtitle ?? t("ui.accessDeniedSubtitle")} title={t("ui.accessDenied")} />;
+}
+
+export function NoDataState({ title, subtitle, icon = "search", action }: { title: string; subtitle: string; icon?: string; action?: ReactNode }) {
+  return <div className="space-y-3"><EmptyState icon={icon} subtitle={subtitle} title={title} />{action}</div>;
 }
 
 export function Toast({ message, tone = "success" }: { message: string; tone?: "success" | "error" }) {
@@ -247,13 +317,15 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: "
 }
 
 export function Modal({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
+  const { t } = useI18n();
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/30 px-3 pb-3 backdrop-blur-sm">
-      <div className="w-full max-w-[430px] rounded-[32px] bg-white p-5 shadow-soft">
+    <div aria-modal="true" className="bottom-sheet-backdrop fixed inset-0 z-50 grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm" role="dialog">
+      <div className="bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft">
+        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-200" />
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-extrabold">{title}</h3>
-          <button className="grid h-10 w-10 place-items-center rounded-full bg-slate-100" onClick={onClose} type="button">
+          <button aria-label={t("ui.close")} className="grid h-10 w-10 place-items-center rounded-full bg-slate-100" onClick={onClose} type="button">
             ×
           </button>
         </div>
@@ -263,8 +335,13 @@ export function Modal({ open, title, children, onClose }: { open: boolean; title
   );
 }
 
+export function BottomSheet({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
+  return <Modal onClose={onClose} open={open} title={title}>{children}</Modal>;
+}
+
 export function BottomNav() {
   const { t } = useI18n();
+  const { haptic } = useTelegram();
   const [hash, setHash] = useState(window.location.hash || "#/");
 
   useEffect(() => {
@@ -274,33 +351,24 @@ export function BottomNav() {
   }, []);
 
   const items = [
-    { href: "#/search", label: "Поиск", icon: "search" },
-    { href: "#/campaigns", label: "Реклама", icon: "send" },
-    { href: "#/requests", label: "Заявки", icon: "briefcase" },
-    { href: "#/profile", label: "Профиль", icon: "user" }
+    { href: "#/search", label: t("nav.search"), icon: "search" },
+    { href: "#/campaigns", label: t("nav.campaigns"), icon: "send" },
+    { href: "#/requests", label: t("nav.requests"), icon: "briefcase" },
+    { href: "#/profile", label: t("nav.profile"), icon: "user" }
   ];
-  const localizedLabels = [t("nav.search"), t("nav.campaigns"), t("nav.requests"), t("nav.profile")];
+  const renderItem = (item: typeof items[number]) => {
+    const active = hash.startsWith(item.href);
+    return <a className={cn("group grid justify-items-center gap-1 rounded-2xl px-2 py-1.5 text-[11px] font-bold transition", active ? "text-brand-blue" : "text-brand-muted")} href={item.href} key={item.href} onClick={() => haptic.selection()}><span className={cn("grid h-8 w-10 place-items-center rounded-full transition", active && "bg-blue-50 shadow-sm")}><Icon className={cn("h-5 w-5 transition group-active:scale-90", active && "scale-110")} name={item.icon} /></span>{item.label}</a>;
+  };
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto grid max-w-[430px] grid-cols-4 border-t border-brand-line/70 bg-white/[0.92] px-3 pb-4 pt-2 shadow-[0_-16px_40px_rgba(15,23,42,0.06)] backdrop-blur-2xl">
-      {items.map((item, index) => {
-        const active = hash.startsWith(item.href);
-        return (
-          <a
-            className={cn(
-              "group grid justify-items-center gap-1 rounded-2xl px-2 py-1.5 text-[11px] font-bold transition",
-              active ? "text-brand-blue" : "text-brand-muted"
-            )}
-            href={item.href}
-            key={item.href}
-          >
-            <span className={cn("grid h-8 w-10 place-items-center rounded-full transition", active && "bg-blue-50 shadow-sm")}>
-              <Icon className={cn("h-5 w-5 transition group-active:scale-90", active && "scale-110")} name={item.icon} />
-            </span>
-            {localizedLabels[index]}
-          </a>
-        );
-      })}
+    <nav aria-label={t("nav.aria")} className="bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px]">
+      <div className="bottom-nav__notch" />
+      <div className="bottom-nav__items">
+        {items.slice(0, 2).map(renderItem)}
+        <button aria-current={hash === "#/" ? "page" : undefined} aria-label={t("ui.home")} className={cn("bottom-nav__home", hash === "#/" && "bottom-nav__home--active")} onClick={() => { haptic.impact(); window.location.hash = "/"; }} type="button"><Icon className="h-7 w-7" name="home" /></button>
+        {items.slice(2).map(renderItem)}
+      </div>
     </nav>
   );
 }

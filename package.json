@@ -1,13 +1,15 @@
 {
   "name": "blogger-marketplace-miniapp",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "workspaces": [
     "frontend"
   ],
   "scripts": {
     "dev": "npm --workspace frontend run dev",
     "dev:frontend": "npm --workspace frontend run dev",
-    "build": "npm --workspace frontend run build"
+    "build": "npm --workspace frontend run build",
+    "test:i18n": "node scripts/check-i18n.mjs",
+    "i18n:audit": "node scripts/check-i18n.mjs"
   }
 }

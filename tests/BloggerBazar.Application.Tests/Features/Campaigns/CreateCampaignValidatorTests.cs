@@ -8,7 +8,7 @@ public sealed class CreateCampaignValidatorTests
     public void Rejects_budget_range_with_lower_upper_limit()
     {
         var validator = new CreateCampaignValidator();
-        var result = validator.Validate(new CreateCampaignCommand(1, "Campaign", "Description", null, ["Lifestyle"], 1000000, 500000, true));
+        var result = validator.Validate(new CreateCampaignCommand(1, "Campaign", "Description", null, ["Lifestyle"], null, 1000000, 500000, null, true));
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.PropertyName == "BudgetTo");

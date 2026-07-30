@@ -1,54 +1,69 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createBusinessProfile, getMyBusinessProfile, updateBusinessProfile } from "../api/marketplace";
-import { BottomNav, Button, Card, Icon, Input, Textarea, Toast } from "../components/ui";
+import { formatPhoneInput } from "../lib/currency";
+import { BottomNav, Button, Card, Icon, Input, Modal, Textarea, Toast } from "../components/ui";
+import { useTelegram } from "../telegram/TelegramProvider";
+import { useI18n } from "../i18n";
 
-const initial = { name: "", username: "", city: "Ташкент", description: "", phone: "", email: "", logoUrl: "" };
+const initial = { name: "", username: "", city: "tashkent", description: "", phone: "", email: "", website: "" };
+type Field = keyof typeof initial;
+type Errors = Partial<Record<Field, string>>;
+const usernamePattern = /^@[A-Za-z0-9_]{5,32}$/;
+const phonePattern = /^\+998\s\d{2}\s\d{3}\s\d{2}\s\d{2}$/;
+
+function validate(form: typeof initial, t: (key: string) => string): Errors {
+  const errors: Errors = {};
+  if (!form.name.trim()) errors.name = t("form.validation.company");
+  if (!usernamePattern.test(form.username.trim())) errors.username = t("form.validation.companyUsername");
+  if (!form.city.trim()) errors.city = t("form.validation.city");
+  if (!form.description.trim()) errors.description = t("form.validation.description");
+  if (!phonePattern.test(form.phone)) errors.phone = t("form.validation.phone");
+  if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) errors.email = t("form.validation.email");
+  if (form.website && !/^https:\/\//i.test(form.website)) errors.website = t("form.validation.website");
+  return errors;
+}
 
 export function BusinessProfileForm() {
+  const { language, t } = useI18n();
+  const { user } = useTelegram();
   const [form, setForm] = useState(initial);
+  const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [existing, setExisting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [toast, setToast] = useState("");
-  const update = (key: keyof typeof initial) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((previous) => ({ ...previous, [key]: event.target.value }));
+  const errors = useMemo(() => validate(form, t), [form, language, t]);
+  const valid = Object.keys(errors).length === 0;
+
+  const update = (key: Field) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const value = key === "phone" ? formatPhoneInput(event.target.value) : event.target.value;
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+  const blur = (key: Field) => () => setTouched((current) => ({ ...current, [key]: true }));
 
   useEffect(() => {
+    if (user?.username) setForm((current) => current.username ? current : { ...current, username: `@${user.username}` });
     getMyBusinessProfile().then((profile) => {
-      setForm({
-        name: profile.name,
-        username: profile.username ?? "",
-        city: profile.city ?? initial.city,
-        description: profile.description ?? "",
-        phone: profile.phone ?? "",
-        email: profile.email ?? "",
-        logoUrl: profile.logoUrl ?? ""
-      });
+      setForm({ name: profile.name, username: profile.username ?? "", city: profile.city ?? initial.city, description: profile.description ?? "", phone: profile.phone ?? "", email: profile.email ?? "", website: profile.websiteUrl ?? "" });
       setExisting(true);
     }).catch(() => undefined);
-  }, []);
+  }, [user?.username]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setTouched({ name: true, username: true, city: true, description: true, phone: true, email: true, website: true });
+    if (!valid || saving) return;
     try {
       setSaving(true);
-      const input = { ...form, username: form.username || undefined, description: form.description || undefined, phone: form.phone || undefined, email: form.email || undefined, logoUrl: form.logoUrl || undefined };
-      if (existing) await updateBusinessProfile(input);
-      else await createBusinessProfile(input);
+      const input = { name: form.name.trim(), username: form.username.trim(), city: form.city.trim(), description: form.description.trim(), phone: form.phone.trim(), email: form.email.trim() || undefined, websiteUrl: form.website.trim() || undefined };
+      if (existing) await updateBusinessProfile(input); else await createBusinessProfile(input);
       setSuccess(true);
     } catch (error) {
-      setToast(error instanceof Error ? error.message : "Не удалось сохранить профиль");
+      setToast(error instanceof Error ? error.message : t("form.submitFailed"));
     } finally {
       setSaving(false);
     }
   };
 
-  if (success) return <div className="screen pb-28"><div className="mt-24 text-center"><div className="mx-auto grid h-20 w-20 place-items-center rounded-[28px] bg-brand-gradient text-white shadow-glow"><Icon name="check" /></div><h1 className="mt-6 text-3xl font-extrabold">{existing ? "Профиль обновлён" : "Профиль создан"}</h1><p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-brand-muted">Теперь можно публиковать рекламные кампании и получать отклики блогеров.</p><a className="mt-7 inline-flex" href="#/campaigns"><Button>Создать кампанию</Button></a></div><BottomNav /></div>;
-
-  return <form className="screen pb-28" onSubmit={submit}>
-    <header><p className="text-sm font-semibold text-brand-muted">Для бизнеса</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{existing ? "Профиль компании" : "Создайте профиль компании"}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">Блогеры увидят бренд, задачу и смогут откликнуться на кампанию.</p></header>
-    <Card className="mt-5"><div className="flex gap-3"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-brand-blue"><Icon name="building" /></span><div><h2 className="font-extrabold">Профиль бренда</h2><p className="mt-1 text-sm text-brand-muted">Контакты будут скрыты до оплаченной разблокировки.</p></div></div></Card>
-    <section className="mt-5 grid gap-3"><Input label="Название компании" onChange={update("name")} placeholder="Lumi Beauty" required value={form.name} /><Input label="Username" onChange={update("username")} placeholder="@lumibeauty" value={form.username} /><Input label="Город" onChange={update("city")} required value={form.city} /><Input label="Ссылка на логотип" onChange={update("logoUrl")} placeholder="https://…" type="url" value={form.logoUrl} /><Textarea label="О компании" onChange={update("description")} placeholder="Чем занимается ваш бренд?" value={form.description} /></section>
-    <section className="mt-6 grid gap-3"><h2 className="font-extrabold">Контакты</h2><Input label="Телефон" onChange={update("phone")} placeholder="+998901234567" value={form.phone} /><Input label="Email" onChange={update("email")} placeholder="brand@example.uz" type="email" value={form.email} /></section>
-    <Button className="mt-6 w-full" disabled={saving} type="submit"><Icon name="check" />{saving ? "Сохраняем…" : existing ? "Сохранить изменения" : "Создать профиль"}</Button><Toast message={toast} /><BottomNav />
-  </form>;
+  return <form className="screen space-y-5 px-4 pt-5" noValidate onSubmit={submit}><header><p className="text-sm font-semibold text-brand-muted">{t("form.business.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{existing ? t("form.business.editTitle") : t("form.business.createTitle")}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">{t("form.business.subtitle")}</p></header><Card><div className="flex items-center gap-3"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-brand-blue"><Icon name="building" /></span><div><h2 className="font-extrabold">{t("form.brand")}</h2><p className="mt-1 text-sm text-brand-muted">{t("form.brandHelper")}</p></div></div></Card><section className="grid gap-3"><Input error={touched.name ? errors.name : undefined} label={t("form.companyName")} onBlur={blur("name")} onChange={update("name")} placeholder="Lumi Beauty" required value={form.name} /><div><Input error={touched.username ? errors.username : undefined} label={t("form.telegramUsername")} onBlur={blur("username")} onChange={update("username")} placeholder="@lumibeauty" required value={form.username} /><p className="mt-1 text-xs text-brand-muted">{t("form.usernameBusinessHelper")}</p></div><Input error={touched.city ? errors.city : undefined} label={t("common.city")} onBlur={blur("city")} onChange={update("city")} required value={form.city} /><div><Input error={touched.website ? errors.website : undefined} label={t("form.websiteOptional")} onBlur={blur("website")} onChange={update("website")} placeholder="https://brand.uz" type="url" value={form.website} /><p className="mt-1 text-xs text-brand-muted">{t("form.websiteHelper")}</p></div><Textarea error={touched.description ? errors.description : undefined} label={t("form.aboutCompany")} onBlur={blur("description")} onChange={update("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /></section><section className="grid gap-3"><h2 className="font-extrabold">{t("form.contacts")}</h2><Input error={touched.phone ? errors.phone : undefined} inputMode="tel" label={t("common.phone")} onBlur={blur("phone")} onChange={update("phone")} placeholder="+998 90 123 45 67" required value={form.phone} /><Input error={touched.email ? errors.email : undefined} label={t("form.emailOptional")} onBlur={blur("email")} onChange={update("email")} placeholder="brand@example.uz" type="email" value={form.email} /></section><Button aria-busy={saving} className="w-full" disabled={!valid || saving} type="submit"><Icon name="check" />{saving ? t("form.publishing") : t("form.publishProfile")}</Button><Toast message={toast} tone="error" /><Modal onClose={() => setSuccess(false)} open={success} title={t("form.successTitle")}><p className="text-sm leading-6 text-brand-muted">{t("form.successDescription")}</p><Button className="mt-5 w-full" onClick={() => { window.location.hash = "/profile"; }} type="button">{t("form.understood")}</Button></Modal><BottomNav /></form>;
 }

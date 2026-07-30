@@ -1,8 +1,11 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace BloggerBazar.Application.Features.Reviews;
 
@@ -39,7 +42,9 @@ public sealed class CreateReviewHandler(
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
     IReviewRepository reviews,
-    IUnitOfWork unitOfWork) : IRequestHandler<CreateReviewCommand, ReviewDto>
+    IUnitOfWork unitOfWork,
+    ITelegramBotClient? botClient = null,
+    ILogger<CreateReviewHandler>? logger = null) : IRequestHandler<CreateReviewCommand, ReviewDto>
 {
     public async Task<ReviewDto> Handle(CreateReviewCommand command, CancellationToken cancellationToken)
     {
@@ -73,6 +78,8 @@ public sealed class CreateReviewHandler(
 
         await reviews.AddAsync(review, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        var targetChatId = review.TargetType == ReviewTargetType.Blogger ? (await bloggers.GetByIdAsync(deal.BloggerId, cancellationToken))?.TelegramUserId : (await businesses.GetByIdAsync(deal.BusinessId, cancellationToken))?.TelegramUserId;
+        if (targetChatId.HasValue) await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId.Value, "BloggerBazar: вы получили новый отзыв о сотрудничестве.", cancellationToken);
         return ReviewDto.From(review);
     }
 }

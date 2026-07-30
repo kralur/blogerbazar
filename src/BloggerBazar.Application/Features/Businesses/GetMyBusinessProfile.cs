@@ -12,10 +12,12 @@ public sealed record MyBusinessProfileDto(
     string? Username,
     string? City,
     string? LogoUrl,
+    string? WebsiteUrl,
     string? Description,
     string? Phone,
     string? Email,
-    bool IsVerified)
+    bool IsVerified,
+    int ModerationStatus)
 {
     public static MyBusinessProfileDto From(BusinessProfile profile) => new(
         profile.Id,
@@ -23,10 +25,12 @@ public sealed record MyBusinessProfileDto(
         profile.Username,
         profile.City,
         profile.LogoUrl,
+        profile.WebsiteUrl,
         profile.Description,
         profile.Phone,
         profile.Email,
-        profile.IsVerified);
+        profile.IsVerified,
+        (int)profile.ModerationStatus);
 }
 
 public sealed class GetMyBusinessProfileHandler(IBusinessProfileRepository businesses)

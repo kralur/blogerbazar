@@ -38,6 +38,13 @@ public sealed class BloggerProfile
     public int? PriceTo { get; private set; }
     public string? PriceNote { get; private set; }
     public int TotalFollowers { get; private set; }
+    public CreatorLevel CreatorLevel => TotalFollowers switch
+    {
+        < 5_000 => CreatorLevel.Newcomer,
+        < 50_000 => CreatorLevel.Microblogger,
+        < 500_000 => CreatorLevel.Blogger,
+        _ => CreatorLevel.TopBlogger
+    };
     public int? AverageReach { get; private set; }
     public decimal? EngagementRate { get; private set; }
     public int? StoriesPrice { get; private set; }
@@ -127,6 +134,17 @@ public sealed class BloggerProfile
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void SetPromotion(bool isPromoted)
+    {
+        if (Status != BloggerStatus.Approved)
+        {
+            throw new InvalidOperationException("Only approved blogger profiles can be promoted.");
+        }
+
+        IsPromoted = isPromoted;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void Reject()
     {
         if (Status != BloggerStatus.Pending)
@@ -135,6 +153,25 @@ public sealed class BloggerProfile
         }
 
         Status = BloggerStatus.Rejected;
+        IsVerified = false;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void RequestChanges()
+    {
+        if (Status != BloggerStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending blogger profiles can be returned for changes.");
+        }
+
+        Status = BloggerStatus.NeedsChanges;
+        IsVerified = false;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SubmitForModeration()
+    {
+        Status = BloggerStatus.Pending;
         IsVerified = false;
         UpdatedAtUtc = DateTime.UtcNow;
     }

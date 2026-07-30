@@ -13,7 +13,7 @@ internal sealed class CampaignRepository(BloggerBazarDbContext dbContext) : ICam
 
     public async Task<IReadOnlyList<Campaign>> SearchPublishedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
-        var query = dbContext.Campaigns.AsNoTracking().Include(campaign => campaign.Business).Where(campaign => campaign.Status == CampaignStatus.Published);
+        var query = dbContext.Campaigns.AsNoTracking().Include(campaign => campaign.Business).Include(campaign => campaign.Applications).Where(campaign => campaign.Status == CampaignStatus.Published);
         if (!string.IsNullOrWhiteSpace(city))
         {
             query = query.Where(campaign => campaign.City == city.Trim());

@@ -33,7 +33,7 @@ public sealed class CreateCampaignHandlerTests
         Assert.Contains("business profile", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static CreateCampaignCommand CreateCommand() => new(123, "Skincare launch", "Ищем beauty-блогеров для Reels и Stories.", "Ташкент", ["Красота", "Lifestyle"], 700000, 2400000, true);
+    private static CreateCampaignCommand CreateCommand() => new(123, "Skincare launch", "Ищем beauty-блогеров для Reels и Stories.", "Ташкент", ["Красота", "Lifestyle"], ["Нативная интеграция"], 700000, 2400000, null, true);
 
     private sealed class InMemoryBusinessRepository(params BusinessProfile[] profiles) : IBusinessProfileRepository
     {

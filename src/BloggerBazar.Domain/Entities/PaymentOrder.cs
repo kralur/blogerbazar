@@ -6,7 +6,7 @@ public sealed class PaymentOrder
 {
     private PaymentOrder() { }
 
-    private PaymentOrder(long payerTelegramUserId, ContactTargetType targetType, Guid targetId, int amountUzs, PaymentProvider provider)
+    private PaymentOrder(long payerTelegramUserId, ContactTargetType targetType, Guid targetId, int amountUzs, PaymentProvider provider, DateTime? expiresAtUtc = null)
     {
         Id = Guid.NewGuid();
         Reference = $"unlock-{Id:N}";
@@ -17,6 +17,7 @@ public sealed class PaymentOrder
         Provider = provider;
         Status = PaymentOrderStatus.Pending;
         CreatedAtUtc = DateTime.UtcNow;
+        ExpiresAtUtc = expiresAtUtc ?? CreatedAtUtc.AddMinutes(30);
     }
 
     public Guid Id { get; private set; }
@@ -29,17 +30,18 @@ public sealed class PaymentOrder
     public PaymentOrderStatus Status { get; private set; }
     public string? ProviderTransactionId { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
+    public DateTime ExpiresAtUtc { get; private set; }
     public DateTime? PaidAtUtc { get; private set; }
     public ContactUnlock? ContactUnlock { get; private set; }
 
-    public static PaymentOrder CreateContactUnlock(long payerTelegramUserId, ContactTargetType targetType, Guid targetId, int amountUzs)
+    public static PaymentOrder CreateContactUnlock(long payerTelegramUserId, ContactTargetType targetType, Guid targetId, int amountUzs, DateTime? expiresAtUtc = null)
     {
         if (amountUzs <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(amountUzs));
         }
 
-        return new PaymentOrder(payerTelegramUserId, targetType, targetId, amountUzs, PaymentProvider.Click);
+        return new PaymentOrder(payerTelegramUserId, targetType, targetId, amountUzs, PaymentProvider.Click, expiresAtUtc);
     }
 
     public static PaymentOrder CreateContactUnlockWithCredits(long payerTelegramUserId, ContactTargetType targetType, Guid targetId)
@@ -66,7 +68,7 @@ public sealed class PaymentOrder
             return;
         }
 
-        if (Status != PaymentOrderStatus.Pending)
+        if (ExpireIfOverdue(DateTime.UtcNow) || Status != PaymentOrderStatus.Pending)
         {
             throw new InvalidOperationException("Only pending payment orders can be paid.");
         }
@@ -74,5 +76,16 @@ public sealed class PaymentOrder
         ProviderTransactionId = providerTransactionId;
         Status = PaymentOrderStatus.Paid;
         PaidAtUtc = DateTime.UtcNow;
+    }
+
+    public bool ExpireIfOverdue(DateTime utcNow)
+    {
+        if (Status != PaymentOrderStatus.Pending || ExpiresAtUtc > utcNow)
+        {
+            return false;
+        }
+
+        Status = PaymentOrderStatus.Expired;
+        return true;
     }
 }

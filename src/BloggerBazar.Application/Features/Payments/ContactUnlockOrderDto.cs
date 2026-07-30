@@ -9,8 +9,9 @@ public sealed record ContactUnlockOrderDto(
     Guid TargetId,
     int AmountUzs,
     PaymentOrderStatus Status,
-    bool IsUnlocked)
+    bool IsUnlocked,
+    DateTime ExpiresAtUtc)
 {
     public static ContactUnlockOrderDto From(PaymentOrder order, bool isUnlocked) =>
-        new(order.Reference, order.TargetType, order.TargetId, order.AmountUzs, order.Status, isUnlocked);
+        new(order.Reference, order.TargetType, order.TargetId, order.AmountUzs, order.Status, isUnlocked, order.ExpiresAtUtc);
 }

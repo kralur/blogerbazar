@@ -21,7 +21,8 @@ public sealed class CreateContactUnlockTelegramInvoiceValidator : AbstractValida
 
 public sealed class CreateContactUnlockTelegramInvoiceHandler(
     IPaymentOrderRepository paymentOrders,
-    ITelegramPaymentGateway paymentGateway) : IRequestHandler<CreateContactUnlockTelegramInvoiceCommand, TelegramInvoiceLinkDto>
+    ITelegramPaymentGateway paymentGateway,
+    IUnitOfWork unitOfWork) : IRequestHandler<CreateContactUnlockTelegramInvoiceCommand, TelegramInvoiceLinkDto>
 {
     public async Task<TelegramInvoiceLinkDto> Handle(CreateContactUnlockTelegramInvoiceCommand command, CancellationToken cancellationToken)
     {
@@ -31,6 +32,12 @@ public sealed class CreateContactUnlockTelegramInvoiceHandler(
         if (paymentOrder.PayerTelegramUserId != command.TelegramUserId)
         {
             throw new UnauthorizedAccessException("You cannot pay for another user's order.");
+        }
+
+        if (paymentOrder.ExpireIfOverdue(DateTime.UtcNow))
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            throw new InvalidOperationException("Payment order has expired. Create a new order.");
         }
 
         if (paymentOrder.Status != PaymentOrderStatus.Pending)

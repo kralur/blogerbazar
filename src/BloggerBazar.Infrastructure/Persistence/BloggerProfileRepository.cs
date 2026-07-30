@@ -15,12 +15,15 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
         dbContext.BloggerProfiles.Include(profile => profile.PortfolioItems).Include(profile => profile.Platforms).Include(profile => profile.Reviews).Include(profile => profile.Deals)
             .SingleOrDefaultAsync(profile => profile.TelegramUserId == telegramUserId, cancellationToken);
 
+    public Task<BloggerProfile?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>
+        dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.Username == username, cancellationToken);
+
     public async Task<IReadOnlyList<BloggerProfile>> GetPendingAsync(int take, CancellationToken cancellationToken) =>
         await dbContext.BloggerProfiles.AsNoTracking().Where(profile => profile.Status == BloggerStatus.Pending)
             .OrderBy(profile => profile.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BloggerProfile>> GetAllAsync(int take, CancellationToken cancellationToken) =>
-        await dbContext.BloggerProfiles.AsNoTracking().Include(profile => profile.Platforms).Include(profile => profile.Reviews).Include(profile => profile.Deals)
+        await dbContext.BloggerProfiles.AsNoTracking().Include(profile => profile.PortfolioItems).Include(profile => profile.Platforms).Include(profile => profile.Reviews).Include(profile => profile.Deals)
             .OrderByDescending(profile => profile.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BloggerProfile>> SearchApprovedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
@@ -43,6 +46,64 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<BloggerCatalogPage> SearchApprovedPageAsync(BloggerCatalogSearch search, CancellationToken cancellationToken)
+    {
+        var query = dbContext.BloggerProfiles.AsNoTracking().Where(profile => profile.Status == BloggerStatus.Approved);
+        if (!string.IsNullOrWhiteSpace(search.Query))
+        {
+            var text = search.Query.Trim().ToLowerInvariant();
+            query = query.Where(profile => profile.Name.ToLower().Contains(text)
+                || profile.City.ToLower().Contains(text)
+                || profile.Categories.Any(category => category.ToLower().Contains(text)));
+        }
+        if (!string.IsNullOrWhiteSpace(search.City))
+        {
+            var city = search.City.Trim();
+            query = query.Where(profile => profile.City == city);
+        }
+        if (!string.IsNullOrWhiteSpace(search.Category))
+        {
+            var category = search.Category.Trim();
+            query = query.Where(profile => profile.Categories.Contains(category));
+        }
+        if (!string.IsNullOrWhiteSpace(search.Platform))
+        {
+            var platform = search.Platform.Trim();
+            query = query.Where(profile => profile.Platforms.Any(item => item.Type == platform));
+        }
+        if (search.MinFollowers.HasValue) query = query.Where(profile => profile.TotalFollowers >= search.MinFollowers.Value);
+        if (search.MinEngagementRate.HasValue) query = query.Where(profile => profile.EngagementRate >= search.MinEngagementRate.Value);
+        if (search.MaxEngagementRate.HasValue) query = query.Where(profile => profile.EngagementRate <= search.MaxEngagementRate.Value);
+        if (search.MinPrice.HasValue)
+        {
+            query = query.Where(profile => (profile.StoriesPrice != null && profile.StoriesPrice >= search.MinPrice)
+                || (profile.ReelsPrice != null && profile.ReelsPrice >= search.MinPrice)
+                || (profile.PostPrice != null && profile.PostPrice >= search.MinPrice)
+                || (profile.IntegrationPrice != null && profile.IntegrationPrice >= search.MinPrice));
+        }
+        if (search.MaxPrice.HasValue)
+        {
+            query = query.Where(profile => (profile.StoriesPrice != null && profile.StoriesPrice <= search.MaxPrice)
+                || (profile.ReelsPrice != null && profile.ReelsPrice <= search.MaxPrice)
+                || (profile.PostPrice != null && profile.PostPrice <= search.MaxPrice)
+                || (profile.IntegrationPrice != null && profile.IntegrationPrice <= search.MaxPrice));
+        }
+
+        var total = await query.CountAsync(cancellationToken);
+        var ordered = search.Sort switch
+        {
+            "rating" => query.OrderByDescending(profile => profile.Reviews.Average(review => (decimal?)review.Rating) ?? 0).ThenByDescending(profile => profile.Deals.Count(deal => deal.Status == DealStatus.Completed)).ThenByDescending(profile => profile.Reviews.Count),
+            "er" => query.OrderByDescending(profile => profile.EngagementRate ?? 0).ThenByDescending(profile => profile.TotalFollowers),
+            "price" => query.OrderBy(profile => profile.StoriesPrice ?? profile.ReelsPrice ?? profile.PostPrice ?? profile.IntegrationPrice ?? int.MaxValue).ThenByDescending(profile => profile.TotalFollowers),
+            "newest" => query.OrderByDescending(profile => profile.CreatedAtUtc),
+            _ => query.OrderByDescending(profile => profile.Deals.Count(deal => deal.Status == DealStatus.Completed)).ThenByDescending(profile => profile.Reviews.Average(review => (decimal?)review.Rating) ?? 0).ThenByDescending(profile => profile.TotalFollowers)
+        };
+
+        var profiles = await ordered.Include(profile => profile.PortfolioItems).Include(profile => profile.Platforms).Include(profile => profile.Reviews).Include(profile => profile.Deals)
+            .Skip((search.Page - 1) * search.PageSize).Take(search.PageSize).ToListAsync(cancellationToken);
+        return new BloggerCatalogPage(profiles, total);
     }
 
     public async Task AddAsync(BloggerProfile profile, CancellationToken cancellationToken) => await dbContext.BloggerProfiles.AddAsync(profile, cancellationToken);

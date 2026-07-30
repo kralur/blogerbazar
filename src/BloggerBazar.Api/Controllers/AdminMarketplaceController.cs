@@ -11,6 +11,42 @@ namespace BloggerBazar.Api.Controllers;
 [Route("api/admin")]
 public sealed class AdminMarketplaceController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
+    [HttpGet("users")]
+    public async Task<ActionResult<IReadOnlyList<AdminPlatformUserDto>>> GetUsers([FromQuery] int take = 100, CancellationToken cancellationToken = default)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetAdminUsersQuery(actor.Id, take), cancellationToken));
+    }
+
+    [HttpPatch("users/{telegramUserId:long}/role")]
+    public async Task<ActionResult<AdminPlatformUserDto>> UpdateRole(long telegramUserId, UpdatePlatformUserRoleRequest request, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        if (!Enum.IsDefined(typeof(BloggerBazar.Domain.Enums.PlatformRole), request.Role)) return BadRequest();
+        return Ok(await sender.Send(new UpdatePlatformUserRoleCommand(actor.Id, telegramUserId, (BloggerBazar.Domain.Enums.PlatformRole)request.Role), cancellationToken));
+    }
+
+    [HttpPatch("users/{telegramUserId:long}/blocked")]
+    public async Task<ActionResult<AdminPlatformUserDto>> SetBlocked(long telegramUserId, SetPlatformUserBlockedRequest request, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new SetPlatformUserBlockedCommand(actor.Id, telegramUserId, request.IsBlocked), cancellationToken));
+    }
+
+    [HttpGet("audit-logs")]
+    public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetAuditLogs([FromQuery] int take = 100, CancellationToken cancellationToken = default)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetAuditLogQuery(actor.Id, take), cancellationToken));
+    }
+
+    [HttpGet("dashboard")]
+    public async Task<ActionResult<AdminDashboardDto>> GetDashboard(CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetAdminDashboardQuery(actor.Id), cancellationToken));
+    }
+
     [HttpGet("bloggers")]
     public async Task<ActionResult<IReadOnlyList<AdminBloggerProfileDto>>> GetBloggers([FromQuery] int take = 100, CancellationToken cancellationToken = default)
     {

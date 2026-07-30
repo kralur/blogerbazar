@@ -9,7 +9,7 @@ public sealed class ApplyToCampaignHandlerTests
     [Fact]
     public async Task Creates_application_for_approved_blogger_and_published_campaign()
     {
-        var campaign = Campaign.Create(Guid.NewGuid(), "Campaign", "Description", ["Lifestyle"], null, null, null);
+        var campaign = Campaign.Create(Guid.NewGuid(), "Campaign", "Description", ["Lifestyle"], null, null, null, null, null);
         campaign.Publish();
         var blogger = BloggerProfile.Create(12, "Madina", "Ташкент", ["Lifestyle"]);
         blogger.Approve();
@@ -26,7 +26,7 @@ public sealed class ApplyToCampaignHandlerTests
     [Fact]
     public async Task Rejects_duplicate_campaign_application()
     {
-        var campaign = Campaign.Create(Guid.NewGuid(), "Campaign", "Description", ["Lifestyle"], null, null, null);
+        var campaign = Campaign.Create(Guid.NewGuid(), "Campaign", "Description", ["Lifestyle"], null, null, null, null, null);
         campaign.Publish();
         var blogger = BloggerProfile.Create(12, "Madina", "Ташкент", ["Lifestyle"]);
         blogger.Approve();
@@ -42,7 +42,7 @@ public sealed class ApplyToCampaignHandlerTests
     public async Task Rejects_application_to_a_campaign_owned_by_the_same_user()
     {
         var business = BusinessProfile.Create(12, "Own business", null);
-        var campaign = Campaign.Create(business.Id, "Campaign", "Description", ["Lifestyle"], null, null, null);
+        var campaign = Campaign.Create(business.Id, "Campaign", "Description", ["Lifestyle"], null, null, null, null, null);
         campaign.Publish();
         var blogger = BloggerProfile.Create(12, "Madina", "Tashkent", ["Lifestyle"]);
         blogger.Approve();

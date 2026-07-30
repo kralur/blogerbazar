@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using BloggerBazar.Application.Abstractions.Payments;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Infrastructure.Security;
 using Microsoft.Extensions.Options;
 
@@ -16,7 +17,7 @@ internal sealed class TelegramPaymentGateway(
         var click = paymentOptions.Value;
         if (string.IsNullOrWhiteSpace(click.TelegramProviderToken))
         {
-            throw new InvalidOperationException("Click:TelegramProviderToken is not configured.");
+            throw new PaymentProviderUnavailableException("Payment provider is not configured.");
         }
 
         var response = await PostAsync<TelegramApiResult<string>>(
@@ -32,10 +33,15 @@ internal sealed class TelegramPaymentGateway(
             },
             cancellationToken);
 
-        if (!response.Ok || string.IsNullOrWhiteSpace(response.Result))
+        if (!response.Ok)
         {
+            if (response.Description?.Contains("PAYMENT_PROVIDER_INVALID", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                throw new PaymentProviderUnavailableException("Payment provider is not active for this bot.");
+            }
             throw new InvalidOperationException("Telegram did not create an invoice link.");
         }
+        if (string.IsNullOrWhiteSpace(response.Result)) throw new InvalidOperationException("Telegram did not create an invoice link.");
 
         return response.Result;
     }
@@ -76,5 +82,5 @@ internal sealed class TelegramPaymentGateway(
             ?? throw new InvalidOperationException("Telegram Payments API returned an invalid response.");
     }
 
-    private sealed record TelegramApiResult<T>(bool Ok, T? Result);
+    private sealed record TelegramApiResult<T>(bool Ok, T? Result, string? Description);
 }

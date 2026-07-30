@@ -1,7 +1,10 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace BloggerBazar.Application.Features.Campaigns;
 
@@ -22,7 +25,10 @@ public sealed class UpdateCampaignApplicationStatusValidator : AbstractValidator
 public sealed class UpdateCampaignApplicationStatusHandler(
     ICampaignApplicationRepository applications,
     IBusinessProfileRepository businesses,
-    IUnitOfWork unitOfWork) : IRequestHandler<UpdateCampaignApplicationStatusCommand, MyCampaignApplicationDto>
+    IUnitOfWork unitOfWork,
+    IBloggerProfileRepository? bloggers = null,
+    ITelegramBotClient? botClient = null,
+    ILogger<UpdateCampaignApplicationStatusHandler>? logger = null) : IRequestHandler<UpdateCampaignApplicationStatusCommand, MyCampaignApplicationDto>
 {
     public async Task<MyCampaignApplicationDto> Handle(UpdateCampaignApplicationStatusCommand command, CancellationToken cancellationToken)
     {
@@ -45,6 +51,11 @@ public sealed class UpdateCampaignApplicationStatusHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (command.Status == CampaignApplicationStatus.Rejected && bloggers is not null)
+        {
+            var blogger = await bloggers.GetByIdAsync(application.BloggerId, cancellationToken);
+            if (blogger is not null) await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, $"BloggerBazar: заявка на кампанию «{application.Campaign.Title}» отклонена.", cancellationToken);
+        }
         return MyCampaignApplicationDto.ForBusiness(application);
     }
 }

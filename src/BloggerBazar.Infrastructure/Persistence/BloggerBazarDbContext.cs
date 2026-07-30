@@ -1,6 +1,7 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace BloggerBazar.Infrastructure.Persistence;
 
@@ -19,13 +20,84 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
     public DbSet<CollaborationRequest> CollaborationRequests => Set<CollaborationRequest>();
     public DbSet<CreditAccount> CreditAccounts => Set<CreditAccount>();
     public DbSet<CreditLedgerEntry> CreditLedgerEntries => Set<CreditLedgerEntry>();
+    public DbSet<PlatformUser> PlatformUsers => Set<PlatformUser>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<BrandFaceProfile> BrandFaceProfiles => Set<BrandFaceProfile>();
+
+    public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken)
+    {
+        await using var transaction = await Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var result = await operation(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<bool> TrySaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            ChangeTracker.Clear();
+            return false;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        var user = modelBuilder.Entity<PlatformUser>();
+        user.ToTable("platform_users");
+        user.HasKey(entity => entity.Id);
+        user.Property(entity => entity.FirstName).HasMaxLength(128).IsRequired();
+        user.Property(entity => entity.Username).HasMaxLength(64);
+        user.Property(entity => entity.Role).HasConversion<int>();
+        user.Property(entity => entity.SelectedMarketplaceRole).HasConversion<int?>();
+        user.HasIndex(entity => entity.TelegramUserId).IsUnique();
+        user.HasIndex(entity => new { entity.Role, entity.IsBlocked, entity.IsDeleted });
+
+        var auditLog = modelBuilder.Entity<AuditLog>();
+        auditLog.ToTable("audit_logs");
+        auditLog.HasKey(entity => entity.Id);
+        auditLog.Property(entity => entity.Action).HasMaxLength(100).IsRequired();
+        auditLog.Property(entity => entity.TargetType).HasMaxLength(100).IsRequired();
+        auditLog.Property(entity => entity.TargetId).HasMaxLength(128).IsRequired();
+        auditLog.Property(entity => entity.Details).HasMaxLength(2000);
+        auditLog.HasIndex(entity => new { entity.ActorTelegramUserId, entity.CreatedAtUtc });
+        auditLog.HasIndex(entity => new { entity.TargetType, entity.TargetId, entity.CreatedAtUtc });
+
+        var brandFace = modelBuilder.Entity<BrandFaceProfile>();
+        brandFace.ToTable("brand_face_profiles");
+        brandFace.HasKey(entity => entity.Id);
+        brandFace.Property(entity => entity.Name).HasMaxLength(100).IsRequired();
+        brandFace.Property(entity => entity.City).HasMaxLength(80).IsRequired();
+        brandFace.Property(entity => entity.Gender).HasMaxLength(32);
+        brandFace.Property(entity => entity.Experience).HasMaxLength(2000);
+        brandFace.Property(entity => entity.Instagram).HasMaxLength(128);
+        brandFace.Property(entity => entity.Telegram).HasMaxLength(128);
+        brandFace.Property(entity => entity.PortfolioUrl).HasMaxLength(2048);
+        brandFace.Property(entity => entity.Description).HasMaxLength(2000);
+        brandFace.Property(entity => entity.AvatarUrl).HasMaxLength(2048);
+        brandFace.Property(entity => entity.Languages).HasColumnType("text[]");
+        brandFace.Property(entity => entity.Categories).HasColumnType("text[]");
+        brandFace.HasIndex(entity => entity.TelegramUserId).IsUnique();
+        brandFace.HasIndex(entity => new { entity.City, entity.IsPromoted });
+
         var profile = modelBuilder.Entity<BloggerProfile>();
         profile.ToTable("blogger_profiles");
         profile.HasKey(entity => entity.Id);
         profile.Property(entity => entity.TelegramUserId).HasColumnName("telegram_user_id");
+        profile.Ignore(entity => entity.CreatorLevel);
         profile.HasIndex(entity => entity.TelegramUserId).IsUnique();
         profile.Property(entity => entity.Name).HasMaxLength(100).IsRequired();
         profile.Property(entity => entity.LastName).HasMaxLength(100);
@@ -71,9 +143,12 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         business.Property(entity => entity.Username).HasMaxLength(64);
         business.Property(entity => entity.City).HasMaxLength(80);
         business.Property(entity => entity.LogoUrl).HasMaxLength(2048);
+        business.Property(entity => entity.WebsiteUrl).HasMaxLength(2048);
         business.Property(entity => entity.Description).HasMaxLength(1000);
         business.Property(entity => entity.Phone).HasMaxLength(20);
         business.Property(entity => entity.Email).HasMaxLength(254);
+        business.Property(entity => entity.ModerationStatus).HasConversion<int>();
+        business.HasIndex(entity => entity.ModerationStatus);
 
         var campaign = modelBuilder.Entity<Campaign>();
         campaign.ToTable("campaigns");
@@ -82,6 +157,8 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         campaign.Property(entity => entity.Description).HasMaxLength(3000).IsRequired();
         campaign.Property(entity => entity.City).HasMaxLength(80);
         campaign.Property(entity => entity.Categories).HasColumnType("text[]");
+        campaign.Property(entity => entity.Requirements).HasColumnType("text[]");
+        campaign.Property(entity => entity.Deadline);
         campaign.HasOne(entity => entity.Business).WithMany(entity => entity.Campaigns).HasForeignKey(entity => entity.BusinessId).OnDelete(DeleteBehavior.Cascade);
         campaign.HasIndex(entity => new { entity.Status, entity.IsPromoted });
 
@@ -132,6 +209,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         paymentOrder.Property(entity => entity.Reference).HasMaxLength(80).IsRequired();
         paymentOrder.HasIndex(entity => entity.Reference).IsUnique();
         paymentOrder.Property(entity => entity.ProviderTransactionId).HasMaxLength(120);
+        paymentOrder.HasIndex(entity => new { entity.Status, entity.ExpiresAtUtc });
         paymentOrder.HasIndex(entity => entity.ProviderTransactionId).IsUnique().HasFilter("\"ProviderTransactionId\" IS NOT NULL");
         paymentOrder.HasIndex(entity => new { entity.PayerTelegramUserId, entity.Status });
         paymentOrder.HasIndex(entity => new { entity.PayerTelegramUserId, entity.TargetType, entity.TargetId })

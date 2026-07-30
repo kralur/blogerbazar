@@ -12,6 +12,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class PaymentsController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpPost("contact-unlocks")]
+    [Obsolete("Legacy compatibility endpoint. Contacts are publicly available in BloggerBazar v1.")]
     [ProducesResponseType<ContactUnlockOrderDto>(StatusCodes.Status201Created)]
     public async Task<ActionResult<ContactUnlockOrderDto>> CreateContactUnlockOrder(
         CreateContactUnlockOrderRequest request,
@@ -23,6 +24,7 @@ public sealed class PaymentsController(ISender sender, ITelegramWebAppValidator 
     }
 
     [HttpPost("contact-unlocks/{reference}/invoice")]
+    [Obsolete("Legacy compatibility endpoint. Contacts are publicly available in BloggerBazar v1.")]
     [ProducesResponseType<TelegramInvoiceLinkResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<TelegramInvoiceLinkResponse>> CreateContactUnlockInvoice(
         string reference,
@@ -34,6 +36,7 @@ public sealed class PaymentsController(ISender sender, ITelegramWebAppValidator 
     }
 
     [HttpGet("contact-unlocks/{targetType}/{targetId:guid}")]
+    [Obsolete("Legacy compatibility endpoint. Contacts are publicly available in BloggerBazar v1.")]
     [ProducesResponseType<ContactUnlockStatusDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<ContactUnlockStatusDto>> GetContactUnlockStatus(
         ContactTargetType targetType,

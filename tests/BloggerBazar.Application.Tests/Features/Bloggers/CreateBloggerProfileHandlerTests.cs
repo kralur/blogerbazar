@@ -8,7 +8,7 @@ namespace BloggerBazar.Application.Tests.Features.Bloggers;
 public sealed class CreateBloggerProfileHandlerTests
 {
     [Fact]
-    public async Task Creates_pending_profile_and_persists_it()
+    public async Task Creates_approved_profile_and_persists_it()
     {
         var repository = new InMemoryBloggerRepository();
         var unitOfWork = new SpyUnitOfWork();
@@ -20,7 +20,8 @@ public sealed class CreateBloggerProfileHandlerTests
         Assert.Equal("Ташкент", result.City);
         Assert.Equal(1, unitOfWork.SaveCallCount);
         Assert.Single(repository.Profiles);
-        Assert.Equal(0, result.Status);
+        Assert.Equal((int)BloggerStatus.Approved, result.Status);
+        Assert.True(result.IsVerified);
     }
 
     [Fact]

@@ -1,27 +1,47 @@
-import { useEffect, useState } from "react";
-import { getPendingBloggerProfiles, moderateBloggerProfile, type PendingBloggerProfile } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, EmptyState, StatsCard, Toast } from "../components/ui";
+import { useEffect, useMemo, useState } from "react";
+import { getAdminAuditLogs, getAdminDashboard, getAdminUsers, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminDashboard, type AdminPlatformUser } from "../api/marketplace";
+import { Badge, BottomNav, Button, Card, ErrorState, LoadingState, StatsCard, Toast } from "../components/ui";
+import { useI18n } from "../i18n";
+
+const roleKeys = ["admin.role.member", "admin.role.support", "admin.role.moderator", "admin.role.admin", "admin.role.owner"];
 
 export function Admin() {
-  const [profiles, setProfiles] = useState<PendingBloggerProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
+  const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
+  const [users, setUsers] = useState<AdminPlatformUser[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLog[]>([]);
+  const [failed, setFailed] = useState(false);
   const [toast, setToast] = useState("");
-
+  const roleLabels = useMemo(() => roleKeys.map((key) => t(key)), [t]);
   const load = () => {
-    setLoading(true);
-    getPendingBloggerProfiles().then(setProfiles).catch((error) => setToast(error instanceof Error ? error.message : "Нет доступа к модерации")).finally(() => setLoading(false));
+    setFailed(false);
+    Promise.all([getAdminDashboard(), getAdminUsers(), getAdminAuditLogs()])
+      .then(([nextDashboard, nextUsers, nextLogs]) => { setDashboard(nextDashboard); setUsers(nextUsers); setAuditLogs(nextLogs); })
+      .catch(() => setFailed(true));
   };
-
   useEffect(load, []);
-  const moderate = async (id: string, decision: "approve" | "reject") => {
+  const updateRole = async (telegramUserId: number, role: number) => {
     try {
-      await moderateBloggerProfile(id, decision);
-      setProfiles((current) => current.filter((profile) => profile.id !== id));
-      setToast(decision === "approve" ? "Профиль одобрен" : "Профиль отклонён");
-    } catch (error) {
-      setToast(error instanceof Error ? error.message : "Не удалось выполнить модерацию");
-    }
+      const user = await updateAdminUserRole(telegramUserId, role);
+      setUsers((items) => items.map((item) => item.telegramUserId === user.telegramUserId ? user : item));
+      setToast(t("admin.roleUpdated"));
+    } catch { setToast(t("admin.roleUpdateDenied")); }
   };
-
-  return <div className="screen pb-28"><header><p className="text-sm font-semibold text-brand-muted">Внутренняя панель</p><h1 className="text-3xl font-extrabold tracking-tight">Модерация</h1></header><div className="mt-5 grid grid-cols-2 gap-2"><StatsCard label="Ожидают проверки" value={loading ? "—" : String(profiles.length)} /><StatsCard label="Безопасная роль" value="TMA" /></div><Card className="mt-5"><p className="text-sm leading-6 text-brand-muted">Доступ проверяется сервером по Telegram ID из allow-list. Пароли не передаются в Mini App.</p></Card><section className="mt-5"><h2 className="mb-3 font-extrabold">Новые профили</h2>{!loading && !profiles.length ? <EmptyState icon="check" subtitle="Новые анкеты появятся здесь автоматически." title="Очередь пуста" /> : <div className="grid gap-3">{profiles.map((profile) => <Card key={profile.id}><div className="flex gap-3"><Avatar name={profile.name} size="sm" src={profile.avatarUrl} /><div className="min-w-0 flex-1"><h3 className="font-extrabold">{profile.name}</h3><p className="mt-1 text-sm text-brand-muted">{profile.city} · {profile.categories[0] ?? "Без категории"}</p><div className="mt-2"><Badge tone="gold">На проверке</Badge></div></div></div><div className="mt-4 grid grid-cols-2 gap-2"><Button onClick={() => moderate(profile.id, "approve")}>Одобрить</Button><Button onClick={() => moderate(profile.id, "reject")} variant="secondary">Отклонить</Button></div></Card>)}</div>}</section><Toast message={toast} /><BottomNav /></div>;
+  const toggleBlock = async (user: AdminPlatformUser) => {
+    try {
+      const updated = await setAdminUserBlocked(user.telegramUserId, !user.isBlocked);
+      setUsers((items) => items.map((item) => item.telegramUserId === updated.telegramUserId ? updated : item));
+      setToast(updated.isBlocked ? t("admin.userBlocked") : t("admin.userUnblocked"));
+    } catch { setToast(t("admin.userUpdateDenied")); }
+  };
+  if (!dashboard && !failed) return <div className="screen"><LoadingState /></div>;
+  if (failed || !dashboard) return <div className="screen"><ErrorState onRetry={load} subtitle={t("ui.accessDeniedSubtitle")} title={t("ui.accessDenied")} /></div>;
+  return <div className="screen space-y-5 pb-28 pt-5">
+    <header><p className="text-sm font-semibold text-brand-muted">{t("common.appName")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{t("admin.dashboardTitle")}</h1></header>
+    <Card className="border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50"><p className="text-sm leading-6 text-brand-muted">{t("admin.dashboardDescription")}</p></Card>
+    <section className="grid grid-cols-2 gap-3"><StatsCard icon="user" label={t("admin.users")} value={String(dashboard.users)} /><StatsCard icon="user" label={t("admin.bloggers")} value={String(dashboard.bloggers)} /><StatsCard icon="building" label={t("admin.businesses")} value={String(dashboard.businesses)} /><StatsCard icon="briefcase" label={t("common.campaigns", { count: dashboard.publishedCampaigns })} value={String(dashboard.publishedCampaigns)} /><StatsCard icon="check" label={t("common.deals", { count: dashboard.completedDeals })} value={String(dashboard.completedDeals)} /><StatsCard icon="star" label={t("admin.promotions")} value={String(dashboard.promotedBloggers + dashboard.promotedCampaigns)} /></section>
+    <section><h2 className="mb-3 text-lg font-extrabold">{t("admin.users")}</h2><div className="grid gap-2">{users.map((user) => <Card className="p-3" key={user.telegramUserId}><div className="flex items-start justify-between gap-2"><div><p className="font-extrabold">{user.firstName}</p><p className="text-xs text-brand-muted">{user.username ? "@" + user.username : user.telegramUserId}</p></div><Badge tone={user.isBlocked ? "gray" : "blue"}>{user.isBlocked ? t("common.blocked") : roleLabels[user.role]}</Badge></div><div className="mt-3 flex gap-2"><select aria-label={t("admin.userRoleAria")} className="min-h-11 flex-1 rounded-xl border border-brand-line bg-white px-2 text-sm" disabled={user.role === 4} onChange={(event) => void updateRole(user.telegramUserId, Number(event.target.value))} value={user.role}>{roleLabels.map((label, value) => <option key={roleKeys[value]} value={value}>{label}</option>)}</select><Button disabled={user.role === 4} onClick={() => void toggleBlock(user)} type="button" variant={user.isBlocked ? "secondary" : "danger"}>{user.isBlocked ? t("common.unblock") : t("common.block")}</Button></div></Card>)}</div></section>
+    <section><h2 className="mb-3 text-lg font-extrabold">{t("common.actionLog")}</h2><div className="grid gap-2">{auditLogs.length ? auditLogs.slice(0, 12).map((entry) => <Card className="p-3" key={entry.id}><p className="text-sm font-bold">{entry.action}</p><p className="mt-1 text-xs text-brand-muted">{entry.targetType} · {entry.targetId}</p></Card>) : <Card><p className="text-sm text-brand-muted">{t("common.noActions")}</p></Card>}</div></section>
+    <BottomNav /><Toast message={toast} />
+  </div>;
 }

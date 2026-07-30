@@ -14,6 +14,8 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
             throw new UnauthorizedAccessException("Telegram initData authorization is required.");
         }
 
-        return telegramValidator.Validate(authorization[scheme.Length..]);
+        var user = telegramValidator.Validate(authorization[scheme.Length..]);
+        HttpContext.RequestServices.GetRequiredService<IPlatformUserAccessPolicy>().EnsureActive(user.Id);
+        return user;
     }
 }

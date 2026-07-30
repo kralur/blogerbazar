@@ -33,4 +33,12 @@ public sealed class AdminBloggersController(ISender sender, ITelegramWebAppValid
         return Ok(await sender.Send(new ModerateBloggerProfileCommand(bloggerId, actor.Id, false), cancellationToken));
     }
 
+    [HttpPost("{bloggerId:guid}/needs-changes")]
+    [ProducesResponseType<AdminBloggerProfileDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<AdminBloggerProfileDto>> NeedsChanges(Guid bloggerId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new ModerateBloggerProfileCommand(bloggerId, actor.Id, false, true), cancellationToken));
+    }
+
 }

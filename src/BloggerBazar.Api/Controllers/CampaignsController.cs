@@ -34,8 +34,24 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     public async Task<ActionResult<CampaignDto>> Create(CreateCampaignRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
-        var campaign = await sender.Send(new CreateCampaignCommand(actor.Id, request.Title, request.Description, request.City, request.Categories, request.BudgetFrom, request.BudgetTo, request.PublishImmediately), cancellationToken);
+        var campaign = await sender.Send(new CreateCampaignCommand(actor.Id, request.Title, request.Description, request.City, request.Categories, request.Requirements, request.BudgetFrom, request.BudgetTo, request.Deadline, request.PublishImmediately), cancellationToken);
         return StatusCode(StatusCodes.Status201Created, campaign);
+    }
+
+    [HttpPut("{campaignId:guid}")]
+    [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<CampaignDto>> Update(Guid campaignId, CreateCampaignRequest request, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new UpdateCampaignCommand(campaignId, actor.Id, request.Title, request.Description, request.City, request.Categories, request.Requirements, request.BudgetFrom, request.BudgetTo, request.Deadline, request.PublishImmediately), cancellationToken));
+    }
+
+    [HttpPost("{campaignId:guid}/close")]
+    [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<CampaignDto>> Close(Guid campaignId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new CloseCampaignCommand(campaignId, actor.Id), cancellationToken));
     }
 
     [HttpPost("{campaignId:guid}/applications")]

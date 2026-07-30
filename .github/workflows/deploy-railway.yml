@@ -1,0 +1,84 @@
+name: Deploy to Railway
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_ENVIRONMENT }}
+      RAILWAY_API_SERVICE: ${{ vars.RAILWAY_API_SERVICE }}
+      RAILWAY_FRONTEND_SERVICE: ${{ vars.RAILWAY_FRONTEND_SERVICE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Railway CLI
+        run: npm install --global @railway/cli@latest
+
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in RAILWAY_TOKEN RAILWAY_PROJECT_ID RAILWAY_ENVIRONMENT RAILWAY_API_SERVICE RAILWAY_FRONTEND_SERVICE; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Required deployment setting $name is not configured."
+              exit 1
+            fi
+          done
+          railway --version
+          railway link --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT"
+
+      - name: Validate required API runtime variables
+        shell: bash
+        run: |
+          set -euo pipefail
+          variables="$(railway variable list --service "$RAILWAY_API_SERVICE" --environment "$RAILWAY_ENVIRONMENT" --json)"
+          required_variables=(
+            ConnectionStrings__Postgres
+            ConnectionStrings__Redis
+            Telegram__BotToken
+            Telegram__BotUsername
+            Telegram__MiniAppUrl
+            Telegram__WebhookSecret
+            Click__TelegramProviderToken
+            Cors__AllowedOrigins__0
+            Administration__TelegramUserIds__0
+          )
+          for name in "${required_variables[@]}"; do
+            if ! grep -Fq "\"$name\"" <<< "$variables"; then
+              echo "::error::Required Railway API variable $name is not configured."
+              exit 1
+            fi
+          done
+
+      - name: Deploy API after validation
+        shell: bash
+        run: railway up --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_API_SERVICE" --ci
+
+      - name: Deploy frontend after API build succeeds
+        shell: bash
+        run: railway up --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_FRONTEND_SERVICE" --ci

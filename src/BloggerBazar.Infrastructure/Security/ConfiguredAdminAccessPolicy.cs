@@ -1,13 +1,18 @@
 using BloggerBazar.Application.Abstractions.Security;
-using Microsoft.Extensions.Options;
+using BloggerBazar.Domain.Enums;
+using BloggerBazar.Infrastructure.Persistence;
 
 namespace BloggerBazar.Infrastructure.Security;
 
-internal sealed class ConfiguredAdminAccessPolicy(IOptions<AdministrationOptions> options) : IAdminAccessPolicy
+internal sealed class ConfiguredAdminAccessPolicy(BloggerBazarDbContext dbContext) : IAdminAccessPolicy
 {
     public void EnsureAllowed(long telegramUserId)
     {
-        if (!options.Value.TelegramUserIds.Contains(telegramUserId))
+        var allowed = dbContext.PlatformUsers.Any(user => user.TelegramUserId == telegramUserId
+            && !user.IsBlocked
+            && !user.IsDeleted
+            && (user.Role == PlatformRole.Owner || user.Role == PlatformRole.Admin));
+        if (!allowed)
         {
             throw new UnauthorizedAccessException("Administrator access is required.");
         }

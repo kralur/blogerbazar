@@ -14,7 +14,7 @@ public sealed class UpdateBusinessProfileHandlerTests
         var handler = new UpdateBusinessProfileHandler(new InMemoryBusinessRepository(business), unitOfWork);
 
         var result = await handler.Handle(
-            new UpdateBusinessProfileCommand(101, "Lumi Beauty", "@lumi", "Samarkand", "https://cdn.example/logo.png", "Beauty brand", "+998901234567", "hello@lumi.uz"),
+            new UpdateBusinessProfileCommand(101, "Lumi Beauty", "@lumi", "Samarkand", "https://cdn.example/logo.png", "https://lumi.uz", "Beauty brand", "+998901234567", "hello@lumi.uz"),
             CancellationToken.None);
 
         Assert.Equal("Lumi Beauty", result.Name);
@@ -29,7 +29,7 @@ public sealed class UpdateBusinessProfileHandlerTests
         var handler = new UpdateBusinessProfileHandler(new InMemoryBusinessRepository(null), new SpyUnitOfWork());
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(
-            new UpdateBusinessProfileCommand(101, "Lumi Beauty", null, null, null, null, null, null),
+            new UpdateBusinessProfileCommand(101, "Lumi Beauty", null, null, null, null, null, null, null),
             CancellationToken.None));
     }
 

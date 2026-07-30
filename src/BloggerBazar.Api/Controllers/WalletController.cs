@@ -18,6 +18,7 @@ public sealed class WalletController(ISender sender, ITelegramWebAppValidator te
     }
 
     [HttpPost("contact-unlocks")]
+    [Obsolete("Legacy compatibility endpoint. Contacts are publicly available in BloggerBazar v1.")]
     public async Task<ActionResult> UnlockContact(UnlockContactWithCreditsRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();

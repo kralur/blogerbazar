@@ -23,11 +23,17 @@ public sealed class ValidateContactUnlockCheckoutValidator : AbstractValidator<V
     }
 }
 
-public sealed class ValidateContactUnlockCheckoutHandler(IPaymentOrderRepository paymentOrders) : IRequestHandler<ValidateContactUnlockCheckoutCommand, TelegramCheckoutValidationDto>
+public sealed class ValidateContactUnlockCheckoutHandler(IPaymentOrderRepository paymentOrders, IUnitOfWork unitOfWork) : IRequestHandler<ValidateContactUnlockCheckoutCommand, TelegramCheckoutValidationDto>
 {
     public async Task<TelegramCheckoutValidationDto> Handle(ValidateContactUnlockCheckoutCommand command, CancellationToken cancellationToken)
     {
         var paymentOrder = await paymentOrders.GetByReferenceAsync(command.Reference, cancellationToken);
+        if (paymentOrder is not null && paymentOrder.ExpireIfOverdue(DateTime.UtcNow))
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return TelegramCheckoutValidationDto.Rejected();
+        }
+
         if (paymentOrder is null
             || paymentOrder.PayerTelegramUserId != command.TelegramUserId
             || paymentOrder.AmountUzs != command.AmountUzs

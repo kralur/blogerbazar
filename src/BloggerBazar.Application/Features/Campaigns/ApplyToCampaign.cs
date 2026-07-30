@@ -1,8 +1,11 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace BloggerBazar.Application.Features.Campaigns;
 
@@ -28,7 +31,9 @@ public sealed class ApplyToCampaignHandler(
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
     ICampaignApplicationRepository applications,
-    IUnitOfWork unitOfWork) : IRequestHandler<ApplyToCampaignCommand, CampaignApplicationDto>
+    IUnitOfWork unitOfWork,
+    ITelegramBotClient? botClient = null,
+    ILogger<ApplyToCampaignHandler>? logger = null) : IRequestHandler<ApplyToCampaignCommand, CampaignApplicationDto>
 {
     public async Task<CampaignApplicationDto> Handle(ApplyToCampaignCommand command, CancellationToken cancellationToken)
     {
@@ -60,6 +65,10 @@ public sealed class ApplyToCampaignHandler(
         var application = CampaignApplication.Create(campaign.Id, blogger.Id, command.Message?.Trim());
         await applications.AddAsync(application, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (campaign.Business is not null)
+        {
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, campaign.Business.TelegramUserId, $"BloggerBazar: новая заявка от {blogger.Name} на кампанию «{campaign.Title}».", cancellationToken);
+        }
         return CampaignApplicationDto.From(application);
     }
 }

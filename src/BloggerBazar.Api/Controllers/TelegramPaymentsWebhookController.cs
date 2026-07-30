@@ -1,6 +1,6 @@
 using BloggerBazar.Api.Contracts.Telegram;
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Abstractions.Payments;
-using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Features.Payments;
 using BloggerBazar.Infrastructure.Payments;
@@ -12,24 +12,23 @@ using Microsoft.Extensions.Options;
 
 namespace BloggerBazar.Api.Controllers;
 
-[ApiController]
 [Route("api/webhooks/telegram")]
-[DisableRateLimiting]
+[EnableRateLimiting("telegram-webhook")]
 public sealed class TelegramPaymentsWebhookController(
     ISender sender,
     ITelegramPaymentGateway paymentGateway,
-    ITelegramWebhookValidator webhookValidator,
     IOptions<ClickTelegramPaymentOptions> paymentOptions,
     IOptions<TelegramOptions> telegramOptions,
     ITelegramBotClient botClient,
     ILogger<TelegramPaymentsWebhookController> logger) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> Receive(TelegramPaymentWebhookUpdate update, CancellationToken cancellationToken)
+    public async Task<IActionResult> Receive([FromBody] TelegramPaymentWebhookUpdate? update, CancellationToken cancellationToken)
     {
-        if (!webhookValidator.IsValid(Request.Headers["X-Telegram-Bot-Api-Secret-Token"].ToString()))
+        if (!ModelState.IsValid || update is null || !TelegramWebhookPayloadValidator.IsValid(update))
         {
-            return Unauthorized();
+            logger.LogWarning("Telegram webhook payload was rejected. TraceId {TraceId}; SourceIp {SourceIp}", HttpContext.TraceIdentifier, HttpContext.Connection.RemoteIpAddress?.ToString());
+            return BadRequest();
         }
 
         if (update.PreCheckoutQuery is { } checkout)

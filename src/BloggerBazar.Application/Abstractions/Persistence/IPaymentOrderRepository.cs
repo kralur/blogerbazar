@@ -6,6 +6,8 @@ namespace BloggerBazar.Application.Abstractions.Persistence;
 public interface IPaymentOrderRepository
 {
     Task<PaymentOrder?> GetByReferenceAsync(string reference, CancellationToken cancellationToken);
+    Task<PaymentOrder?> GetByProviderTransactionIdAsync(string providerTransactionId, CancellationToken cancellationToken) =>
+        Task.FromResult<PaymentOrder?>(null);
     Task<PaymentOrder?> GetPendingContactUnlockAsync(long payerTelegramUserId, ContactTargetType targetType, Guid targetId, CancellationToken cancellationToken) =>
         Task.FromResult<PaymentOrder?>(null);
     Task AddAsync(PaymentOrder paymentOrder, CancellationToken cancellationToken);

@@ -21,8 +21,7 @@ public sealed class GetUnlockedContactValidator : AbstractValidator<GetUnlockedC
 
 public sealed class GetUnlockedContactHandler(
     IBloggerProfileRepository bloggers,
-    IBusinessProfileRepository businesses,
-    IContactUnlockRepository contactUnlocks) : IRequestHandler<GetUnlockedContactQuery, ContactDetailsDto>
+    IBusinessProfileRepository businesses) : IRequestHandler<GetUnlockedContactQuery, ContactDetailsDto>
 {
     public async Task<ContactDetailsDto> Handle(GetUnlockedContactQuery query, CancellationToken cancellationToken)
     {
@@ -39,27 +38,12 @@ public sealed class GetUnlockedContactHandler(
     private async Task<ContactDetailsDto> GetBloggerContactAsync(GetUnlockedContactQuery query, CancellationToken cancellationToken)
     {
         var target = await bloggers.GetByIdAsync(query.TargetId, cancellationToken) ?? throw new InvalidOperationException("Contact target was not found.");
-        await EnsureAccessAsync(query, target.TelegramUserId, cancellationToken);
         return new ContactDetailsDto(target.Phone, target.Email);
     }
 
     private async Task<ContactDetailsDto> GetBusinessContactAsync(GetUnlockedContactQuery query, CancellationToken cancellationToken)
     {
         var target = await businesses.GetByIdAsync(query.TargetId, cancellationToken) ?? throw new InvalidOperationException("Contact target was not found.");
-        await EnsureAccessAsync(query, target.TelegramUserId, cancellationToken);
         return new ContactDetailsDto(target.Phone, target.Email);
-    }
-
-    private async Task EnsureAccessAsync(GetUnlockedContactQuery query, long targetTelegramUserId, CancellationToken cancellationToken)
-    {
-        if (targetTelegramUserId == query.TelegramUserId)
-        {
-            return;
-        }
-
-        if (await contactUnlocks.GetAsync(query.TelegramUserId, query.TargetType, query.TargetId, cancellationToken) is null)
-        {
-            throw new UnauthorizedAccessException("Contact access must be unlocked first.");
-        }
     }
 }

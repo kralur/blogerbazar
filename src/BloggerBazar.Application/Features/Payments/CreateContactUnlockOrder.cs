@@ -49,16 +49,21 @@ public sealed class CreateContactUnlockOrderHandler(
         var existingUnlock = await contactUnlocks.GetAsync(command.TelegramUserId, command.TargetType, command.TargetId, cancellationToken);
         if (existingUnlock is not null)
         {
-            return new ContactUnlockOrderDto(existingUnlock.PaymentOrder.Reference, command.TargetType, command.TargetId, existingUnlock.PaymentOrder.AmountUzs, PaymentOrderStatus.Paid, true);
+            return ContactUnlockOrderDto.From(existingUnlock.PaymentOrder, true);
         }
 
         var pendingOrder = await paymentOrders.GetPendingContactUnlockAsync(command.TelegramUserId, command.TargetType, command.TargetId, cancellationToken);
         if (pendingOrder is not null)
         {
-            return ContactUnlockOrderDto.From(pendingOrder, false);
+            if (!pendingOrder.ExpireIfOverdue(DateTime.UtcNow))
+            {
+                return ContactUnlockOrderDto.From(pendingOrder, false);
+            }
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        var paymentOrder = PaymentOrder.CreateContactUnlock(command.TelegramUserId, command.TargetType, command.TargetId, pricing.AmountUzs);
+        var paymentOrder = PaymentOrder.CreateContactUnlock(command.TelegramUserId, command.TargetType, command.TargetId, pricing.AmountUzs, DateTime.UtcNow.Add(pricing.PendingOrderLifetime));
         await paymentOrders.AddAsync(paymentOrder, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ContactUnlockOrderDto.From(paymentOrder, false);

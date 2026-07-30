@@ -8,7 +8,7 @@ import {
   type MyCampaignApplication,
   type MyDeal
 } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, EmptyState, Icon, Modal, Textarea, Toast } from "../components/ui";
+import { Avatar, Badge, BottomNav, Button, Card, EmptyState, ErrorState, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 
 const applicationStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : status === 2 ? "gray" : "purple";
@@ -28,16 +28,18 @@ export function MyRequests() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [toast, setToast] = useState("");
 
   const load = () => {
     setLoading(true);
+    setFailed(false);
     Promise.all([getMyCampaignApplications(), getMyDeals()])
       .then(([nextRequests, nextDeals]) => {
         setRequests(nextRequests);
         setDeals(nextDeals);
       })
-      .catch((error) => setToast(error instanceof Error ? error.message : t("requests.loadFailed")))
+      .catch((error) => { setFailed(true); setToast(error instanceof Error ? error.message : t("requests.loadFailed")); })
       .finally(() => setLoading(false));
   };
 
@@ -95,7 +97,7 @@ export function MyRequests() {
         <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "deals" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("deals")} type="button">{t("requests.deals")}</button>
       </div>
 
-      {loading ? <div className="mt-5 text-center text-sm text-brand-muted">{t("requests.loading")}</div> : view === "applications" ? (
+      {loading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : failed ? <div className="mt-5"><ErrorState onRetry={load} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> : view === "applications" ? (
         !requests.length ? <div className="mt-8"><EmptyState subtitle={t("requests.emptyApplicationsSubtitle")} title={t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="mt-5 grid gap-3">
             {requests.map((request) => (

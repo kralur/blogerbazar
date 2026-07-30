@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Payments;
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Features.Payments;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -45,6 +46,55 @@ public sealed class ContactUnlockPaymentHandlerTests
     }
 
     [Fact]
+    public async Task Ignores_a_repeated_payment_delivery_without_sending_a_second_notification()
+    {
+        var order = PaymentOrder.CreateContactUnlock(101, ContactTargetType.Blogger, Guid.NewGuid(), 29000);
+        var orders = new InMemoryPaymentOrderRepository(order);
+        var unlocks = new InMemoryContactUnlockRepository();
+        var bot = new SpyTelegramBotClient();
+        var handler = new ConfirmContactUnlockPaymentHandler(orders, unlocks, new SpyUnitOfWork(), bot);
+
+        await handler.Handle(new ConfirmContactUnlockPaymentCommand(order.Reference, "telegram-charge-1", 29000, 101), CancellationToken.None);
+        await handler.Handle(new ConfirmContactUnlockPaymentCommand(order.Reference, "telegram-charge-1", 29000, 101), CancellationToken.None);
+
+        Assert.Single(unlocks.Unlocks);
+        Assert.Equal(1, bot.NotificationCount);
+    }
+
+    [Fact]
+    public async Task Treats_a_concurrent_unique_conflict_as_an_already_completed_payment()
+    {
+        var order = PaymentOrder.CreateContactUnlock(101, ContactTargetType.Blogger, Guid.NewGuid(), 29000);
+        order.MarkPaid("telegram-charge-1");
+        var completedUnlock = ContactUnlock.Create(order);
+        var orders = new ConflictPaymentOrderRepository(order);
+        var unlocks = new ConflictContactUnlockRepository(completedUnlock);
+        var bot = new SpyTelegramBotClient();
+        var handler = new ConfirmContactUnlockPaymentHandler(orders, unlocks, new ConflictUnitOfWork(), bot);
+
+        var result = await handler.Handle(new ConfirmContactUnlockPaymentCommand(order.Reference, "telegram-charge-1", 29000, 101), CancellationToken.None);
+
+        Assert.True(result.IsUnlocked);
+        Assert.Equal(1, unlocks.AddAttempts);
+        Assert.Equal(0, bot.NotificationCount);
+    }
+
+    [Fact]
+    public async Task Confirms_payment_and_unlock_inside_a_unit_of_work_transaction()
+    {
+        var order = PaymentOrder.CreateContactUnlock(101, ContactTargetType.Blogger, Guid.NewGuid(), 29000);
+        var unitOfWork = new TransactionSpyUnitOfWork();
+        var handler = new ConfirmContactUnlockPaymentHandler(
+            new InMemoryPaymentOrderRepository(order),
+            new InMemoryContactUnlockRepository(),
+            unitOfWork);
+
+        await handler.Handle(new ConfirmContactUnlockPaymentCommand(order.Reference, "telegram-charge-1", 29000, 101), CancellationToken.None);
+
+        Assert.Equal(1, unitOfWork.TransactionCount);
+    }
+
+    [Fact]
     public async Task Reuses_an_existing_pending_order_for_the_same_contact()
     {
         var target = BloggerProfile.Create(202, "Madina", "Tashkent", ["Lifestyle"]);
@@ -79,7 +129,7 @@ public sealed class ContactUnlockPaymentHandlerTests
     {
         var order = PaymentOrder.CreateContactUnlock(101, ContactTargetType.Blogger, Guid.NewGuid(), 29000);
         var gateway = new FakeTelegramPaymentGateway();
-        var handler = new CreateContactUnlockTelegramInvoiceHandler(new InMemoryPaymentOrderRepository(order), gateway);
+        var handler = new CreateContactUnlockTelegramInvoiceHandler(new InMemoryPaymentOrderRepository(order), gateway, new SpyUnitOfWork());
 
         var invoice = await handler.Handle(new CreateContactUnlockTelegramInvoiceCommand(order.Reference, 101), CancellationToken.None);
 
@@ -93,16 +143,45 @@ public sealed class ContactUnlockPaymentHandlerTests
     public async Task Rejects_checkout_for_a_different_payer()
     {
         var order = PaymentOrder.CreateContactUnlock(101, ContactTargetType.Blogger, Guid.NewGuid(), 29000);
-        var handler = new ValidateContactUnlockCheckoutHandler(new InMemoryPaymentOrderRepository(order));
+        var handler = new ValidateContactUnlockCheckoutHandler(new InMemoryPaymentOrderRepository(order), new SpyUnitOfWork());
 
         var result = await handler.Handle(new ValidateContactUnlockCheckoutCommand(order.Reference, 202, 29000), CancellationToken.None);
 
         Assert.False(result.IsApproved);
     }
 
+    [Fact]
+    public async Task Expires_an_old_order_and_creates_a_new_one()
+    {
+        var target = BloggerProfile.Create(202, "Madina", "Tashkent", ["Lifestyle"]);
+        var expired = PaymentOrder.CreateContactUnlock(101, ContactTargetType.Blogger, target.Id, 29000, DateTime.UtcNow.AddMinutes(-1));
+        var orders = new InMemoryPaymentOrderRepository(expired);
+        var handler = new CreateContactUnlockOrderHandler(
+            new InMemoryBloggerRepository(target), new InMemoryBusinessRepository(), new InMemoryContactUnlockRepository(), orders, new FixedPricing(), new SpyUnitOfWork());
+
+        var result = await handler.Handle(new CreateContactUnlockOrderCommand(101, ContactTargetType.Blogger, target.Id), CancellationToken.None);
+
+        Assert.Equal(PaymentOrderStatus.Expired, expired.Status);
+        Assert.NotEqual(expired.Reference, result.Reference);
+        Assert.Equal(PaymentOrderStatus.Pending, result.Status);
+    }
+
+    [Fact]
+    public async Task Rejects_checkout_for_an_expired_order()
+    {
+        var order = PaymentOrder.CreateContactUnlock(101, ContactTargetType.Blogger, Guid.NewGuid(), 29000, DateTime.UtcNow.AddMinutes(-1));
+        var handler = new ValidateContactUnlockCheckoutHandler(new InMemoryPaymentOrderRepository(order), new SpyUnitOfWork());
+
+        var result = await handler.Handle(new ValidateContactUnlockCheckoutCommand(order.Reference, 101, 29000), CancellationToken.None);
+
+        Assert.False(result.IsApproved);
+        Assert.Equal(PaymentOrderStatus.Expired, order.Status);
+    }
+
     private sealed class FixedPricing : IContactUnlockPricing
     {
         public int AmountUzs => 29000;
+        public TimeSpan PendingOrderLifetime => TimeSpan.FromMinutes(30);
     }
 
     private sealed class FakeTelegramPaymentGateway : ITelegramPaymentGateway
@@ -146,6 +225,9 @@ public sealed class ContactUnlockPaymentHandlerTests
         public Task<PaymentOrder?> GetByReferenceAsync(string reference, CancellationToken cancellationToken) =>
             Task.FromResult<PaymentOrder?>(Orders.SingleOrDefault(order => order.Reference == reference));
 
+        public Task<PaymentOrder?> GetByProviderTransactionIdAsync(string providerTransactionId, CancellationToken cancellationToken) =>
+            Task.FromResult<PaymentOrder?>(Orders.SingleOrDefault(order => order.ProviderTransactionId == providerTransactionId));
+
         public Task<PaymentOrder?> GetPendingContactUnlockAsync(long payerTelegramUserId, ContactTargetType targetType, Guid targetId, CancellationToken cancellationToken) =>
             Task.FromResult<PaymentOrder?>(Orders.FirstOrDefault(order =>
                 order.PayerTelegramUserId == payerTelegramUserId
@@ -172,5 +254,66 @@ public sealed class ContactUnlockPaymentHandlerTests
     private sealed class SpyUnitOfWork : IUnitOfWork
     {
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+    }
+
+    private sealed class SpyTelegramBotClient : ITelegramBotClient
+    {
+        public int NotificationCount { get; private set; }
+
+        public Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task SendNotificationAsync(long chatId, string text, CancellationToken cancellationToken)
+        {
+            NotificationCount++;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ConflictPaymentOrderRepository(PaymentOrder order) : IPaymentOrderRepository
+    {
+        private int providerTransactionLookups;
+
+        public Task<PaymentOrder?> GetByReferenceAsync(string reference, CancellationToken cancellationToken) => Task.FromResult<PaymentOrder?>(order);
+
+        public Task<PaymentOrder?> GetByProviderTransactionIdAsync(string providerTransactionId, CancellationToken cancellationToken) =>
+            Task.FromResult<PaymentOrder?>(++providerTransactionLookups == 1 ? null : order);
+
+        public Task AddAsync(PaymentOrder paymentOrder, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class ConflictContactUnlockRepository(ContactUnlock completedUnlock) : IContactUnlockRepository
+    {
+        private int lookups;
+
+        public int AddAttempts { get; private set; }
+
+        public Task AddAsync(ContactUnlock contactUnlock, CancellationToken cancellationToken)
+        {
+            AddAttempts++;
+            return Task.CompletedTask;
+        }
+
+        public Task<ContactUnlock?> GetAsync(long viewerTelegramUserId, ContactTargetType targetType, Guid targetId, CancellationToken cancellationToken) =>
+            Task.FromResult<ContactUnlock?>(++lookups == 1 ? null : completedUnlock);
+    }
+
+    private sealed class ConflictUnitOfWork : IUnitOfWork
+    {
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+
+        public Task<bool> TrySaveChangesAsync(CancellationToken cancellationToken) => Task.FromResult(false);
+    }
+
+    private sealed class TransactionSpyUnitOfWork : IUnitOfWork
+    {
+        public int TransactionCount { get; private set; }
+
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+
+        public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken)
+        {
+            TransactionCount++;
+            return await operation(cancellationToken);
+        }
     }
 }

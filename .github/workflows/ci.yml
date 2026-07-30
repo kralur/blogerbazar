@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Restore .NET dependencies
+        run: dotnet restore BloggerBazar.sln
+      - name: Build backend
+        run: dotnet build BloggerBazar.sln --configuration Release --no-restore
+      - name: Run backend tests
+        run: dotnet test BloggerBazar.sln --configuration Release --no-build --no-restore
+
+  frontend:
+    name: Frontend build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Audit translations
+        run: npm run i18n:audit
+      - name: Run frontend tests when present
+        run: npm --workspace frontend run test --if-present
+      - name: Build frontend
+        run: npm run build
+
+  docker:
+    name: Production Docker build validation
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API production image
+        run: docker build --file src/BloggerBazar.Api/Dockerfile --tag bloggerbazar-api:ci .
+      - name: Build frontend production image
+        run: docker build --file frontend/Dockerfile --build-arg VITE_API_URL="" --tag bloggerbazar-frontend:ci .

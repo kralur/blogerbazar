@@ -5,7 +5,7 @@ using MediatR;
 
 namespace BloggerBazar.Application.Features.Campaigns;
 
-public sealed record CreateCampaignCommand(long TelegramUserId, string Title, string Description, string? City, IReadOnlyCollection<string> Categories, int? BudgetFrom, int? BudgetTo, bool PublishImmediately) : IRequest<CampaignDto>;
+public sealed record CreateCampaignCommand(long TelegramUserId, string Title, string Description, string? City, IReadOnlyCollection<string> Categories, IReadOnlyCollection<string>? Requirements, int? BudgetFrom, int? BudgetTo, DateTime? Deadline, bool PublishImmediately) : IRequest<CampaignDto>;
 
 public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCommand>
 {
@@ -17,6 +17,8 @@ public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCo
         RuleFor(command => command.City).MaximumLength(80).When(command => command.City is not null);
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);
         RuleForEach(command => command.Categories).NotEmpty().MaximumLength(50);
+        RuleFor(command => command.Requirements).Must(requirements => requirements is null || requirements.Count <= 10);
+        RuleForEach(command => command.Requirements!).NotEmpty().MaximumLength(300).When(command => command.Requirements is not null);
         RuleFor(command => command.BudgetFrom).GreaterThanOrEqualTo(0).When(command => command.BudgetFrom.HasValue);
         RuleFor(command => command.BudgetTo).GreaterThanOrEqualTo(command => command.BudgetFrom!.Value).When(command => command.BudgetFrom.HasValue && command.BudgetTo.HasValue);
     }
@@ -29,7 +31,7 @@ public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses,
     {
         var business = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
             ?? throw new InvalidOperationException("Create a business profile before publishing a campaign.");
-        var campaign = Campaign.Create(business.Id, command.Title.Trim(), command.Description.Trim(), command.Categories.Select(category => category.Trim()).ToArray(), command.BudgetFrom, command.BudgetTo, command.City?.Trim());
+        var campaign = Campaign.Create(business.Id, command.Title.Trim(), command.Description.Trim(), command.Categories.Select(category => category.Trim()).ToArray(), command.Requirements?.Select(requirement => requirement.Trim()).ToArray(), command.BudgetFrom, command.BudgetTo, command.City?.Trim(), command.Deadline?.ToUniversalTime());
         if (command.PublishImmediately)
         {
             campaign.Publish();

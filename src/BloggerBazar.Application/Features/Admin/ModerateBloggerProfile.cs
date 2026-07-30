@@ -1,12 +1,15 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Security;
+using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace BloggerBazar.Application.Features.Admin;
 
-public sealed record ModerateBloggerProfileCommand(Guid BloggerId, long TelegramUserId, bool Approve) : IRequest<AdminBloggerProfileDto>;
+public sealed record ModerateBloggerProfileCommand(Guid BloggerId, long TelegramUserId, bool Approve, bool NeedsChanges = false) : IRequest<AdminBloggerProfileDto>;
 
 public sealed class ModerateBloggerProfileValidator : AbstractValidator<ModerateBloggerProfileCommand>
 {
@@ -17,7 +20,7 @@ public sealed class ModerateBloggerProfileValidator : AbstractValidator<Moderate
     }
 }
 
-public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository profiles, IAdminAccessPolicy adminAccess, IUnitOfWork unitOfWork)
+public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository profiles, IAdminAccessPolicy adminAccess, IUnitOfWork unitOfWork, ITelegramBotClient? botClient = null, ILogger<ModerateBloggerProfileHandler>? logger = null)
     : IRequestHandler<ModerateBloggerProfileCommand, AdminBloggerProfileDto>
 {
     public async Task<AdminBloggerProfileDto> Handle(ModerateBloggerProfileCommand command, CancellationToken cancellationToken)
@@ -30,7 +33,11 @@ public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository prof
             throw new InvalidOperationException("Only pending blogger profiles can be moderated.");
         }
 
-        if (command.Approve)
+        if (command.NeedsChanges)
+        {
+            profile.RequestChanges();
+        }
+        else if (command.Approve)
         {
             profile.Approve();
         }
@@ -40,6 +47,12 @@ public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository prof
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        var notification = command.NeedsChanges
+            ? "BloggerBazar: необходимо исправить несколько пунктов. После сохранения отправьте профиль ещё раз."
+            : command.Approve
+                ? "🎉 Поздравляем! Ваш профиль успешно прошёл модерацию. Теперь он доступен пользователям BloggerBazar."
+                : "BloggerBazar: анкета не прошла проверку. Исправьте замечания и отправьте снова.";
+        await BestEffortTelegramNotification.SendAsync(botClient, logger, profile.TelegramUserId, notification, cancellationToken);
         return AdminBloggerProfileDto.From(profile);
     }
 }

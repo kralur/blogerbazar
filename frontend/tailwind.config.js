@@ -33,6 +33,15 @@ export default {
         "brand-gradient": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
         "premium-gradient": "linear-gradient(135deg, #7C3AED 0%, #2563EB 55%, #06B6D4 100%)",
         "soft-radial": "radial-gradient(circle at 20% 10%, rgba(37,99,235,.16), transparent 34%), radial-gradient(circle at 85% 0%, rgba(6,182,212,.14), transparent 28%)"
+      },
+      keyframes: {
+        "screen-in": {
+          "0%": { opacity: "0", transform: "translateY(6px) scale(.995)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" }
+        }
+      },
+      animation: {
+        "screen-in": "screen-in 240ms cubic-bezier(.2,.8,.2,1) both"
       }
     }
   },

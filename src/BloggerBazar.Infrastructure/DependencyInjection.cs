@@ -33,6 +33,9 @@ public static class DependencyInjection
         services.AddScoped<ICollaborationRequestRepository, CollaborationRequestRepository>();
         services.AddScoped<ICreditAccountRepository, CreditAccountRepository>();
         services.AddScoped<ISocialPlatformRepository, SocialPlatformRepository>();
+        services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IBrandFaceProfileRepository, BrandFaceProfileRepository>();
         services.AddSingleton<IContactUnlockPricing, ContactUnlockPricing>();
         services.Configure<ClickTelegramPaymentOptions>(configuration.GetSection(ClickTelegramPaymentOptions.SectionName));
         services.AddSingleton<ICatalogCache, DistributedCatalogCache>();
@@ -51,7 +54,8 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.telegram.org/");
             client.Timeout = TimeSpan.FromSeconds(5);
         });
-        services.AddSingleton<IAdminAccessPolicy, ConfiguredAdminAccessPolicy>();
+        services.AddScoped<IAdminAccessPolicy, ConfiguredAdminAccessPolicy>();
+        services.AddScoped<IPlatformUserAccessPolicy, PlatformUserAccessPolicy>();
 
         var redisConnection = configuration.GetConnectionString("Redis");
         if (string.IsNullOrWhiteSpace(redisConnection))

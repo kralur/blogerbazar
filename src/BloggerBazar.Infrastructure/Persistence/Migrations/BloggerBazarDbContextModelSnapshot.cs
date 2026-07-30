@@ -22,6 +22,46 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("BloggerBazar.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<long>("ActorTelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("TargetId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorTelegramUserId", "CreatedAtUtc");
+
+                    b.HasIndex("TargetType", "TargetId", "CreatedAtUtc");
+
+                    b.ToTable("audit_logs", (string)null);
+                });
+
             modelBuilder.Entity("BloggerBazar.Domain.Entities.BloggerProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -151,6 +191,86 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.ToTable("blogger_profiles", (string)null);
                 });
 
+            modelBuilder.Entity("BloggerBazar.Domain.Entities.BrandFaceProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Age")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.PrimitiveCollection<string[]>("Categories")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<int?>("CollaborationPrice")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Experience")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Instagram")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<bool>("IsPromoted")
+                        .HasColumnType("boolean");
+
+                    b.PrimitiveCollection<string[]>("Languages")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("PortfolioUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("Telegram")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<long>("TelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TelegramUserId")
+                        .IsUnique();
+
+                    b.HasIndex("City", "IsPromoted");
+
+                    b.ToTable("brand_face_profiles", (string)null);
+                });
+
             modelBuilder.Entity("BloggerBazar.Domain.Entities.BusinessProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -179,6 +299,9 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
 
+                    b.Property<int>("ModerationStatus")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -199,7 +322,13 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("WebsiteUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ModerationStatus");
 
                     b.HasIndex("TelegramUserId")
                         .IsUnique();
@@ -233,6 +362,9 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(3000)
@@ -240,6 +372,10 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("IsPromoted")
                         .HasColumnType("boolean");
+
+                    b.PrimitiveCollection<string[]>("Requirements")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -465,6 +601,9 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("PaidAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -503,12 +642,66 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PayerTelegramUserId", "Status");
 
+                    b.HasIndex("Status", "ExpiresAtUtc");
+
                     b.HasIndex("PayerTelegramUserId", "TargetType", "TargetId")
                         .IsUnique()
                         .HasDatabaseName("IX_payment_orders_pending_contact_unlock")
                         .HasFilter("\"Status\" = 0");
 
                     b.ToTable("payment_orders", (string)null);
+                });
+
+            modelBuilder.Entity("BloggerBazar.Domain.Entities.PlatformUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("DeletedByTelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<bool>("IsBlocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SelectedMarketplaceRole")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("TelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Username")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TelegramUserId")
+                        .IsUnique();
+
+                    b.HasIndex("Role", "IsBlocked", "IsDeleted");
+
+                    b.ToTable("platform_users", (string)null);
                 });
 
             modelBuilder.Entity("BloggerBazar.Domain.Entities.PortfolioItem", b =>

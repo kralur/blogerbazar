@@ -8,20 +8,22 @@ namespace BloggerBazar.Application.Tests.Features.Payments;
 public sealed class GetUnlockedContactHandlerTests
 {
     [Fact]
-    public async Task Rejects_viewer_without_unlock()
+    public async Task Returns_contact_to_any_authenticated_marketplace_user()
     {
         var target = CreateBlogger();
-        var handler = new GetUnlockedContactHandler(new InMemoryBloggerRepository(target), new InMemoryBusinessRepository(), new InMemoryContactUnlockRepository());
+        var handler = new GetUnlockedContactHandler(new InMemoryBloggerRepository(target), new InMemoryBusinessRepository());
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            handler.Handle(new GetUnlockedContactQuery(101, ContactTargetType.Blogger, target.Id), CancellationToken.None));
+        var result = await handler.Handle(new GetUnlockedContactQuery(101, ContactTargetType.Blogger, target.Id), CancellationToken.None);
+
+        Assert.Equal("+998901234567", result.Phone);
+        Assert.Equal("madina@example.com", result.Email);
     }
 
     [Fact]
     public async Task Returns_contact_to_profile_owner()
     {
         var target = CreateBlogger();
-        var handler = new GetUnlockedContactHandler(new InMemoryBloggerRepository(target), new InMemoryBusinessRepository(), new InMemoryContactUnlockRepository());
+        var handler = new GetUnlockedContactHandler(new InMemoryBloggerRepository(target), new InMemoryBusinessRepository());
 
         var result = await handler.Handle(new GetUnlockedContactQuery(202, ContactTargetType.Blogger, target.Id), CancellationToken.None);
 
@@ -49,11 +51,5 @@ public sealed class GetUnlockedContactHandlerTests
         public Task AddAsync(BusinessProfile profile, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<BusinessProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<BusinessProfile?>(null);
         public Task<BusinessProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult<BusinessProfile?>(null);
-    }
-
-    private sealed class InMemoryContactUnlockRepository : IContactUnlockRepository
-    {
-        public Task AddAsync(ContactUnlock contactUnlock, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task<ContactUnlock?> GetAsync(long viewerTelegramUserId, ContactTargetType targetType, Guid targetId, CancellationToken cancellationToken) => Task.FromResult<ContactUnlock?>(null);
     }
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using BloggerBazar.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BloggerBazar.Api.Middleware;
@@ -25,6 +26,11 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
             await WriteProblemAsync(context, StatusCodes.Status409Conflict, exception.Message, null);
             logger.LogInformation(exception, "Business rule conflict on {Path}", context.Request.Path);
         }
+        catch (PaymentProviderUnavailableException exception)
+        {
+            await WriteProblemAsync(context, StatusCodes.Status503ServiceUnavailable, "Payment provider is temporarily unavailable.", null, "payment_provider_unavailable");
+            logger.LogWarning(exception, "Payment provider unavailable for {Path}", context.Request.Path);
+        }
         catch (Exception exception)
         {
             logger.LogError(exception, "Unhandled exception on {Path}", context.Request.Path);
@@ -32,7 +38,7 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
         }
     }
 
-    private static Task WriteProblemAsync(HttpContext context, int statusCode, string title, object? errors)
+    private static Task WriteProblemAsync(HttpContext context, int statusCode, string title, object? errors, string? code = null)
     {
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json";
@@ -40,7 +46,7 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
         {
             Status = statusCode,
             Title = title,
-            Extensions = { ["errors"] = errors }
+            Extensions = { ["errors"] = errors, ["code"] = code }
         });
     }
 }

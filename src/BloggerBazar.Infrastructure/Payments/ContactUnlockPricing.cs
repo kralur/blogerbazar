@@ -7,4 +7,8 @@ internal sealed class ContactUnlockPricing(IConfiguration configuration) : ICont
 {
     public int AmountUzs { get; } = configuration.GetValue<int?>("Payments:ContactUnlockAmountUzs")
         ?? throw new InvalidOperationException("Payments:ContactUnlockAmountUzs must be configured.");
+
+    public TimeSpan PendingOrderLifetime { get; } = TimeSpan.FromMinutes(
+        configuration.GetValue<int?>("Payments:ContactUnlockExpiresInMinutes")
+        ?? throw new InvalidOperationException("Payments:ContactUnlockExpiresInMinutes must be configured."));
 }

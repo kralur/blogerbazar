@@ -10,6 +10,9 @@ internal sealed class PaymentOrderRepository(BloggerBazarDbContext dbContext) : 
     public Task<PaymentOrder?> GetByReferenceAsync(string reference, CancellationToken cancellationToken) =>
         dbContext.PaymentOrders.SingleOrDefaultAsync(order => order.Reference == reference, cancellationToken);
 
+    public Task<PaymentOrder?> GetByProviderTransactionIdAsync(string providerTransactionId, CancellationToken cancellationToken) =>
+        dbContext.PaymentOrders.SingleOrDefaultAsync(order => order.ProviderTransactionId == providerTransactionId, cancellationToken);
+
     public Task<PaymentOrder?> GetPendingContactUnlockAsync(long payerTelegramUserId, ContactTargetType targetType, Guid targetId, CancellationToken cancellationToken) =>
         dbContext.PaymentOrders.OrderByDescending(order => order.CreatedAtUtc).FirstOrDefaultAsync(
             order => order.PayerTelegramUserId == payerTelegramUserId

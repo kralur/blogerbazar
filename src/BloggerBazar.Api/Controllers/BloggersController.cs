@@ -25,12 +25,23 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     [HttpGet]
     [ProducesResponseType<SearchBloggersResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<SearchBloggersResponse>> Search(
+        [FromQuery] string? query,
         [FromQuery] string? city,
         [FromQuery] string? category,
+        [FromQuery] string? platform,
+        [FromQuery] int? minFollowers,
+        [FromQuery] int? minEr,
+        [FromQuery] int? maxEr,
+        [FromQuery] int? minPrice,
+        [FromQuery] int? maxPrice,
+        [FromQuery] string? sort,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
-        CancellationToken cancellationToken = default) =>
-        Ok(new SearchBloggersResponse(await sender.Send(new SearchBloggersQuery(city, category, page, pageSize), cancellationToken)));
+        CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new SearchBloggersQuery(query, city, category, platform, minFollowers, minEr, maxEr, minPrice, maxPrice, sort, page, pageSize), cancellationToken);
+        return Ok(SearchBloggersResponse.From(result));
+    }
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<BloggerProfileDto>(StatusCodes.Status200OK)]

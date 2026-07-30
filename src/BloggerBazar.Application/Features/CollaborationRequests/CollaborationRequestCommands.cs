@@ -1,8 +1,11 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace BloggerBazar.Application.Features.CollaborationRequests;
 
@@ -22,7 +25,9 @@ public sealed class CreateCollaborationRequestHandler(
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
     ICollaborationRequestRepository requests,
-    IUnitOfWork unitOfWork) : IRequestHandler<CreateCollaborationRequestCommand, CollaborationRequestDto>
+    IUnitOfWork unitOfWork,
+    ITelegramBotClient? botClient = null,
+    ILogger<CreateCollaborationRequestHandler>? logger = null) : IRequestHandler<CreateCollaborationRequestCommand, CollaborationRequestDto>
 {
     public async Task<CollaborationRequestDto> Handle(CreateCollaborationRequestCommand command, CancellationToken cancellationToken)
     {
@@ -38,6 +43,7 @@ public sealed class CreateCollaborationRequestHandler(
         var request = CollaborationRequest.Create(blogger.Id, business.Id, command.Message.Trim());
         await requests.AddAsync(request, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, $"BloggerBazar: {business.Name} отправил(а) вам предложение о сотрудничестве.", cancellationToken);
         return CollaborationRequestDto.From(request, blogger.Name, business.Name);
     }
 }

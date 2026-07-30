@@ -15,7 +15,9 @@ public sealed class TelegramOptions
     public string BotUsername { get; init; } = string.Empty;
     public string MiniAppUrl { get; init; } = string.Empty;
     public string WebhookSecret { get; init; } = string.Empty;
+    public int WebhookMaxBodyBytes { get; init; } = 65_536;
     public int MaxInitDataAgeSeconds { get; init; } = 3600;
+    public int MaxInitDataClockSkewSeconds { get; init; } = 60;
 }
 
 internal sealed class TelegramWebAppValidator(IOptions<TelegramOptions> options) : ITelegramWebAppValidator
@@ -49,8 +51,15 @@ internal sealed class TelegramWebAppValidator(IOptions<TelegramOptions> options)
             throw new UnauthorizedAccessException("Telegram initData signature is invalid.");
         }
 
-        if (!values.TryGetValue("auth_date", out var authDate) || !long.TryParse(authDate, out var unixSeconds) ||
-            DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeSeconds(unixSeconds) > TimeSpan.FromSeconds(settings.MaxInitDataAgeSeconds))
+        if (!values.TryGetValue("auth_date", out var authDate) || !long.TryParse(authDate, out var unixSeconds))
+        {
+            throw new UnauthorizedAccessException("Telegram initData has expired.");
+        }
+
+        var authenticatedAt = DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
+        var now = DateTimeOffset.UtcNow;
+        if (authenticatedAt > now.AddSeconds(settings.MaxInitDataClockSkewSeconds)
+            || now - authenticatedAt > TimeSpan.FromSeconds(settings.MaxInitDataAgeSeconds))
         {
             throw new UnauthorizedAccessException("Telegram initData has expired.");
         }

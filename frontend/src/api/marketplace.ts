@@ -72,9 +72,13 @@ type ApiCampaign = {
   description: string;
   city?: string | null;
   categories: string[];
+  requirements: string[];
   budgetFrom?: number | null;
   budgetTo?: number | null;
+  deadline?: string | null;
   isPromoted: boolean;
+  status: number;
+  applicationsCount: number;
   createdAtUtc: string;
 };
 
@@ -90,6 +94,56 @@ export type ContactUnlockOrder = {
 export type TelegramInvoiceLink = { reference: string; invoiceLink: string };
 
 export type ContactDetails = { phone?: string | null; email?: string | null };
+export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number };
+export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; createdAtUtc: string };
+export type AdminAuditLog = { id: string; actorTelegramUserId: number; action: string; targetType: string; targetId: string; details?: string | null; createdAtUtc: string };
+export type MarketplaceRole = "Blogger" | "BrandFace" | "Business";
+export type CurrentPlatformUser = {
+  telegramUserId: number;
+  firstName: string;
+  username?: string | null;
+  role: number;
+  selectedMarketplaceRole?: MarketplaceRole | null;
+  isBlocked: boolean;
+};
+export type MyBrandFaceProfile = {
+  id: string;
+  name: string;
+  city: string;
+  age?: number | null;
+  gender?: string | null;
+  languages: string[];
+  categories: string[];
+  experience?: string | null;
+  instagram?: string | null;
+  telegram?: string | null;
+  portfolioUrl?: string | null;
+  collaborationPrice?: number | null;
+  description?: string | null;
+  avatarUrl?: string | null;
+  isPromoted: boolean;
+};
+export type MarketplaceBusiness = {
+  id: string;
+  name: string;
+  city?: string | null;
+  logoUrl?: string | null;
+  campaignsCount: number;
+  completedDealsCount: number;
+  rating?: number | null;
+};
+export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean };
+export type BrandFaceDetails = BrandFaceCard;
+export type MarketplaceHome = {
+  promotedBloggers: ApiBlogger[];
+  promotedCampaigns: ApiCampaign[];
+  topRatedBloggers: ApiBlogger[];
+  newBloggers: ApiBlogger[];
+  newBrandFaces: BrandFaceCard[];
+  popularBusinesses: MarketplaceBusiness[];
+  categories: string[];
+  statistics: { approvedBloggers: number; companies: number; activeCampaigns: number; completedDeals: number; averageRating?: number | null };
+};
 export type BloggerReview = { id: string; rating: number; comment?: string | null; reviewerName?: string | null; createdAtUtc: string };
 export type MyBusinessProfile = {
   id: string;
@@ -97,10 +151,12 @@ export type MyBusinessProfile = {
   username?: string | null;
   city?: string | null;
   logoUrl?: string | null;
+  websiteUrl?: string | null;
   description?: string | null;
   phone?: string | null;
   email?: string | null;
   isVerified: boolean;
+  moderationStatus: number;
 };
 export type MyBloggerProfile = {
   id: string;
@@ -121,7 +177,19 @@ export type MyBloggerProfile = {
   postPrice?: number | null;
   integrationPrice?: number | null;
   barterEnabled: boolean;
+  status: number;
   portfolioItems: Array<{ id: string; title: string; type: number; url: string }>;
+};
+
+export type BusinessProfileInput = {
+  name: string;
+  username?: string;
+  city?: string;
+  logoUrl?: string;
+  websiteUrl?: string;
+  description?: string;
+  phone?: string;
+  email?: string;
 };
 
 export type BloggerProfileInput = {
@@ -159,6 +227,9 @@ const asBloggerCard = (blogger: ApiBlogger): BloggerCardData => ({
   verified: blogger.isVerified,
   averageReach: blogger.averageReach,
   engagementRate: blogger.engagementRate,
+  storiesPrice: blogger.storiesPrice,
+  reelsPrice: blogger.reelsPrice,
+  platform: blogger.platforms?.[0]?.type,
   isPromoted: blogger.isPromoted
 });
 
@@ -191,6 +262,10 @@ const asCampaignCard = (campaign: ApiCampaign): CampaignCardData => ({
   budgetFrom: campaign.budgetFrom,
   budgetTo: campaign.budgetTo,
   isPromoted: campaign.isPromoted,
+  status: campaign.status,
+  requirements: campaign.requirements,
+  deadline: campaign.deadline,
+  applicationsCount: campaign.applicationsCount,
   business: { name: campaign.businessName }
 });
 
@@ -207,17 +282,37 @@ const asCampaignDetails = (campaign: ApiCampaign): CampaignDetails => ({
   businessId: campaign.businessId,
   company: campaign.businessName,
   logo: initials(campaign.businessName),
-  city: campaign.city ?? "Узбекистан",
+  city: campaign.city ?? "uzbekistan",
   budgetFrom: campaign.budgetFrom ?? 0,
   budgetTo: campaign.budgetTo ?? 0,
   date: new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(new Date(campaign.createdAtUtc)),
-  applicants: 0,
-  requirements: campaign.categories.length ? campaign.categories.map((category) => `Категория: ${category}`) : ["Обсудите детали с бизнесом"]
+  applicants: campaign.applicationsCount,
+  requirements: campaign.requirements
 });
 
-export async function getBloggers(): Promise<BloggerCardData[]> {
-  const response = await api<{ bloggers: ApiBlogger[] }>("/api/bloggers?pageSize=3");
-  return response.bloggers.map(asBloggerCard);
+export type BloggerSearchFilters = { query?: string; city?: string; category?: string; platform?: string; minFollowers?: number; minEr?: number; maxEr?: number; minPrice?: number; maxPrice?: number; sort?: "popular" | "rating" | "er" | "price" | "newest"; page?: number; pageSize?: number };
+export type BloggerSearchResult = { bloggers: BloggerCardData[]; total: number; page: number; pageSize: number };
+
+export async function getBloggers(filters: BloggerSearchFilters = {}): Promise<BloggerSearchResult> {
+  const params = new URLSearchParams();
+  Object.entries({ ...filters, page: filters.page ?? 1, pageSize: filters.pageSize ?? 20 }).forEach(([key, value]) => { if (value !== undefined && value !== "") params.set(key, String(value)); });
+  const response = await api<{ bloggers: ApiBlogger[]; total: number; page: number; pageSize: number }>(`/api/bloggers?${params.toString()}`);
+  return { ...response, bloggers: response.bloggers.map(asBloggerCard) };
+}
+
+export async function getMarketplaceHome() {
+  const home = await api<MarketplaceHome>("/api/marketplace/home");
+  return {
+    ...home,
+    promotedBloggers: home.promotedBloggers.map(asBloggerCard),
+    promotedCampaigns: home.promotedCampaigns.map(asCampaignCard),
+    topRatedBloggers: home.topRatedBloggers.map(asBloggerCard),
+    newBloggers: home.newBloggers.map(asBloggerCard)
+  };
+}
+
+export async function getCategories() {
+  return api<string[]>("/api/marketplace/taxonomy/categories");
 }
 
 export async function getBlogger(id: string): Promise<BloggerDetails> {
@@ -301,15 +396,47 @@ export async function getUnlockedContact(targetType: "Blogger" | "Business", tar
   return api<ContactDetails>(`/api/contacts/${targetType}/${targetId}`);
 }
 
-export async function createBusinessProfile(input: {
-  name: string;
-  username?: string;
-  city?: string;
-  logoUrl?: string;
-  description?: string;
-  phone?: string;
-  email?: string;
-}) {
+export async function getCurrentPlatformUser() {
+  return api<CurrentPlatformUser>("/api/users/me");
+}
+
+export async function getAdminDashboard() {
+  return api<AdminDashboard>("/api/admin/dashboard");
+}
+
+export async function getAdminUsers() {
+  return api<AdminPlatformUser[]>("/api/admin/users");
+}
+
+export async function getAdminAuditLogs() {
+  return api<AdminAuditLog[]>("/api/admin/audit-logs");
+}
+
+export async function updateAdminUserRole(telegramUserId: number, role: number) {
+  return api<AdminPlatformUser>("/api/admin/users/" + telegramUserId + "/role", { method: "PATCH", body: JSON.stringify({ role }) });
+}
+
+export async function setAdminUserBlocked(telegramUserId: number, isBlocked: boolean) {
+  return api<AdminPlatformUser>("/api/admin/users/" + telegramUserId + "/blocked", { method: "PATCH", body: JSON.stringify({ isBlocked }) });
+}
+
+export async function selectMarketplaceRole(role: MarketplaceRole) {
+  return api<CurrentPlatformUser>("/api/users/me/selected-role", { method: "PUT", body: JSON.stringify({ role }) });
+}
+
+export async function getMyBrandFaceProfile() {
+  return api<MyBrandFaceProfile>("/api/brand-faces/me");
+}
+
+export async function getBrandFace(id: string) {
+  return api<BrandFaceDetails>(`/api/brand-faces/${id}`);
+}
+
+export async function upsertBrandFaceProfile(input: Omit<MyBrandFaceProfile, "id" | "isPromoted">) {
+  return api<MyBrandFaceProfile>("/api/brand-faces/me", { method: "PUT", body: JSON.stringify(input) });
+}
+
+export async function createBusinessProfile(input: BusinessProfileInput) {
   return api("/api/businesses", { method: "POST", body: JSON.stringify(input) });
 }
 
@@ -329,15 +456,7 @@ export async function updateBloggerProfile(input: BloggerProfileInput) {
   return api("/api/bloggers/me", { method: "PUT", body: JSON.stringify(input) });
 }
 
-export async function updateBusinessProfile(input: {
-  name: string;
-  username?: string;
-  city?: string;
-  logoUrl?: string;
-  description?: string;
-  phone?: string;
-  email?: string;
-}) {
+export async function updateBusinessProfile(input: BusinessProfileInput) {
   return api("/api/businesses/me", { method: "PUT", body: JSON.stringify(input) });
 }
 
@@ -346,11 +465,21 @@ export async function createCampaign(input: {
   description: string;
   city?: string;
   categories: string[];
+  requirements?: string[];
   budgetFrom?: number;
   budgetTo?: number;
+  deadline?: string;
   publishImmediately: boolean;
 }) {
   return api("/api/campaigns", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function updateCampaign(id: string, input: Parameters<typeof createCampaign>[0]) {
+  return api(`/api/campaigns/${id}`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export async function closeCampaign(id: string) {
+  return api(`/api/campaigns/${id}/close`, { method: "POST" });
 }
 
 export type PendingBloggerProfile = {
@@ -364,10 +493,33 @@ export type PendingBloggerProfile = {
   createdAtUtc: string;
 };
 
+export type PendingBusinessProfile = {
+  id: string;
+  name: string;
+  username?: string | null;
+  city?: string | null;
+  logoUrl?: string | null;
+  description?: string | null;
+  moderationStatus: number;
+  createdAtUtc: string;
+};
+
 export async function getPendingBloggerProfiles() {
   return api<PendingBloggerProfile[]>("/api/admin/bloggers/pending");
 }
 
 export async function moderateBloggerProfile(id: string, decision: "approve" | "reject") {
   return api<PendingBloggerProfile>(`/api/admin/bloggers/${id}/${decision}`, { method: "POST" });
+}
+
+export async function requestBloggerChanges(id: string) {
+  return api<PendingBloggerProfile>(`/api/admin/bloggers/${id}/needs-changes`, { method: "POST" });
+}
+
+export async function getPendingBusinessProfiles() {
+  return api<PendingBusinessProfile[]>("/api/admin/businesses/pending");
+}
+
+export async function moderateBusinessProfile(id: string, decision: "approve" | "reject" | "needs-changes") {
+  return api<PendingBusinessProfile>(`/api/admin/businesses/${id}/${decision}`, { method: "POST" });
 }
