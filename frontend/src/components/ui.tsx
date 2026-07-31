@@ -7,7 +7,7 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function Icon({ name, className }: { name: string; className?: string }) {
+export function Icon({ name, className, filled = false }: { name: string; className?: string; filled?: boolean }) {
   const common = "h-5 w-5";
   const icons: Record<string, ReactNode> = {
     search: (
@@ -21,6 +21,10 @@ export function Icon({ name, className }: { name: string; className?: string }) 
     check: <path d="m20 6-11 11-5-5" />,
     send: <path d="m22 2-7 20-4-9-9-4 20-7Z" />,
     filter: <path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M2 14h4m4-6h4m4 8h4" />,
+    phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.64a2 2 0 0 1-.45 2.11L8.01 9.74a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.86.29 1.74.5 2.64.62A2 2 0 0 1 22 16.92Z" />,
+    mail: <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm18 3-10 6L2 7" />,
+    link: <path d="M10 13a5 5 0 0 0 7.07.07l2-2a5 5 0 0 0-7.07-7.07l-1.15 1.15M14 11a5 5 0 0 0-7.07-.07l-2 2A5 5 0 0 0 12 20l1.15-1.15" />,
+    copy: <path d="M8 8h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Zm-4 8H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1" />,
     bookmark: <path d="M19 21 12 17 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16Z" />,
     heart: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />,
     chart: <path d="M3 3v18h18M7 15l4-4 3 3 5-7" />,
@@ -37,7 +41,7 @@ export function Icon({ name, className }: { name: string; className?: string }) 
   return (
     <svg
       className={cn(common, className)}
-      fill="none"
+      fill={filled ? "currentColor" : "none"}
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -181,11 +185,13 @@ export function Price({ value, className }: { value?: number | null; className?:
 }
 
 export function Avatar({ src, name, size = "md", verified = false }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => setImageFailed(false), [src]);
   const sizes = { sm: "h-12 w-12", md: "h-16 w-16", lg: "h-24 w-24", xl: "h-32 w-32" };
   return (
     <div className="relative shrink-0">
       <div className={cn("overflow-hidden rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 ring-4 ring-white", sizes[size])}>
-        {src ? <img alt={name} className="h-full w-full object-cover" src={src} /> : <div className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
+        {src && !imageFailed ? <img alt={name} className="h-full w-full object-cover" onError={() => setImageFailed(true)} src={src} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
       </div>
       {verified && (
         <span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white shadow-glow ring-4 ring-white">

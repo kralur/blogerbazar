@@ -9,9 +9,9 @@ export const formatDate = (value?: string | Date | null) => value ? new Intl.Dat
 export const normalizeNumericInput = (value: string) => Number(value.replace(/[^\d]/g, "")) || 0;
 export const formatNumericInput = (value: string) => value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 export const formatPhoneInput = (value: string) => {
-  const digits = value.replace(/\D/g, "").replace(/^8/, "998").slice(0, 12);
-  const local = digits.startsWith("998") ? digits.slice(3) : digits;
+  const digits = value.replace(/\D/g, "");
+  const local = (digits.startsWith("998") ? digits.slice(3) : digits).slice(0, 9);
   const groups = [local.slice(0, 2), local.slice(2, 5), local.slice(5, 7), local.slice(7, 9)].filter(Boolean);
-  return groups.length ? `+998 ${groups.join(" ")}` : "";
+  return groups.length ? `+998 ${groups.join(" ")}` : "+998";
 };
 import { currentLanguage, translate } from "../i18n";

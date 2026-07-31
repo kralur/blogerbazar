@@ -20,7 +20,8 @@ public sealed class SearchCampaignsHandler(IMarketplaceCatalogReadModel catalog,
 {
     public async Task<IReadOnlyList<CampaignDto>> Handle(SearchCampaignsQuery query, CancellationToken cancellationToken)
     {
-        var key = $"catalog:campaigns:{query.City?.Trim().ToLowerInvariant() ?? "all"}:{query.Category?.Trim().ToLowerInvariant() ?? "all"}:{query.Page}:{query.PageSize}";
+        var namespaceVersion = await cache.GetNamespaceVersionAsync(cancellationToken);
+        var key = $"catalog:{namespaceVersion}:campaigns:{query.City?.Trim().ToLowerInvariant() ?? "all"}:{query.Category?.Trim().ToLowerInvariant() ?? "all"}:{query.Page}:{query.PageSize}";
         var cached = await cache.GetAsync<List<CampaignDto>>(key, cancellationToken);
         if (cached is not null)
         {

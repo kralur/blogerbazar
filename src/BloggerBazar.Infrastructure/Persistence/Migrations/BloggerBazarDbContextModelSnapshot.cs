@@ -13,6 +13,8 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
     [DbContext(typeof(BloggerBazarDbContext))]
     partial class BloggerBazarDbContextModelSnapshot : ModelSnapshot
     {
+        internal void BuildMigrationTargetModel(ModelBuilder modelBuilder) => BuildModel(modelBuilder);
+
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
@@ -43,6 +45,10 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.Property<string>("Details")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("TargetId")
                         .IsRequired()
@@ -120,6 +126,12 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsPromoted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("IsVerified")
                         .HasColumnType("boolean");
 
@@ -195,6 +207,8 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("IsPromoted");
 
+                    b.HasIndex("IsDeleted");
+
                     b.HasIndex("Name")
                         .HasDatabaseName("IX_blogger_profiles_name_trgm");
 
@@ -203,6 +217,8 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TelegramUserId")
                         .IsUnique();
+
+                    b.HasIndex("IsDeleted");
 
                     b.HasIndex("Status", "City");
 
@@ -256,6 +272,12 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsPromoted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.PrimitiveCollection<string[]>("Languages")
                         .IsRequired()
                         .HasColumnType("text[]");
@@ -301,6 +323,8 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.HasIndex("TelegramUserId")
                         .IsUnique();
 
+                    b.HasIndex("IsDeleted");
+
                     b.HasIndex("City", "IsPromoted");
 
                     b.ToTable("brand_face_profiles", (string)null);
@@ -329,6 +353,12 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("IsVerified")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LogoUrl")
                         .HasMaxLength(2048)
@@ -364,6 +394,8 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ModerationStatus");
+
+                    b.HasIndex("IsDeleted");
 
                     b.HasIndex("TelegramUserId")
                         .IsUnique();
@@ -687,6 +719,33 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.ToTable("payment_orders", (string)null);
                 });
 
+            modelBuilder.Entity("BloggerBazar.Domain.Entities.Favorite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BloggerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PlatformUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BloggerId");
+
+                    b.HasIndex("PlatformUserId", "BloggerId")
+                        .IsUnique();
+
+                    b.HasIndex("PlatformUserId", "CreatedAtUtc");
+
+                    b.ToTable("favorites", (string)null);
+                });
+
             modelBuilder.Entity("BloggerBazar.Domain.Entities.PlatformUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -953,6 +1012,21 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.Navigation("CampaignApplication");
 
                     b.Navigation("CollaborationRequest");
+                });
+
+            modelBuilder.Entity("BloggerBazar.Domain.Entities.Favorite", b =>
+                {
+                    b.HasOne("BloggerBazar.Domain.Entities.BloggerProfile", null)
+                        .WithMany()
+                        .HasForeignKey("BloggerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BloggerBazar.Domain.Entities.PlatformUser", null)
+                        .WithMany()
+                        .HasForeignKey("PlatformUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("BloggerBazar.Domain.Entities.PortfolioItem", b =>

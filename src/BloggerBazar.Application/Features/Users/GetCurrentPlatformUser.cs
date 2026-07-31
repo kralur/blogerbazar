@@ -39,7 +39,19 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
         }
         else
         {
-            user.SyncTelegramIdentity(command.FirstName.Trim(), NormalizeUsername(command.Username));
+            if (user.IsBlocked)
+            {
+                throw new UnauthorizedAccessException("This Telegram account is not allowed to access the marketplace.");
+            }
+
+            if (user.IsDeleted)
+            {
+                user.RestoreForNewOnboarding(command.FirstName.Trim(), NormalizeUsername(command.Username));
+            }
+            else
+            {
+                user.SyncTelegramIdentity(command.FirstName.Trim(), NormalizeUsername(command.Username));
+            }
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

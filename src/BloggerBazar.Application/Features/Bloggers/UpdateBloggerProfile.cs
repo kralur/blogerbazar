@@ -1,6 +1,7 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
+using BloggerBazar.Application.Validation;
 using FluentValidation;
 using MediatR;
 
@@ -27,13 +28,13 @@ public sealed class UpdateBloggerProfileValidator : AbstractValidator<UpdateBlog
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(100);
-        RuleFor(command => command.Username).NotEmpty().Matches("^@[A-Za-z0-9_]{5,32}$");
+        RuleFor(command => command.Username).NotEmpty().Must(ContactValidation.IsTelegramUsername);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80);
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);
         RuleForEach(command => command.Categories).NotEmpty().MaximumLength(50);
         RuleFor(command => command.Bio).MaximumLength(500).When(command => command.Bio is not null);
-        RuleFor(command => command.AvatarUrl).Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _)).When(command => command.AvatarUrl is not null);
-        RuleFor(command => command.Phone).NotEmpty().Matches("^\\+?[0-9\\s]{7,20}$");
+        RuleFor(command => command.AvatarUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.AvatarUrl is not null);
+        RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsUzbekPhone);
         RuleFor(command => command.Email).EmailAddress().MaximumLength(254).When(command => command.Email is not null);
         RuleFor(command => command.TotalFollowers).GreaterThan(0);
         RuleFor(command => command.AverageReach).NotNull().GreaterThan(0);
@@ -47,7 +48,12 @@ public sealed class UpdateBloggerProfileValidator : AbstractValidator<UpdateBlog
         {
             item.RuleFor(value => value.Title).NotEmpty().MaximumLength(120);
             item.RuleFor(value => value.Type).IsInEnum();
-            item.RuleFor(value => value.Url).Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _));
+            item.RuleFor(value => value.Url).Must(ContactValidation.IsHttpsUrl);
+        });
+        RuleForEach(command => command.Platforms!).ChildRules(item =>
+        {
+            item.RuleFor(value => value.Type).NotEmpty();
+            item.RuleFor(value => value).Must(value => ContactValidation.IsSupportedPlatform(value.Type, value.Url));
         });
     }
 }

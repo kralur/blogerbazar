@@ -46,12 +46,32 @@
 
 @layer components {
   .app-shell {
-    @apply mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-brand-bg pb-28 text-brand-ink shadow-soft;
+    @apply mx-auto min-h-[100dvh] w-full max-w-[430px] overflow-x-hidden bg-brand-bg pb-28 text-brand-ink shadow-soft;
   }
 
+  .app-shell--first-run { padding-bottom: 0; }
+
   .screen {
-    @apply min-h-screen px-4 pb-36 pt-5;
+    @apply min-h-[100dvh] px-4 pb-36 pt-5;
     animation: screen-in 240ms cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  .first-run-screen {
+    min-height: 100dvh;
+    display: flex;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+    animation: screen-in 240ms cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  .first-run-screen__hero {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
 
   .glass-card {
@@ -171,7 +191,7 @@
   }
 
   .splash-screen {
-    min-height: 100vh;
+    min-height: 100dvh;
     display: grid;
     place-content: center;
     justify-items: center;

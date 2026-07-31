@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, type MarketplaceRole } from "./api/marketplace";
 import { LoadingState } from "./components/ui";
 import { useTelegram } from "./telegram/TelegramProvider";
+import { FavoritesProvider } from "./features/favorites/FavoritesProvider";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
@@ -23,6 +24,7 @@ const OnboardingSuccess = lazy(async () => ({ default: (await import("./pages/On
 const ProfileDashboard = lazy(async () => ({ default: (await import("./pages/ProfileDashboard")).ProfileDashboard }));
 const TelegramAuthorization = lazy(async () => ({ default: (await import("./pages/TelegramAuthorization")).TelegramAuthorization }));
 const Welcome = lazy(async () => ({ default: (await import("./pages/Welcome")).Welcome }));
+const Favorites = lazy(async () => ({ default: (await import("./pages/Favorites")).Favorites }));
 
 function useRoute() {
   const [hash, setHash] = useState(() => window.location.hash.replace("#", "") || "/");
@@ -123,7 +125,7 @@ export function App() {
     return () => setBackButtonHandler();
   }, [onboardingStep, route.path, route.id, setBackButtonHandler]);
 
-  const knownRoutes = ["/", "/profile", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/requests", "/admin"];
+  const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <div className="screen"><LoadingState /></div>
@@ -134,10 +136,11 @@ export function App() {
                 : onboardingStep === "success" ? <OnboardingSuccess onContinue={finishOnboarding} />
                   : <div className="screen"><LoadingState /></div>;
 
-  return <main className="app-shell bg-soft-radial"><Suspense fallback={<div className="screen"><LoadingState /></div>}>
+  return <FavoritesProvider enabled={onboardingStep === "complete"}><main className={`app-shell bg-soft-radial ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><Suspense fallback={<div className="screen"><LoadingState /></div>}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {route.path === "/" && <Home />}
       {route.path === "/profile" && <ProfileDashboard />}
+      {route.path === "/favorites" && <Favorites />}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
       {route.path === "/business" && <BusinessProfileForm />}
       {route.path === "/brand-face" && <BrandFaceProfileForm />}
@@ -150,5 +153,5 @@ export function App() {
       {route.path === "/admin" && <Admin />}
       {!knownRoutes.includes(route.path) && <Home />}
     </>}
-  </Suspense></main>;
+  </Suspense></main></FavoritesProvider>;
 }

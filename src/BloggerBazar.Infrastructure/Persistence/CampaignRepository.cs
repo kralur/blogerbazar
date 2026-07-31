@@ -9,11 +9,11 @@ internal sealed class CampaignRepository(BloggerBazarDbContext dbContext) : ICam
 {
     public Task<Campaign?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         dbContext.Campaigns.Include(campaign => campaign.Business)
-            .SingleOrDefaultAsync(campaign => campaign.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(campaign => campaign.Id == id && !campaign.Business.IsDeleted, cancellationToken);
 
     public async Task<IReadOnlyList<Campaign>> SearchPublishedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
-        var query = dbContext.Campaigns.AsNoTracking().Where(campaign => campaign.Status == CampaignStatus.Published);
+        var query = dbContext.Campaigns.AsNoTracking().Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted);
         if (!string.IsNullOrWhiteSpace(city))
         {
             query = query.Where(campaign => campaign.City == city.Trim());

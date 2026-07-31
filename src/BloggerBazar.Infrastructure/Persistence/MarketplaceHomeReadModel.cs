@@ -16,11 +16,11 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
     public async Task<MarketplaceHomeDto> GetAsync(CancellationToken cancellationToken)
     {
         var approvedBloggers = dbContext.BloggerProfiles.AsNoTracking()
-            .Where(profile => profile.Status == BloggerStatus.Approved);
+            .Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
         var publishedCampaigns = dbContext.Campaigns.AsNoTracking()
-            .Where(campaign => campaign.Status == CampaignStatus.Published);
-        var businesses = dbContext.BusinessProfiles.AsNoTracking();
-        var brandFaces = dbContext.BrandFaceProfiles.AsNoTracking();
+            .Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted);
+        var businesses = dbContext.BusinessProfiles.AsNoTracking().Where(profile => !profile.IsDeleted);
+        var brandFaces = dbContext.BrandFaceProfiles.AsNoTracking().Where(profile => !profile.IsDeleted);
 
         var promotedBloggers = await ProjectBloggers(approvedBloggers
                 .Where(profile => profile.IsPromoted)
@@ -46,7 +46,7 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
                 campaign.Deadline,
                 campaign.IsPromoted,
                 (int)campaign.Status,
-                campaign.Applications.Count,
+                campaign.Applications.Count(application => !application.Blogger.IsDeleted),
                 campaign.CreatedAtUtc))
             .ToArrayAsync(cancellationToken);
 
@@ -114,7 +114,7 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
             await businesses.CountAsync(cancellationToken),
             await publishedCampaigns.CountAsync(cancellationToken),
             await dbContext.Deals.AsNoTracking()
-                .CountAsync(deal => deal.Status == DealStatus.Completed && deal.Blogger.Status == BloggerStatus.Approved, cancellationToken),
+                .CountAsync(deal => deal.Status == DealStatus.Completed && !deal.Blogger.IsDeleted && !deal.Business.IsDeleted && deal.Blogger.Status == BloggerStatus.Approved, cancellationToken),
             averageRating.HasValue ? decimal.Round(averageRating.Value, 1) : null);
 
         return new MarketplaceHomeDto(

@@ -3,6 +3,7 @@ import { applyToCampaign, getCampaign, getPublicContact, type CampaignDetails, t
 import { Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
+import { ContactList, hasContacts } from "../components/ContactList";
 
 export function CampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
@@ -50,7 +51,12 @@ export function CampaignDetails({ id }: { id: string }) {
   if (loading) return <div className="screen"><LoadingState title={t("campaign.loading")} /></div>;
   if (failed || !campaign) return <div className="screen"><ErrorState onRetry={loadCampaign} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /></div>;
 
-  const contactLine = contact?.phone ?? contact?.email;
+  const contacts = [
+    contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
+    contact?.telegram ? { kind: "telegram" as const, value: contact.telegram } : null,
+    contact?.websiteUrl ? { kind: "website" as const, value: contact.websiteUrl } : null,
+    contact?.email ? { kind: "email" as const, value: contact.email } : null
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
   return (
     <div className="screen pb-36">
       <header className="flex items-center justify-between pt-2">
@@ -65,7 +71,7 @@ export function CampaignDetails({ id }: { id: string }) {
       </Card>
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.suitable")}</h2><div className="flex flex-wrap gap-2">{campaign.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div></section>
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("common.requirements")}</h2><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></section>
-      <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.businessContact")}</h2>{contactLine ? <Card><p className="text-sm font-bold">{contactLine}</p>{contact?.phone && contact.email && <p className="mt-1 text-sm text-brand-muted">{contact.email}</p>}</Card> : <Card><p className="text-sm text-brand-muted">{t("common.contactMissing")}</p></Card>}</section>
+      {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.businessContact")}</h2><ContactList items={contacts} /></section>}
       <div className="fixed inset-x-0 bottom-[70px] z-30 mx-auto max-w-[430px] bg-white/90 px-5 pb-3 pt-2 backdrop-blur"><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></div>
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
       <Toast message={toast} /><BottomNav />

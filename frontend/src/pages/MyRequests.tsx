@@ -116,7 +116,7 @@ export function MyRequests() {
           <div className="mt-5 grid gap-3">
             {visibleRequests.map((request) => (
               <button className="text-left" key={request.id} onClick={() => setSelectedRequest(request)} type="button">
-                <Card><div className="flex gap-3"><Avatar name={request.counterpartyName} size="sm" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{request.counterpartyName}</h2><Badge tone={applicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{request.campaignTitle}</p><p className="mt-2 text-xs text-brand-muted">{formatDate(request.createdAtUtc, locale)}</p></div></div></Card>
+                <Card><div className="flex gap-3"><Avatar name={request.counterpartyName} size="sm" src={request.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{request.counterpartyName}</h2><Badge tone={applicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{request.campaignTitle}</p><p className="mt-2 text-xs text-brand-muted">{formatDate(request.createdAtUtc, locale)}</p></div></div></Card>
               </button>
             ))}
           </div>
@@ -126,7 +126,7 @@ export function MyRequests() {
           <div className="mt-5 grid gap-3">
             {visibleDeals.map((deal) => (
               <button className="text-left" key={deal.id} onClick={() => setSelectedDeal(deal)} type="button">
-                <Card><div className="flex gap-3"><Avatar name={deal.counterpartyName} size="sm" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{deal.counterpartyName}</h2><Badge tone={dealStatusTone(deal.status)}>{dealStatusLabels[deal.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{deal.title}</p><p className="mt-2 text-xs text-brand-muted">{deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, locale)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, locale)}`}</p></div></div></Card>
+                <Card><div className="flex gap-3"><Avatar name={deal.counterpartyName} size="sm" src={deal.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{deal.counterpartyName}</h2><Badge tone={dealStatusTone(deal.status)}>{dealStatusLabels[deal.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{deal.title}</p><p className="mt-2 text-xs text-brand-muted">{deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, locale)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, locale)}`}</p></div></div></Card>
               </button>
             ))}
           </div>

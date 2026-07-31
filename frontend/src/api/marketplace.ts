@@ -82,10 +82,11 @@ type ApiCampaign = {
   createdAtUtc: string;
 };
 
-export type ContactDetails = { phone?: string | null; email?: string | null };
+export type ContactDetails = { phone?: string | null; email?: string | null; telegram?: string | null; websiteUrl?: string | null };
 export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number };
-export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; createdAtUtc: string };
-export type AdminAuditLog = { id: string; actorTelegramUserId: number; action: string; targetType: string; targetId: string; details?: string | null; createdAtUtc: string };
+export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; isDeleted: boolean; deletedAtUtc?: string | null; deletedByTelegramUserId?: number | null; createdAtUtc: string };
+export type AdminBloggerProfile = { id: string; name: string; city: string; categories: string[]; avatarUrl?: string | null; totalFollowers: number; status: number; createdAtUtc: string };
+export type AdminAuditLog = { id: string; actorTelegramUserId: number; action: string; targetType: string; targetId: string; details?: string | null; correlationId?: string | null; createdAtUtc: string };
 export type MarketplaceRole = "Blogger" | "BrandFace" | "Business";
 type MarketplaceRoleValue = MarketplaceRole | number;
 export type CurrentPlatformUser = {
@@ -96,6 +97,18 @@ export type CurrentPlatformUser = {
   selectedMarketplaceRole?: MarketplaceRoleValue | null;
   isBlocked: boolean;
 };
+
+export type FavoriteBlogger = {
+  bloggerId: string;
+  name: string;
+  city: string;
+  categories: string[];
+  avatarUrl?: string | null;
+  totalFollowers: number;
+  createdAtUtc: string;
+};
+
+export type FavoritesPage = { items: FavoriteBlogger[]; total: number; page: number; pageSize: number };
 
 export function normalizeMarketplaceRole(value: MarketplaceRoleValue | null | undefined): MarketplaceRole | undefined {
   if (value === "Blogger" || value === 0) return "Blogger";
@@ -129,7 +142,7 @@ export type MarketplaceBusiness = {
   completedDealsCount: number;
   rating?: number | null;
 };
-export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean };
+export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; instagram?: string | null; telegram?: string | null; portfolioUrl?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean };
 export type BrandFaceDetails = BrandFaceCard;
 export type MarketplaceHome = {
   promotedBloggers: ApiBlogger[];
@@ -176,6 +189,7 @@ export type MyBloggerProfile = {
   barterEnabled: boolean;
   status: number;
   portfolioItems: Array<{ id: string; title: string; type: number; url: string }>;
+  platforms: Array<{ id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null }>;
 };
 
 export type BusinessProfileInput = {
@@ -196,6 +210,7 @@ export type BloggerProfileInput = {
   city: string;
   categories: string[];
   bio?: string;
+  avatarUrl?: string | null;
   phone?: string;
   email?: string;
   totalFollowers: number;
@@ -206,8 +221,22 @@ export type BloggerProfileInput = {
   postPrice?: number;
   integrationPrice?: number;
   barterEnabled: boolean;
+  platforms?: Array<{ type: string; url: string; followers?: number; screenshotUrl?: string }>;
   portfolioItems: Array<{ title: string; type: "IMAGE" | "VIDEO"; url: string }>;
 };
+
+export type ProfileMediaTarget = "blogger" | "brand-face" | "business";
+export type ProfileMediaResponse = { url: string | null };
+
+export async function uploadProfileImage(target: ProfileMediaTarget, file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api<ProfileMediaResponse>(`/api/profile-media/${target}`, { method: "PUT", body: formData });
+}
+
+export async function deleteProfileImage(target: ProfileMediaTarget) {
+  await api<void>(`/api/profile-media/${target}`, { method: "DELETE" });
+}
 
 const asBloggerCard = (blogger: ApiBlogger): BloggerCardData => ({
   id: blogger.id,
@@ -337,6 +366,7 @@ export type MyCampaignApplication = {
   campaignId: string;
   campaignTitle: string;
   counterpartyName: string;
+  counterpartyImageUrl?: string | null;
   message?: string | null;
   status: number;
   canAccept: boolean;
@@ -357,6 +387,7 @@ export type MyDeal = {
   collaborationRequestId?: string | null;
   title: string;
   counterpartyName: string;
+  counterpartyImageUrl?: string | null;
   status: number;
   createdAtUtc: string;
   completedAtUtc?: string | null;
@@ -384,8 +415,28 @@ export async function getCurrentPlatformUser() {
   return api<CurrentPlatformUser>("/api/users/me");
 }
 
+export async function getFavorites(page = 1, pageSize = 50) {
+  return api<FavoritesPage>(`/api/favorites?page=${page}&pageSize=${pageSize}`);
+}
+
+export async function saveFavorite(bloggerId: string) {
+  return api<{ isFavorite: boolean }>(`/api/favorites/${bloggerId}`, { method: "POST" });
+}
+
+export async function removeFavorite(bloggerId: string) {
+  return api<{ isFavorite: boolean }>(`/api/favorites/${bloggerId}`, { method: "DELETE" });
+}
+
+export async function deleteCurrentAccount() {
+  return api<{ alreadyDeleted: boolean }>("/api/users/me", { method: "DELETE" });
+}
+
 export async function getAdminDashboard() {
   return api<AdminDashboard>("/api/admin/dashboard");
+}
+
+export async function getAdminBloggers() {
+  return api<AdminBloggerProfile[]>("/api/admin/marketplace/bloggers");
 }
 
 export async function getAdminUsers() {

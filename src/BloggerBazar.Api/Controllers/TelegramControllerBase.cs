@@ -8,6 +8,13 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
 {
     protected TelegramWebAppUser GetTelegramUser()
     {
+        var user = GetTelegramIdentity();
+        HttpContext.RequestServices.GetRequiredService<IPlatformUserAccessPolicy>().EnsureActive(user.Id);
+        return user;
+    }
+
+    protected TelegramWebAppUser GetTelegramIdentity()
+    {
         var authorization = Request.Headers.Authorization.ToString();
         const string scheme = "tma ";
         if (!authorization.StartsWith(scheme, StringComparison.OrdinalIgnoreCase))
@@ -15,8 +22,6 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
             throw new AuthenticationException("Telegram initData authorization is required.");
         }
 
-        var user = telegramValidator.Validate(authorization[scheme.Length..]);
-        HttpContext.RequestServices.GetRequiredService<IPlatformUserAccessPolicy>().EnsureActive(user.Id);
-        return user;
+        return telegramValidator.Validate(authorization[scheme.Length..]);
     }
 }

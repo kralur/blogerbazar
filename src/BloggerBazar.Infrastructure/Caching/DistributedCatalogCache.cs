@@ -7,6 +7,7 @@ namespace BloggerBazar.Infrastructure.Caching;
 internal sealed class DistributedCatalogCache(IDistributedCache cache) : ICatalogCache
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
+    private const string NamespaceVersionKey = "catalog:namespace-version";
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken) where T : class
     {
@@ -19,4 +20,10 @@ internal sealed class DistributedCatalogCache(IDistributedCache cache) : ICatalo
         {
             AbsoluteExpirationRelativeToNow = timeToLive
         }, cancellationToken);
+
+    public async Task<string> GetNamespaceVersionAsync(CancellationToken cancellationToken) =>
+        await cache.GetStringAsync(NamespaceVersionKey, cancellationToken) ?? "0";
+
+    public Task RotateNamespaceVersionAsync(CancellationToken cancellationToken) =>
+        cache.SetStringAsync(NamespaceVersionKey, Guid.NewGuid().ToString("N"), new DistributedCacheEntryOptions(), cancellationToken);
 }

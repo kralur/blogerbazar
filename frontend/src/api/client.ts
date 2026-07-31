@@ -41,6 +41,8 @@ function friendlyError(status: number, code?: string) {
   const normalizedCode = code?.toLowerCase();
   if (normalizedCode === "validation_failed") return translate("error.validation_failed");
   if (normalizedCode === "payment_provider_unavailable") return translate("error.payment_provider_unavailable");
+  if (normalizedCode === "profile_media_unavailable") return translate("error.profile_media_unavailable");
+  if (normalizedCode === "invalid_profile_media") return translate("error.invalid_profile_media");
   if (status === 401 || status === 403) return translate("error.access_denied");
   if (status === 404) return translate("error.not_found");
   if (status === 409) return translate("error.conflict");
@@ -56,7 +58,7 @@ function authHeaders(options?: ApiOptions) {
     headers.set("authorization", `tma ${initData}`);
   }
 
-  if (!headers.has("content-type") && options?.body) {
+  if (!headers.has("content-type") && options?.body && !(options.body instanceof FormData)) {
     headers.set("content-type", "application/json");
   }
 

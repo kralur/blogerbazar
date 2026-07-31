@@ -14,8 +14,17 @@ public sealed class UsersController(ISender sender, ITelegramWebAppValidator tel
     [HttpGet]
     public async Task<ActionResult<CurrentPlatformUserDto>> GetCurrent(CancellationToken cancellationToken)
     {
-        var telegramUser = GetTelegramUser();
+        var telegramUser = GetTelegramIdentity();
         return Ok(await sender.Send(new GetCurrentPlatformUserCommand(telegramUser.Id, telegramUser.FirstName, telegramUser.Username), cancellationToken));
+    }
+
+    [HttpDelete]
+    [ProducesResponseType<AccountDeletionResultDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AccountDeletionResultDto>> DeleteCurrentAccount(CancellationToken cancellationToken)
+    {
+        var telegramUser = GetTelegramIdentity();
+        return Ok(await sender.Send(new DeleteCurrentAccountCommand(telegramUser.Id, HttpContext.TraceIdentifier), cancellationToken));
     }
 
     [HttpPut("selected-role")]

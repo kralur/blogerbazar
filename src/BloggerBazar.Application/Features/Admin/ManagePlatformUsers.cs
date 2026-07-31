@@ -5,14 +5,14 @@ using MediatR;
 
 namespace BloggerBazar.Application.Features.Admin;
 
-public sealed record AdminPlatformUserDto(long TelegramUserId, string FirstName, string? Username, PlatformRole Role, bool IsBlocked, DateTime CreatedAtUtc)
+public sealed record AdminPlatformUserDto(long TelegramUserId, string FirstName, string? Username, PlatformRole Role, bool IsBlocked, bool IsDeleted, DateTime? DeletedAtUtc, long? DeletedByTelegramUserId, DateTime CreatedAtUtc)
 {
-    public static AdminPlatformUserDto From(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.IsBlocked, user.CreatedAtUtc);
+    public static AdminPlatformUserDto From(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.IsBlocked, user.IsDeleted, user.DeletedAtUtc, user.DeletedByTelegramUserId, user.CreatedAtUtc);
 }
 
-public sealed record AuditLogDto(Guid Id, long ActorTelegramUserId, string Action, string TargetType, string TargetId, string? Details, DateTime CreatedAtUtc)
+public sealed record AuditLogDto(Guid Id, long ActorTelegramUserId, string Action, string TargetType, string TargetId, string? Details, string? CorrelationId, DateTime CreatedAtUtc)
 {
-    public static AuditLogDto From(AuditLog entry) => new(entry.Id, entry.ActorTelegramUserId, entry.Action, entry.TargetType, entry.TargetId, entry.Details, entry.CreatedAtUtc);
+    public static AuditLogDto From(AuditLog entry) => new(entry.Id, entry.ActorTelegramUserId, entry.Action, entry.TargetType, entry.TargetId, entry.Details, entry.CorrelationId, entry.CreatedAtUtc);
 }
 
 public sealed record GetAdminUsersQuery(long ActorTelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AdminPlatformUserDto>>;
@@ -26,7 +26,7 @@ public sealed class GetAdminUsersHandler(IPlatformUserRepository users, BloggerB
     public async Task<IReadOnlyList<AdminPlatformUserDto>> Handle(GetAdminUsersQuery query, CancellationToken cancellationToken)
     {
         access.EnsureAllowed(query.ActorTelegramUserId);
-        return (await users.GetActiveAsync(Math.Clamp(query.Take, 1, 200), cancellationToken)).Select(AdminPlatformUserDto.From).ToArray();
+        return (await users.GetAllAsync(Math.Clamp(query.Take, 1, 200), cancellationToken)).Select(AdminPlatformUserDto.From).ToArray();
     }
 }
 

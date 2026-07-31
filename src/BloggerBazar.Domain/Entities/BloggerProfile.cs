@@ -54,6 +54,8 @@ public sealed class BloggerProfile
     public bool BarterEnabled { get; private set; }
     public bool IsVerified { get; private set; }
     public bool IsPromoted { get; private set; }
+    public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAtUtc { get; private set; }
     public BloggerStatus Status { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
@@ -124,6 +126,28 @@ public sealed class BloggerProfile
         PriceFrom = priceFrom;
         PriceTo = priceTo;
         PriceNote = priceNote;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SetPrimaryImageUrl(string? avatarUrl)
+    {
+        AvatarUrl = avatarUrl;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        IsPromoted = false;
+        IsVerified = false;
+        DeletedAtUtc = DateTime.UtcNow;
+        UpdatedAtUtc = DeletedAtUtc.Value;
+    }
+
+    public void Restore()
+    {
+        IsDeleted = false;
+        DeletedAtUtc = null;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

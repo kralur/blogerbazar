@@ -19,7 +19,7 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
                 .ToDictionary(group => group.Key, group => group.Select(error => error.ErrorMessage).ToArray());
             await ApiProblemWriter.WriteAsync(context, StatusCodes.Status422UnprocessableEntity, "validation_failed", detail: "One or more validation errors occurred.", errors: errors);
         }
-        catch (BadHttpRequestException)
+        catch (BadHttpRequestException exception)
         {
             if (context.Request.Path.StartsWithSegments("/api/webhooks/telegram"))
             {
@@ -28,7 +28,10 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
                 return;
             }
 
-            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status400BadRequest);
+            var status = exception.StatusCode == StatusCodes.Status413PayloadTooLarge
+                ? StatusCodes.Status413PayloadTooLarge
+                : StatusCodes.Status400BadRequest;
+            await ApiProblemWriter.WriteAsync(context, status);
         }
         catch (AuthenticationException)
         {
@@ -51,6 +54,16 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
         {
             await ApiProblemWriter.WriteAsync(context, StatusCodes.Status503ServiceUnavailable, "payment_provider_unavailable", "Payment provider unavailable");
             logger.LogWarning("Payment provider unavailable for {Path}", context.Request.Path);
+        }
+        catch (ProfileMediaStorageUnavailableException)
+        {
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status503ServiceUnavailable, "profile_media_unavailable", "Profile media is temporarily unavailable");
+            logger.LogWarning("Profile media storage unavailable for {Path}", context.Request.Path);
+        }
+        catch (ProfileMediaValidationException)
+        {
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status422UnprocessableEntity, "invalid_profile_media", "Invalid profile image");
+            logger.LogInformation("Invalid profile media rejected for {Path}", context.Request.Path);
         }
         catch (Exception exception)
         {

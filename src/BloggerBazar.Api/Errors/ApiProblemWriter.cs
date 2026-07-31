@@ -57,6 +57,7 @@ internal static class ApiProblemWriter
         StatusCodes.Status409Conflict => "conflict",
         StatusCodes.Status422UnprocessableEntity => "validation_failed",
         StatusCodes.Status429TooManyRequests => "rate_limited",
+        StatusCodes.Status413PayloadTooLarge => "payload_too_large",
         StatusCodes.Status500InternalServerError => "internal_error",
         _ => "request_failed"
     };
@@ -70,6 +71,7 @@ internal static class ApiProblemWriter
         StatusCodes.Status409Conflict => "Request conflict",
         StatusCodes.Status422UnprocessableEntity => "Validation failed",
         StatusCodes.Status429TooManyRequests => "Too many requests",
+        StatusCodes.Status413PayloadTooLarge => "Payload too large",
         StatusCodes.Status500InternalServerError => "Internal server error",
         _ => "Request failed"
     };

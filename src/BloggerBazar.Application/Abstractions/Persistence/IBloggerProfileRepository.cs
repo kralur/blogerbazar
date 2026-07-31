@@ -22,6 +22,7 @@ public interface IBloggerProfileRepository
 {
     Task<BloggerProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<BloggerProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken);
+    Task<BloggerProfile?> GetIncludingDeletedByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => GetByTelegramUserIdAsync(telegramUserId, cancellationToken);
     Task<BloggerProfile?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>
         Task.FromResult<BloggerProfile?>(null);
     Task<IReadOnlyList<BloggerProfile>> GetPendingAsync(int take, CancellationToken cancellationToken) =>

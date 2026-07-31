@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using FluentValidation;
+using BloggerBazar.Application.Validation;
 using MediatR;
 
 namespace BloggerBazar.Application.Features.Businesses;
@@ -21,12 +22,12 @@ public sealed class UpdateBusinessProfileValidator : AbstractValidator<UpdateBus
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(150);
-        RuleFor(command => command.Username).NotEmpty().Matches("^@[A-Za-z0-9_]{5,32}$");
+        RuleFor(command => command.Username).NotEmpty().Must(ContactValidation.IsTelegramUsername);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80);
-        RuleFor(command => command.LogoUrl).Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _)).When(command => command.LogoUrl is not null);
-        RuleFor(command => command.WebsiteUrl).Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out var parsed) && parsed.Scheme == Uri.UriSchemeHttps).When(command => command.WebsiteUrl is not null);
+        RuleFor(command => command.LogoUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.LogoUrl is not null);
+        RuleFor(command => command.WebsiteUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.WebsiteUrl is not null);
         RuleFor(command => command.Description).NotEmpty().MaximumLength(1000);
-        RuleFor(command => command.Phone).NotEmpty().Matches("^\\+?[0-9\\s]{7,20}$");
+        RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsUzbekPhone);
         RuleFor(command => command.Email).EmailAddress().MaximumLength(254).When(command => command.Email is not null);
     }
 }

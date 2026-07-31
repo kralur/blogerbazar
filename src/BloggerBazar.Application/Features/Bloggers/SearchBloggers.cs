@@ -45,7 +45,8 @@ public sealed class SearchBloggersHandler(IMarketplaceCatalogReadModel catalog, 
 {
     public async Task<SearchBloggersResult> Handle(SearchBloggersQuery query, CancellationToken cancellationToken)
     {
-        var key = $"catalog:bloggers:{query.Query}:{query.City}:{query.Category}:{query.Platform}:{query.MinFollowers}:{query.MinEngagementRate}:{query.MaxEngagementRate}:{query.MinPrice}:{query.MaxPrice}:{query.Sort}:{query.Page}:{query.PageSize}".ToLowerInvariant();
+        var namespaceVersion = await cache.GetNamespaceVersionAsync(cancellationToken);
+        var key = $"catalog:{namespaceVersion}:bloggers:{query.Query}:{query.City}:{query.Category}:{query.Platform}:{query.MinFollowers}:{query.MinEngagementRate}:{query.MaxEngagementRate}:{query.MinPrice}:{query.MaxPrice}:{query.Sort}:{query.Page}:{query.PageSize}".ToLowerInvariant();
         var cached = await cache.GetAsync<SearchBloggersResult>(key, cancellationToken);
         if (cached is not null) return cached;
 

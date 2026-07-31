@@ -28,6 +28,8 @@ public sealed class BusinessProfile
     public string? Email { get; private set; }
     public bool IsVerified { get; private set; }
     public BloggerStatus ModerationStatus { get; private set; } = BloggerStatus.Pending;
+    public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAtUtc { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
     public IReadOnlyCollection<Campaign> Campaigns { get; private set; } = new List<Campaign>();
@@ -47,6 +49,27 @@ public sealed class BusinessProfile
         Description = description;
         Phone = phone;
         Email = email;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SetPrimaryImageUrl(string? logoUrl)
+    {
+        LogoUrl = logoUrl;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        IsVerified = false;
+        DeletedAtUtc = DateTime.UtcNow;
+        UpdatedAtUtc = DeletedAtUtc.Value;
+    }
+
+    public void Restore()
+    {
+        IsDeleted = false;
+        DeletedAtUtc = null;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

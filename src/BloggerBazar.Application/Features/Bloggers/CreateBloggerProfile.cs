@@ -1,6 +1,7 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
+using BloggerBazar.Application.Validation;
 using FluentValidation;
 using MediatR;
 
@@ -45,13 +46,13 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(100);
-        RuleFor(command => command.Username).NotEmpty().Matches("^@[A-Za-z0-9_]{5,32}$");
+        RuleFor(command => command.Username).NotEmpty().Must(ContactValidation.IsTelegramUsername);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80);
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);
         RuleForEach(command => command.Categories).NotEmpty().MaximumLength(50);
         RuleFor(command => command.Bio).MaximumLength(500).When(command => command.Bio is not null);
-        RuleFor(command => command.AvatarUrl).Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _)).When(command => command.AvatarUrl is not null);
-        RuleFor(command => command.Phone).NotEmpty().Matches("^\\+?[0-9\\s]{7,20}$");
+        RuleFor(command => command.AvatarUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.AvatarUrl is not null);
+        RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsUzbekPhone);
         RuleFor(command => command.Email).EmailAddress().MaximumLength(254).When(command => command.Email is not null);
         RuleFor(command => command.TotalFollowers).GreaterThan(0);
         RuleFor(command => command.AverageReach).NotNull().GreaterThan(0);
@@ -68,13 +69,18 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
         RuleFor(command => command.PriceFrom).GreaterThanOrEqualTo(0).When(command => command.PriceFrom.HasValue);
         RuleFor(command => command.PriceTo).GreaterThanOrEqualTo(0).When(command => command.PriceTo.HasValue);
         RuleFor(command => command.PriceNote).MaximumLength(500).When(command => command.PriceNote is not null);
-        RuleFor(command => command.CoverUrl).Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _)).When(command => command.CoverUrl is not null);
+        RuleFor(command => command.CoverUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.CoverUrl is not null);
         RuleFor(command => command.Platforms).Must(items => items is null || items.Count <= 8);
         RuleForEach(command => command.PortfolioItems!).ChildRules(item =>
         {
             item.RuleFor(value => value.Title).NotEmpty().MaximumLength(120);
             item.RuleFor(value => value.Type).IsInEnum();
-            item.RuleFor(value => value.Url).Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _));
+            item.RuleFor(value => value.Url).Must(ContactValidation.IsHttpsUrl);
+        });
+        RuleForEach(command => command.Platforms!).ChildRules(item =>
+        {
+            item.RuleFor(value => value.Type).NotEmpty();
+            item.RuleFor(value => value).Must(value => ContactValidation.IsSupportedPlatform(value.Type, value.Url));
         });
     }
 }
@@ -84,8 +90,8 @@ public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profil
 {
     public async Task<BloggerProfileDto> Handle(CreateBloggerProfileCommand command, CancellationToken cancellationToken)
     {
-        var existing = await profiles.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken);
-        if (existing is not null)
+        var existing = await profiles.GetIncludingDeletedByTelegramUserIdAsync(command.TelegramUserId, cancellationToken);
+        if (existing is not null && !existing.IsDeleted)
         {
             throw new InvalidOperationException("A blogger profile already exists for this Telegram user.");
         }
@@ -95,7 +101,11 @@ public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profil
             throw new InvalidOperationException("This Telegram username is already used by another blogger profile.");
         }
 
-        var profile = BloggerProfile.Create(command.TelegramUserId, command.Name.Trim(), command.City.Trim(), command.Categories.Select(category => category.Trim()).ToArray());
+        var profile = existing ?? BloggerProfile.Create(command.TelegramUserId, command.Name.Trim(), command.City.Trim(), command.Categories.Select(category => category.Trim()).ToArray());
+        if (existing is not null)
+        {
+            profile.Restore();
+        }
         profile.UpdatePublicProfile(
             command.Name.Trim(), command.LastName?.Trim(), command.Username?.Trim(), command.City.Trim(),
             command.Categories.Select(category => category.Trim()).ToArray(), command.Bio?.Trim(), command.AvatarUrl, command.Phone?.Trim(), command.Email?.Trim(),
@@ -104,7 +114,10 @@ public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profil
         profile.UpdateExtendedProfile(command.CoverUrl, command.Age, command.Gender?.Trim(), command.Language?.Trim(), command.Subcategory?.Trim(), command.PriceFrom, command.PriceTo, command.PriceNote?.Trim());
         profile.Approve();
 
-        await profiles.AddAsync(profile, cancellationToken);
+        if (existing is null)
+        {
+            await profiles.AddAsync(profile, cancellationToken);
+        }
         var portfolio = (command.PortfolioItems ?? []).Select(item =>
             PortfolioItem.Create(profile.Id, item.Title.Trim(), item.Type, item.Url.Trim()));
         await portfolioItems.AddRangeAsync(portfolio, cancellationToken);

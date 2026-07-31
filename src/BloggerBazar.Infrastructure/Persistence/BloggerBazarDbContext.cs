@@ -21,6 +21,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
     public DbSet<CreditAccount> CreditAccounts => Set<CreditAccount>();
     public DbSet<CreditLedgerEntry> CreditLedgerEntries => Set<CreditLedgerEntry>();
     public DbSet<PlatformUser> PlatformUsers => Set<PlatformUser>();
+    public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<BrandFaceProfile> BrandFaceProfiles => Set<BrandFaceProfile>();
 
@@ -67,6 +68,15 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         user.HasIndex(entity => entity.TelegramUserId).IsUnique();
         user.HasIndex(entity => new { entity.Role, entity.IsBlocked, entity.IsDeleted });
 
+        var favorite = modelBuilder.Entity<Favorite>();
+        favorite.ToTable("favorites");
+        favorite.HasKey(entity => entity.Id);
+        favorite.HasOne<PlatformUser>().WithMany().HasForeignKey(entity => entity.PlatformUserId).OnDelete(DeleteBehavior.Cascade);
+        favorite.HasOne<BloggerProfile>().WithMany().HasForeignKey(entity => entity.BloggerId).OnDelete(DeleteBehavior.Cascade);
+        favorite.HasIndex(entity => new { entity.PlatformUserId, entity.BloggerId }).IsUnique();
+        favorite.HasIndex(entity => new { entity.PlatformUserId, entity.CreatedAtUtc });
+        favorite.HasIndex(entity => entity.BloggerId);
+
         var auditLog = modelBuilder.Entity<AuditLog>();
         auditLog.ToTable("audit_logs");
         auditLog.HasKey(entity => entity.Id);
@@ -74,6 +84,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         auditLog.Property(entity => entity.TargetType).HasMaxLength(100).IsRequired();
         auditLog.Property(entity => entity.TargetId).HasMaxLength(128).IsRequired();
         auditLog.Property(entity => entity.Details).HasMaxLength(2000);
+        auditLog.Property(entity => entity.CorrelationId).HasMaxLength(128);
         auditLog.HasIndex(entity => new { entity.ActorTelegramUserId, entity.CreatedAtUtc });
         auditLog.HasIndex(entity => new { entity.TargetType, entity.TargetId, entity.CreatedAtUtc });
 
@@ -89,6 +100,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         brandFace.Property(entity => entity.PortfolioUrl).HasMaxLength(2048);
         brandFace.Property(entity => entity.Description).HasMaxLength(2000);
         brandFace.Property(entity => entity.AvatarUrl).HasMaxLength(2048);
+        brandFace.HasIndex(entity => entity.IsDeleted);
         brandFace.Property(entity => entity.Languages).HasColumnType("text[]");
         brandFace.Property(entity => entity.Categories).HasColumnType("text[]");
         brandFace.HasIndex(entity => entity.TelegramUserId).IsUnique();
@@ -117,6 +129,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         profile.Property(entity => entity.Language).HasMaxLength(16);
         profile.Property(entity => entity.Subcategory).HasMaxLength(100);
         profile.Property(entity => entity.PriceNote).HasMaxLength(500);
+        profile.HasIndex(entity => entity.IsDeleted);
         profile.Property(entity => entity.EngagementRate).HasPrecision(5, 2);
         profile.HasIndex(entity => new { entity.Status, entity.City });
         profile.HasIndex(entity => entity.IsPromoted);
@@ -156,6 +169,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         business.Property(entity => entity.Email).HasMaxLength(254);
         business.Property(entity => entity.ModerationStatus).HasConversion<int>();
         business.HasIndex(entity => entity.ModerationStatus);
+        business.HasIndex(entity => entity.IsDeleted);
 
         var campaign = modelBuilder.Entity<Campaign>();
         campaign.ToTable("campaigns");

@@ -8,26 +8,29 @@ namespace BloggerBazar.Infrastructure.Persistence;
 internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) : IBloggerProfileRepository
 {
     public Task<BloggerProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.Id == id, cancellationToken);
+        dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.Id == id && !profile.IsDeleted, cancellationToken);
 
     public Task<BloggerProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) =>
+        dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.TelegramUserId == telegramUserId && !profile.IsDeleted, cancellationToken);
+
+    public Task<BloggerProfile?> GetIncludingDeletedByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) =>
         dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.TelegramUserId == telegramUserId, cancellationToken);
 
     public Task<BloggerProfile?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>
-        dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.Username == username, cancellationToken);
+        dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.Username == username && !profile.IsDeleted, cancellationToken);
 
     public async Task<IReadOnlyList<BloggerProfile>> GetPendingAsync(int take, CancellationToken cancellationToken) =>
-        await dbContext.BloggerProfiles.AsNoTracking().Where(profile => profile.Status == BloggerStatus.Pending)
+        await dbContext.BloggerProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Pending)
             .OrderBy(profile => profile.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BloggerProfile>> GetAllAsync(int take, CancellationToken cancellationToken) =>
-        await dbContext.BloggerProfiles.AsNoTracking()
+        await dbContext.BloggerProfiles.AsNoTracking().Where(profile => !profile.IsDeleted)
             .OrderByDescending(profile => profile.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BloggerProfile>> SearchApprovedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
         var query = dbContext.BloggerProfiles.AsNoTracking()
-            .Where(profile => profile.Status == BloggerStatus.Approved);
+            .Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
 
         if (!string.IsNullOrWhiteSpace(city))
         {
@@ -48,7 +51,7 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
 
     public async Task<BloggerCatalogPage> SearchApprovedPageAsync(BloggerCatalogSearch search, CancellationToken cancellationToken)
     {
-        var query = dbContext.BloggerProfiles.AsNoTracking().Where(profile => profile.Status == BloggerStatus.Approved);
+        var query = dbContext.BloggerProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
             var pattern = PostgresSearchPattern.Contains(search.Query.Trim());

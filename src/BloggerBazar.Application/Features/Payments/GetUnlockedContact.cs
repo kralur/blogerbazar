@@ -5,15 +5,14 @@ using MediatR;
 
 namespace BloggerBazar.Application.Features.Payments;
 
-public sealed record GetUnlockedContactQuery(long TelegramUserId, ContactTargetType TargetType, Guid TargetId) : IRequest<ContactDetailsDto>;
+public sealed record GetUnlockedContactQuery(ContactTargetType TargetType, Guid TargetId) : IRequest<ContactDetailsDto>;
 
-public sealed record ContactDetailsDto(string? Phone, string? Email);
+public sealed record ContactDetailsDto(string? Phone, string? Email, string? Telegram, string? WebsiteUrl);
 
 public sealed class GetUnlockedContactValidator : AbstractValidator<GetUnlockedContactQuery>
 {
     public GetUnlockedContactValidator()
     {
-        RuleFor(query => query.TelegramUserId).GreaterThan(0);
         RuleFor(query => query.TargetId).NotEmpty();
         RuleFor(query => query.TargetType).IsInEnum();
     }
@@ -38,12 +37,12 @@ public sealed class GetUnlockedContactHandler(
     private async Task<ContactDetailsDto> GetBloggerContactAsync(GetUnlockedContactQuery query, CancellationToken cancellationToken)
     {
         var target = await bloggers.GetByIdAsync(query.TargetId, cancellationToken) ?? throw new InvalidOperationException("Contact target was not found.");
-        return new ContactDetailsDto(target.Phone, target.Email);
+        return new ContactDetailsDto(target.Phone, target.Email, target.Username, null);
     }
 
     private async Task<ContactDetailsDto> GetBusinessContactAsync(GetUnlockedContactQuery query, CancellationToken cancellationToken)
     {
         var target = await businesses.GetByIdAsync(query.TargetId, cancellationToken) ?? throw new InvalidOperationException("Contact target was not found.");
-        return new ContactDetailsDto(target.Phone, target.Email);
+        return new ContactDetailsDto(target.Phone, target.Email, target.Username, target.WebsiteUrl);
     }
 }

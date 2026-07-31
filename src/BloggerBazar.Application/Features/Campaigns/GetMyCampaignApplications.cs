@@ -5,13 +5,13 @@ namespace BloggerBazar.Application.Features.Campaigns;
 
 public sealed record GetMyCampaignApplicationsQuery(long TelegramUserId) : IRequest<IReadOnlyList<MyCampaignApplicationDto>>;
 
-public sealed record MyCampaignApplicationDto(Guid Id, Guid CampaignId, string CampaignTitle, string CounterpartyName, string? Message, int Status, bool CanAccept, DateTime CreatedAtUtc)
+public sealed record MyCampaignApplicationDto(Guid Id, Guid CampaignId, string CampaignTitle, string CounterpartyName, string? CounterpartyImageUrl, string? Message, int Status, bool CanAccept, DateTime CreatedAtUtc)
 {
     public static MyCampaignApplicationDto ForBlogger(Domain.Entities.CampaignApplication application) =>
-        new(application.Id, application.CampaignId, application.Campaign.Title, application.Campaign.Business.Name, application.Message, (int)application.Status, false, application.CreatedAtUtc);
+        new(application.Id, application.CampaignId, application.Campaign.Title, application.Campaign.Business.Name, application.Campaign.Business.LogoUrl, application.Message, (int)application.Status, false, application.CreatedAtUtc);
 
     public static MyCampaignApplicationDto ForBusiness(Domain.Entities.CampaignApplication application) =>
-        new(application.Id, application.CampaignId, application.Campaign.Title, application.Blogger.Name, application.Message, (int)application.Status, true, application.CreatedAtUtc);
+        new(application.Id, application.CampaignId, application.Campaign.Title, application.Blogger.Name, application.Blogger.AvatarUrl, application.Message, (int)application.Status, true, application.CreatedAtUtc);
 }
 
 public sealed class GetMyCampaignApplicationsHandler(

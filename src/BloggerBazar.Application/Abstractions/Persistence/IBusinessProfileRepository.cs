@@ -6,6 +6,7 @@ public interface IBusinessProfileRepository
 {
     Task<BusinessProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<BusinessProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken);
+    Task<BusinessProfile?> GetIncludingDeletedByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => GetByTelegramUserIdAsync(telegramUserId, cancellationToken);
     Task<BusinessProfile?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>
         Task.FromResult<BusinessProfile?>(null);
     Task<IReadOnlyList<BusinessProfile>> GetAllAsync(int take, CancellationToken cancellationToken) =>
