@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, type MarketplaceRole } from "./api/marketplace";
+import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, type MarketplaceRole } from "./api/marketplace";
 import { LoadingState } from "./components/ui";
 import { useTelegram } from "./telegram/TelegramProvider";
 
@@ -72,13 +72,14 @@ export function App() {
     try {
       setOnboardingStep("checking");
       const user = await getCurrentPlatformUser();
-      if (!user.selectedMarketplaceRole) {
+      const marketplaceRole = normalizeMarketplaceRole(user.selectedMarketplaceRole);
+      if (!marketplaceRole) {
         setOnboardingStep("role");
         return;
       }
 
-      setSelectedRole(user.selectedMarketplaceRole);
-      if (await selectedProfileExists(user.selectedMarketplaceRole)) {
+      setSelectedRole(marketplaceRole);
+      if (await selectedProfileExists(marketplaceRole)) {
         localStorage.setItem(onboardingCompletedKey, "true");
         setOnboardingStep("complete");
         window.location.hash = "/";
@@ -86,7 +87,7 @@ export function App() {
       }
 
       setOnboardingStep("profile");
-      window.location.hash = profileRoute(user.selectedMarketplaceRole);
+      window.location.hash = profileRoute(marketplaceRole);
     } catch {
       setAuthorizationFailed(true);
       setOnboardingStep("telegram");

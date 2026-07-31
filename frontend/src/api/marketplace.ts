@@ -87,14 +87,22 @@ export type AdminDashboard = { users: number; bloggers: number; businesses: numb
 export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; createdAtUtc: string };
 export type AdminAuditLog = { id: string; actorTelegramUserId: number; action: string; targetType: string; targetId: string; details?: string | null; createdAtUtc: string };
 export type MarketplaceRole = "Blogger" | "BrandFace" | "Business";
+type MarketplaceRoleValue = MarketplaceRole | number;
 export type CurrentPlatformUser = {
   telegramUserId: number;
   firstName: string;
   username?: string | null;
   role: number;
-  selectedMarketplaceRole?: MarketplaceRole | null;
+  selectedMarketplaceRole?: MarketplaceRoleValue | null;
   isBlocked: boolean;
 };
+
+export function normalizeMarketplaceRole(value: MarketplaceRoleValue | null | undefined): MarketplaceRole | undefined {
+  if (value === "Blogger" || value === 0) return "Blogger";
+  if (value === "BrandFace" || value === 1) return "BrandFace";
+  if (value === "Business" || value === 2) return "Business";
+  return undefined;
+}
 export type MyBrandFaceProfile = {
   id: string;
   name: string;

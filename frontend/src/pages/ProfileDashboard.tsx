@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplications, getMyDeals, selectMarketplaceRole, type MarketplaceRole, type MyBloggerProfile, type MyBrandFaceProfile, type MyBusinessProfile } from "../api/marketplace";
+import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplications, getMyDeals, normalizeMarketplaceRole, selectMarketplaceRole, type MarketplaceRole, type MyBloggerProfile, type MyBrandFaceProfile, type MyBusinessProfile } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, EmptyState, Icon, Modal, Skeleton, StatsCard } from "../components/ui";
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -36,7 +36,8 @@ export function ProfileDashboard() {
       if (cancelled) return;
       if (userResult.status === "fulfilled") {
         const selectedRole: Record<MarketplaceRole, SelectedRole> = { Blogger: "blogger", BrandFace: "brandFace", Business: "business" };
-        if (userResult.value.selectedMarketplaceRole) setRole(selectedRole[userResult.value.selectedMarketplaceRole]);
+        const marketplaceRole = normalizeMarketplaceRole(userResult.value.selectedMarketplaceRole);
+        if (marketplaceRole) setRole(selectedRole[marketplaceRole]);
       }
       if (bloggerResult.status === "fulfilled") setBlogger(bloggerResult.value);
       if (brandFaceResult.status === "fulfilled") setBrandFace(brandFaceResult.value);
