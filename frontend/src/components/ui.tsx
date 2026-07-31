@@ -94,7 +94,7 @@ export function Divider({ className }: { className?: string }) {
 export function Input({ label, error, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string }) {
   return (
     <label className="grid gap-2">
-      {label && <span className="text-[13px] font-bold text-brand-muted">{label}</span>}
+      {label && <span className="text-[13px] font-bold text-brand-muted">{label}{props.required && <span aria-hidden="true" className="ml-1 text-brand-danger">*</span>}</span>}
       <input
         className={cn(
           "h-[52px] rounded-2xl border border-brand-line bg-white px-4 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
@@ -111,12 +111,13 @@ export function Input({ label, error, className, ...props }: InputHTMLAttributes
 }
 
 export function Textarea({ label, error, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; error?: string }) {
+  const length = typeof props.value === "string" ? props.value.length : 0;
   return (
     <label className="grid gap-2">
-      {label && <span className="text-[13px] font-bold text-brand-muted">{label}</span>}
+      {label && <span className="flex items-center justify-between gap-3 text-[13px] font-bold text-brand-muted"><span>{label}{props.required && <span aria-hidden="true" className="ml-1 text-brand-danger">*</span>}</span>{props.maxLength && <span className="font-medium text-slate-400">{length} / {props.maxLength}</span>}</span>}
       <textarea
         className={cn(
-          "min-h-28 rounded-2xl border border-brand-line bg-white px-4 py-3 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
+          "min-h-28 resize-none rounded-2xl border border-brand-line bg-white px-4 py-3 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
           error && "border-brand-danger focus:border-brand-danger focus:ring-red-100",
           className
         )}

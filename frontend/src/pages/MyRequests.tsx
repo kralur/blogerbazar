@@ -8,7 +8,7 @@ import {
   type MyCampaignApplication,
   type MyDeal
 } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, EmptyState, ErrorState, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 
 const applicationStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : status === 2 ? "gray" : "purple";
@@ -30,6 +30,10 @@ export function MyRequests() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [toast, setToast] = useState("");
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<"today" | "week" | "month" | "custom" | "all">("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const load = () => {
     setLoading(true);
@@ -44,6 +48,16 @@ export function MyRequests() {
   };
 
   useEffect(load, []);
+
+  const withinRange = (value: string) => {
+    const date = new Date(value);
+    if (dateRange === "all") return true;
+    if (dateRange === "custom") return (!fromDate || date >= new Date(`${fromDate}T00:00:00`)) && (!toDate || date <= new Date(`${toDate}T23:59:59`));
+    const days = dateRange === "today" ? 1 : dateRange === "week" ? 7 : 30;
+    return date.getTime() >= Date.now() - days * 86_400_000;
+  };
+  const visibleRequests = requests.filter((request) => withinRange(request.createdAtUtc));
+  const visibleDeals = deals.filter((deal) => withinRange(deal.createdAtUtc));
 
   const accept = async (id: string) => {
     try {
@@ -89,7 +103,7 @@ export function MyRequests() {
           <p className="text-sm font-semibold text-brand-muted">{t("requests.eyebrow")}</p>
           <h1 className="text-3xl font-extrabold tracking-tight">{t("requests.title")}</h1>
         </div>
-        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-brand-blue"><Icon name="briefcase" /></span>
+        <button aria-label={t("requests.dateFilter")} className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-brand-blue" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button>
       </header>
 
       <div className="mt-5 grid grid-cols-2 rounded-2xl bg-slate-100 p-1">
@@ -98,9 +112,9 @@ export function MyRequests() {
       </div>
 
       {loading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : failed ? <div className="mt-5"><ErrorState onRetry={load} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> : view === "applications" ? (
-        !requests.length ? <div className="mt-8"><EmptyState subtitle={t("requests.emptyApplicationsSubtitle")} title={t("requests.emptyApplicationsTitle")} /></div> : (
+        !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="mt-5 grid gap-3">
-            {requests.map((request) => (
+            {visibleRequests.map((request) => (
               <button className="text-left" key={request.id} onClick={() => setSelectedRequest(request)} type="button">
                 <Card><div className="flex gap-3"><Avatar name={request.counterpartyName} size="sm" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{request.counterpartyName}</h2><Badge tone={applicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{request.campaignTitle}</p><p className="mt-2 text-xs text-brand-muted">{formatDate(request.createdAtUtc, locale)}</p></div></div></Card>
               </button>
@@ -108,9 +122,9 @@ export function MyRequests() {
           </div>
         )
       ) : (
-        !deals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={t("requests.emptyDealsSubtitle")} title={t("requests.emptyDealsTitle")} /></div> : (
+        !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
           <div className="mt-5 grid gap-3">
-            {deals.map((deal) => (
+            {visibleDeals.map((deal) => (
               <button className="text-left" key={deal.id} onClick={() => setSelectedDeal(deal)} type="button">
                 <Card><div className="flex gap-3"><Avatar name={deal.counterpartyName} size="sm" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{deal.counterpartyName}</h2><Badge tone={dealStatusTone(deal.status)}>{dealStatusLabels[deal.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{deal.title}</p><p className="mt-2 text-xs text-brand-muted">{deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, locale)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, locale)}`}</p></div></div></Card>
               </button>
@@ -126,6 +140,8 @@ export function MyRequests() {
       <Modal onClose={() => setSelectedDeal(null)} open={Boolean(selectedDeal)} title={selectedDeal?.title ?? t("requests.deals")}>
         {selectedDeal && <><p className="text-sm font-bold">{selectedDeal.counterpartyName}</p><p className="mt-2 text-sm text-brand-muted">{t("requests.status")}: {dealStatusLabels[selectedDeal.status]}</p>{selectedDeal.canComplete && <Button className="mt-4 w-full" onClick={() => finishDeal(selectedDeal.id)}>{t("requests.complete")}</Button>}{selectedDeal.canReview && <div className="mt-5 border-t border-brand-line pt-5"><p className="text-sm font-extrabold">{t("requests.reviewTitle")}</p><div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${t("requests.rating")} ${value}`} className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${value <= rating ? "bg-amber-50 text-amber-500" : "bg-slate-100 text-slate-300"}`} key={value} onClick={() => setRating(value)} type="button">★</button>)}</div><Textarea className="mt-3" maxLength={1000} onChange={(event) => setComment(event.target.value)} placeholder={t("requests.reviewPlaceholder")} value={comment} /><Button className="mt-3 w-full" onClick={submitReview}>{t("requests.publishReview")}</Button></div>}</>}
       </Modal>
+
+      <BottomSheet onClose={() => setDateFilterOpen(false)} open={dateFilterOpen} title={t("requests.dateFilter")}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">{(["today", "week", "month", "custom"] as const).map((range) => <button className={`rounded-2xl border px-3 py-3 text-sm font-bold ${dateRange === range ? "border-brand-blue bg-blue-50 text-brand-blue" : "border-brand-line bg-white"}`} key={range} onClick={() => setDateRange(range)} type="button">{t(`requests.range.${range}`)}</button>)}</div>{dateRange === "custom" && <div className="grid grid-cols-2 gap-3"><Input label={t("requests.fromDate")} onChange={(event) => setFromDate(event.target.value)} type="date" value={fromDate} /><Input label={t("requests.toDate")} onChange={(event) => setToDate(event.target.value)} type="date" value={toDate} /></div>}<Button className="w-full" onClick={() => setDateFilterOpen(false)} type="button">{t("common.apply")}</Button><Button className="w-full" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setDateFilterOpen(false); }} type="button" variant="secondary">{t("common.reset")}</Button></div></BottomSheet>
 
       <Toast message={toast} />
       <BottomNav />
