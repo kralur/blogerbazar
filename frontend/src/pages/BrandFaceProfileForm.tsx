@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { getMyBrandFaceProfile, upsertBrandFaceProfile } from "../api/marketplace";
+import { getApiErrorMessage } from "../api/client";
 import { BottomNav, Button, Card, Input, LoadingState, Textarea, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -27,7 +28,16 @@ export function BrandFaceProfileForm({ onCompleted }: { onCompleted?: () => void
       await upsertBrandFaceProfile({ name: form.name.trim(), city: form.city.trim(), age: null, gender: null, languages: values(form.languages), categories: values(form.categories), experience: form.experience.trim() || null, instagram: form.instagram.trim() || null, telegram: form.telegram.trim(), portfolioUrl: form.portfolioUrl.trim() || null, collaborationPrice: form.collaborationPrice ? Number(form.collaborationPrice) : null, description: form.description.trim() || null, avatarUrl: null });
       if (onCompleted) onCompleted();
       else setToast(t("brandFace.saved"));
-    } catch {
+    } catch (error) {
+      setToast(getApiErrorMessage(error, t("brandFace.failed"), {
+        validationMessages: {
+          name: t("form.validation.name"),
+          city: t("form.validation.city"),
+          languages: t("brandFace.languagesRequired"),
+          categories: t("form.validation.categories"),
+          telegram: t("form.validation.username")
+        }
+      }));
       setFailed(true);
     } finally { setSaving(false); }
   };

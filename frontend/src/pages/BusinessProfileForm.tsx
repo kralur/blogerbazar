@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createBusinessProfile, getMyBusinessProfile, updateBusinessProfile } from "../api/marketplace";
+import { getApiErrorMessage } from "../api/client";
 import { formatPhoneInput } from "../lib/currency";
 import { BottomNav, Button, Card, Icon, Input, Modal, Textarea, Toast } from "../components/ui";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -60,7 +61,18 @@ export function BusinessProfileForm({ onCompleted }: { onCompleted?: () => void 
       if (onCompleted) onCompleted();
       else setSuccess(true);
     } catch (error) {
-      setToast(error instanceof Error ? error.message : t("form.submitFailed"));
+      setToast(getApiErrorMessage(error, t("form.submitFailed"), {
+        conflictMessage: t("form.businessProfileConflict"),
+        validationMessages: {
+          name: t("form.validation.company"),
+          username: t("form.validation.companyUsername"),
+          city: t("form.validation.city"),
+          description: t("form.validation.description"),
+          phone: t("form.validation.phone"),
+          email: t("form.validation.email"),
+          websiteurl: t("form.validation.website")
+        }
+      }));
     } finally {
       setSaving(false);
     }

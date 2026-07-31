@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createBloggerProfile, getMyBloggerProfile, updateBloggerProfile } from "../api/marketplace";
+import { getApiErrorMessage } from "../api/client";
 import { BottomNav, Button, Card, Chip, Icon, Input, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, useI18n } from "../i18n";
 import { formatNumericInput, formatPhoneInput, normalizeNumericInput } from "../lib/currency";
@@ -77,7 +78,22 @@ export function BloggerProfileForm({ onCompleted }: { onCompleted?: () => void }
       if (onCompleted) onCompleted();
       else setSuccess(true);
     } catch (error) {
-      setToast(error instanceof Error ? error.message : t("form.submitFailed"));
+      setToast(getApiErrorMessage(error, t("form.submitFailed"), {
+        conflictMessage: t("form.bloggerProfileConflict"),
+        validationMessages: {
+          name: t("form.validation.name"),
+          username: t("form.validation.username"),
+          city: t("form.validation.city"),
+          phone: t("form.validation.phone"),
+          email: t("form.validation.email"),
+          categories: t("form.validation.categories"),
+          totalfollowers: t("form.validation.followers"),
+          averagereach: t("form.validation.reach"),
+          engagementrate: t("form.validation.er"),
+          storiesprice: t("form.validation.stories"),
+          reelsprice: t("form.validation.reels")
+        }
+      }));
     } finally {
       setSaving(false);
     }
