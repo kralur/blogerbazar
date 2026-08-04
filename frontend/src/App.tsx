@@ -125,6 +125,12 @@ export function App() {
     return () => setBackButtonHandler();
   }, [onboardingStep, route.path, route.id, setBackButtonHandler]);
 
+  useEffect(() => {
+    if (["/blogger", "/brand-face-detail", "/campaign"].includes(route.path)) {
+      window.scrollTo(0, 0);
+    }
+  }, [route.id, route.path]);
+
   const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />

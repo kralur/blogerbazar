@@ -5,6 +5,7 @@ import { Avatar, Badge, BottomNav, Button, Card, EmptyState, Icon, Modal, Skelet
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
+import { useScrollRestoration } from "../hooks/useScrollRestoration";
 
 type SelectedRole = "blogger" | "brandFace" | "business";
 const selectedRoleKey = "bloggerbazar.selectedRole";
@@ -19,6 +20,7 @@ function bloggerStatus(status: number | undefined, t: (key: string) => string) {
 
 export function ProfileDashboard() {
   const { user: telegramUser } = useTelegram();
+  useScrollRestoration("profile");
   const [blogger, setBlogger] = useState<MyBloggerProfile | null>(null);
   const [brandFace, setBrandFace] = useState<MyBrandFaceProfile | null>(null);
   const [business, setBusiness] = useState<MyBusinessProfile | null>(null);

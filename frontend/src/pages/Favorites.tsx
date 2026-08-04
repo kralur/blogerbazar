@@ -1,21 +1,23 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getFavorites, type FavoriteBlogger } from "../api/marketplace";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatNumber } from "../lib/currency";
 import { Avatar, BottomNav, Card, EmptyState, ErrorState, Icon, LoadingState } from "../components/ui";
 import { FavoriteButton } from "../components/FavoriteButton";
+import { useScrollRestoration } from "../hooks/useScrollRestoration";
 
 export function Favorites() {
   const { language, t } = useI18n();
+  useScrollRestoration("favorites");
   const [items, setItems] = useState<FavoriteBlogger[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setFailed(false);
     getFavorites().then((response) => setItems(response.items)).catch(() => setFailed(true)).finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(load, []);
 

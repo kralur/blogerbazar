@@ -32,7 +32,7 @@ function Metric({ icon, value, label }: { icon: string; value: string; label: st
 export function BloggerCard({ blogger }: { blogger: BloggerCardData }) {
   const { t } = useI18n();
   const primaryPrice = blogger.storiesPrice ?? blogger.priceFrom;
-  return <article className="glass-card pressable relative overflow-hidden p-4"><a className="block" href={`#/blogger/${blogger.id}`}>
+  return <article className="card-enter glass-card pressable relative overflow-hidden p-4"><a className="block" href={`#/blogger/${blogger.id}`}>
     <div className="flex gap-3">
       <Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} verified={blogger.verified} />
       <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><strong className="truncate text-[16px] tracking-tight">{blogger.name}</strong>{blogger.isPromoted && <Badge tone="gold">{t("card.promoted")}</Badge>}</div><p className="mt-0.5 truncate text-[13px] text-brand-muted">{cityLabel(blogger.city)}{blogger.platform ? ` · ${blogger.platform}` : ""}</p><div className="mt-2 flex flex-wrap gap-1.5">{blogger.categories.slice(0, 2).map((category) => <Badge key={category} tone="blue">{categoryLabel(category)}</Badge>)}</div></div>

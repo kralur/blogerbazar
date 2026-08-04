@@ -1,4 +1,4 @@
-import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { useEffect, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -79,8 +79,8 @@ export function Button({
   );
 }
 
-export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <section className={cn("glass-card p-4", className)}>{children}</section>;
+export function Card({ children, className, ...props }: ComponentPropsWithoutRef<"section">) {
+  return <section className={cn("glass-card p-4", className)} {...props}>{children}</section>;
 }
 
 export function Container({ children, className }: { children: ReactNode; className?: string }) {
@@ -191,7 +191,7 @@ export function Avatar({ src, name, size = "md", verified = false }: { src?: str
   return (
     <div className="relative shrink-0">
       <div className={cn("overflow-hidden rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 ring-4 ring-white", sizes[size])}>
-        {src && !imageFailed ? <img alt={name} className="h-full w-full object-cover" onError={() => setImageFailed(true)} src={src} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
+        {src && !imageFailed ? <img alt={name} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" onError={() => setImageFailed(true)} src={src} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
       </div>
       {verified && (
         <span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white shadow-glow ring-4 ring-white">
@@ -255,8 +255,8 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function EmptyState({ title, subtitle, icon = "search" }: { title: string; subtitle: string; icon?: string }) {
   return (
-    <Card className="py-8 text-center">
-      <div className="mx-auto grid h-14 w-14 place-items-center rounded-3xl bg-blue-50 text-brand-blue">
+    <Card className="py-8 text-center" role="status">
+      <div aria-hidden="true" className="mx-auto grid h-14 w-14 place-items-center rounded-3xl bg-blue-50 text-brand-blue">
         <Icon name={icon} />
       </div>
       <h3 className="mt-4 text-lg font-extrabold">{title}</h3>
@@ -267,7 +267,7 @@ export function EmptyState({ title, subtitle, icon = "search" }: { title: string
 
 export function LoadingState({ title }: { title?: string }) {
   const { t } = useI18n();
-  return <section aria-busy="true" className="grid gap-3"><Skeleton className="h-24" /><Skeleton className="h-32" /><p className="text-center text-sm font-semibold text-brand-muted">{title ?? t("common.loading")}</p></section>;
+  return <section aria-busy="true" aria-live="polite" className="grid gap-3"><Skeleton className="h-24" /><Skeleton className="h-32" /><p className="text-center text-sm font-semibold text-brand-muted">{title ?? t("common.loading")}</p></section>;
 }
 
 export function ErrorState({ title, subtitle, onRetry }: { title?: string; subtitle?: string; onRetry?: () => void }) {
@@ -289,13 +289,33 @@ export function NoDataState({ title, subtitle, icon = "search", action }: { titl
   return <div className="space-y-3"><EmptyState icon={icon} subtitle={subtitle} title={title} />{action}</div>;
 }
 
-export function Toast({ message, tone = "success" }: { message: string; tone?: "success" | "error" }) {
-  if (!message) return null;
+export type ToastTone = "success" | "saved" | "deleted" | "copied" | "error" | "warning" | "info";
+
+export function Toast({ message, tone = "success" }: { message: string; tone?: ToastTone }) {
+  const { haptic } = useTelegram();
+  const [visible, setVisible] = useState(Boolean(message));
+  useEffect(() => {
+    if (!message) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
+    if (tone === "error") haptic.error();
+    else if (tone === "warning") haptic.warning();
+    else haptic.success();
+    const timer = window.setTimeout(() => setVisible(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [haptic, message, tone]);
+  if (!message || !visible) return null;
+  const isError = tone === "error";
+  const isWarning = tone === "warning";
   return (
     <div
+      aria-live={isError ? "assertive" : "polite"}
+      role={isError ? "alert" : "status"}
       className={cn(
-        "fixed inset-x-4 bottom-24 z-50 mx-auto max-w-[390px] rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-glow",
-        tone === "success" ? "bg-brand-success" : "bg-brand-danger"
+        "toast-enter fixed inset-x-4 bottom-24 z-50 mx-auto max-w-[390px] rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-glow",
+        isError ? "bg-brand-danger" : isWarning ? "bg-amber-500" : tone === "info" ? "bg-brand-blue" : "bg-brand-success"
       )}
     >
       {message}

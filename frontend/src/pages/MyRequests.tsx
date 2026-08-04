@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   acceptCampaignApplication,
   completeDeal,
@@ -10,6 +10,7 @@ import {
 } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
+import { useScrollRestoration } from "../hooks/useScrollRestoration";
 
 const applicationStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : status === 2 ? "gray" : "purple";
 const dealStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : "gray";
@@ -17,6 +18,7 @@ const formatDate = (value: string, locale: string) => new Intl.DateTimeFormat(lo
 
 export function MyRequests() {
   const { language, t } = useI18n();
+  useScrollRestoration("requests");
   const applicationStatusLabels: Record<number, string> = { 0: t("requests.applicationNew"), 1: t("requests.applicationAccepted"), 2: t("requests.applicationRejected"), 3: t("requests.applicationWithdrawn") };
   const dealStatusLabels: Record<number, string> = { 0: t("requests.dealActive"), 1: t("requests.dealCompleted"), 2: t("requests.dealCancelled") };
   const locale = language === "uz" ? "uz-UZ" : "ru-RU";
@@ -30,12 +32,13 @@ export function MyRequests() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [toast, setToast] = useState("");
+  const [toastTone, setToastTone] = useState<"success" | "error">("success");
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
   const [dateRange, setDateRange] = useState<"today" | "week" | "month" | "custom" | "all">("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setFailed(false);
     Promise.all([getMyCampaignApplications(), getMyDeals()])
@@ -43,9 +46,9 @@ export function MyRequests() {
         setRequests(nextRequests);
         setDeals(nextDeals);
       })
-      .catch((error) => { setFailed(true); setToast(error instanceof Error ? error.message : t("requests.loadFailed")); })
+      .catch((error) => { setFailed(true); setToastTone("error"); setToast(error instanceof Error ? error.message : t("requests.loadFailed")); })
       .finally(() => setLoading(false));
-  };
+  }, [t]);
 
   useEffect(load, []);
 
@@ -64,9 +67,11 @@ export function MyRequests() {
       await acceptCampaignApplication(id);
       setRequests((current) => current.map((request) => request.id === id ? { ...request, status: 1, canAccept: false } : request));
       setSelectedRequest(null);
+      setToastTone("success");
       setToast(t("requests.accepted"));
       load();
     } catch (error) {
+      setToastTone("error");
       setToast(error instanceof Error ? error.message : t("requests.acceptFailed"));
     }
   };
@@ -76,8 +81,10 @@ export function MyRequests() {
       await completeDeal(id);
       setDeals((current) => current.map((deal) => deal.id === id ? { ...deal, status: 1, canComplete: false, canReview: true, completedAtUtc: new Date().toISOString() } : deal));
       setSelectedDeal((current) => current?.id === id ? { ...current, status: 1, canComplete: false, canReview: true, completedAtUtc: new Date().toISOString() } : current);
+      setToastTone("success");
       setToast(t("requests.completedToast"));
     } catch (error) {
+      setToastTone("error");
       setToast(error instanceof Error ? error.message : t("requests.completeFailed"));
     }
   };
@@ -90,8 +97,10 @@ export function MyRequests() {
       setDeals((current) => current.map((deal) => deal.id === selectedDeal.id ? { ...deal, canReview: false } : deal));
       setSelectedDeal((current) => current ? { ...current, canReview: false } : null);
       setComment("");
+      setToastTone("success");
       setToast(t("requests.reviewPublished"));
     } catch (error) {
+      setToastTone("error");
       setToast(error instanceof Error ? error.message : t("requests.reviewFailed"));
     }
   };
@@ -143,7 +152,7 @@ export function MyRequests() {
 
       <BottomSheet onClose={() => setDateFilterOpen(false)} open={dateFilterOpen} title={t("requests.dateFilter")}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">{(["today", "week", "month", "custom"] as const).map((range) => <button className={`rounded-2xl border px-3 py-3 text-sm font-bold ${dateRange === range ? "border-brand-blue bg-blue-50 text-brand-blue" : "border-brand-line bg-white"}`} key={range} onClick={() => setDateRange(range)} type="button">{t(`requests.range.${range}`)}</button>)}</div>{dateRange === "custom" && <div className="grid grid-cols-2 gap-3"><Input label={t("requests.fromDate")} onChange={(event) => setFromDate(event.target.value)} type="date" value={fromDate} /><Input label={t("requests.toDate")} onChange={(event) => setToDate(event.target.value)} type="date" value={toDate} /></div>}<Button className="w-full" onClick={() => setDateFilterOpen(false)} type="button">{t("common.apply")}</Button><Button className="w-full" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setDateFilterOpen(false); }} type="button" variant="secondary">{t("common.reset")}</Button></div></BottomSheet>
 
-      <Toast message={toast} />
+      <Toast message={toast} tone={toastTone} />
       <BottomNav />
     </div>
   );

@@ -15,6 +15,7 @@ export function CampaignDetails({ id }: { id: string }) {
   const [applicationMessage, setApplicationMessage] = useState("");
   const [applying, setApplying] = useState(false);
   const [toast, setToast] = useState("");
+  const [toastTone, setToastTone] = useState<"success" | "error">("success");
 
   const loadCampaign = () => {
     setLoading(true);
@@ -39,8 +40,10 @@ export function CampaignDetails({ id }: { id: string }) {
       await applyToCampaign(id, applicationMessage.trim() || t("campaign.defaultApplicationMessage"));
       setApplicationOpen(false);
       setApplicationMessage("");
+      setToastTone("success");
       setToast(t("campaign.applicationSent"));
     } catch {
+      setToastTone("error");
       setToast(t("campaign.applicationFailed"));
     } finally {
       setApplying(false);
@@ -74,7 +77,7 @@ export function CampaignDetails({ id }: { id: string }) {
       {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.businessContact")}</h2><ContactList items={contacts} /></section>}
       <div className="fixed inset-x-0 bottom-[70px] z-30 mx-auto max-w-[430px] bg-white/90 px-5 pb-3 pt-2 backdrop-blur"><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></div>
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
-      <Toast message={toast} /><BottomNav />
+      <Toast message={toast} tone={toastTone} /><BottomNav />
     </div>
   );
 }

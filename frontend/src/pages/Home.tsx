@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { getMarketplaceHome } from "../api/marketplace";
 import { BloggerCard } from "../components/BloggerCard";
 import { CampaignCard } from "../components/CampaignCard";
-import { Avatar, BottomNav, Button, Card, Chip, Icon, PromotionCard, Skeleton, StatsCard } from "../components/ui";
+import { Avatar, BottomNav, Button, Card, Chip, ErrorState, Icon, PromotionCard, Skeleton, StatsCard } from "../components/ui";
+import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency, formatNumber } from "../lib/currency";
 
@@ -15,15 +16,16 @@ function Rail({ title, empty, children }: { title: string; empty: string; childr
 
 export function Home() {
   const { language, setLanguage, t } = useI18n();
+  useScrollRestoration("home");
   const [data, setData] = useState<HomeData | null>(null);
   const [failed, setFailed] = useState(false);
-  const load = () => { setFailed(false); getMarketplaceHome().then(setData).catch(() => setFailed(true)); };
+  const load = useCallback(() => { setFailed(false); getMarketplaceHome().then(setData).catch(() => setFailed(true)); }, []);
   useEffect(load, []);
 
   return <div className="home-showcase screen pb-36">
     <header className="flex items-start justify-between gap-4"><div><h1 className="text-3xl font-extrabold tracking-tight">{t("home.title")}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">{t("home.subtitle")}</p></div><button aria-label={t("language.aria")} className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-xs font-extrabold text-brand-blue shadow-card" onClick={() => setLanguage(language === "ru" ? "uz" : "ru")} type="button">{language === "ru" ? "UZ" : "RU"}</button></header>
     <section className="home-showcase__hero relative mt-5 overflow-hidden rounded-[32px] p-5"><div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-cyan-300/40 blur-2xl" /><div className="relative"><p className="text-sm font-bold text-brand-blue">{t("common.appName")}</p><p className="mt-2 max-w-[240px] text-xl font-extrabold leading-6">{t("home.hero")}</p><a className="mt-4 inline-flex" href="#/search"><Button><Icon name="search" />{t("home.iNeedBlogger")}</Button></a></div></section>
-    {failed ? <Card className="mt-5 text-center"><p className="text-sm text-brand-muted">{t("home.loadFailed")}</p><Button className="mt-3" onClick={load} variant="secondary">{t("common.retry")}</Button></Card> : !data ? <div className="mt-6 grid gap-3"><Skeleton className="h-36" /><Skeleton className="h-36" /></div> : <>
+    {failed ? <div className="mt-5"><ErrorState onRetry={load} subtitle={t("home.loadFailed")} title={t("home.loadFailed")} /></div> : !data ? <HomeSkeleton /> : <>
       <Rail empty={t("home.promotedBloggersEmpty")} title={t("home.promotedBloggers")}>{data.promotedBloggers.length ? data.promotedBloggers.map(blogger => <div className="home-rail__blogger shrink-0 snap-start" key={blogger.id}><BloggerCard blogger={blogger} /></div>) : null}</Rail>
       <Rail empty={t("home.promotedCampaignsEmpty")} title={t("home.promotedCampaigns")}>{data.promotedCampaigns.length ? data.promotedCampaigns.map(campaign => <div className="home-rail__campaign shrink-0 snap-start" key={campaign.id}><CampaignCard campaign={campaign} /></div>) : null}</Rail>
       <section className="mt-7"><h2 className="mb-3 text-lg font-extrabold">{t("home.popularBusinesses")}</h2>{data.popularBusinesses.length ? <div className="home-rail no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">{data.popularBusinesses.map(business => <article className="glass-card w-[220px] shrink-0 snap-start p-4" key={business.id}><div className="flex items-center gap-3"><Avatar name={business.name} size="sm" src={business.logoUrl} /><div className="min-w-0"><h3 className="truncate text-[15px] font-extrabold">{business.name}</h3><p className="mt-0.5 truncate text-xs text-brand-muted">{business.city ? cityLabel(business.city) : t("common.country")}</p></div></div><div className="mt-4 grid grid-cols-2 gap-2 text-center"><div className="rounded-2xl bg-slate-50 px-2 py-2"><strong className="block text-sm">{business.campaignsCount}</strong><span className="text-[10px] text-brand-muted">{t("common.campaigns", { count: business.campaignsCount })}</span></div><div className="rounded-2xl bg-slate-50 px-2 py-2"><strong className="block text-sm">{business.rating?.toFixed(1) ?? "—"}</strong><span className="text-[10px] text-brand-muted">{t("common.rating")}</span></div></div></article>)}</div> : <Card><p className="text-sm text-brand-muted">{t("home.businessesEmpty")}</p></Card>}</section>
@@ -36,4 +38,8 @@ export function Home() {
     <section className="mt-7"><h2 className="mb-3 text-lg font-extrabold">{t("home.promotion")}</h2><div className="grid gap-3"><PromotionCard audience={t("home.audienceBloggers")} subtitle={t("home.promotionCampaignSubtitle")} title={t("home.promotionCampaignTitle")} /><PromotionCard audience={t("home.audienceBusinesses")} subtitle={t("home.promotionProfileSubtitle")} title={t("home.promotionProfileTitle")} /></div></section>
     <BottomNav />
   </div>;
+}
+
+function HomeSkeleton() {
+  return <div aria-busy="true" className="mt-6 grid gap-7"><section><Skeleton className="mb-3 h-6 w-48" /><div className="flex gap-3 overflow-hidden"><Skeleton className="h-56 w-[286px] shrink-0" /><Skeleton className="h-56 w-[286px] shrink-0" /></div></section><section><Skeleton className="mb-3 h-6 w-52" /><div className="flex gap-3 overflow-hidden"><Skeleton className="h-48 w-[286px] shrink-0" /><Skeleton className="h-48 w-[286px] shrink-0" /></div></section><section><Skeleton className="mb-3 h-6 w-44" /><div className="grid grid-cols-2 gap-2"><Skeleton className="h-24" /><Skeleton className="h-24" /></div></section></div>;
 }

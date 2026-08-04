@@ -2,11 +2,13 @@ import { useState, type MouseEvent } from "react";
 import { getApiErrorMessage } from "../api/client";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
 import { useI18n } from "../i18n";
+import { useTelegram } from "../telegram/TelegramProvider";
 import { Icon } from "./ui";
 
 export function FavoriteButton({ bloggerId, className, onChanged }: { bloggerId: string; className?: string; onChanged?: (isFavorite: boolean) => void }) {
   const { isEligible, isFavorite, ready, toggleFavorite } = useFavorites();
   const { t } = useI18n();
+  const { haptic } = useTelegram();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const saved = isFavorite(bloggerId);
@@ -21,8 +23,10 @@ export function FavoriteButton({ bloggerId, className, onChanged }: { bloggerId:
     setError("");
     try {
       const next = await toggleFavorite(bloggerId);
+      haptic.success();
       onChanged?.(next);
     } catch (reason) {
+      haptic.error();
       setError(getApiErrorMessage(reason, t("favorites.actionFailed")));
     } finally {
       setPending(false);

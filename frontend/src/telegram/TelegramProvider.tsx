@@ -19,6 +19,9 @@ type TelegramWebApp = {
   MainButton?: TelegramNativeButton;
   SettingsButton?: TelegramNativeButton;
   HapticFeedback?: TelegramHaptic;
+  enableVerticalSwipes?: () => void;
+  openLink?: (url: string) => void;
+  openTelegramLink?: (url: string) => void;
   onEvent?: (event: "themeChanged" | "viewportChanged", handler: () => void) => void;
   offEvent?: (event: "themeChanged" | "viewportChanged", handler: () => void) => void;
 };
@@ -45,7 +48,8 @@ type TelegramContextValue = {
   colorScheme: "light" | "dark";
   viewportHeight?: number;
   setBackButtonHandler: (handler?: () => void) => void;
-  haptic: { selection: () => void; impact: () => void; success: () => void };
+  haptic: { selection: () => void; impact: () => void; success: () => void; error: () => void; warning: () => void };
+  openLink: (url: string) => void;
 };
 
 const TelegramContext = createContext<TelegramContextValue | null>(null);
@@ -68,6 +72,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     app?.ready?.();
     app?.expand?.();
+    app?.enableVerticalSwipes?.();
     app?.MainButton?.hide?.();
     app?.SettingsButton?.hide?.();
 
@@ -122,7 +127,18 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     haptic: {
       selection: () => app?.HapticFeedback?.selectionChanged?.(),
       impact: () => app?.HapticFeedback?.impactOccurred?.("light"),
-      success: () => app?.HapticFeedback?.notificationOccurred?.("success")
+      success: () => app?.HapticFeedback?.notificationOccurred?.("success"),
+      error: () => app?.HapticFeedback?.notificationOccurred?.("error"),
+      warning: () => app?.HapticFeedback?.notificationOccurred?.("warning")
+    },
+    openLink: (url) => {
+      if (url.startsWith("https://t.me/")) {
+        app?.openTelegramLink?.(url);
+      } else if (app?.openLink) {
+        app.openLink(url);
+      } else {
+        window.location.assign(url);
+      }
     }
   }), [app, environment, setBackButtonHandler]);
 

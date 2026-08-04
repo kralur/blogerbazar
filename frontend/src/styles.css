@@ -53,7 +53,7 @@
 
   .screen {
     @apply min-h-[100dvh] px-4 pb-36 pt-5;
-    animation: screen-in 240ms cubic-bezier(.2,.8,.2,1) both;
+    animation: screen-in 180ms cubic-bezier(.2,.8,.2,1) both;
   }
 
   .first-run-screen {
@@ -62,7 +62,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem max(1.25rem, env(safe-area-inset-bottom));
-    animation: screen-in 240ms cubic-bezier(.2,.8,.2,1) both;
+    animation: screen-in 180ms cubic-bezier(.2,.8,.2,1) both;
   }
 
   .first-run-screen__hero {
@@ -157,6 +157,19 @@
     scroll-snap-align: start;
     scroll-snap-stop: always;
     animation: home-rail-card-in .32s cubic-bezier(.22, 1, .36, 1) both;
+  }
+
+  .toast-enter {
+    animation: toast-in 180ms cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  .image-fade {
+    background: linear-gradient(135deg, rgba(226,232,240,.9), rgba(207,250,254,.72));
+    animation: image-in 180ms ease-out both;
+  }
+
+  .card-enter {
+    animation: card-in 180ms cubic-bezier(.2,.8,.2,1) both;
   }
 
   .bottom-nav {
@@ -277,9 +290,30 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes image-in {
+  from { opacity: .25; filter: blur(6px); transform: scale(1.015); }
+  to { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-rail { scroll-behavior: auto; }
   .home-rail > * { animation: none; }
+  .card-enter { animation: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
