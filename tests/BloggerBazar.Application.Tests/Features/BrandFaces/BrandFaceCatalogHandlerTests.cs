@@ -7,7 +7,7 @@ namespace BloggerBazar.Application.Tests.Features.BrandFaces;
 public sealed class BrandFaceCatalogHandlerTests
 {
     [Fact]
-    public async Task Public_detail_does_not_expose_telegram_contact()
+    public async Task Public_detail_exposes_the_brand_face_contact()
     {
         var profile = BrandFaceProfile.Create(11, "Madina", "tashkent", ["beauty"]);
         profile.Update("Madina", "tashkent", null, null, ["ru", "uz"], ["beauty"], null, "@madina_inst", "@private_telegram", null, 500000, "Creator", null);
@@ -17,7 +17,7 @@ public sealed class BrandFaceCatalogHandlerTests
 
         Assert.NotNull(result);
         Assert.Equal("Madina", result.Name);
-        Assert.Null(typeof(BrandFacePublicDto).GetProperty("Telegram"));
+        Assert.Equal("@private_telegram", result.Telegram);
     }
 
     private sealed class InMemoryBrandFaceRepository(params BrandFaceProfile[] profiles) : IBrandFaceProfileRepository

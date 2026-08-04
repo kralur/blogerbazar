@@ -74,6 +74,7 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
                 profile.Categories,
                 profile.Experience,
                 profile.Instagram,
+                profile.Telegram,
                 profile.PortfolioUrl,
                 profile.CollaborationPrice,
                 profile.Description,

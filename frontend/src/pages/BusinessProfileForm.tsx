@@ -8,6 +8,8 @@ import { RegionSelect } from "../components/RegionSelect";
 import { normalizeRegion } from "../lib/taxonomy";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useI18n } from "../i18n";
+import { normalizeWebsite } from "../lib/contacts";
+import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
 
 const initial = { name: "", username: "", city: "tashkent-city", description: "", phone: "+998", email: "", website: "" };
 type Field = keyof typeof initial;
@@ -38,14 +40,20 @@ export function BusinessProfileForm({ onCompleted }: { onCompleted?: () => void 
   const [toast, setToast] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<PendingProfileImage>();
+  const [dirty, setDirty] = useState(false);
+  const unsavedChanges = useUnsavedChanges(dirty);
   const errors = useMemo(() => validate(form, t), [form, language, t]);
   const valid = Object.keys(errors).length === 0;
 
   const update = (key: Field) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = key === "phone" ? formatPhoneInput(event.target.value) : event.target.value;
+    setDirty(true);
     setForm((current) => ({ ...current, [key]: value }));
   };
-  const blur = (key: Field) => () => setTouched((current) => ({ ...current, [key]: true }));
+  const blur = (key: Field) => () => {
+    setTouched((current) => ({ ...current, [key]: true }));
+    if (key === "website") setForm((current) => ({ ...current, website: normalizeWebsite(current.website) }));
+  };
 
   useEffect(() => {
     if (user?.username) setForm((current) => current.username ? current : { ...current, username: `@${user.username}` });
@@ -53,6 +61,7 @@ export function BusinessProfileForm({ onCompleted }: { onCompleted?: () => void 
       setForm({ name: profile.name, username: profile.username ?? "", city: normalizeRegion(profile.city) || initial.city, description: profile.description ?? "", phone: formatPhoneInput(profile.phone ?? initial.phone), email: profile.email ?? "", website: profile.websiteUrl ?? "" });
       setLogoUrl(profile.logoUrl ?? null);
       setExisting(true);
+      setDirty(false);
     }).catch(() => undefined);
   }, [user?.username]);
 
@@ -72,6 +81,7 @@ export function BusinessProfileForm({ onCompleted }: { onCompleted?: () => void 
         setLogoUrl(null);
       }
       setPendingImage(undefined);
+      setDirty(false);
       if (onCompleted) onCompleted();
       else setSuccess(true);
     } catch (error) {
@@ -92,5 +102,5 @@ export function BusinessProfileForm({ onCompleted }: { onCompleted?: () => void 
     }
   };
 
-  return <form className="screen space-y-5 px-4 pt-5" noValidate onSubmit={submit}><header><p className="text-sm font-semibold text-brand-muted">{t("form.business.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{existing ? t("form.business.editTitle") : t("form.business.createTitle")}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">{t("form.business.subtitle")}</p></header><ProfileMediaPicker currentUrl={logoUrl} disabled={saving} name={form.name || t("profile.telegramUser")} onChange={setPendingImage} pending={pendingImage} /><section className="grid gap-3"><Input error={touched.name ? errors.name : undefined} label={t("form.companyName")} onBlur={blur("name")} onChange={update("name")} placeholder="Lumi Beauty" required value={form.name} /><div><Input error={touched.username ? errors.username : undefined} label={t("form.telegramUsername")} onBlur={blur("username")} onChange={update("username")} placeholder="@username" required value={form.username} /><p className="mt-1 text-xs text-brand-muted">{t("form.usernameBusinessHelper")}</p></div><RegionSelect error={touched.city ? errors.city : undefined} onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} required value={form.city} /><div><Input error={touched.website ? errors.website : undefined} label={t("form.websiteOptional")} onBlur={blur("website")} onChange={update("website")} placeholder="https://company.uz" type="url" value={form.website} /><p className="mt-1 text-xs text-brand-muted">{t("form.websiteHelper")}</p></div><Textarea error={touched.description ? errors.description : undefined} label={t("form.aboutCompany")} maxLength={1000} onBlur={blur("description")} onChange={update("description")} placeholder={t("form.companyDescriptionPlaceholder")} required value={form.description} /></section><section className="grid gap-3"><h2 className="font-extrabold">{t("form.contacts")}</h2><Input error={touched.phone ? errors.phone : undefined} inputMode="tel" label={t("common.phone")} onBlur={blur("phone")} onChange={update("phone")} placeholder="+998 90 123 45 67" required value={form.phone} /><Input error={touched.email ? errors.email : undefined} label={t("form.emailOptional")} onBlur={blur("email")} onChange={update("email")} placeholder="brand@example.uz" type="email" value={form.email} /></section><Button aria-busy={saving} className="w-full" disabled={!valid || saving} type="submit"><Icon name="check" />{saving ? t("form.publishing") : t("form.publishProfile")}</Button><Toast message={toast} tone="error" /><Modal onClose={() => setSuccess(false)} open={success} title={t("form.successTitle")}><p className="text-sm leading-6 text-brand-muted">{t("form.successDescription")}</p><Button className="mt-5 w-full" onClick={() => { window.location.hash = "/profile"; }} type="button">{t("form.understood")}</Button></Modal>{!onCompleted && <BottomNav />}</form>;
+  return <form className="screen space-y-5 px-4 pt-5" noValidate onSubmit={submit}><header><p className="text-sm font-semibold text-brand-muted">{t("form.business.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{existing ? t("form.business.editTitle") : t("form.business.createTitle")}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">{t("form.business.subtitle")}</p></header><ProfileMediaPicker currentUrl={logoUrl} disabled={saving} name={form.name || t("profile.telegramUser")} onChange={(image) => { setDirty(true); setPendingImage(image); }} pending={pendingImage} /><section className="grid gap-3"><Input error={touched.name ? errors.name : undefined} label={t("form.companyName")} onBlur={blur("name")} onChange={update("name")} placeholder="Lumi Beauty" required value={form.name} /><div><Input error={touched.username ? errors.username : undefined} label={t("form.telegramUsername")} onBlur={blur("username")} onChange={update("username")} placeholder="@username" required value={form.username} /><p className="mt-1 text-xs text-brand-muted">{t("form.usernameBusinessHelper")}</p></div><RegionSelect error={touched.city ? errors.city : undefined} onChange={(event) => { setDirty(true); setForm((current) => ({ ...current, city: event.target.value })); }} required value={form.city} /><div><Input error={touched.website ? errors.website : undefined} label={t("form.websiteOptional")} onBlur={blur("website")} onChange={update("website")} placeholder="https://company.uz" type="url" value={form.website} /><p className="mt-1 text-xs text-brand-muted">{t("form.websiteHelper")}</p></div><Textarea error={touched.description ? errors.description : undefined} label={t("form.aboutCompany")} maxLength={1000} onBlur={blur("description")} onChange={update("description")} placeholder={t("form.companyDescriptionPlaceholder")} required value={form.description} /></section><section className="grid gap-3"><h2 className="font-extrabold">{t("form.contacts")}</h2><Input error={touched.phone ? errors.phone : undefined} inputMode="tel" label={t("common.phone")} onBlur={blur("phone")} onChange={update("phone")} placeholder="+998 90 123 45 67" required value={form.phone} /><Input error={touched.email ? errors.email : undefined} label={t("form.emailOptional")} onBlur={blur("email")} onChange={update("email")} placeholder="brand@example.uz" type="email" value={form.email} /></section><Button aria-busy={saving} className="w-full" disabled={!valid || saving} type="submit"><Icon name="check" />{saving ? t("form.publishing") : t("form.publishProfile")}</Button><Toast message={toast} tone="error" /><Modal onClose={() => setSuccess(false)} open={success} title={t("form.successTitle")}><p className="text-sm leading-6 text-brand-muted">{t("form.successDescription")}</p><Button className="mt-5 w-full" onClick={() => { window.location.hash = "/profile"; }} type="button">{t("form.understood")}</Button></Modal><UnsavedChangesDialog guard={unsavedChanges} />{!onCompleted && <BottomNav />}</form>;
 }

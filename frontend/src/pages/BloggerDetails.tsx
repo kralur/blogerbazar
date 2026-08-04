@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
-import { getBlogger, getBloggerReviews, getPublicContact, type BloggerDetails, type BloggerReview } from "../api/marketplace";
+import { getBlogger, getBloggerReviews, getPublicContact, type BloggerDetails, type BloggerReview, type ContactDetails } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Rating, StatsCard, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { ContactList, hasContacts } from "../components/ContactList";
 
-type Contact = { phone?: string | null; email?: string | null };
-
 export function BloggerDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
   const [blogger, setBlogger] = useState<BloggerDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [contact, setContact] = useState<Contact | null>(null);
+  const [contact, setContact] = useState<ContactDetails | null>(null);
   const [reviews, setReviews] = useState<BloggerReview[]>([]);
   const [toast, setToast] = useState("");
 
@@ -38,7 +36,10 @@ export function BloggerDetails({ id }: { id: string }) {
   if (loading) return <div className="screen"><LoadingState title={t("common.loadingProfile")} /></div>;
   if (failed || !blogger) return <div className="screen"><ErrorState onRetry={loadBlogger} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /></div>;
 
-  const socialContact = (type: string, kind: "instagram" | "tiktok" | "youtube" | "telegram") => blogger.platforms.find((platform) => platform.type.toLowerCase() === type)?.url ? { kind, value: blogger.platforms.find((platform) => platform.type.toLowerCase() === type)!.url } : null;
+  const socialContact = (type: string, kind: "instagram" | "tiktok" | "youtube" | "telegram") => {
+    const platform = blogger.platforms.find((item) => item.type.toLowerCase() === type);
+    return platform?.url ? { kind, value: platform.url } : null;
+  };
   const contacts = [
     contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
     contact?.telegram ? { kind: "telegram" as const, value: contact.telegram } : null,

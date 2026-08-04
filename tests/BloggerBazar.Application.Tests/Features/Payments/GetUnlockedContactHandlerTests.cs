@@ -8,24 +8,25 @@ namespace BloggerBazar.Application.Tests.Features.Payments;
 public sealed class GetUnlockedContactHandlerTests
 {
     [Fact]
-    public async Task Returns_contact_to_any_authenticated_marketplace_user()
+    public async Task Returns_public_contact()
     {
         var target = CreateBlogger();
         var handler = new GetUnlockedContactHandler(new InMemoryBloggerRepository(target), new InMemoryBusinessRepository());
 
-        var result = await handler.Handle(new GetUnlockedContactQuery(101, ContactTargetType.Blogger, target.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetUnlockedContactQuery(ContactTargetType.Blogger, target.Id), CancellationToken.None);
 
         Assert.Equal("+998901234567", result.Phone);
         Assert.Equal("madina@example.com", result.Email);
+        Assert.Equal("@madina", result.Telegram);
     }
 
     [Fact]
-    public async Task Returns_contact_to_profile_owner()
+    public async Task Returns_same_public_contact_for_repeated_queries()
     {
         var target = CreateBlogger();
         var handler = new GetUnlockedContactHandler(new InMemoryBloggerRepository(target), new InMemoryBusinessRepository());
 
-        var result = await handler.Handle(new GetUnlockedContactQuery(202, ContactTargetType.Blogger, target.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetUnlockedContactQuery(ContactTargetType.Blogger, target.Id), CancellationToken.None);
 
         Assert.Equal("+998901234567", result.Phone);
         Assert.Equal("madina@example.com", result.Email);
@@ -34,7 +35,7 @@ public sealed class GetUnlockedContactHandlerTests
     private static BloggerProfile CreateBlogger()
     {
         var profile = BloggerProfile.Create(202, "Madina", "Tashkent", ["Lifestyle"]);
-        profile.UpdatePublicProfile("Madina", null, null, "Tashkent", ["Lifestyle"], null, null, "+998901234567", "madina@example.com", 1000, null, null, null, null, null, null, false);
+        profile.UpdatePublicProfile("Madina", null, "@madina", "Tashkent", ["Lifestyle"], null, null, "+998901234567", "madina@example.com", 1000, null, null, null, null, null, null, false);
         return profile;
     }
 

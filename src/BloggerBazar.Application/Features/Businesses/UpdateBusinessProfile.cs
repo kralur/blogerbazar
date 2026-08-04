@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using FluentValidation;
 using BloggerBazar.Application.Validation;
 using MediatR;
@@ -32,7 +33,7 @@ public sealed class UpdateBusinessProfileValidator : AbstractValidator<UpdateBus
     }
 }
 
-public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository businesses, IUnitOfWork unitOfWork)
+public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository businesses, IUnitOfWork unitOfWork, ICatalogCache? cache = null)
     : IRequestHandler<UpdateBusinessProfileCommand, BusinessProfileDto>
 {
     public async Task<BusinessProfileDto> Handle(UpdateBusinessProfileCommand command, CancellationToken cancellationToken)
@@ -57,6 +58,7 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
             command.Email?.Trim());
         profile.Approve();
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return BusinessProfileDto.From(profile);
     }
 }

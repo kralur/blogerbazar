@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Application.Validation;
 using FluentValidation;
@@ -24,7 +25,7 @@ public sealed class CreateBusinessProfileValidator : AbstractValidator<CreateBus
     }
 }
 
-public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository businesses, IUnitOfWork unitOfWork)
+public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository businesses, IUnitOfWork unitOfWork, ICatalogCache? cache = null)
     : IRequestHandler<CreateBusinessProfileCommand, BusinessProfileDto>
 {
     public async Task<BusinessProfileDto> Handle(CreateBusinessProfileCommand command, CancellationToken cancellationToken)
@@ -52,6 +53,7 @@ public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository busi
             await businesses.AddAsync(profile, cancellationToken);
         }
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return BusinessProfileDto.From(profile);
     }
 }

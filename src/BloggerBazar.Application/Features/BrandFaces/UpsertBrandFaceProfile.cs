@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Application.Validation;
 using FluentValidation;
@@ -45,7 +46,7 @@ public sealed class UpsertBrandFaceProfileValidator : AbstractValidator<UpsertBr
     }
 }
 
-public sealed class UpsertBrandFaceProfileHandler(IBrandFaceProfileRepository profiles, IUnitOfWork unitOfWork)
+public sealed class UpsertBrandFaceProfileHandler(IBrandFaceProfileRepository profiles, IUnitOfWork unitOfWork, ICatalogCache? cache = null)
     : IRequestHandler<UpsertBrandFaceProfileCommand, BrandFaceProfileDto>
 {
     public async Task<BrandFaceProfileDto> Handle(UpsertBrandFaceProfileCommand command, CancellationToken cancellationToken)
@@ -63,6 +64,7 @@ public sealed class UpsertBrandFaceProfileHandler(IBrandFaceProfileRepository pr
 
         profile.Update(command.Name.Trim(), command.City.Trim(), command.Age, command.Gender?.Trim(), command.Languages.Select(value => value.Trim()).ToArray(), command.Categories.Select(value => value.Trim()).ToArray(), command.Experience?.Trim(), command.Instagram?.Trim(), command.Telegram!.Trim(), command.PortfolioUrl?.Trim(), command.CollaborationPrice, command.Description?.Trim(), command.AvatarUrl?.Trim());
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return BrandFaceProfileDto.From(profile);
     }
 }

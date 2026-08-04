@@ -32,7 +32,8 @@ export function socialHandle(value: string) {
   if (!trimmed) return "";
   try {
     const url = new URL(normalizeWebsite(trimmed));
-    return url.pathname.split("/").filter(Boolean).at(-1)?.replace(/^@/, "") ?? "";
+    const segments = url.pathname.split("/").filter(Boolean);
+    return (segments[segments.length - 1] ?? "").replace(/^@/, "");
   } catch {
     return trimmed.replace(/^@/, "");
   }

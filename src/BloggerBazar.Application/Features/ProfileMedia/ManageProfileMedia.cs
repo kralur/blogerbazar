@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Media;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Abstractions.Persistence;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,8 @@ public sealed class UploadProfileMediaHandler(
     IBusinessProfileRepository businesses,
     IProfileMediaStorage storage,
     IUnitOfWork unitOfWork,
-    ILogger<UploadProfileMediaHandler> logger) : IRequestHandler<UploadProfileMediaCommand, ProfileMediaDto>
+    ILogger<UploadProfileMediaHandler> logger,
+    ICatalogCache? cache = null) : IRequestHandler<UploadProfileMediaCommand, ProfileMediaDto>
 {
     public async Task<ProfileMediaDto> Handle(UploadProfileMediaCommand command, CancellationToken cancellationToken)
     {
@@ -43,6 +45,7 @@ public sealed class UploadProfileMediaHandler(
         }
 
         await TryDeletePreviousFileAsync(profile.CurrentImageUrl, uploaded.PublicUrl, storage, logger, cancellationToken);
+        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return new ProfileMediaDto(uploaded.PublicUrl);
     }
 
@@ -112,7 +115,8 @@ public sealed class DeleteProfileMediaHandler(
     IBusinessProfileRepository businesses,
     IProfileMediaStorage storage,
     IUnitOfWork unitOfWork,
-    ILogger<DeleteProfileMediaHandler> logger) : IRequestHandler<DeleteProfileMediaCommand>
+    ILogger<DeleteProfileMediaHandler> logger,
+    ICatalogCache? cache = null) : IRequestHandler<DeleteProfileMediaCommand>
 {
     public async Task Handle(DeleteProfileMediaCommand command, CancellationToken cancellationToken)
     {
@@ -137,5 +141,7 @@ public sealed class DeleteProfileMediaHandler(
         {
             logger.LogWarning(exception, "Profile media cleanup failed after deletion");
         }
+
+        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
     }
 }

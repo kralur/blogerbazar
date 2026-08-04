@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using BloggerBazar.Application.Validation;
@@ -85,7 +86,7 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
     }
 }
 
-public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profiles, IPortfolioItemRepository portfolioItems, ISocialPlatformRepository platforms, IUnitOfWork unitOfWork)
+public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profiles, IPortfolioItemRepository portfolioItems, ISocialPlatformRepository platforms, IUnitOfWork unitOfWork, ICatalogCache? cache = null)
     : IRequestHandler<CreateBloggerProfileCommand, BloggerProfileDto>
 {
     public async Task<BloggerProfileDto> Handle(CreateBloggerProfileCommand command, CancellationToken cancellationToken)
@@ -123,6 +124,7 @@ public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profil
         await portfolioItems.AddRangeAsync(portfolio, cancellationToken);
         await platforms.AddRangeAsync((command.Platforms ?? []).Select(platform => SocialPlatform.Create(profile.Id, platform.Type.Trim(), platform.Url.Trim(), platform.Followers, platform.ScreenshotUrl?.Trim())), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return BloggerProfileDto.From(profile);
     }
 }
