@@ -62,7 +62,7 @@ export function CampaignDetails({ id }: { id: string }) {
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   return (
     <div className="screen pb-36">
-      <header className="flex items-center justify-between pt-2">
+      <header className="flex items-center justify-between">
         <a className="grid h-11 w-11 place-items-center rounded-2xl bg-white shadow-card" href="#/campaigns"><Icon name="back" /></a>
         <Badge tone={campaign.isPromoted ? "gold" : "blue"}>{campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>
       </header>

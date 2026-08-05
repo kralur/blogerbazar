@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { deleteCurrentAccount, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplications, getMyDeals, normalizeMarketplaceRole, selectMarketplaceRole, type MarketplaceRole, type MyBloggerProfile, type MyBrandFaceProfile, type MyBusinessProfile } from "../api/marketplace";
+import { deleteCurrentAccount, deleteProfileImage, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplications, getMyDeals, normalizeMarketplaceRole, selectMarketplaceRole, uploadProfileImage, type MarketplaceRole, type MyBloggerProfile, type MyBrandFaceProfile, type MyBusinessProfile, type ProfileMediaTarget } from "../api/marketplace";
 import { getApiErrorMessage } from "../api/client";
-import { Avatar, Badge, BottomNav, Button, Card, EmptyState, Icon, Modal, Skeleton, StatsCard, Toast } from "../components/ui";
+import { Badge, BottomNav, Button, Card, EmptyState, Icon, Modal, Skeleton, StatsCard, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
+import { ProfileMediaPicker, type PendingProfileImage } from "../components/ProfileMediaPicker";
 
 type SelectedRole = "blogger" | "brandFace" | "business";
 const selectedRoleKey = "bloggerbazar.selectedRole";
@@ -30,6 +31,8 @@ export function ProfileDashboard() {
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error">("error");
+  const [accountImagePending, setAccountImagePending] = useState<PendingProfileImage>();
+  const [accountImageSaving, setAccountImageSaving] = useState(false);
   const [applicationsCount, setApplicationsCount] = useState(0);
   const [dealsCount, setDealsCount] = useState(0);
   const [role, setRole] = useState<SelectedRole>(() => {
@@ -71,10 +74,40 @@ export function ProfileDashboard() {
   };
   const username = telegramUser?.username ? `@${telegramUser.username}` : t("profile.usernameMissing");
   const activeProfile = role === "blogger" ? blogger : role === "brandFace" ? brandFace : business;
-  const activeProfileImage = role === "blogger" ? blogger?.avatarUrl : role === "brandFace" ? brandFace?.avatarUrl : business?.logoUrl;
+  const activeStoredImage = role === "blogger" ? blogger?.avatarUrl : role === "brandFace" ? brandFace?.avatarUrl : business?.logoUrl;
+  const profileMediaTarget: ProfileMediaTarget = role === "blogger" ? "blogger" : role === "brandFace" ? "brand-face" : "business";
   const status = role === "brandFace" ? { label: t("profile.approved"), tone: "green" as const } : bloggerStatus(role === "blogger" ? blogger?.status : business?.moderationStatus, t);
   const profileHash = role === "blogger" ? "/blogger-form" : role === "brandFace" ? "/brand-face" : "/business";
   const completion = activeProfile ? role === "blogger" ? Math.round(([blogger?.bio, blogger?.phone, blogger?.email, blogger?.storiesPrice].filter(Boolean).length / 4) * 100) : role === "brandFace" ? Math.round(([brandFace?.experience, brandFace?.instagram, brandFace?.portfolioUrl, brandFace?.description].filter(Boolean).length / 4) * 100) : Math.round(([business?.description, business?.phone, business?.email, business?.logoUrl].filter(Boolean).length / 4) * 100) : 0;
+
+  const updateProfileImage = (target: ProfileMediaTarget, imageUrl: string | null) => {
+    if (target === "blogger") setBlogger((current) => current ? { ...current, avatarUrl: imageUrl } : current);
+    else if (target === "brand-face") setBrandFace((current) => current ? { ...current, avatarUrl: imageUrl } : current);
+    else setBusiness((current) => current ? { ...current, logoUrl: imageUrl } : current);
+  };
+
+  const changeAccountImage = async (image: PendingProfileImage) => {
+    if (!activeProfile || accountImageSaving) return;
+    setAccountImagePending(image);
+    setAccountImageSaving(true);
+    try {
+      if (image instanceof File) {
+        const media = await uploadProfileImage(profileMediaTarget, image);
+        updateProfileImage(profileMediaTarget, media.url);
+        haptic.success();
+      } else if (image === null && activeStoredImage) {
+        await deleteProfileImage(profileMediaTarget);
+        updateProfileImage(profileMediaTarget, null);
+        haptic.success();
+      }
+    } catch (error) {
+      setToastTone("error");
+      setToast(getApiErrorMessage(error, t("form.submitFailed")));
+    } finally {
+      setAccountImagePending(undefined);
+      setAccountImageSaving(false);
+    }
+  };
 
   const clearLocalAccountState = () => {
     localStorage.removeItem(selectedRoleKey);
@@ -115,7 +148,7 @@ export function ProfileDashboard() {
   return (
     <div className="screen space-y-5 px-4 pt-5">
       <header className="flex items-center justify-between"><div><p className="text-sm font-semibold text-brand-muted">{t("profile.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{t("profile.title")}</h1></div><button aria-label={t("language.aria")} className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-xs font-extrabold text-brand-blue shadow-card" onClick={() => setLanguage(language === "ru" ? "uz" : "ru")} type="button">{language === "ru" ? "UZ" : "RU"}</button></header>
-      <Card className="flex items-center gap-4"><Avatar name={activeProfile?.name || telegramUser?.first_name || t("profile.telegramUser")} size="md" src={activeProfileImage} /><div className="min-w-0"><div className="truncate text-lg font-extrabold">{telegramUser?.first_name || t("profile.telegramUser")}</div><p className="mt-1 truncate text-sm text-brand-muted">{username}</p><Badge tone="blue">{t("profile.telegramAccount")}</Badge></div></Card>
+      <Card className="flex items-center gap-4"><ProfileMediaPicker canRemove={Boolean(activeStoredImage)} compact currentUrl={activeStoredImage} disabled={!activeProfile || accountImageSaving} fallbackUrl={telegramUser?.photo_url} name={activeProfile?.name || telegramUser?.first_name || t("profile.telegramUser")} onChange={(image) => void changeAccountImage(image)} pending={accountImagePending} /><div className="min-w-0"><div className="truncate text-lg font-extrabold">{telegramUser?.first_name || t("profile.telegramUser")}</div><p className="mt-1 truncate text-sm text-brand-muted">{username}</p><Badge tone="blue">{t("profile.telegramAccount")}</Badge></div></Card>
       {loading ? <><Skeleton className="h-28" /><Skeleton className="h-20" /></> : <>
         <section><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-extrabold">{t("profile.role")}</h2></div><div className="grid grid-cols-3 gap-3">
           <button className={`rounded-3xl border p-4 text-left transition ${role === "blogger" ? "border-brand-blue bg-blue-50 ring-2 ring-blue-100" : "border-brand-line bg-white"}`} onClick={() => selectRole("blogger")} type="button"><Icon className="mb-3 text-brand-blue" name="user" /><div className="font-extrabold">{t("profile.blogger")}</div><div className="mt-1 text-xs text-brand-muted">{blogger ? t("profile.created") : t("profile.create")}</div></button>

@@ -107,7 +107,7 @@ export function MyRequests() {
 
   return (
     <div className="screen pb-28">
-      <header className="flex items-center justify-between pt-2">
+      <header className="flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-brand-muted">{t("requests.eyebrow")}</p>
           <h1 className="text-3xl font-extrabold tracking-tight">{t("requests.title")}</h1>

@@ -61,8 +61,8 @@
 
   .screen {
     min-height: var(--tg-viewport-height, 100dvh);
-    padding-top: max(1.25rem, var(--tg-content-safe-top, env(safe-area-inset-top)));
-    padding-bottom: max(9rem, calc(6.75rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom))));
+    padding-top: max(1.25rem, var(--tg-content-safe-top, env(safe-area-inset-top))) !important;
+    padding-bottom: max(9rem, calc(6.75rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom)))) !important;
     @apply px-4;
     animation: screen-in 180ms cubic-bezier(.2,.8,.2,1) both;
   }
@@ -119,11 +119,15 @@
 
   .bottom-sheet-backdrop {
     animation: fade-in 180ms ease-out both;
+    padding-top: var(--tg-content-safe-top, env(safe-area-inset-top));
+    padding-bottom: var(--tg-content-safe-bottom, env(safe-area-inset-bottom));
   }
 
   .bottom-sheet {
     animation: sheet-in 280ms cubic-bezier(.2,.8,.2,1) both;
-    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    max-height: calc(var(--tg-viewport-height, 100dvh) - var(--tg-content-safe-top, 0px));
+    overflow-y: auto;
+    padding-bottom: max(1.25rem, var(--tg-content-safe-bottom, env(safe-area-inset-bottom)));
   }
 
   .tap-target {

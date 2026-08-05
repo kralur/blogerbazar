@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { BloggerBazarLogo } from "../components/BloggerBazarLogo";
 import { TelegramLaunch } from "./telegramTheme";
 
-type TelegramUser = { id: number; username?: string; first_name?: string };
+type TelegramUser = { id: number; username?: string; first_name?: string; photo_url?: string };
 type TelegramBackButton = { show?: () => void; hide?: () => void; onClick?: (handler: () => void) => void; offClick?: (handler: () => void) => void };
 type TelegramHaptic = { selectionChanged?: () => void; impactOccurred?: (style: "light" | "medium" | "heavy" | "rigid" | "soft") => void; notificationOccurred?: (type: "error" | "success" | "warning") => void };
 type TelegramInset = { top?: number; bottom?: number; left?: number; right?: number };
@@ -27,7 +27,7 @@ type TelegramWebApp = {
   MainButton?: TelegramNativeButton;
   SettingsButton?: TelegramNativeButton;
   HapticFeedback?: TelegramHaptic;
-  enableVerticalSwipes?: () => void;
+  disableVerticalSwipes?: () => void;
   openLink?: (url: string) => void;
   openTelegramLink?: (url: string) => void;
   onEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
@@ -93,7 +93,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     } catch {
       app?.expand?.();
     }
-    app?.enableVerticalSwipes?.();
+    app?.disableVerticalSwipes?.();
     app?.MainButton?.hide?.();
     app?.SettingsButton?.hide?.();
 
@@ -113,8 +113,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       root.style.setProperty("--telegram-button", theme?.button_color ?? TelegramLaunch.accent);
       root.style.setProperty("--tg-safe-area-top", `${safeInsets?.top ?? 0}px`);
       root.style.setProperty("--tg-safe-area-bottom", `${safeInsets?.bottom ?? 0}px`);
-      root.style.setProperty("--tg-content-safe-top", `${contentInsets?.top ?? safeInsets?.top ?? 0}px`);
-      root.style.setProperty("--tg-content-safe-bottom", `${contentInsets?.bottom ?? safeInsets?.bottom ?? 0}px`);
+      root.style.setProperty("--tg-content-safe-top", `${Math.max(contentInsets?.top ?? 0, safeInsets?.top ?? 0)}px`);
+      root.style.setProperty("--tg-content-safe-bottom", `${Math.max(contentInsets?.bottom ?? 0, safeInsets?.bottom ?? 0)}px`);
       root.style.setProperty("--tg-viewport-height", `${app?.viewportStableHeight ?? app?.viewportHeight ?? window.innerHeight}px`);
       try {
         app?.setHeaderColor?.(theme?.bg_color ?? TelegramLaunch.splashHeader);
