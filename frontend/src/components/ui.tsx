@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -405,13 +406,15 @@ export function FixedActionBar({ children }: { children: ReactNode }) {
 }
 
 export function FloatingActionButton({ children, ariaLabel, onClick }: { children: ReactNode; ariaLabel: string; onClick: () => void }) {
-  if (typeof document === "undefined") return null;
+  const rootScreenVisible = useRootScreenVisibility();
+  if (!rootScreenVisible || typeof document === "undefined") return null;
   return createPortal(<button aria-label={ariaLabel} className="floating-action fixed right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient text-white shadow-glow transition active:scale-95" onClick={onClick} type="button">{children}</button>, document.body);
 }
 
 export function BottomNav() {
   const { t } = useI18n();
   const { haptic } = useTelegram();
+  const rootScreenVisible = useRootScreenVisibility();
   const [hash, setHash] = useState(window.location.hash || "#/");
 
   useEffect(() => {
@@ -431,7 +434,7 @@ export function BottomNav() {
     return <a className={cn("group grid justify-items-center gap-1 rounded-2xl px-2 py-1.5 text-[11px] font-bold transition", active ? "text-brand-blue" : "text-brand-muted")} href={item.href} key={item.href} onClick={() => haptic.selection()}><span className={cn("grid h-8 w-10 place-items-center rounded-full transition", active && "bg-blue-50 shadow-sm")}><Icon className={cn("h-5 w-5 transition group-active:scale-90", active && "scale-110")} name={item.icon} /></span>{item.label}</a>;
   };
 
-  if (typeof document === "undefined") return null;
+  if (!rootScreenVisible || typeof document === "undefined") return null;
 
   return createPortal(
     <nav aria-label={t("nav.aria")} className="bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px]">

@@ -29,10 +29,14 @@ export function BloggerSearch() {
   const [hasMore, setHasMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const requestIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController>();
   const debouncedQuery = useDebouncedValue(query, 300);
 
   const load = useCallback(async (requestedPage: number, append: boolean) => {
     const requestId = ++requestIdRef.current;
+    abortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     if (append) {
       setLoadingMore(true);
       setLoadMoreFailed(false);
@@ -43,7 +47,7 @@ export function BloggerSearch() {
     }
 
     try {
-      const result = await getBloggers({ ...filters, query: debouncedQuery || undefined, page: requestedPage, pageSize });
+      const result = await getBloggers({ ...filters, query: debouncedQuery || undefined, page: requestedPage, pageSize }, abortController.signal);
       if (requestId !== requestIdRef.current) return;
       setBloggers((current) => append
         ? [...current, ...result.bloggers.filter((blogger) => !current.some((item) => item.id === blogger.id))]
@@ -51,7 +55,8 @@ export function BloggerSearch() {
       setTotal(result.total);
       setPage(result.page);
       setHasMore(result.page * result.pageSize < result.total);
-    } catch {
+    } catch (error) {
+      if (abortController.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
       if (requestId !== requestIdRef.current) return;
       if (append) setLoadMoreFailed(true);
       else setFailed(true);
@@ -68,8 +73,13 @@ export function BloggerSearch() {
 
   useEffect(() => {
     void load(1, false);
+    return () => {
+      requestIdRef.current += 1;
+      abortControllerRef.current?.abort();
+    };
   }, [load]);
-  useProfileDataRefresh(() => { void load(1, false); });
+  const refreshProfileData = useCallback(() => { void load(1, false); }, [load]);
+  useProfileDataRefresh(refreshProfileData);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;

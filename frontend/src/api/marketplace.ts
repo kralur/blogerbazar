@@ -318,10 +318,10 @@ const asCampaignDetails = (campaign: ApiCampaign): CampaignDetails => ({
 export type BloggerSearchFilters = { query?: string; city?: string; category?: string; platform?: string; minFollowers?: number; minEr?: number; maxEr?: number; minPrice?: number; maxPrice?: number; sort?: "popular" | "rating" | "er" | "price" | "newest"; page?: number; pageSize?: number };
 export type BloggerSearchResult = { bloggers: BloggerCardData[]; total: number; page: number; pageSize: number };
 
-export async function getBloggers(filters: BloggerSearchFilters = {}): Promise<BloggerSearchResult> {
+export async function getBloggers(filters: BloggerSearchFilters = {}, signal?: AbortSignal): Promise<BloggerSearchResult> {
   const params = new URLSearchParams();
   Object.entries({ ...filters, page: filters.page ?? 1, pageSize: filters.pageSize ?? 20 }).forEach(([key, value]) => { if (value !== undefined && value !== "") params.set(key, String(value)); });
-  const response = await api<{ bloggers: ApiBlogger[]; total: number; page: number; pageSize: number }>(`/api/bloggers?${params.toString()}`);
+  const response = await api<{ bloggers: ApiBlogger[]; total: number; page: number; pageSize: number }>(`/api/bloggers?${params.toString()}`, { signal });
   return { ...response, bloggers: response.bloggers.map(asBloggerCard) };
 }
 

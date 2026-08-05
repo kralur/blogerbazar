@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, memo, Suspense, useEffect, useState } from "react";
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, type MarketplaceRole } from "./api/marketplace";
 import { LoadingState } from "./components/ui";
 import { useTelegram } from "./telegram/TelegramProvider";
 import { FavoritesProvider } from "./features/favorites/FavoritesProvider";
+import { RootScreenVisibility } from "./navigation/RootScreenVisibility";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
@@ -25,6 +26,12 @@ const ProfileDashboard = lazy(async () => ({ default: (await import("./pages/Pro
 const TelegramAuthorization = lazy(async () => ({ default: (await import("./pages/TelegramAuthorization")).TelegramAuthorization }));
 const Welcome = lazy(async () => ({ default: (await import("./pages/Welcome")).Welcome }));
 const Favorites = lazy(async () => ({ default: (await import("./pages/Favorites")).Favorites }));
+const CachedHome = memo(Home);
+const CachedSearch = memo(BloggerSearch);
+const CachedCampaigns = memo(Campaigns);
+const CachedRequests = memo(MyRequests);
+const CachedProfile = memo(ProfileDashboard);
+const rootRoutes = ["/", "/search", "/campaigns", "/requests", "/profile"];
 
 function useRoute() {
   const [hash, setHash] = useState(() => window.location.hash.replace("#", "") || "/");
@@ -33,7 +40,8 @@ function useRoute() {
     window.addEventListener("hashchange", handleRouteChange);
     return () => window.removeEventListener("hashchange", handleRouteChange);
   }, []);
-  const [path, id] = hash.split("/").filter(Boolean);
+  const [pathname] = hash.split("?");
+  const [path, id] = pathname.split("/").filter(Boolean);
   return { path: path ? `/${path}` : "/", id };
 }
 
@@ -63,6 +71,13 @@ export function App() {
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(initialOnboardingStep);
   const [selectedRole, setSelectedRole] = useState<MarketplaceRole>();
   const [authorizationFailed, setAuthorizationFailed] = useState(false);
+  const [visitedRootRoutes, setVisitedRootRoutes] = useState<Set<string>>(() => new Set(rootRoutes.includes(route.path) ? [route.path] : ["/"]));
+
+  useEffect(() => {
+    if (onboardingStep === "complete" && rootRoutes.includes(route.path)) {
+      setVisitedRootRoutes((current) => current.has(route.path) ? current : new Set([...current, route.path]));
+    }
+  }, [onboardingStep, route.path]);
 
   const authorize = async () => {
     setAuthorizationFailed(false);
@@ -113,7 +128,7 @@ export function App() {
   };
 
   useEffect(() => {
-    if (onboardingStep !== "complete" || route.path === "/") {
+    if (onboardingStep !== "complete" || rootRoutes.includes(route.path)) {
       setBackButtonHandler();
       return;
     }
@@ -144,18 +159,18 @@ export function App() {
 
   return <FavoritesProvider enabled={onboardingStep === "complete"}><main className={`app-shell bg-soft-radial ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><Suspense fallback={<div className="screen"><LoadingState /></div>}>
     {onboardingStep !== "complete" ? onboardingContent : <>
-      {route.path === "/" && <Home />}
-      {route.path === "/profile" && <ProfileDashboard />}
+      {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome /></RootScreenVisibility>}
+      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile /></RootScreenVisibility>}
       {route.path === "/favorites" && <Favorites />}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
       {route.path === "/business" && <BusinessProfileForm />}
       {route.path === "/brand-face" && <BrandFaceProfileForm />}
       {route.path === "/brand-face-detail" && route.id && <BrandFaceDetails id={route.id} />}
-      {route.path === "/search" && <BloggerSearch />}
+      {(visitedRootRoutes.has("/search") || route.path === "/search") && <RootScreenVisibility active={route.path === "/search"}><CachedSearch /></RootScreenVisibility>}
       {route.path === "/blogger" && route.id && <BloggerDetails id={route.id} />}
-      {route.path === "/campaigns" && <Campaigns />}
+      {(visitedRootRoutes.has("/campaigns") || route.path === "/campaigns") && <RootScreenVisibility active={route.path === "/campaigns"}><CachedCampaigns /></RootScreenVisibility>}
       {route.path === "/campaign" && route.id && <CampaignDetails id={route.id} />}
-      {route.path === "/requests" && <MyRequests />}
+      {(visitedRootRoutes.has("/requests") || route.path === "/requests") && <RootScreenVisibility active={route.path === "/requests"}><CachedRequests /></RootScreenVisibility>}
       {route.path === "/admin" && <Admin />}
       {!knownRoutes.includes(route.path) && <Home />}
     </>}
