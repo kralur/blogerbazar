@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { selectMarketplaceRole, type MarketplaceRole } from "../api/marketplace";
-import { Button, Card, Toast } from "../components/ui";
+import { Button, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
+import { useTelegram } from "../telegram/TelegramProvider";
 
 const roleRoutes: Record<MarketplaceRole, string> = {
   Blogger: "/blogger-form",
@@ -11,6 +12,7 @@ const roleRoutes: Record<MarketplaceRole, string> = {
 
 export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: MarketplaceRole) => void }) {
   const { t } = useI18n();
+  const { haptic } = useTelegram();
   const [selectedRole, setSelectedRole] = useState<MarketplaceRole>("Blogger");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -35,12 +37,12 @@ export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: Marketp
     }
   };
 
-  return <div className="screen flex min-h-screen flex-col px-5 pt-10">
+  return <div className="screen flex flex-col px-5 pt-10">
     <p className="text-sm font-bold text-brand-blue">BloggerBazar</p>
     <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{t("onboarding.title")}</h1>
     <p className="mt-3 text-sm leading-6 text-brand-muted">{t("onboarding.subtitle")}</p>
     <div className="mt-7 grid gap-3">
-      {roles.map((item) => <button aria-pressed={selectedRole === item.role} className={`rounded-3xl border p-5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue ${selectedRole === item.role ? "border-brand-blue bg-blue-50 shadow-card" : "border-brand-line bg-white"}`} key={item.role} onClick={() => setSelectedRole(item.role)} type="button">
+      {roles.map((item) => <button aria-pressed={selectedRole === item.role} className={`rounded-3xl border p-5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue ${selectedRole === item.role ? "border-brand-blue bg-blue-50 shadow-card" : "border-brand-line bg-white"}`} key={item.role} onClick={() => { haptic.selection(); setSelectedRole(item.role); }} type="button">
         <p className="text-lg font-extrabold">{item.title}</p><p className="mt-1 text-sm leading-5 text-brand-muted">{item.description}</p>
       </button>)}
     </div>

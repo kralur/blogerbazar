@@ -6,6 +6,7 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { uzbekistanRegions } from "../lib/taxonomy";
+import { useTelegram } from "../telegram/TelegramProvider";
 
 const pageSize = 20;
 
@@ -91,5 +92,6 @@ export function BloggerSearch() {
 }
 
 function FilterSelect({ label, value, options, onChange }: { label: string; value: string; options: string[][]; onChange: (value: string) => void }) {
-  return <label className="grid gap-2"><span className="text-[13px] font-bold text-brand-muted">{label}</span><select className="h-[52px] rounded-2xl border border-brand-line bg-white px-3 text-sm font-semibold outline-none focus:border-brand-blue focus:ring-4 focus:ring-blue-100" onChange={(event) => onChange(event.target.value)} value={value}>{options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}</select></label>;
+  const { haptic } = useTelegram();
+  return <label className="grid gap-2"><span className="text-[13px] font-bold text-brand-muted">{label}</span><select className="h-[52px] rounded-2xl border border-brand-line bg-white px-3 text-sm font-semibold outline-none focus:border-brand-blue focus:ring-4 focus:ring-blue-100" onChange={(event) => { haptic.selection(); onChange(event.target.value); }} value={value}>{options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}</select></label>;
 }

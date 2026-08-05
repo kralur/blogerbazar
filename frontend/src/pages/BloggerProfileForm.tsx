@@ -42,7 +42,7 @@ function validate(form: typeof initial, selectedCategories: string[], t: (key: s
 
 export function BloggerProfileForm({ onCompleted }: { onCompleted?: () => void }) {
   const { t, language } = useI18n();
-  const { user } = useTelegram();
+  const { haptic, user } = useTelegram();
   const [form, setForm] = useState(initial);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["lifestyle"]);
   const [barterEnabled, setBarterEnabled] = useState(true);
@@ -98,6 +98,7 @@ export function BloggerProfileForm({ onCompleted }: { onCompleted?: () => void }
       }
       setPendingImage(undefined);
       setDirty(false);
+      haptic.success();
       if (onCompleted) onCompleted();
       else setSuccess(true);
     } catch (error) {

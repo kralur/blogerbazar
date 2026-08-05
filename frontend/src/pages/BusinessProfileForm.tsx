@@ -31,7 +31,7 @@ function validate(form: typeof initial, t: (key: string) => string): Errors {
 
 export function BusinessProfileForm({ onCompleted }: { onCompleted?: () => void }) {
   const { language, t } = useI18n();
-  const { user } = useTelegram();
+  const { haptic, user } = useTelegram();
   const [form, setForm] = useState(initial);
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [existing, setExisting] = useState(false);
@@ -82,6 +82,7 @@ export function BusinessProfileForm({ onCompleted }: { onCompleted?: () => void 
       }
       setPendingImage(undefined);
       setDirty(false);
+      haptic.success();
       if (onCompleted) onCompleted();
       else setSuccess(true);
     } catch (error) {

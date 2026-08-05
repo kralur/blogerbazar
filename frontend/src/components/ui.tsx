@@ -96,7 +96,8 @@ export function Divider({ className }: { className?: string }) {
   return <div className={cn("h-px bg-brand-line", className)} />;
 }
 
-export function Input({ label, error, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string }) {
+export function Input({ label, error, className, onInvalid, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string }) {
+  const { haptic } = useTelegram();
   return (
     <label className="grid gap-2">
       {label && <span className="text-[13px] font-bold text-brand-muted">{label}{props.required && <span aria-hidden="true" className="ml-1 text-brand-danger">*</span>}</span>}
@@ -108,6 +109,10 @@ export function Input({ label, error, className, ...props }: InputHTMLAttributes
         )}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${props.id ?? props.name ?? label}-error` : undefined}
+        onInvalid={(event) => {
+          haptic.error();
+          onInvalid?.(event);
+        }}
         {...props}
       />
       {error && <span className="text-xs font-semibold text-brand-danger" id={`${props.id ?? props.name ?? label}-error`}>{error}</span>}
@@ -115,7 +120,8 @@ export function Input({ label, error, className, ...props }: InputHTMLAttributes
   );
 }
 
-export function Textarea({ label, error, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; error?: string }) {
+export function Textarea({ label, error, className, onInvalid, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; error?: string }) {
+  const { haptic } = useTelegram();
   const length = typeof props.value === "string" ? props.value.length : 0;
   return (
     <label className="grid gap-2">
@@ -128,6 +134,10 @@ export function Textarea({ label, error, className, ...props }: TextareaHTMLAttr
         )}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${props.id ?? props.name ?? label}-error` : undefined}
+        onInvalid={(event) => {
+          haptic.error();
+          onInvalid?.(event);
+        }}
         {...props}
       />
       {error && <span className="text-xs font-semibold text-brand-danger" id={`${props.id ?? props.name ?? label}-error`}>{error}</span>}
@@ -326,6 +336,11 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
 
 export function Modal({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
   const { t } = useI18n();
+  const { registerBackButtonHandler } = useTelegram();
+  useEffect(() => {
+    if (!open) return;
+    return registerBackButtonHandler(onClose);
+  }, [onClose, open, registerBackButtonHandler]);
   if (!open) return null;
   return (
     <div aria-modal="true" className="bottom-sheet-backdrop fixed inset-0 z-50 grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm" role="dialog">

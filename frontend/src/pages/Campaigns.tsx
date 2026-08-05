@@ -8,6 +8,7 @@ import { BottomNav, BottomSheet, Button, Chip, ErrorState, Icon, Input, LoadingS
 import { categoryLabel, useI18n } from "../i18n";
 import { formatNumericInput, normalizeNumericInput } from "../lib/currency";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
+import { useTelegram } from "../telegram/TelegramProvider";
 
 const initial = { title: "", description: "", city: "tashkent-city", categories: ["lifestyle"], requirements: "", deadline: "", budgetFrom: "500 000", budgetTo: "1 500 000" };
 type CampaignFilters = { city: string; category: string; budget: string; deadline: string; format: string };
@@ -15,6 +16,7 @@ const defaultFilters: CampaignFilters = { city: "", category: "", budget: "", de
 
 export function Campaigns() {
   const { t } = useI18n();
+  const { haptic } = useTelegram();
   useScrollRestoration("campaigns");
   const [campaigns, setCampaigns] = useState<CampaignCardData[]>([]);
   const [form, setForm] = useState(initial);
@@ -43,7 +45,7 @@ export function Campaigns() {
   }), [campaigns, filters, query]);
 
   const update = (key: keyof typeof initial) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((previous) => ({ ...previous, [key]: event.target.value }));
-  const setFilter = (key: keyof CampaignFilters) => (value: string) => setFilters((current) => ({ ...current, [key]: value }));
+  const setFilter = (key: keyof CampaignFilters) => (value: string) => { haptic.selection(); setFilters((current) => ({ ...current, [key]: value })); };
   const openCreate = async () => { try { await getMyBusinessProfile(); setCreateOpen(true); } catch { setToastTone("warning"); setToast(t("campaigns.businessRequired")); window.setTimeout(() => { window.location.hash = "/business"; }, 800); } };
   const create = async () => {
     if (saving || !form.title.trim() || !form.description.trim() || !form.categories.length) return;

@@ -7,6 +7,6 @@ import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <TelegramProvider><I18nProvider><App /></I18nProvider></TelegramProvider>
+    <I18nProvider><TelegramProvider><App /></TelegramProvider></I18nProvider>
   </React.StrictMode>
 );

@@ -19,7 +19,7 @@ function bloggerStatus(status: number | undefined, t: (key: string) => string) {
 }
 
 export function ProfileDashboard() {
-  const { user: telegramUser } = useTelegram();
+  const { haptic, user: telegramUser } = useTelegram();
   useScrollRestoration("profile");
   const [blogger, setBlogger] = useState<MyBloggerProfile | null>(null);
   const [brandFace, setBrandFace] = useState<MyBrandFaceProfile | null>(null);
@@ -63,6 +63,7 @@ export function ProfileDashboard() {
   }, []);
 
   const selectRole = (nextRole: SelectedRole) => {
+    haptic.selection();
     setRole(nextRole);
     localStorage.setItem(selectedRoleKey, nextRole);
     const apiRole: Record<SelectedRole, MarketplaceRole> = { blogger: "Blogger", brandFace: "BrandFace", business: "Business" };
@@ -125,7 +126,7 @@ export function ProfileDashboard() {
       </>}
       {!loading && role !== "blogger" && <a className="block" href="#/favorites"><Card className="flex items-center justify-between"><span><strong>{t("favorites.profileTitle")}</strong><span className="mt-1 block text-sm text-brand-muted">{t("favorites.profileSubtitle")}</span></span><Icon className="text-brand-blue" name="back" /></Card></a>}
       <Card><div className="flex items-center justify-between"><div><div className="font-extrabold">BloggerBazar</div><div className="mt-1 text-sm text-brand-muted">{t("common.version", { version: "1.0.0" })}</div></div><a className="text-sm font-bold text-brand-blue" href="#/">{t("profile.backHome")}</a></div></Card>
-      <div className="grid gap-3"><Button className="w-full" onClick={() => setLogoutOpen(true)} type="button" variant="danger">{t("profile.logout")}</Button><Button className="w-full text-brand-danger" onClick={() => setDeleteOpen(true)} type="button" variant="secondary">{t("profile.deleteAccount")}</Button></div>
+      <div className="grid gap-3"><Button className="w-full" onClick={() => { haptic.warning(); setLogoutOpen(true); }} type="button" variant="danger">{t("profile.logout")}</Button><Button className="w-full text-brand-danger" onClick={() => { haptic.warning(); setDeleteOpen(true); }} type="button" variant="secondary">{t("profile.deleteAccount")}</Button></div>
       <Modal onClose={() => setLogoutOpen(false)} open={logoutOpen} title={t("profile.logoutTitle")}><p className="text-sm leading-6 text-brand-muted">{t("profile.logoutDescription")}</p><div className="mt-5 grid grid-cols-2 gap-3"><Button onClick={() => setLogoutOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button onClick={logout} type="button" variant="danger">{t("profile.logout")}</Button></div></Modal>
       <Modal onClose={() => { if (!deleting) setDeleteOpen(false); }} open={deleteOpen} title={t("profile.deleteAccountTitle")}><p className="text-sm leading-6 text-brand-muted">{t("profile.deleteAccountDescription")}</p><div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={deleting} onClick={() => setDeleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={deleting} disabled={deleting} onClick={() => void requestAccountDeletion()} type="button" variant="danger">{deleting ? t("profile.deleting") : t("profile.deleteAccount")}</Button></div></Modal>
       <Toast message={toast} tone={toastTone} />

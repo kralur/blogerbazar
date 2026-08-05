@@ -17,7 +17,7 @@ const values = (value: string) => value.split(",").map((item) => item.trim()).fi
 
 export function BrandFaceProfileForm({ onCompleted }: { onCompleted?: () => void }) {
   const { t } = useI18n();
-  const { user } = useTelegram();
+  const { haptic, user } = useTelegram();
   const [form, setForm] = useState<BrandFaceForm>(() => ({ ...emptyForm, name: user?.first_name ?? "", telegram: user?.username ? `@${user.username}` : "" }));
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,13 @@ export function BrandFaceProfileForm({ onCompleted }: { onCompleted?: () => void
       }
       setPendingImage(undefined);
       setDirty(false);
-      if (onCompleted) onCompleted(); else { setToastTone("success"); setToast(t("brandFace.saved")); }
+      if (onCompleted) {
+        haptic.success();
+        onCompleted();
+      } else {
+        setToastTone("success");
+        setToast(t("brandFace.saved"));
+      }
     } catch (error) {
       setToastTone("error");
       setToast(getApiErrorMessage(error, t("brandFace.failed"), { validationMessages: { name: t("form.validation.name"), city: t("form.validation.city"), languages: t("brandFace.languagesRequired"), categories: t("form.validation.categories"), telegram: t("form.validation.username") } }));
