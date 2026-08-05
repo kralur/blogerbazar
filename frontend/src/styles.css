@@ -61,10 +61,18 @@
 
   .screen {
     min-height: var(--tg-viewport-height, 100dvh);
-    padding-top: max(1.25rem, var(--tg-content-safe-top, env(safe-area-inset-top))) !important;
-    padding-bottom: max(9rem, calc(6.75rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom)))) !important;
+    padding-top: max(1.25rem, var(--tg-content-safe-top, env(safe-area-inset-top)));
+    padding-bottom: max(1.25rem, var(--tg-content-safe-bottom, env(safe-area-inset-bottom)));
     @apply px-4;
-    animation: screen-in 180ms cubic-bezier(.2,.8,.2,1) both;
+    animation: fade-in 180ms ease-out both;
+  }
+
+  .screen--with-nav {
+    padding-bottom: max(7rem, calc(5.75rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom)))) !important;
+  }
+
+  .screen--without-nav {
+    padding-bottom: max(1.25rem, var(--tg-content-safe-bottom, env(safe-area-inset-bottom))) !important;
   }
 
   .first-run-screen {
@@ -190,22 +198,18 @@
   }
 
   .bottom-nav {
+    background-color: color-mix(in srgb, var(--telegram-secondary-bg, #fff) 96%, transparent);
     padding-bottom: max(env(safe-area-inset-bottom), var(--tg-content-safe-bottom, 0px));
   }
 
   .bottom-nav__items {
-    @apply relative grid grid-cols-5 items-end rounded-t-[30px] border px-2 pb-3 pt-4 shadow-[0_-16px_40px_rgba(15,23,42,0.08)] backdrop-blur-2xl;
+    @apply relative grid grid-cols-5 items-end border-t px-2 pb-3 pt-3 shadow-[0_-10px_28px_rgba(15,23,42,0.07)] backdrop-blur-2xl;
     background-color: color-mix(in srgb, var(--telegram-secondary-bg, #fff) 94%, transparent);
     border-color: color-mix(in srgb, var(--telegram-separator, rgba(148, 163, 184, .35)) 45%, transparent);
   }
 
-  .bottom-nav__notch {
-    @apply pointer-events-none absolute left-1/2 top-0 z-10 h-20 w-28 -translate-x-1/2 -translate-y-8 rounded-b-[999px] bg-transparent;
-    box-shadow: 0 14px 28px rgba(15, 23, 42, .08);
-  }
-
   .bottom-nav__home {
-    @apply relative z-20 col-start-3 row-start-1 mx-auto -mt-12 grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-full border-[3px] border-white bg-brand-gradient text-white shadow-[0_12px_28px_rgba(37,99,235,0.35)] transition duration-200 ease-out active:scale-[0.92];
+    @apply relative z-20 col-start-3 row-start-1 mx-auto -mt-9 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-brand-gradient text-white shadow-[0_10px_22px_rgba(37,99,235,0.28)] transition duration-200 ease-out active:scale-[0.92];
   }
 
   .bottom-nav__home::after {
@@ -218,8 +222,15 @@
   }
 
   .bottom-nav__home--active {
-    @apply shadow-[0_0_0_7px_rgba(96,165,250,0.18),0_16px_32px_rgba(6,182,212,0.38)];
-    animation: home-fab-pulse 1.8s ease-in-out infinite;
+    @apply shadow-[0_0_0_5px_rgba(96,165,250,0.18),0_12px_24px_rgba(6,182,212,0.32)];
+  }
+
+  .fixed-action-bar {
+    bottom: max(4.75rem, calc(4.25rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom))));
+  }
+
+  .floating-action {
+    bottom: max(5.25rem, calc(4.75rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom))));
   }
 
   .splash-screen {
@@ -306,11 +317,6 @@ html[data-telegram-theme="dark"] select {
 @keyframes splash-shimmer {
   from { background-position: 100% 0; }
   to { background-position: -100% 0; }
-}
-
-@keyframes home-fab-pulse {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-2px) scale(1.025); }
 }
 
 @keyframes home-fab-ripple {

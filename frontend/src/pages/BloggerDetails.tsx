@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getBlogger, getBloggerReviews, getPublicContact, type BloggerDetails, type BloggerReview, type ContactDetails } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Rating, StatsCard, Toast } from "../components/ui";
+import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Rating, StatsCard, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 
 export function BloggerDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
@@ -17,13 +18,14 @@ export function BloggerDetails({ id }: { id: string }) {
   const [reviews, setReviews] = useState<BloggerReview[]>([]);
   const [toast, setToast] = useState("");
 
-  const loadBlogger = () => {
+  const loadBlogger = useCallback(() => {
     setLoading(true);
     setFailed(false);
     getBlogger(id).then(setBlogger).catch(() => { setBlogger(null); setFailed(true); }).finally(() => setLoading(false));
-  };
+  }, [id]);
 
-  useEffect(loadBlogger, [id]);
+  useEffect(() => { loadBlogger(); }, [loadBlogger]);
+  useProfileDataRefresh(loadBlogger);
 
   useEffect(() => {
     getBloggerReviews(id).then(setReviews).catch(() => undefined);
@@ -35,8 +37,8 @@ export function BloggerDetails({ id }: { id: string }) {
       .catch(() => undefined);
   }, [id]);
 
-  if (loading) return <div className="screen"><LoadingState title={t("common.loadingProfile")} /></div>;
-  if (failed || !blogger) return <div className="screen"><ErrorState onRetry={loadBlogger} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /></div>;
+  if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
+  if (failed || !blogger) return <div className="screen screen--with-nav"><ErrorState onRetry={loadBlogger} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
 
   const socialContact = (type: string, kind: "instagram" | "tiktok" | "youtube" | "telegram") => {
     const platform = blogger.platforms.find((item) => item.type.toLowerCase() === type);
@@ -51,7 +53,7 @@ export function BloggerDetails({ id }: { id: string }) {
     contact?.email ? { kind: "email" as const, value: contact.email } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   const portfolio = blogger.portfolioItems;
-  return <div className="screen pb-36">
+  return <div className="screen screen--with-nav">
     <div className="relative -mx-5 h-48 overflow-hidden bg-gradient-to-br from-violet-200 via-blue-100 to-cyan-100">
       {blogger.coverUrl && <img alt="" className="image-fade h-full w-full object-cover opacity-35" decoding="async" src={blogger.coverUrl} />}
       <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-white/80" /><a className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-white/85 shadow-card" href="#/search"><Icon name="back" /></a><FavoriteButton bloggerId={blogger.id} className="absolute right-4 top-4" />
@@ -63,7 +65,7 @@ export function BloggerDetails({ id }: { id: string }) {
     <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.reviews")}</h2>{reviews.length ? <div className="grid gap-2">{reviews.map((review) => <Card className="p-3" key={review.id}><div className="flex items-center justify-between"><Rating value={review.rating} /><span className="text-xs text-brand-muted">{new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(review.createdAtUtc))}</span></div>{review.reviewerName && <p className="mt-2 text-sm font-bold">{review.reviewerName}</p>}{review.comment && <p className="mt-1 text-sm leading-5 text-brand-muted">{review.comment}</p>}</Card>)}</div> : <Card><p className="text-sm text-brand-muted">{t("details.noReviews")}</p></Card>}</section>
     <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.adPrices")}</h2><div className="grid grid-cols-2 gap-2">{[[t("card.stories"), blogger.storiesPrice], [t("card.reels"), blogger.reelsPrice], [t("card.post"), blogger.postPrice], [t("card.integration"), blogger.integrationPrice]].map(([label, value]) => <Card className="p-3" key={String(label)}><p className="text-xs text-brand-muted">{label}</p><p className="mt-1 text-sm font-extrabold">{formatCurrency(Number(value))}</p></Card>)}</div></section>
     {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.contacts")}</h2><ContactList items={contacts} /></section>}
-    <div className="fixed inset-x-0 bottom-[70px] z-30 mx-auto max-w-[430px] bg-white/90 px-5 pb-3 pt-2 backdrop-blur"><a href="#/campaigns"><Button className="w-full"><Icon name="send" />{t("details.createCampaign")}</Button></a></div>
+    <FixedActionBar><a href="#/campaigns"><Button className="w-full"><Icon name="send" />{t("details.createCampaign")}</Button></a></FixedActionBar>
     <Toast message={toast} /><BottomNav />
   </div>;
 }

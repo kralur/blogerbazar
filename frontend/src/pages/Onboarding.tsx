@@ -37,7 +37,7 @@ export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: Marketp
     }
   };
 
-  return <div className="screen flex flex-col px-5 pt-10">
+  return <div className="screen screen--without-nav flex flex-col px-5 pt-10">
     <p className="text-sm font-bold text-brand-blue">BloggerBazar</p>
     <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{t("onboarding.title")}</h1>
     <p className="mt-3 text-sm leading-6 text-brand-muted">{t("onboarding.subtitle")}</p>

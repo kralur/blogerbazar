@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { applyToCampaign, getCampaign, getPublicContact, type CampaignDetails, type ContactDetails } from "../api/marketplace";
-import { Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
@@ -51,8 +51,8 @@ export function CampaignDetails({ id }: { id: string }) {
   };
 
 
-  if (loading) return <div className="screen"><LoadingState title={t("campaign.loading")} /></div>;
-  if (failed || !campaign) return <div className="screen"><ErrorState onRetry={loadCampaign} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /></div>;
+  if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("campaign.loading")} /><BottomNav /></div>;
+  if (failed || !campaign) return <div className="screen screen--with-nav"><ErrorState onRetry={loadCampaign} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
 
   const contacts = [
     contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
@@ -61,7 +61,7 @@ export function CampaignDetails({ id }: { id: string }) {
     contact?.email ? { kind: "email" as const, value: contact.email } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   return (
-    <div className="screen pb-36">
+    <div className="screen screen--with-nav">
       <header className="flex items-center justify-between">
         <a className="grid h-11 w-11 place-items-center rounded-2xl bg-white shadow-card" href="#/campaigns"><Icon name="back" /></a>
         <Badge tone={campaign.isPromoted ? "gold" : "blue"}>{campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>
@@ -75,7 +75,7 @@ export function CampaignDetails({ id }: { id: string }) {
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.suitable")}</h2><div className="flex flex-wrap gap-2">{campaign.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div></section>
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("common.requirements")}</h2><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></section>
       {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.businessContact")}</h2><ContactList items={contacts} /></section>}
-      <div className="fixed inset-x-0 bottom-[70px] z-30 mx-auto max-w-[430px] bg-white/90 px-5 pb-3 pt-2 backdrop-blur"><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></div>
+      <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar>
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
       <Toast message={toast} tone={toastTone} /><BottomNav />
     </div>

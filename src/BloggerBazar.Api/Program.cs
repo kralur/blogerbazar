@@ -26,6 +26,12 @@ try
         .Enrich.FromLogContext()
         .WriteTo.Console());
 
+    var profileMediaOptions = builder.Configuration.GetSection(ProfileMediaOptions.SectionName).Get<ProfileMediaOptions>() ?? new ProfileMediaOptions();
+    if (!profileMediaOptions.IsConfigured)
+    {
+        Log.Warning("Profile media storage is not configured. Profile image uploads are unavailable until ProfileMedia settings are provided.");
+    }
+
     builder.Services.AddProblemDetails();
     builder.Services.AddControllers(options =>
     {

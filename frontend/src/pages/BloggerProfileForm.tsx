@@ -11,6 +11,7 @@ import { normalizeRegion } from "../lib/taxonomy";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { normalizeWebsite, safeExternalUrl, socialHandle, socialUrl } from "../lib/contacts";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
+import { notifyProfileDataChanged } from "../hooks/useProfileDataRefresh";
 
 const initial = { name: "", lastName: "", username: "", city: "tashkent-city", phone: "+998", email: "", totalFollowers: "10 000", averageReach: "25 000", engagementRate: "5.5", storiesPrice: "250 000", reelsPrice: "500 000", postPrice: "350 000", integrationPrice: "900 000", bio: "", portfolioUrl: "", instagram: "", tiktok: "", youtube: "" };
 type Field = keyof typeof initial;
@@ -89,16 +90,26 @@ export function BloggerProfileForm({ onCompleted }: { onCompleted?: () => void }
       const youtubeUrl = normalizeWebsite(form.youtube);
       const input = { name: form.name.trim(), lastName: form.lastName.trim() || undefined, username: form.username.trim(), city: form.city.trim(), categories: selectedCategories, bio: form.bio.trim() || undefined, avatarUrl, phone: form.phone.trim(), email: form.email.trim() || undefined, totalFollowers: normalizeNumericInput(form.totalFollowers), averageReach: normalizeNumericInput(form.averageReach), engagementRate: Number(form.engagementRate), storiesPrice: normalizeNumericInput(form.storiesPrice), reelsPrice: normalizeNumericInput(form.reelsPrice), postPrice: normalizeNumericInput(form.postPrice) || undefined, integrationPrice: normalizeNumericInput(form.integrationPrice) || undefined, barterEnabled, portfolioItems: portfolioUrl ? [{ title: t("form.blogger.portfolioTitle"), type: "IMAGE" as const, url: portfolioUrl }] : [], platforms: ([form.instagram.trim() ? { type: "instagram", url: socialUrl("instagram", form.instagram) } : null, form.tiktok.trim() ? { type: "tiktok", url: socialUrl("tiktok", form.tiktok) } : null, youtubeUrl ? { type: "youtube", url: youtubeUrl } : null].filter(Boolean) as Array<{ type: string; url: string }>) };
       if (existing) await updateBloggerProfile(input); else { await createBloggerProfile(input); setExisting(true); }
-      if (pendingImage instanceof File) {
-        const media = await uploadProfileImage("blogger", pendingImage);
-        setAvatarUrl(media.url);
-      } else if (pendingImage === null && avatarUrl) {
-        await deleteProfileImage("blogger");
-        setAvatarUrl(null);
+      let mediaWarning = "";
+      try {
+        if (pendingImage instanceof File) {
+          const media = await uploadProfileImage("blogger", pendingImage);
+          setAvatarUrl(media.url);
+        } else if (pendingImage === null && avatarUrl) {
+          await deleteProfileImage("blogger");
+          setAvatarUrl(null);
+        }
+      } catch (error) {
+        mediaWarning = getApiErrorMessage(error, t("error.profile_media_unavailable"));
       }
       setPendingImage(undefined);
       setDirty(false);
-      haptic.success();
+      notifyProfileDataChanged();
+      if (mediaWarning) {
+        haptic.warning();
+        if (onCompleted) window.sessionStorage.setItem("bloggerbazar.onboarding.media-warning", mediaWarning);
+        else setToast(mediaWarning);
+      } else haptic.success();
       if (onCompleted) onCompleted();
       else setSuccess(true);
     } catch (error) {
@@ -123,7 +134,7 @@ export function BloggerProfileForm({ onCompleted }: { onCompleted?: () => void }
     }
   };
 
-  return <form className="screen space-y-5 px-4 pt-5" noValidate onSubmit={submit}>
+  return <form className={`screen ${onCompleted ? "screen--without-nav" : "screen--with-nav"} space-y-5 px-4 pt-5`} noValidate onSubmit={submit}>
     <header><p className="text-sm font-semibold text-brand-muted">{t("form.blogger.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{existing ? t("form.blogger.editTitle") : t("form.blogger.createTitle")}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">{t("form.blogger.subtitle")}</p></header>
     <section className="grid gap-3"><h2 className="font-extrabold">{t("form.personal")}</h2><ProfileMediaPicker currentUrl={avatarUrl} disabled={saving} name={form.name || t("profile.telegramUser")} onChange={(image) => { setDirty(true); setPendingImage(image); }} pending={pendingImage} /><div className="grid grid-cols-2 gap-3"><Input error={touched.name ? errors.name : undefined} label={t("form.name")} onBlur={blur("name")} onChange={update("name")} placeholder={t("form.blogger.namePlaceholder")} required value={form.name} /><Input label={t("form.lastName")} onChange={update("lastName")} placeholder={t("form.blogger.lastNamePlaceholder")} value={form.lastName} /></div><div><Input error={touched.username ? errors.username : undefined} label={t("form.telegramUsername")} onBlur={blur("username")} onChange={update("username")} placeholder="@username" required value={form.username} /><p className="mt-1 text-xs text-brand-muted">{t("form.usernameHelper")}</p></div><RegionSelect error={touched.city ? errors.city : undefined} onChange={(event) => { setDirty(true); setForm((current) => ({ ...current, city: event.target.value })); }} required value={form.city} /><div className="grid grid-cols-2 gap-3"><Input error={touched.phone ? errors.phone : undefined} inputMode="tel" label={t("common.phone")} onBlur={blur("phone")} onChange={update("phone")} placeholder="+998 90 123 45 67" required value={form.phone} /><Input error={touched.email ? errors.email : undefined} label={t("form.emailOptional")} onBlur={blur("email")} onChange={update("email")} placeholder="you@email.com" type="email" value={form.email} /></div></section>
     <section><h2 className="font-extrabold">{t("form.audience")}</h2><div className="mt-3"><CategoryMultiSelect error={touched.categories ? errors.categories : undefined} onChange={(categories) => { setTouched((current) => ({ ...current, categories: true })); setDirty(true); setSelectedCategories(categories); }} required value={selectedCategories} /></div><div className="mt-4 grid gap-3"><div className="grid grid-cols-2 gap-3"><Input error={touched.totalFollowers ? errors.totalFollowers : undefined} inputMode="numeric" label={t("common.followers")} onBlur={blur("totalFollowers")} onChange={numeric("totalFollowers")} placeholder="25 000" required value={form.totalFollowers} /><Input error={touched.averageReach ? errors.averageReach : undefined} inputMode="numeric" label={t("common.reach")} onBlur={blur("averageReach")} onChange={numeric("averageReach")} placeholder="15 000" required value={form.averageReach} /></div><Input error={touched.engagementRate ? errors.engagementRate : undefined} label={t("search.er")} max="100" min="0.1" onBlur={blur("engagementRate")} onChange={update("engagementRate")} placeholder="5.5" required step="0.1" type="number" value={form.engagementRate} /></div></section>

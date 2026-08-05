@@ -1,4 +1,4 @@
-import { useEffect, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
@@ -320,7 +320,8 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
   if (!message || !visible) return null;
   const isError = tone === "error";
   const isWarning = tone === "warning";
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       aria-live={isError ? "assertive" : "polite"}
       role={isError ? "alert" : "status"}
@@ -330,36 +331,82 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
       )}
     >
       {message}
-    </div>
+    </div>,
+    document.body
   );
 }
 
 export function Modal({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
   const { t } = useI18n();
   const { registerBackButtonHandler } = useTelegram();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!open) return;
-    return registerBackButtonHandler(onClose);
+    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    const focusableSelector = "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? []);
+      if (!focusable.length) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+      const currentIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      const nextIndex = event.shiftKey ? currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1 : currentIndex === focusable.length - 1 ? 0 : currentIndex + 1;
+      event.preventDefault();
+      focusable[nextIndex].focus();
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    const frame = window.requestAnimationFrame(() => dialogRef.current?.focus());
+    const unregisterBackButton = registerBackButtonHandler(onClose);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      unregisterBackButton();
+      restoreFocusRef.current?.focus();
+    };
   }, [onClose, open, registerBackButtonHandler]);
   if (!open) return null;
-  return (
-    <div aria-modal="true" className="bottom-sheet-backdrop fixed inset-0 z-50 grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm" role="dialog">
-      <div className="bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft">
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div aria-modal="true" className="bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }} role="dialog">
+      <div aria-labelledby="bottom-sheet-title" className="bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft" ref={dialogRef} tabIndex={-1}>
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-200" />
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-xl font-extrabold">{title}</h3>
+          <h3 className="text-xl font-extrabold" id="bottom-sheet-title">{title}</h3>
           <button aria-label={t("ui.close")} className="grid h-10 w-10 place-items-center rounded-full bg-slate-100" onClick={onClose} type="button">
             ×
           </button>
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 export function BottomSheet({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
   return <Modal onClose={onClose} open={open} title={title}>{children}</Modal>;
+}
+
+export function FixedActionBar({ children }: { children: ReactNode }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(<div className="fixed-action-bar fixed inset-x-0 z-40 mx-auto max-w-[430px] px-5">{children}</div>, document.body);
+}
+
+export function FloatingActionButton({ children, ariaLabel, onClick }: { children: ReactNode; ariaLabel: string; onClick: () => void }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(<button aria-label={ariaLabel} className="floating-action fixed right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient text-white shadow-glow transition active:scale-95" onClick={onClick} type="button">{children}</button>, document.body);
 }
 
 export function BottomNav() {
@@ -388,7 +435,6 @@ export function BottomNav() {
 
   return createPortal(
     <nav aria-label={t("nav.aria")} className="bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px]">
-      <div className="bottom-nav__notch" />
       <div className="bottom-nav__items">
         {items.slice(0, 2).map(renderItem)}
         <button aria-current={hash === "#/" ? "page" : undefined} aria-label={t("ui.home")} className={cn("bottom-nav__home", hash === "#/" && "bottom-nav__home--active")} onClick={() => { haptic.impact(); window.location.hash = "/"; }} type="button"><Icon className="h-7 w-7" name="home" /></button>

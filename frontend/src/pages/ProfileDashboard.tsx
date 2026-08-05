@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { deleteCurrentAccount, deleteProfileImage, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplications, getMyDeals, normalizeMarketplaceRole, selectMarketplaceRole, uploadProfileImage, type MarketplaceRole, type MyBloggerProfile, type MyBrandFaceProfile, type MyBusinessProfile, type ProfileMediaTarget } from "../api/marketplace";
-import { getApiErrorMessage } from "../api/client";
-import { Badge, BottomNav, Button, Card, EmptyState, Icon, Modal, Skeleton, StatsCard, Toast } from "../components/ui";
+import { ApiError, getApiErrorMessage } from "../api/client";
+import { Badge, BottomNav, Button, Card, EmptyState, ErrorState, Icon, Modal, Skeleton, StatsCard, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { ProfileMediaPicker, type PendingProfileImage } from "../components/ProfileMediaPicker";
+import { notifyProfileDataChanged, useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 
 type SelectedRole = "blogger" | "brandFace" | "business";
 const selectedRoleKey = "bloggerbazar.selectedRole";
@@ -26,6 +27,7 @@ export function ProfileDashboard() {
   const [brandFace, setBrandFace] = useState<MyBrandFaceProfile | null>(null);
   const [business, setBusiness] = useState<MyBusinessProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -33,6 +35,7 @@ export function ProfileDashboard() {
   const [toastTone, setToastTone] = useState<"success" | "error">("error");
   const [accountImagePending, setAccountImagePending] = useState<PendingProfileImage>();
   const [accountImageSaving, setAccountImageSaving] = useState(false);
+  const [switchingRole, setSwitchingRole] = useState(false);
   const [applicationsCount, setApplicationsCount] = useState(0);
   const [dealsCount, setDealsCount] = useState(0);
   const [role, setRole] = useState<SelectedRole>(() => {
@@ -46,10 +49,19 @@ export function ProfileDashboard() {
   );
   const { refreshFavorites } = useFavorites();
 
-  useEffect(() => {
+  const loadDashboard = useCallback(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadFailed(false);
     Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBrandFaceProfile(), getMyBusinessProfile(), getMyCampaignApplications(), getMyDeals()]).then(([userResult, bloggerResult, brandFaceResult, businessResult, applicationsResult, dealsResult]) => {
       if (cancelled) return;
+      const profileResults = [bloggerResult, brandFaceResult, businessResult];
+      const hasUnexpectedProfileFailure = profileResults.some((result) => result.status === "rejected" && (!(result.reason instanceof ApiError) || result.reason.status !== 404));
+      if (userResult.status === "rejected" || hasUnexpectedProfileFailure) {
+        setLoadFailed(true);
+        setLoading(false);
+        return;
+      }
       if (userResult.status === "fulfilled") {
         const selectedRole: Record<MarketplaceRole, SelectedRole> = { Blogger: "blogger", BrandFace: "brandFace", Business: "business" };
         const marketplaceRole = normalizeMarketplaceRole(userResult.value.selectedMarketplaceRole);
@@ -65,12 +77,25 @@ export function ProfileDashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  const selectRole = (nextRole: SelectedRole) => {
+  useEffect(() => loadDashboard(), [loadDashboard]);
+  useProfileDataRefresh(loadDashboard);
+
+  const selectRole = async (nextRole: SelectedRole) => {
+    if (switchingRole || nextRole === role) return;
     haptic.selection();
-    setRole(nextRole);
-    localStorage.setItem(selectedRoleKey, nextRole);
     const apiRole: Record<SelectedRole, MarketplaceRole> = { blogger: "Blogger", brandFace: "BrandFace", business: "Business" };
-    void selectMarketplaceRole(apiRole[nextRole]).then(() => refreshFavorites()).catch(() => undefined);
+    try {
+      setSwitchingRole(true);
+      await selectMarketplaceRole(apiRole[nextRole]);
+      setRole(nextRole);
+      localStorage.setItem(selectedRoleKey, nextRole);
+      await refreshFavorites();
+    } catch (error) {
+      setToastTone("error");
+      setToast(getApiErrorMessage(error, t("error.default")));
+    } finally {
+      setSwitchingRole(false);
+    }
   };
   const username = telegramUser?.username ? `@${telegramUser.username}` : t("profile.usernameMissing");
   const activeProfile = role === "blogger" ? blogger : role === "brandFace" ? brandFace : business;
@@ -94,10 +119,12 @@ export function ProfileDashboard() {
       if (image instanceof File) {
         const media = await uploadProfileImage(profileMediaTarget, image);
         updateProfileImage(profileMediaTarget, media.url);
+        notifyProfileDataChanged();
         haptic.success();
       } else if (image === null && activeStoredImage) {
         await deleteProfileImage(profileMediaTarget);
         updateProfileImage(profileMediaTarget, null);
+        notifyProfileDataChanged();
         haptic.success();
       }
     } catch (error) {
@@ -146,14 +173,14 @@ export function ProfileDashboard() {
   };
 
   return (
-    <div className="screen space-y-5 px-4 pt-5">
+    <div className="screen screen--with-nav space-y-5 px-4 pt-5">
       <header className="flex items-center justify-between"><div><p className="text-sm font-semibold text-brand-muted">{t("profile.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{t("profile.title")}</h1></div><button aria-label={t("language.aria")} className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-xs font-extrabold text-brand-blue shadow-card" onClick={() => setLanguage(language === "ru" ? "uz" : "ru")} type="button">{language === "ru" ? "UZ" : "RU"}</button></header>
       <Card className="flex items-center gap-4"><ProfileMediaPicker canRemove={Boolean(activeStoredImage)} compact currentUrl={activeStoredImage} disabled={!activeProfile || accountImageSaving} fallbackUrl={telegramUser?.photo_url} name={activeProfile?.name || telegramUser?.first_name || t("profile.telegramUser")} onChange={(image) => void changeAccountImage(image)} pending={accountImagePending} /><div className="min-w-0"><div className="truncate text-lg font-extrabold">{telegramUser?.first_name || t("profile.telegramUser")}</div><p className="mt-1 truncate text-sm text-brand-muted">{username}</p><Badge tone="blue">{t("profile.telegramAccount")}</Badge></div></Card>
-      {loading ? <><Skeleton className="h-28" /><Skeleton className="h-20" /></> : <>
+      {loading ? <><Skeleton className="h-28" /><Skeleton className="h-20" /></> : loadFailed ? <ErrorState onRetry={loadDashboard} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /> : <>
         <section><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-extrabold">{t("profile.role")}</h2></div><div className="grid grid-cols-3 gap-3">
-          <button className={`rounded-3xl border p-4 text-left transition ${role === "blogger" ? "border-brand-blue bg-blue-50 ring-2 ring-blue-100" : "border-brand-line bg-white"}`} onClick={() => selectRole("blogger")} type="button"><Icon className="mb-3 text-brand-blue" name="user" /><div className="font-extrabold">{t("profile.blogger")}</div><div className="mt-1 text-xs text-brand-muted">{blogger ? t("profile.created") : t("profile.create")}</div></button>
-          <button className={`rounded-3xl border p-4 text-left transition ${role === "brandFace" ? "border-brand-blue bg-blue-50 ring-2 ring-blue-100" : "border-brand-line bg-white"}`} onClick={() => selectRole("brandFace")} type="button"><Icon className="mb-3 text-brand-blue" name="star" /><div className="font-extrabold">{t("onboarding.brandFace")}</div><div className="mt-1 text-xs text-brand-muted">{brandFace ? t("profile.created") : t("profile.create")}</div></button>
-          <button className={`rounded-3xl border p-4 text-left transition ${role === "business" ? "border-brand-blue bg-blue-50 ring-2 ring-blue-100" : "border-brand-line bg-white"}`} onClick={() => selectRole("business")} type="button"><Icon className="mb-3 text-brand-blue" name="building" /><div className="font-extrabold">{t("profile.business")}</div><div className="mt-1 text-xs text-brand-muted">{business ? t("profile.created") : t("profile.create")}</div></button>
+          <button aria-busy={switchingRole} className={`rounded-3xl border p-4 text-left transition ${role === "blogger" ? "border-brand-blue bg-blue-50 ring-2 ring-blue-100" : "border-brand-line bg-white"}`} disabled={switchingRole} onClick={() => void selectRole("blogger")} type="button"><Icon className="mb-3 text-brand-blue" name="user" /><div className="font-extrabold">{t("profile.blogger")}</div><div className="mt-1 text-xs text-brand-muted">{blogger ? t("profile.created") : t("profile.create")}</div></button>
+          <button aria-busy={switchingRole} className={`rounded-3xl border p-4 text-left transition ${role === "brandFace" ? "border-brand-blue bg-blue-50 ring-2 ring-blue-100" : "border-brand-line bg-white"}`} disabled={switchingRole} onClick={() => void selectRole("brandFace")} type="button"><Icon className="mb-3 text-brand-blue" name="star" /><div className="font-extrabold">{t("onboarding.brandFace")}</div><div className="mt-1 text-xs text-brand-muted">{brandFace ? t("profile.created") : t("profile.create")}</div></button>
+          <button aria-busy={switchingRole} className={`rounded-3xl border p-4 text-left transition ${role === "business" ? "border-brand-blue bg-blue-50 ring-2 ring-blue-100" : "border-brand-line bg-white"}`} disabled={switchingRole} onClick={() => void selectRole("business")} type="button"><Icon className="mb-3 text-brand-blue" name="building" /><div className="font-extrabold">{t("profile.business")}</div><div className="mt-1 text-xs text-brand-muted">{business ? t("profile.created") : t("profile.create")}</div></button>
         </div></section>
         {activeProfile ? <><Card><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-brand-muted">{role === "blogger" ? t("profile.bloggerProfile") : role === "brandFace" ? t("profile.brandFaceProfile") : t("profile.businessProfile")}</p><h2 className="mt-1 text-xl font-extrabold">{activeProfile.name}</h2><p className="mt-2 text-sm text-brand-muted">{role === "blogger" ? (blogger?.categories.join(" · ") || t("profile.categoryMissing")) : role === "brandFace" ? (brandFace?.categories.join(" · ") || t("profile.categoryMissing")) : (business?.city || t("profile.cityMissing"))}</p></div><Badge tone={status.tone}>{status.label}</Badge></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-brand-gradient" style={{ width: `${completion}%` }} /></div><p className="mt-2 text-xs text-brand-muted">{t("profile.completion", { percent: completion })}</p><Button className="mt-4 w-full" onClick={() => { window.location.hash = profileHash; }} type="button">{t("profile.edit")}</Button></Card><Card className="border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50"><p className="text-sm font-semibold text-brand-muted">{t("profile.status")}</p><p className="mt-1 text-lg font-extrabold">{status.label}</p><p className="mt-2 text-sm leading-5 text-brand-muted">{t("profile.publishedDescription")}</p></Card><div className="grid grid-cols-2 gap-3"><StatsCard icon="briefcase" label={t("common.applications")} value={String(applicationsCount)} /><StatsCard icon="check" label={t("common.deals", { count: dealsCount })} value={String(dealsCount)} /></div><a className="block" href="#/requests"><Card className="flex items-center justify-between"><span><strong>{t("profile.requestsAndDeals")}</strong><span className="mt-1 block text-sm text-brand-muted">{t("profile.requestsAndDealsSubtitle")}</span></span><Icon className="text-brand-blue" name="back" /></Card></a></> : <><EmptyState icon={role === "blogger" ? "user" : role === "brandFace" ? "star" : "building"} subtitle={t("profile.missingSubtitle")} title={role === "blogger" ? t("profile.missingBlogger") : role === "brandFace" ? t("profile.missingBrandFace") : t("profile.missingBusiness")} /><Button className="w-full" onClick={() => { window.location.hash = profileHash; }} type="button">{t("profile.create")}</Button></>}
       </>}

@@ -4,6 +4,7 @@ import { BloggerCard } from "../components/BloggerCard";
 import { CampaignCard } from "../components/CampaignCard";
 import { Avatar, BottomNav, Button, Card, Chip, ErrorState, Icon, PromotionCard, Skeleton, StatsCard } from "../components/ui";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
+import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency, formatNumber } from "../lib/currency";
 
@@ -21,8 +22,9 @@ export function Home() {
   const [failed, setFailed] = useState(false);
   const load = useCallback(() => { setFailed(false); getMarketplaceHome().then(setData).catch(() => setFailed(true)); }, []);
   useEffect(load, []);
+  useProfileDataRefresh(load);
 
-  return <div className="home-showcase screen pb-36">
+  return <div className="home-showcase screen screen--with-nav">
     <header className="flex items-start justify-between gap-4"><div><h1 className="text-3xl font-extrabold tracking-tight">{t("home.title")}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">{t("home.subtitle")}</p></div><button aria-label={t("language.aria")} className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-xs font-extrabold text-brand-blue shadow-card" onClick={() => setLanguage(language === "ru" ? "uz" : "ru")} type="button">{language === "ru" ? "UZ" : "RU"}</button></header>
     <section className="home-showcase__hero relative mt-5 overflow-hidden rounded-[32px] p-5"><div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-cyan-300/40 blur-2xl" /><div className="relative"><p className="text-sm font-bold text-brand-blue">{t("common.appName")}</p><p className="mt-2 max-w-[240px] text-xl font-extrabold leading-6">{t("home.hero")}</p><a className="mt-4 inline-flex" href="#/search"><Button><Icon name="search" />{t("home.iNeedBlogger")}</Button></a></div></section>
     {failed ? <div className="mt-5"><ErrorState onRetry={load} subtitle={t("home.loadFailed")} title={t("home.loadFailed")} /></div> : !data ? <HomeSkeleton /> : <>

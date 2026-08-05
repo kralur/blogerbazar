@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Modal } from "../components/ui";
 import { useI18n } from "../i18n";
+import { useTelegram } from "../telegram/TelegramProvider";
 
 export type UnsavedChangesGuard = {
   cancelLeave: () => void;
@@ -9,6 +10,7 @@ export type UnsavedChangesGuard = {
 };
 
 export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
+  const { setClosingConfirmation } = useTelegram();
   const currentHash = useRef(window.location.hash);
   const bypassGuard = useRef(false);
   const [pendingHash, setPendingHash] = useState<string | null>(null);
@@ -45,6 +47,11 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
       window.removeEventListener("beforeunload", onBeforeUnload);
     };
   }, [isDirty]);
+
+  useEffect(() => {
+    setClosingConfirmation(isDirty);
+    return () => setClosingConfirmation(false);
+  }, [isDirty, setClosingConfirmation]);
 
   const cancelLeave = useCallback(() => setPendingHash(null), []);
   const confirmLeave = useCallback(() => {

@@ -39,9 +39,9 @@ export function Admin() {
       setToast(updated.isBlocked ? t("admin.userBlocked") : t("admin.userUnblocked"));
     } catch { setToastTone("error"); setToast(t("admin.userUpdateDenied")); }
   };
-  if (!dashboard && !failed) return <div className="screen"><LoadingState /></div>;
-  if (failed || !dashboard) return <div className="screen"><ErrorState onRetry={load} subtitle={t("ui.accessDeniedSubtitle")} title={t("ui.accessDenied")} /></div>;
-  return <div className="screen space-y-5 pb-28 pt-5">
+  if (!dashboard && !failed) return <div className="screen screen--with-nav"><LoadingState /><BottomNav /></div>;
+  if (failed || !dashboard) return <div className="screen screen--with-nav"><ErrorState onRetry={load} subtitle={t("ui.accessDeniedSubtitle")} title={t("ui.accessDenied")} /><BottomNav /></div>;
+  return <div className="screen screen--with-nav space-y-5 pt-5">
     <header><p className="text-sm font-semibold text-brand-muted">{t("common.appName")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{t("admin.dashboardTitle")}</h1></header>
     <Card className="border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50"><p className="text-sm leading-6 text-brand-muted">{t("admin.dashboardDescription")}</p></Card>
     <section className="grid grid-cols-2 gap-3"><StatsCard icon="user" label={t("admin.users")} value={String(dashboard.users)} /><StatsCard icon="user" label={t("admin.bloggers")} value={String(dashboard.bloggers)} /><StatsCard icon="building" label={t("admin.businesses")} value={String(dashboard.businesses)} /><StatsCard icon="briefcase" label={t("common.campaigns", { count: dashboard.publishedCampaigns })} value={String(dashboard.publishedCampaigns)} /><StatsCard icon="check" label={t("common.deals", { count: dashboard.completedDeals })} value={String(dashboard.completedDeals)} /><StatsCard icon="star" label={t("admin.promotions")} value={String(dashboard.promotedBloggers + dashboard.promotedCampaigns)} /></section>

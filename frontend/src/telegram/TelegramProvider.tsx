@@ -8,6 +8,7 @@ type TelegramHaptic = { selectionChanged?: () => void; impactOccurred?: (style: 
 type TelegramInset = { top?: number; bottom?: number; left?: number; right?: number };
 type TelegramTheme = { bg_color?: string; secondary_bg_color?: string; text_color?: string; hint_color?: string; link_color?: string; button_color?: string; button_text_color?: string; section_separator_color?: string };
 type TelegramNativeButton = { hide?: () => void };
+type TelegramClosingBehavior = { enableConfirmation?: () => void; disableConfirmation?: () => void };
 type TelegramWebApp = {
   initData?: string;
   initDataUnsafe?: { user?: TelegramUser };
@@ -26,12 +27,13 @@ type TelegramWebApp = {
   BackButton?: TelegramBackButton;
   MainButton?: TelegramNativeButton;
   SettingsButton?: TelegramNativeButton;
+  ClosingBehavior?: TelegramClosingBehavior;
   HapticFeedback?: TelegramHaptic;
   disableVerticalSwipes?: () => void;
   openLink?: (url: string) => void;
   openTelegramLink?: (url: string) => void;
-  onEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
-  offEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
+  onEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "fullscreenFailed" | "orientationChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
+  offEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "fullscreenFailed" | "orientationChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
 };
 
 declare global {
@@ -57,6 +59,7 @@ type TelegramContextValue = {
   viewportHeight?: number;
   setBackButtonHandler: (handler?: () => void) => void;
   registerBackButtonHandler: (handler: () => void) => () => void;
+  setClosingConfirmation: (enabled: boolean) => void;
   haptic: { selection: () => void; impact: () => void; success: () => void; error: () => void; warning: () => void };
   openLink: (url: string) => void;
 };
@@ -79,6 +82,10 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     theme: app?.themeParams ?? {}
   }));
   const setBackButtonHandler = useCallback((handler?: () => void) => setBackHandler(() => handler), []);
+  const setClosingConfirmation = useCallback((enabled: boolean) => {
+    if (enabled) app?.ClosingBehavior?.enableConfirmation?.();
+    else app?.ClosingBehavior?.disableConfirmation?.();
+  }, [app]);
   const registerBackButtonHandler = useCallback((handler: () => void) => {
     const id = ++nextBackHandlerId.current;
     setOverlayBackHandlers((handlers) => [...handlers, { id, handler }]);
@@ -115,7 +122,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       root.style.setProperty("--tg-safe-area-bottom", `${safeInsets?.bottom ?? 0}px`);
       root.style.setProperty("--tg-content-safe-top", `${Math.max(contentInsets?.top ?? 0, safeInsets?.top ?? 0)}px`);
       root.style.setProperty("--tg-content-safe-bottom", `${Math.max(contentInsets?.bottom ?? 0, safeInsets?.bottom ?? 0)}px`);
-      root.style.setProperty("--tg-viewport-height", `${app?.viewportStableHeight ?? app?.viewportHeight ?? window.innerHeight}px`);
+      const browserViewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      root.style.setProperty("--tg-viewport-height", `${app?.viewportStableHeight ?? app?.viewportHeight ?? browserViewportHeight}px`);
       try {
         app?.setHeaderColor?.(theme?.bg_color ?? TelegramLaunch.splashHeader);
         app?.setBackgroundColor?.(background);
@@ -128,12 +136,22 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     };
 
     applyEnvironment();
-    const events = ["themeChanged", "viewportChanged", "fullscreenChanged", "safeAreaChanged", "contentSafeAreaChanged"] as const;
+    const events = ["themeChanged", "viewportChanged", "fullscreenChanged", "fullscreenFailed", "orientationChanged", "safeAreaChanged", "contentSafeAreaChanged"] as const;
     events.forEach((event) => app?.onEvent?.(event, applyEnvironment));
+    const onFullscreenFailed = () => app?.expand?.();
+    const onBrowserViewportChange = () => applyEnvironment();
+    app?.onEvent?.("fullscreenFailed", onFullscreenFailed);
+    window.addEventListener("resize", onBrowserViewportChange, { passive: true });
+    window.addEventListener("orientationchange", onBrowserViewportChange, { passive: true });
+    document.addEventListener("visibilitychange", onBrowserViewportChange);
     const timer = window.setTimeout(() => setBooting(false), 260);
     return () => {
       window.clearTimeout(timer);
       events.forEach((event) => app?.offEvent?.(event, applyEnvironment));
+      app?.offEvent?.("fullscreenFailed", onFullscreenFailed);
+      window.removeEventListener("resize", onBrowserViewportChange);
+      window.removeEventListener("orientationchange", onBrowserViewportChange);
+      document.removeEventListener("visibilitychange", onBrowserViewportChange);
     };
   }, [app]);
 
@@ -162,6 +180,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     viewportHeight: environment.viewportHeight,
     setBackButtonHandler,
     registerBackButtonHandler,
+    setClosingConfirmation,
     haptic: {
       selection: () => app?.HapticFeedback?.selectionChanged?.(),
       impact: () => app?.HapticFeedback?.impactOccurred?.("light"),
@@ -178,7 +197,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         window.location.assign(url);
       }
     }
-  }), [app, environment, registerBackButtonHandler, setBackButtonHandler]);
+  }), [app, environment, registerBackButtonHandler, setBackButtonHandler, setClosingConfirmation]);
 
   return <TelegramContext.Provider value={value}>{booting ? <SplashScreen /> : children}</TelegramContext.Provider>;
 }

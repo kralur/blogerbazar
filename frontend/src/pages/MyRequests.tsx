@@ -106,7 +106,7 @@ export function MyRequests() {
   };
 
   return (
-    <div className="screen pb-28">
+    <div className="screen screen--with-nav">
       <header className="flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-brand-muted">{t("requests.eyebrow")}</p>
