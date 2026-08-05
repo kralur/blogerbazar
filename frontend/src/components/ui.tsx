@@ -1,4 +1,5 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -368,7 +369,9 @@ export function BottomNav() {
     return <a className={cn("group grid justify-items-center gap-1 rounded-2xl px-2 py-1.5 text-[11px] font-bold transition", active ? "text-brand-blue" : "text-brand-muted")} href={item.href} key={item.href} onClick={() => haptic.selection()}><span className={cn("grid h-8 w-10 place-items-center rounded-full transition", active && "bg-blue-50 shadow-sm")}><Icon className={cn("h-5 w-5 transition group-active:scale-90", active && "scale-110")} name={item.icon} /></span>{item.label}</a>;
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <nav aria-label={t("nav.aria")} className="bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px]">
       <div className="bottom-nav__notch" />
       <div className="bottom-nav__items">
@@ -377,5 +380,7 @@ export function BottomNav() {
         {items.slice(2).map(renderItem)}
       </div>
     </nav>
+    ,
+    document.body
   );
 }

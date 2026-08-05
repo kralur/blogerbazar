@@ -36,7 +36,11 @@ export function ProfileDashboard() {
     const savedRole = localStorage.getItem(selectedRoleKey);
     return savedRole === "business" || savedRole === "brandFace" ? savedRole : "blogger";
   });
-  const { language, setLanguage, t } = useI18n();
+  const { language, setLanguage, t: translate } = useI18n();
+  const t = (key: string, values?: Record<string, string | number>) => translate(
+    key === "profile.requestsAndDeals" ? "requests.title" : key === "profile.requestsAndDealsSubtitle" ? "requests.emptyApplicationsSubtitle" : key,
+    values
+  );
   const { refreshFavorites } = useFavorites();
 
   useEffect(() => {

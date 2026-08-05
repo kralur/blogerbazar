@@ -46,7 +46,7 @@
 
 @layer components {
   .app-shell {
-    @apply mx-auto min-h-[100dvh] w-full max-w-[430px] overflow-x-hidden bg-brand-bg pb-28 text-brand-ink shadow-soft;
+    @apply mx-auto min-h-[100dvh] w-full max-w-[430px] overflow-x-hidden bg-brand-bg text-brand-ink shadow-soft;
   }
 
   .app-shell--first-run { padding-bottom: 0; }
