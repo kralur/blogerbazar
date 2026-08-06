@@ -1,4 +1,12 @@
 {
+  "wizard.businessCompanyStep": "Компания",
+  "wizard.businessDetailsStep": "Описание и контакты",
+  "wizard.businessReviewStep": "Проверка",
+  "wizard.stepOf": "Шаг {current} из {total}",
+  "wizard.continue": "Продолжить",
+  "wizard.createProfile": "Создать профиль",
+  "wizard.saveChanges": "Сохранить изменения",
+  "wizard.editSection": "Изменить: {section}",
   "language.switch": "O‘zbekcha", "language.aria": "Сменить язык",
   "common.all": "Все", "common.any": "Любой", "common.loading": "Загружаем данные…", "common.retry": "Повторить", "common.cancel": "Отмена", "common.close": "Закрыть", "common.save": "Сохранить", "common.create": "Создать", "common.edit": "Редактировать", "common.open": "Открыть", "common.from": "от", "common.to": "до", "common.notSpecified": "Не указано", "common.notFound": "Данные не найдены", "common.error": "Не удалось выполнить действие", "common.appName": "BloggerBazar", "common.version": "Версия {version}", "common.sentAt": "Отправлено {date}", "common.country": "Узбекистан", "common.categories": "Категории", "common.city": "Город", "common.email": "Email", "common.phone": "Телефон", "common.website": "Сайт", "common.optional": "необязательно", "common.status": "Статус", "common.rating": "Рейтинг", "common.reviews": "{count} отзывов", "common.deals": "{count} сделок", "common.campaigns": "{count} кампаний", "common.followers": "Подписчики", "common.reach": "Охват", "common.price": "Цена", "common.budget": "Бюджет", "common.applications": "Отклики", "common.date": "Дата", "common.requirements": "Требования", "common.business": "Бизнес", "common.blogger": "Блогер", "common.profile": "Профиль", "common.noData": "Нет данных", "common.created": "Создано", "common.unknown": "Неизвестно",
   "nav.search": "Поиск", "nav.campaigns": "Реклама", "nav.home": "Главная", "nav.requests": "Заявки", "nav.profile": "Профиль", "nav.aria": "Основная навигация",
@@ -16,15 +24,15 @@
   "error.payment_provider_unavailable": "Платёжный провайдер временно недоступен.", "error.access_denied": "Нет доступа к этому действию.", "error.not_found": "Данные не найдены.", "error.conflict": "Это действие сейчас недоступно.", "error.validation_failed": "Проверьте заполненные поля и повторите попытку.", "error.server": "Временная ошибка сервера. Повторите попытку.", "error.default": "Не удалось обработать данные.",
   "taxonomy.category.lifestyle": "Лайфстайл", "taxonomy.category.beauty": "Красота", "taxonomy.category.food": "Еда", "taxonomy.category.technology": "Технологии", "taxonomy.category.sport": "Спорт", "taxonomy.category.travel": "Путешествия", "taxonomy.category.finance": "Финансы", "taxonomy.category.gaming": "Игры", "taxonomy.category.fashion": "Мода", "taxonomy.city.tashkent": "Ташкент", "taxonomy.city.samarkand": "Самарканд", "taxonomy.city.bukhara": "Бухара", "taxonomy.city.fergana": "Фергана", "taxonomy.city.andijan": "Андижан", "taxonomy.city.namangan": "Наманган", "taxonomy.city.uzbekistan": "Узбекистан"
 ,
-  "onboarding.title": "Кем вы хотите быть?",
-  "onboarding.subtitle": "Выберите роль, которая лучше всего описывает вас сейчас. Её можно изменить позже в профиле.",
+  "onboarding.title": "Выберите свою роль",
+  "onboarding.subtitle": "Вы сможете добавить другие роли позже в профиле.",
   "onboarding.blogger": "Блогер",
-  "onboarding.bloggerDescription": "Создавайте контент и сотрудничайте с брендами.",
+  "onboarding.bloggerDescription": "Развивайте блог, находите бренды и участвуйте в рекламных кампаниях.",
   "onboarding.brandFace": "Бренд-фейс",
-  "onboarding.brandFaceDescription": "Представляйте бренды в рекламных кампаниях.",
+  "onboarding.brandFaceDescription": "Представляйте бренды в контенте и участвуйте в съёмках и рекламных проектах.",
   "onboarding.business": "Бизнес",
-  "onboarding.businessDescription": "Находите авторов для продвижения товаров и услуг.",
-  "onboarding.selectRole": "Выбрать роль",
+  "onboarding.businessDescription": "Находите авторов, запускайте кампании и управляйте сотрудничеством.",
+  "onboarding.selectRole": "Продолжить",
   "onboarding.selectionFailed": "Не удалось сохранить выбор роли. Повторите попытку."
 ,
   "brandFace.eyebrow": "Для бренд-фейса",
@@ -97,7 +105,7 @@
   ,"currency.uzs": "сум"
   ,"common.companies": "Компании"
   ,"firstRun.welcomeTitle": "Добро пожаловать!"
-  ,"firstRun.welcomeSubtitle": "Платформа, где бренды и авторы находят друг друга для безопасного сотрудничества."
+  ,"firstRun.welcomeSubtitle": "Платформа, где бренды и авторы находят друг друга и безопасно сотрудничают."
   ,"firstRun.start": "Начать"
   ,"firstRun.telegramTitle": "Продолжить через Telegram"
   ,"firstRun.telegramSubtitle": "Подтвердим ваш Telegram-аккаунт и подготовим личный профиль. Пароль и email не нужны."

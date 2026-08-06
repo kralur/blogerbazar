@@ -17,7 +17,7 @@ describe("first-time flow", () => {
     window.location.hash = "#/";
     render(<I18nProvider><App /></I18nProvider>);
 
-    expect(await screen.findByText(translate("firstRun.welcomeTitle", undefined, "ru"))).toBeInTheDocument();
+    expect(await screen.findByText(translate("firstRun.welcomeSubtitle", undefined, "ru"))).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: translate("firstRun.start", undefined, "ru") }));
 
     expect(await screen.findByText(translate("firstRun.telegramOutsideTitle", undefined, "ru"))).toBeInTheDocument();

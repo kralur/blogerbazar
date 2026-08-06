@@ -7,6 +7,8 @@ export type UnsavedChangesGuard = {
   cancelLeave: () => void;
   confirmLeave: () => void;
   pendingHash: string | null;
+  hasPendingLeave: boolean;
+  requestLeave: (action: () => void) => void;
 };
 
 export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
@@ -14,6 +16,7 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
   const currentHash = useRef(window.location.hash);
   const bypassGuard = useRef(false);
   const [pendingHash, setPendingHash] = useState<string | null>(null);
+  const pendingAction = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -53,20 +56,36 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
     return () => setClosingConfirmation(false);
   }, [isDirty, setClosingConfirmation]);
 
-  const cancelLeave = useCallback(() => setPendingHash(null), []);
+  const cancelLeave = useCallback(() => {
+    pendingAction.current = null;
+    setPendingHash(null);
+  }, []);
   const confirmLeave = useCallback(() => {
-    if (!pendingHash) return;
-    bypassGuard.current = true;
-    window.location.hash = pendingHash;
+    if (pendingHash) {
+      bypassGuard.current = true;
+      window.location.hash = pendingHash;
+    } else {
+      pendingAction.current?.();
+    }
+    pendingAction.current = null;
     setPendingHash(null);
   }, [pendingHash]);
 
-  return { pendingHash, cancelLeave, confirmLeave };
+  const requestLeave = useCallback((action: () => void) => {
+    if (!isDirty) {
+      action();
+      return;
+    }
+    pendingAction.current = action;
+    setPendingHash("");
+  }, [isDirty]);
+
+  return { pendingHash, hasPendingLeave: pendingHash !== null, cancelLeave, confirmLeave, requestLeave };
 }
 
 export function UnsavedChangesDialog({ guard }: { guard: UnsavedChangesGuard }) {
   const { t } = useI18n();
-  return <Modal onClose={guard.cancelLeave} open={Boolean(guard.pendingHash)} title={t("form.unsavedTitle")}>
+  return <Modal onClose={guard.cancelLeave} open={guard.hasPendingLeave} title={t("form.unsavedTitle")}>
     <p className="text-sm leading-6 text-brand-muted">{t("form.unsavedDescription")}</p>
     <div className="mt-5 grid grid-cols-2 gap-3">
       <Button onClick={guard.cancelLeave} type="button" variant="secondary">{t("common.cancel")}</Button>

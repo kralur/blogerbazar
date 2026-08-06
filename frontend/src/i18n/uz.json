@@ -1,4 +1,12 @@
 {
+  "wizard.businessCompanyStep": "Kompaniya",
+  "wizard.businessDetailsStep": "Tavsif va kontaktlar",
+  "wizard.businessReviewStep": "Tekshirish",
+  "wizard.stepOf": "{total} dan {current}-qadam",
+  "wizard.continue": "Davom etish",
+  "wizard.createProfile": "Profil yaratish",
+  "wizard.saveChanges": "O‘zgarishlarni saqlash",
+  "wizard.editSection": "Tahrirlash: {section}",
   "language.switch": "Русский", "language.aria": "Tilni almashtirish", "common.all": "Barchasi", "common.any": "Istalgan", "common.loading": "Ma’lumotlar yuklanmoqda…", "common.retry": "Qayta urinish", "common.cancel": "Bekor qilish", "common.close": "Yopish", "common.save": "Saqlash", "common.create": "Yaratish", "common.edit": "Tahrirlash", "common.open": "Ochish", "common.from": "dan", "common.to": "gacha", "common.notSpecified": "Ko‘rsatilmagan", "common.notFound": "Ma’lumot topilmadi", "common.error": "Amalni bajarib bo‘lmadi", "common.appName": "BloggerBazar", "common.version": "Versiya {version}", "common.sentAt": "Yuborilgan: {date}", "common.country": "O‘zbekiston", "common.categories": "Kategoriyalar", "common.city": "Shahar", "common.email": "Email", "common.phone": "Telefon", "common.website": "Veb-sayt", "common.optional": "ixtiyoriy", "common.status": "Holat", "common.rating": "Reyting", "common.reviews": "{count} ta fikr", "common.deals": "{count} ta bitim", "common.campaigns": "{count} ta kampaniya", "common.followers": "Obunachilar", "common.reach": "Qamrov", "common.price": "Narx", "common.budget": "Budjet", "common.applications": "Javoblar", "common.date": "Sana", "common.requirements": "Talablar", "common.business": "Biznes", "common.blogger": "Bloger", "common.profile": "Profil", "common.noData": "Ma’lumot yo‘q", "common.created": "Yaratildi", "common.unknown": "Noma’lum",
   "nav.search": "Qidiruv", "nav.campaigns": "Reklama", "nav.home": "Bosh sahifa", "nav.requests": "Arizalar", "nav.profile": "Profil", "nav.aria": "Asosiy navigatsiya",
   "home.title": "Mukammal blogerni toping", "home.subtitle": "O‘zbekiston bo‘ylab tasdiqlangan mualliflar va reklama kampaniyalari.", "home.hero": "Xavfsiz bitimlar, haqiqiy metrikalar va tushunarli narxlar.", "home.iAmBlogger": "Men blogerman", "home.iNeedBlogger": "Men bloger qidiryapman", "home.iAmBusiness": "Men biznes vakiliman", "home.viewAll": "Barchasini ko‘rish", "home.loadFailed": "Vitrinani yuklab bo‘lmadi.", "home.promotedBloggers": "🔥 Mashhur blogerlar", "home.promotedBloggersEmpty": "Tez orada bu yerda targ‘ib qilinadigan anketalar paydo bo‘ladi.", "home.promotedCampaigns": "📢 Tavsiya etilgan kampaniyalar", "home.promotedCampaignsEmpty": "Tez orada bu yerda targ‘ib qilinadigan kampaniyalar paydo bo‘ladi.", "home.popularBusinesses": "🏢 Mashhur kompaniyalar", "home.businessesEmpty": "Kampaniyalar yaratilgandan keyin kompaniyalar ko‘rinadi.", "home.topRated": "⭐ Reyting bo‘yicha eng yaxshilar", "home.topRatedEmpty": "Hozircha ko‘rsatish uchun reyting yo‘q.", "home.newBloggers": "🆕 Yangi blogerlar", "home.newBloggersEmpty": "Yangi anketalar moderatsiyadan keyin paydo bo‘ladi.", "home.categories": "🔥 Mashhur kategoriyalar", "home.statistics": "📊 Marketpleys statistikasi", "home.approvedBloggers": "tasdiqlangan blogerlar", "home.activeCampaigns": "faol kampaniyalar", "home.promotion": "💎 Marketpleysdagi targ‘ibot", "home.promotionCampaignTitle": "Kampaniyani targ‘ib qiling", "home.promotionCampaignSubtitle": "Uni vitrinada ajrating, ammo halol reyting bilan aralashtirmang.", "home.promotionProfileTitle": "Profilingizni targ‘ib qiling", "home.promotionProfileSubtitle": "Haqiqiy reytingga ta’sir qilmasdan vitrinada alohida belgi oling.", "home.audienceBloggers": "blogerlar", "home.audienceBusinesses": "bizneslar",
@@ -15,15 +23,15 @@
   "error.payment_provider_unavailable": "To‘lov provayderi vaqtincha mavjud emas.", "error.access_denied": "Bu amal uchun ruxsat yo‘q.", "error.not_found": "Ma’lumot topilmadi.", "error.conflict": "Bu amal hozir mavjud emas.", "error.validation_failed": "To‘ldirilgan maydonlarni tekshiring va qayta urinib ko‘ring.", "error.server": "Serverda vaqtinchalik xatolik. Qayta urinib ko‘ring.", "error.default": "Ma’lumotni qayta ishlashda xatolik yuz berdi.",
   "taxonomy.category.lifestyle": "Layfstayl", "taxonomy.category.beauty": "Go‘zallik", "taxonomy.category.food": "Taomlar", "taxonomy.category.technology": "Texnologiya", "taxonomy.category.sport": "Sport", "taxonomy.category.travel": "Sayohat", "taxonomy.category.finance": "Moliya", "taxonomy.category.gaming": "O‘yinlar", "taxonomy.category.fashion": "Moda", "taxonomy.city.tashkent": "Toshkent", "taxonomy.city.samarkand": "Samarqand", "taxonomy.city.bukhara": "Buxoro", "taxonomy.city.fergana": "Farg‘ona", "taxonomy.city.andijan": "Andijon", "taxonomy.city.namangan": "Namangan", "taxonomy.city.uzbekistan": "O‘zbekiston"
 ,
-  "onboarding.title": "Kim bo‘lishni xohlaysiz?",
-  "onboarding.subtitle": "Sizni eng yaxshi ifodalaydigan rolni tanlang. Uni keyin profil sozlamalarida o‘zgartirish mumkin.",
+  "onboarding.title": "O‘z rolingizni tanlang",
+  "onboarding.subtitle": "Keyinroq profilingizda boshqa rollarni ham qo‘shishingiz mumkin.",
   "onboarding.blogger": "Bloger",
-  "onboarding.bloggerDescription": "Kontent yarating va brendlar bilan hamkorlik qiling.",
+  "onboarding.bloggerDescription": "Blogingizni rivojlantiring, brendlarni toping va reklama kampaniyalarida ishtirok eting.",
   "onboarding.brandFace": "Brend-yuzi",
-  "onboarding.brandFaceDescription": "Reklama kampaniyalarida brendlarni namoyish eting.",
+  "onboarding.brandFaceDescription": "Brendlarni kontentda namoyish eting hamda suratga olishlar va reklama loyihalarida ishtirok eting.",
   "onboarding.business": "Biznes",
-  "onboarding.businessDescription": "Tovar va xizmatlarni targ‘ib qilish uchun mualliflarni toping.",
-  "onboarding.selectRole": "Rolni tanlash",
+  "onboarding.businessDescription": "Mualliflarni toping, kampaniyalarni ishga tushiring va hamkorlikni boshqaring.",
+  "onboarding.selectRole": "Davom etish",
   "onboarding.selectionFailed": "Rol tanlovini saqlab bo‘lmadi. Qayta urinib ko‘ring."
 ,
   "brandFace.eyebrow": "Brend-yuzi uchun",
@@ -96,7 +104,7 @@
   ,"currency.uzs": "so‘m"
   ,"common.companies": "Kompaniyalar"
   ,"firstRun.welcomeTitle": "Xush kelibsiz!"
-  ,"firstRun.welcomeSubtitle": "Brendlar va mualliflar xavfsiz hamkorlik uchun bir-birini topadigan platforma."
+  ,"firstRun.welcomeSubtitle": "Brendlar va mualliflar bir-birini topib, xavfsiz hamkorlik qiladigan platforma."
   ,"firstRun.start": "Boshlash"
   ,"firstRun.telegramTitle": "Telegram orqali davom etish"
   ,"firstRun.telegramSubtitle": "Telegram akkauntingizni tasdiqlaymiz va shaxsiy profilingizni tayyorlaymiz. Parol va email kerak emas."

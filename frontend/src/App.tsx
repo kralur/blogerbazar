@@ -153,7 +153,7 @@ export function App() {
         : onboardingStep === "role" ? <Onboarding onRoleSelected={handleRoleSelected} />
           : onboardingStep === "profile" && selectedRole === "Blogger" ? <BloggerProfileForm onCompleted={handleProfileCompleted} />
             : onboardingStep === "profile" && selectedRole === "BrandFace" ? <BrandFaceProfileForm onCompleted={handleProfileCompleted} />
-              : onboardingStep === "profile" && selectedRole === "Business" ? <BusinessProfileForm onCompleted={handleProfileCompleted} />
+              : onboardingStep === "profile" && selectedRole === "Business" ? <BusinessProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
                 : onboardingStep === "success" ? <OnboardingSuccess onContinue={finishOnboarding} />
                   : <div className="screen"><LoadingState /></div>;
 

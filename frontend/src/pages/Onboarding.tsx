@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { selectMarketplaceRole, type MarketplaceRole } from "../api/marketplace";
-import { Button, Toast } from "../components/ui";
+import { Button, Icon, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
 
@@ -13,16 +13,18 @@ const roleRoutes: Record<MarketplaceRole, string> = {
 export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: MarketplaceRole) => void }) {
   const { t } = useI18n();
   const { haptic } = useTelegram();
-  const [selectedRole, setSelectedRole] = useState<MarketplaceRole>("Blogger");
+  const [selectedRole, setSelectedRole] = useState<MarketplaceRole | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const roles: Array<{ role: MarketplaceRole; title: string; description: string }> = [
-    { role: "BrandFace", title: t("onboarding.brandFace"), description: t("onboarding.brandFaceDescription") },
-    { role: "Blogger", title: t("onboarding.blogger"), description: t("onboarding.bloggerDescription") },
-    { role: "Business", title: t("onboarding.business"), description: t("onboarding.businessDescription") }
+  const roles: Array<{ role: MarketplaceRole; title: string; description: string; icon: string }> = [
+    { role: "Blogger", title: t("onboarding.blogger"), description: t("onboarding.bloggerDescription"), icon: "chart" },
+    { role: "BrandFace", title: t("onboarding.brandFace"), description: t("onboarding.brandFaceDescription"), icon: "users" },
+    { role: "Business", title: t("onboarding.business"), description: t("onboarding.businessDescription"), icon: "building" }
   ];
 
   const saveRole = async () => {
+    if (!selectedRole || saving) return;
+
     try {
       setSaving(true);
       setError("");
@@ -37,16 +39,35 @@ export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: Marketp
     }
   };
 
-  return <div className="screen screen--without-nav flex flex-col px-5 pt-10">
-    <p className="text-sm font-bold text-brand-blue">BloggerBazar</p>
-    <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{t("onboarding.title")}</h1>
-    <p className="mt-3 text-sm leading-6 text-brand-muted">{t("onboarding.subtitle")}</p>
-    <div className="mt-7 grid gap-3">
-      {roles.map((item) => <button aria-pressed={selectedRole === item.role} className={`rounded-3xl border p-5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue ${selectedRole === item.role ? "border-brand-blue bg-blue-50 shadow-card" : "border-brand-line bg-white"}`} key={item.role} onClick={() => { haptic.selection(); setSelectedRole(item.role); }} type="button">
-        <p className="text-lg font-extrabold">{item.title}</p><p className="mt-1 text-sm leading-5 text-brand-muted">{item.description}</p>
-      </button>)}
+  return <main className="ftue-screen ftue-role-selection">
+    <div className="ftue-screen__layout">
+      <div className="ftue-role-selection__header">
+        <p className="ftue-role-selection__eyebrow">{t("common.appName")}</p>
+        <h1 className="ftue-role-selection__title">{t("onboarding.title")}</h1>
+        <p className="ftue-role-selection__subtitle">{t("onboarding.subtitle")}</p>
+      </div>
+
+      <div aria-label={t("onboarding.title")} className="ftue-role-selection__list" role="radiogroup">
+        {roles.map((item) => {
+          const selected = selectedRole === item.role;
+          return <button
+            aria-checked={selected}
+            aria-label={`${item.title}. ${item.description}`}
+            className={`ftue-role-card${selected ? " ftue-role-card--selected" : ""}`}
+            key={item.role}
+            onClick={() => { haptic.selection(); setSelectedRole(item.role); }}
+            role="radio"
+            type="button"
+          >
+            <span aria-hidden="true" className="ftue-role-card__icon"><Icon name={item.icon} /></span>
+            <span className="ftue-role-card__copy"><span className="ftue-role-card__title">{item.title}</span><span className="ftue-role-card__description">{item.description}</span></span>
+            <span aria-hidden="true" className="ftue-role-card__check"><Icon name="check" /></span>
+          </button>;
+        })}
+      </div>
+
+      <Button className="ftue-primary-button ftue-role-selection__cta w-full" disabled={!selectedRole || saving} onClick={saveRole} type="button" variant="secondary">{saving ? t("common.loading") : t("onboarding.selectRole")}</Button>
     </div>
-    <Button className="mt-auto mb-8 w-full" disabled={saving} onClick={saveRole} type="button">{saving ? t("common.loading") : t("onboarding.selectRole")}</Button>
     <Toast message={error} tone="error" />
-  </div>;
+  </main>;
 }
