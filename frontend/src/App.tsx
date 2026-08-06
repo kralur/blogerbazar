@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useEffect, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useState } from "react";
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, type MarketplaceRole } from "./api/marketplace";
 import { LoadingState } from "./components/ui";
 import { useTelegram } from "./telegram/TelegramProvider";
@@ -72,6 +72,7 @@ export function App() {
   const [selectedRole, setSelectedRole] = useState<MarketplaceRole>();
   const [authorizationFailed, setAuthorizationFailed] = useState(false);
   const [visitedRootRoutes, setVisitedRootRoutes] = useState<Set<string>>(() => new Set(rootRoutes.includes(route.path) ? [route.path] : ["/"]));
+  const [sessionEpoch, setSessionEpoch] = useState(0);
 
   useEffect(() => {
     if (onboardingStep === "complete" && rootRoutes.includes(route.path)) {
@@ -126,6 +127,15 @@ export function App() {
     setOnboardingStep("complete");
     window.location.hash = "/";
   };
+  const resetToWelcome = useCallback(() => {
+    setBackButtonHandler();
+    setSelectedRole(undefined);
+    setAuthorizationFailed(false);
+    setVisitedRootRoutes(new Set(["/"]));
+    setSessionEpoch((current) => current + 1);
+    setOnboardingStep("welcome");
+    if (window.location.hash !== "#/") window.location.hash = "/";
+  }, [setBackButtonHandler]);
 
   useEffect(() => {
     if (onboardingStep !== "complete" || rootRoutes.includes(route.path)) {
@@ -157,10 +167,10 @@ export function App() {
                 : onboardingStep === "success" ? <OnboardingSuccess onContinue={finishOnboarding} />
                   : <div className="screen"><LoadingState /></div>;
 
-  return <FavoritesProvider enabled={onboardingStep === "complete"}><main className={`app-shell bg-soft-radial ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><Suspense fallback={<div className="screen"><LoadingState /></div>}>
+  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><main className={`app-shell bg-soft-radial ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><Suspense fallback={<div className="screen"><LoadingState /></div>}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome /></RootScreenVisibility>}
-      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile /></RootScreenVisibility>}
+      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onSessionReset={resetToWelcome} /></RootScreenVisibility>}
       {route.path === "/favorites" && <Favorites />}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
       {route.path === "/business" && <BusinessProfileForm />}

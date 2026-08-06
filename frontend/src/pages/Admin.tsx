@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAdminAuditLogs, getAdminBloggers, getAdminDashboard, getAdminUsers, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminDashboard, type AdminPlatformUser } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, StatsCard, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/currency";
+import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 
 const roleKeys = ["admin.role.member", "admin.role.support", "admin.role.moderator", "admin.role.admin", "admin.role.owner"];
 
@@ -16,13 +17,14 @@ export function Admin() {
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
   const roleLabels = useMemo(() => roleKeys.map((key) => t(key)), [t]);
-  const load = () => {
+  const load = useCallback(() => {
     setFailed(false);
     Promise.all([getAdminDashboard(), getAdminUsers(), getAdminAuditLogs(), getAdminBloggers()])
       .then(([nextDashboard, nextUsers, nextLogs, nextBloggers]) => { setDashboard(nextDashboard); setUsers(nextUsers); setAuditLogs(nextLogs); setBloggers(nextBloggers); })
       .catch(() => setFailed(true));
-  };
+  }, []);
   useEffect(load, []);
+  useProfileDataRefresh(load);
   const updateRole = async (telegramUserId: number, role: number) => {
     try {
       const user = await updateAdminUserRole(telegramUserId, role);

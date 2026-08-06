@@ -11,6 +11,7 @@ import {
 import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
+import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 
 const applicationStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : status === 2 ? "gray" : "purple";
 const dealStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : "gray";
@@ -51,6 +52,7 @@ export function MyRequests() {
   }, [t]);
 
   useEffect(load, []);
+  useProfileDataRefresh(load);
 
   const withinRange = (value: string) => {
     const date = new Date(value);

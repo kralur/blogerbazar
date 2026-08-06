@@ -12,6 +12,7 @@ type TelegramClosingBehavior = { enableConfirmation?: () => void; disableConfirm
 type TelegramWebApp = {
   initData?: string;
   initDataUnsafe?: { user?: TelegramUser };
+  platform?: string;
   version?: string;
   colorScheme?: "light" | "dark";
   themeParams?: TelegramTheme;
@@ -95,10 +96,12 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     app?.ready?.();
     app?.expand?.();
-    try {
-      app?.requestFullscreen?.();
-    } catch {
-      app?.expand?.();
+    if (app?.platform === "ios" || app?.platform === "android") {
+      try {
+        app.requestFullscreen?.();
+      } catch {
+        app.expand?.();
+      }
     }
     app?.disableVerticalSwipes?.();
     app?.MainButton?.hide?.();

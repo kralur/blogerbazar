@@ -11,7 +11,6 @@ import { notifyProfileDataChanged, useProfileDataRefresh } from "../hooks/usePro
 
 type SelectedRole = "blogger" | "brandFace" | "business";
 const selectedRoleKey = "bloggerbazar.selectedRole";
-const languageKey = "bloggerbazar.language";
 
 function bloggerStatus(status: number | undefined, t: (key: string) => string) {
   if (status === 1) return { label: t("profile.approved"), tone: "green" as const };
@@ -20,7 +19,7 @@ function bloggerStatus(status: number | undefined, t: (key: string) => string) {
   return { label: t("profile.pending"), tone: "gold" as const };
 }
 
-export function ProfileDashboard() {
+export function ProfileDashboard({ onSessionReset }: { onSessionReset?: () => void }) {
   const { haptic, user: telegramUser } = useTelegram();
   useScrollRestoration("profile");
   const [blogger, setBlogger] = useState<MyBloggerProfile | null>(null);
@@ -128,8 +127,9 @@ export function ProfileDashboard() {
         haptic.success();
       }
     } catch (error) {
+      haptic.error();
       setToastTone("error");
-      setToast(getApiErrorMessage(error, t("form.submitFailed")));
+      setToast(getApiErrorMessage(error, t("error.profile_media_unavailable")));
     } finally {
       setAccountImagePending(undefined);
       setAccountImageSaving(false);
@@ -137,18 +137,24 @@ export function ProfileDashboard() {
   };
 
   const clearLocalAccountState = () => {
-    localStorage.removeItem(selectedRoleKey);
-    localStorage.removeItem("bloggerbazar.preferences");
-    localStorage.removeItem(languageKey);
-    localStorage.removeItem("bloggerbazar.onboarding.welcomeViewed");
-    localStorage.removeItem("bloggerbazar.onboarding.completed");
+    [localStorage, sessionStorage].forEach((storage) => {
+      for (let index = storage.length - 1; index >= 0; index -= 1) {
+        const key = storage.key(index);
+        if (key?.startsWith("bloggerbazar.")) storage.removeItem(key);
+      }
+    });
     setLanguage("ru");
   };
 
-  const logout = () => {
+  const resetLocalSession = () => {
     clearLocalAccountState();
-    window.location.hash = "/";
     setLogoutOpen(false);
+    setDeleteOpen(false);
+    onSessionReset?.();
+  };
+
+  const logout = () => {
+    resetLocalSession();
   };
 
   const requestAccountDeletion = async () => {
@@ -156,15 +162,10 @@ export function ProfileDashboard() {
     setDeleting(true);
     try {
       await deleteCurrentAccount();
-      setDeleteOpen(false);
-      setToastTone("success");
-      setToast(t("profile.deleteSuccess"));
-      clearLocalAccountState();
-      window.setTimeout(() => {
-        window.location.hash = "/";
-        window.location.reload();
-      }, 650);
+      haptic.success();
+      resetLocalSession();
     } catch (error) {
+      haptic.error();
       setToastTone("error");
       setToast(getApiErrorMessage(error, t("profile.deleteFailed")));
     } finally {
