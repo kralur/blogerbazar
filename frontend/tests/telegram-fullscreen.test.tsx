@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Modal } from "../src/components/ui";
 import { I18nProvider } from "../src/i18n";
-import { TelegramProvider } from "../src/telegram/TelegramProvider";
+import { TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
 
 function renderTelegram(platform: string) {
   const webApp = {
@@ -36,5 +37,31 @@ describe("Telegram fullscreen", () => {
     await screen.findByText("ready");
     expect(webApp.expand).toHaveBeenCalled();
     expect(webApp.requestFullscreen).not.toHaveBeenCalled();
+  });
+
+  it("registers a modal back handler once when its parent rerenders", async () => {
+    const onClick = vi.fn();
+    window.Telegram = { WebApp: {
+      platform: "ios",
+      colorScheme: "light",
+      expand: vi.fn(),
+      ready: vi.fn(),
+      requestFullscreen: vi.fn(),
+      disableVerticalSwipes: vi.fn(),
+      MainButton: { hide: vi.fn() },
+      SettingsButton: { hide: vi.fn() },
+      BackButton: { hide: vi.fn(), show: vi.fn(), onClick, offClick: vi.fn() }
+    } };
+
+    function DialogExample() {
+      useTelegram();
+      return <Modal onClose={() => undefined} open title="Dialog">content</Modal>;
+    }
+
+    render(<I18nProvider><TelegramProvider><DialogExample /></TelegramProvider></I18nProvider>);
+    await screen.findByText("content");
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

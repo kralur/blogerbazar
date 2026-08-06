@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
@@ -343,6 +343,9 @@ export function Modal({ open, title, children, onClose }: { open: boolean; title
   const { registerBackButtonHandler } = useTelegram();
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const close = useCallback(() => onCloseRef.current(), []);
   useEffect(() => {
     if (!open) return;
     restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -351,7 +354,7 @@ export function Modal({ open, title, children, onClose }: { open: boolean; title
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        close();
         return;
       }
       if (event.key !== "Tab") return;
@@ -369,7 +372,7 @@ export function Modal({ open, title, children, onClose }: { open: boolean; title
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
     const frame = window.requestAnimationFrame(() => dialogRef.current?.focus());
-    const unregisterBackButton = registerBackButtonHandler(onClose);
+    const unregisterBackButton = registerBackButtonHandler(close);
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", onKeyDown);
@@ -377,16 +380,16 @@ export function Modal({ open, title, children, onClose }: { open: boolean; title
       unregisterBackButton();
       restoreFocusRef.current?.focus();
     };
-  }, [onClose, open, registerBackButtonHandler]);
+  }, [close, open, registerBackButtonHandler]);
   if (!open) return null;
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div aria-modal="true" className="bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }} role="dialog">
+    <div aria-modal="true" className="bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
       <div aria-labelledby="bottom-sheet-title" className="bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft" ref={dialogRef} tabIndex={-1}>
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-200" />
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-extrabold" id="bottom-sheet-title">{title}</h3>
-          <button aria-label={t("ui.close")} className="grid h-10 w-10 place-items-center rounded-full bg-slate-100" onClick={onClose} type="button">
+          <button aria-label={t("ui.close")} className="grid h-10 w-10 place-items-center rounded-full bg-slate-100" onClick={close} type="button">
             ×
           </button>
         </div>
