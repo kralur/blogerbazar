@@ -73,8 +73,10 @@ function SplashScreen() {
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
   const [booting, setBooting] = useState(true);
-  const [backHandler, setBackHandler] = useState<(() => void) | undefined>();
+  const backHandlerRef = useRef<(() => void) | undefined>();
+  const [hasBackHandler, setHasBackHandler] = useState(false);
   const [overlayBackHandlers, setOverlayBackHandlers] = useState<Array<{ id: number; handler: () => void }>>([]);
+  const overlayBackHandlersRef = useRef<Array<{ id: number; handler: () => void }>>([]);
   const nextBackHandlerId = useRef(0);
   const app = webApp();
   const [environment, setEnvironment] = useState(() => ({
@@ -82,31 +84,29 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     viewportHeight: app?.viewportStableHeight ?? app?.viewportHeight,
     theme: app?.themeParams ?? {}
   }));
-  const setBackButtonHandler = useCallback((handler?: () => void) => setBackHandler(() => handler), []);
+  const setBackButtonHandler = useCallback((handler?: () => void) => {
+    backHandlerRef.current = handler;
+    setHasBackHandler((current) => current === Boolean(handler) ? current : Boolean(handler));
+  }, []);
   const setClosingConfirmation = useCallback((enabled: boolean) => {
     if (enabled) app?.ClosingBehavior?.enableConfirmation?.();
     else app?.ClosingBehavior?.disableConfirmation?.();
   }, [app]);
   const registerBackButtonHandler = useCallback((handler: () => void) => {
     const id = ++nextBackHandlerId.current;
-    setOverlayBackHandlers((handlers) => [...handlers, { id, handler }]);
-    return () => setOverlayBackHandlers((handlers) => handlers.filter((item) => item.id !== id));
+    setOverlayBackHandlers((handlers) => {
+      const nextHandlers = [...handlers, { id, handler }];
+      overlayBackHandlersRef.current = nextHandlers;
+      return nextHandlers;
+    });
+    return () => setOverlayBackHandlers((handlers) => {
+      const nextHandlers = handlers.filter((item) => item.id !== id);
+      overlayBackHandlersRef.current = nextHandlers;
+      return nextHandlers;
+    });
   }, []);
 
   useEffect(() => {
-    app?.ready?.();
-    app?.expand?.();
-    if (app?.platform === "ios" || app?.platform === "android") {
-      try {
-        app.requestFullscreen?.();
-      } catch {
-        app.expand?.();
-      }
-    }
-    app?.disableVerticalSwipes?.();
-    app?.MainButton?.hide?.();
-    app?.SettingsButton?.hide?.();
-
     const applyEnvironment = () => {
       const theme = app?.themeParams;
       const contentInsets = app?.contentSafeAreaInset;
@@ -138,12 +138,27 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       });
     };
 
-    applyEnvironment();
     const events = ["themeChanged", "viewportChanged", "fullscreenChanged", "fullscreenFailed", "orientationChanged", "safeAreaChanged", "contentSafeAreaChanged"] as const;
     events.forEach((event) => app?.onEvent?.(event, applyEnvironment));
-    const onFullscreenFailed = () => app?.expand?.();
+    const onFullscreenFailed = () => {
+      app?.expand?.();
+      applyEnvironment();
+    };
     const onBrowserViewportChange = () => applyEnvironment();
     app?.onEvent?.("fullscreenFailed", onFullscreenFailed);
+    app?.ready?.();
+    applyEnvironment();
+    app?.expand?.();
+    if (app?.platform === "ios" || app?.platform === "android") {
+      try {
+        app.requestFullscreen?.();
+      } catch {
+        app.expand?.();
+      }
+    }
+    app?.disableVerticalSwipes?.();
+    app?.MainButton?.hide?.();
+    app?.SettingsButton?.hide?.();
     window.addEventListener("resize", onBrowserViewportChange, { passive: true });
     window.addEventListener("orientationchange", onBrowserViewportChange, { passive: true });
     document.addEventListener("visibilitychange", onBrowserViewportChange);
@@ -184,18 +199,22 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const button = app?.BackButton;
     if (!button) return;
-    const activeHandler = overlayBackHandlers[overlayBackHandlers.length - 1]?.handler ?? backHandler;
-    if (!activeHandler) {
+    const onBackButtonClick = () => {
+      const handlers = overlayBackHandlersRef.current;
+      const overlayHandler = handlers.length ? handlers[handlers.length - 1].handler : undefined;
+      (overlayHandler ?? backHandlerRef.current)?.();
+    };
+    if (!hasBackHandler && !overlayBackHandlers.length) {
       button.hide?.();
       return;
     }
     button.show?.();
-    button.onClick?.(activeHandler);
+    button.onClick?.(onBackButtonClick);
     return () => {
-      button.offClick?.(activeHandler);
+      button.offClick?.(onBackButtonClick);
       button.hide?.();
     };
-  }, [app, backHandler, overlayBackHandlers]);
+  }, [app, hasBackHandler, overlayBackHandlers.length]);
 
   const value = useMemo<TelegramContextValue>(() => ({
     isTelegram: Boolean(app?.initData),

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { useCallback, useEffect, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Modal } from "../src/components/ui";
 import { I18nProvider } from "../src/i18n";
@@ -62,6 +63,39 @@ describe("Telegram fullscreen", () => {
     await screen.findByText("content");
     await new Promise((resolve) => window.setTimeout(resolve, 50));
 
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the native back button bound while a form handler changes", async () => {
+    const onClick = vi.fn();
+    window.Telegram = { WebApp: {
+      platform: "ios",
+      colorScheme: "light",
+      expand: vi.fn(),
+      ready: vi.fn(),
+      requestFullscreen: vi.fn(),
+      disableVerticalSwipes: vi.fn(),
+      MainButton: { hide: vi.fn() },
+      SettingsButton: { hide: vi.fn() },
+      BackButton: { hide: vi.fn(), show: vi.fn(), onClick, offClick: vi.fn() }
+    } };
+
+    function FormExample() {
+      const { setBackButtonHandler } = useTelegram();
+      const [value, setValue] = useState(0);
+      const goBack = useCallback(() => undefined, [value]);
+      useEffect(() => {
+        setBackButtonHandler(goBack);
+        return () => setBackButtonHandler();
+      }, [goBack, setBackButtonHandler]);
+      return <button onClick={() => setValue((current) => current + 1)} type="button">update form</button>;
+    }
+
+    render(<I18nProvider><TelegramProvider><FormExample /></TelegramProvider></I18nProvider>);
+    await screen.findByText("update form");
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    await screen.getByText("update form").click();
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
