@@ -4,6 +4,7 @@ import { LoadingState } from "./components/ui";
 import { useTelegram } from "./telegram/TelegramProvider";
 import { FavoritesProvider } from "./features/favorites/FavoritesProvider";
 import { RootScreenVisibility } from "./navigation/RootScreenVisibility";
+import { useTelegramBackHandler } from "./hooks/useTelegramBackHandler";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
@@ -96,16 +97,16 @@ export function App() {
         return;
       }
 
-      setSelectedRole(marketplaceRole);
       if (await selectedProfileExists(marketplaceRole)) {
+        setSelectedRole(marketplaceRole);
         localStorage.setItem(onboardingCompletedKey, "true");
         setOnboardingStep("complete");
         window.location.hash = "/";
         return;
       }
 
-      setOnboardingStep("profile");
-      window.location.hash = profileRoute(marketplaceRole);
+      setSelectedRole(undefined);
+      setOnboardingStep("role");
     } catch {
       setAuthorizationFailed(true);
       setOnboardingStep("telegram");
@@ -137,18 +138,11 @@ export function App() {
     if (window.location.hash !== "#/") window.location.hash = "/";
   }, [setBackButtonHandler]);
 
-  useEffect(() => {
-    if (onboardingStep !== "complete" || rootRoutes.includes(route.path)) {
-      setBackButtonHandler();
-      return;
-    }
-    const goBack = () => {
-      if (window.history.length > 1) window.history.back();
-      else window.location.hash = "/";
-    };
-    setBackButtonHandler(goBack);
-    return () => setBackButtonHandler();
-  }, [onboardingStep, route.path, route.id, setBackButtonHandler]);
+  const goBackFromNestedRoute = useCallback(() => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.hash = "/";
+  }, []);
+  useTelegramBackHandler(goBackFromNestedRoute, onboardingStep === "complete" && !rootRoutes.includes(route.path));
 
   useEffect(() => {
     if (["/blogger", "/brand-face-detail", "/campaign"].includes(route.path)) {
@@ -161,8 +155,8 @@ export function App() {
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <div className="screen"><LoadingState /></div>
         : onboardingStep === "role" ? <Onboarding onRoleSelected={handleRoleSelected} />
-          : onboardingStep === "profile" && selectedRole === "Blogger" ? <BloggerProfileForm onCompleted={handleProfileCompleted} />
-            : onboardingStep === "profile" && selectedRole === "BrandFace" ? <BrandFaceProfileForm onCompleted={handleProfileCompleted} />
+          : onboardingStep === "profile" && selectedRole === "Blogger" ? <BloggerProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
+            : onboardingStep === "profile" && selectedRole === "BrandFace" ? <BrandFaceProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
               : onboardingStep === "profile" && selectedRole === "Business" ? <BusinessProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
                 : onboardingStep === "success" ? <OnboardingSuccess onContinue={finishOnboarding} />
                   : <div className="screen"><LoadingState /></div>;

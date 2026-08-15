@@ -64,6 +64,29 @@ describe("Telegram fullscreen", () => {
     webApp.contentSafeAreaInset.top = 72;
     handlers.get("contentSafeAreaChanged")?.();
     expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("72px");
+
+    webApp.contentSafeAreaInset.top = 80;
+    handlers.get("fullscreenChanged")?.();
+    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("80px");
+  });
+
+  it("uses the centralized Telegram-only content inset fallback until a client reports its value", async () => {
+    const webApp = {
+      platform: "ios",
+      colorScheme: "light" as const,
+      contentSafeAreaInset: { top: 0, bottom: 0 },
+      safeAreaInset: { top: 0, bottom: 0 },
+      expand: vi.fn(),
+      ready: vi.fn(),
+      requestFullscreen: vi.fn(),
+      disableVerticalSwipes: vi.fn(),
+      MainButton: { hide: vi.fn() },
+      SettingsButton: { hide: vi.fn() }
+    };
+    window.Telegram = { WebApp: webApp };
+    render(<I18nProvider><TelegramProvider><p>ready</p></TelegramProvider></I18nProvider>);
+    await screen.findByText("ready");
+    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("56px");
   });
 
   it("registers a modal back handler once when its parent rerenders", async () => {

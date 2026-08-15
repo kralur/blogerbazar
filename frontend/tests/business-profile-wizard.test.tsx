@@ -175,6 +175,26 @@ describe("Business profile wizard", () => {
     expect(api.createBusinessProfile).not.toHaveBeenCalled();
   });
 
+  it("uses the native BackButton to return from the first FTUE step to role selection", async () => {
+    const { onBackToRole } = renderCreate();
+    await waitFor(() => expect(telegram.setBackButtonHandler).toHaveBeenCalled());
+    const nativeBack = telegram.setBackButtonHandler.mock.calls[0][0] as () => void;
+    nativeBack();
+    expect(onBackToRole).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the same native BackButton handler to move from step two to step one", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await completeStepOne(user);
+    await waitFor(() => expect(telegram.setBackButtonHandler).toHaveBeenCalled());
+    const nativeBack = telegram.setBackButtonHandler.mock.calls[0][0] as () => void;
+    await new Promise((resolve) => window.setTimeout(resolve));
+    nativeBack();
+    expect(await screen.findByRole("heading", { level: 1, name: translate("wizard.businessCompanyStep", undefined, "ru") })).toBeInTheDocument();
+    expect(telegram.setBackButtonHandler).toHaveBeenCalledTimes(1);
+  });
+
   it("prevents a double submit while the profile request is pending", async () => {
     const user = userEvent.setup();
     let resolveCreate: (() => void) | undefined;

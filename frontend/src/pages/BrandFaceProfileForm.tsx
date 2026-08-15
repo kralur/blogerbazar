@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { getApiErrorMessage } from "../api/client";
 import { deleteProfileImage, getMyBrandFaceProfile, upsertBrandFaceProfile, uploadProfileImage } from "../api/marketplace";
 import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
@@ -10,13 +10,14 @@ import { formatNumericInput, normalizeNumericInput } from "../lib/currency";
 import { normalizeRegion } from "../lib/taxonomy";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
+import { useTelegramBackHandler } from "../hooks/useTelegramBackHandler";
 import { notifyProfileDataChanged } from "../hooks/useProfileDataRefresh";
 
 type BrandFaceForm = { name: string; city: string; languages: string; experience: string; instagram: string; telegram: string; portfolioUrl: string; collaborationPrice: string; description: string };
 const emptyForm: BrandFaceForm = { name: "", city: "tashkent-city", languages: "", experience: "", instagram: "", telegram: "", portfolioUrl: "", collaborationPrice: "", description: "" };
 const values = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean);
 
-export function BrandFaceProfileForm({ onCompleted }: { onCompleted?: () => void }) {
+export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onCompleted?: () => void; onBackToRole?: () => void }) {
   const { t } = useI18n();
   const { haptic, user } = useTelegram();
   const [form, setForm] = useState<BrandFaceForm>(() => ({ ...emptyForm, name: user?.first_name ?? "", telegram: user?.username ? `@${user.username}` : "" }));
@@ -29,6 +30,18 @@ export function BrandFaceProfileForm({ onCompleted }: { onCompleted?: () => void
   const [pendingImage, setPendingImage] = useState<PendingProfileImage>();
   const [dirty, setDirty] = useState(false);
   const unsavedChanges = useUnsavedChanges(dirty);
+  const leaveForm = useCallback(() => {
+    if (onBackToRole) {
+      onBackToRole();
+      return;
+    }
+    if (window.history.length > 1) window.history.back();
+    else window.location.hash = "/profile";
+  }, [onBackToRole]);
+  const goBack = useCallback(() => {
+    if (!saving) unsavedChanges.requestLeave(leaveForm);
+  }, [leaveForm, saving, unsavedChanges]);
+  useTelegramBackHandler(goBack, Boolean(onCompleted));
   const set = (key: keyof BrandFaceForm) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setDirty(true);
     setForm((current) => ({ ...current, [key]: event.target.value }));

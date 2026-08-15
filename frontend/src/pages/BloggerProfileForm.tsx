@@ -11,6 +11,7 @@ import { normalizeRegion } from "../lib/taxonomy";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { normalizeWebsite, safeExternalUrl, socialHandle, socialUrl } from "../lib/contacts";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
+import { useTelegramBackHandler } from "../hooks/useTelegramBackHandler";
 import { notifyProfileDataChanged } from "../hooks/useProfileDataRefresh";
 
 const initial = { name: "", lastName: "", username: "", city: "tashkent-city", phone: "+998", email: "", totalFollowers: "10 000", averageReach: "25 000", engagementRate: "5.5", storiesPrice: "250 000", reelsPrice: "500 000", postPrice: "350 000", integrationPrice: "900 000", bio: "", portfolioUrl: "", instagram: "", tiktok: "", youtube: "" };
@@ -41,7 +42,7 @@ function validate(form: typeof initial, selectedCategories: string[], t: (key: s
   return errors;
 }
 
-export function BloggerProfileForm({ onCompleted }: { onCompleted?: () => void }) {
+export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?: () => void; onBackToRole?: () => void }) {
   const { t, language } = useI18n();
   const { haptic, user } = useTelegram();
   const [form, setForm] = useState(initial);
@@ -56,6 +57,17 @@ export function BloggerProfileForm({ onCompleted }: { onCompleted?: () => void }
   const [pendingImage, setPendingImage] = useState<PendingProfileImage>();
   const [dirty, setDirty] = useState(false);
   const unsavedChanges = useUnsavedChanges(dirty);
+  const leaveForm = () => {
+    if (onBackToRole) {
+      onBackToRole();
+      return;
+    }
+    if (window.history.length > 1) window.history.back();
+    else window.location.hash = "/profile";
+  };
+  useTelegramBackHandler(() => {
+    if (!saving) unsavedChanges.requestLeave(leaveForm);
+  }, Boolean(onCompleted));
   const errors = useMemo(() => validate(form, selectedCategories, t), [form, selectedCategories, t, language]);
   const valid = Object.keys(errors).length === 0;
 

@@ -90,6 +90,8 @@
 
   .app-shell--first-run { padding-bottom: 0; }
 
+  html[data-telegram-embedded="true"] .app-shell--first-run a[href="#/profile"] { display: none; }
+
   .screen {
     min-height: var(--tg-viewport-height, 100dvh);
     padding-top: calc(var(--tg-header-offset) + var(--app-page-gutter)) !important;
@@ -370,6 +372,7 @@
   }
 
   .wizard-screen__content { width: 100%; max-width: 26rem; margin: 0 auto; }
+  .wizard-header__back-placeholder { display: block; width: 2.75rem; height: 2.75rem; }
   .wizard-header { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); gap: .75rem; align-items: start; margin-bottom: 1.5rem; }
   .wizard-header__back { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
   .wizard-header__copy { min-width: 0; }

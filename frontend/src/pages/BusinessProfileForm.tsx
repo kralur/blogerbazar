@@ -6,6 +6,7 @@ import { FixedActionBar, ReviewItem, ReviewSection, WizardErrorSummary, WizardHe
 import { Button, Icon, Input, Modal, Textarea, Toast } from "../components/ui";
 import { RegionSelect } from "../components/RegionSelect";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
+import { useTelegramBackHandler } from "../hooks/useTelegramBackHandler";
 import { notifyProfileDataChanged } from "../hooks/useProfileDataRefresh";
 import { cityLabel, useI18n } from "../i18n";
 import { normalizeWebsite } from "../lib/contacts";
@@ -62,7 +63,7 @@ function stepForField(field: Field): Step {
 
 export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted?: () => void; onBackToRole?: () => void }) {
   const { language, t } = useI18n();
-  const { haptic, setBackButtonHandler, user } = useTelegram();
+  const { haptic, isTelegram, user } = useTelegram();
   const [form, setForm] = useState(initial);
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [serverErrors, setServerErrors] = useState<Errors>({});
@@ -167,10 +168,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
     unsavedChanges.requestLeave(leaveForm);
   }, [haptic, leaveForm, saving, step, unsavedChanges]);
 
-  useEffect(() => {
-    setBackButtonHandler(goBack);
-    return () => setBackButtonHandler();
-  }, [goBack, setBackButtonHandler]);
+  useTelegramBackHandler(goBack, Boolean(onCompleted));
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -229,7 +227,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
 
   return <form noValidate onSubmit={submit}>
     <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 2 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 2 ? undefined : continueStep} submit={step === 2} />}>
-      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} step={step + 1} stepTitle={stepTitles[step]} title={existing ? t("form.business.editTitle") : t("form.business.createTitle")} totalSteps={3} />
+      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} step={step + 1} stepTitle={stepTitles[step]} title={existing ? t("form.business.editTitle") : t("form.business.createTitle")} totalSteps={3} />
       <WizardErrorSummary message={serverSummary} />
       {step === 0 && <WizardStep stepKey={stepTitles[0]}>
         <div className="wizard-fields">
