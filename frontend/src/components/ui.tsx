@@ -439,9 +439,15 @@ export function BottomNav() {
     { href: "#/requests", label: t("nav.requests"), icon: "briefcase" },
     { href: "#/profile", label: t("nav.profile"), icon: "user" }
   ];
+  const isActive = (href: string) => {
+    if (href === "#/search") return hash.startsWith("#/search") || hash.startsWith("#/blogger/");
+    if (href === "#/campaigns") return hash.startsWith("#/campaigns") || hash.startsWith("#/campaign/");
+    if (href === "#/requests") return hash.startsWith("#/requests");
+    return ["#/profile", "#/favorites", "#/blogger-form", "#/business", "#/brand-face", "#/brand-face-detail"].some((route) => hash.startsWith(route));
+  };
   const renderItem = (item: typeof items[number]) => {
-    const active = hash.startsWith(item.href);
-    return <a className={cn("group grid justify-items-center gap-1 rounded-2xl px-2 py-1.5 text-[11px] font-bold transition", active ? "text-brand-blue" : "text-brand-muted")} href={item.href} key={item.href} onClick={() => haptic.selection()}><span className={cn("grid h-8 w-10 place-items-center rounded-full transition", active && "bg-blue-50 shadow-sm")}><Icon className={cn("h-5 w-5 transition group-active:scale-90", active && "scale-110")} name={item.icon} /></span>{item.label}</a>;
+    const active = isActive(item.href);
+    return <a aria-current={active ? "page" : undefined} className={cn("bottom-nav__item", active && "bottom-nav__item--active")} href={item.href} key={item.href} onClick={() => haptic.selection()}><span aria-hidden="true" className="bottom-nav__icon"><Icon name={item.icon} /></span><span className="bottom-nav__label">{item.label}</span></a>;
   };
 
   if (!rootScreenVisible || typeof document === "undefined") return null;
@@ -450,7 +456,7 @@ export function BottomNav() {
     <nav aria-label={t("nav.aria")} className="bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px]">
       <div className="bottom-nav__items">
         {items.slice(0, 2).map(renderItem)}
-        <button aria-current={hash === "#/" ? "page" : undefined} aria-label={t("ui.home")} className={cn("bottom-nav__home", hash === "#/" && "bottom-nav__home--active")} onClick={() => { haptic.impact(); window.location.hash = "/"; }} type="button"><Icon className="h-7 w-7" name="home" /></button>
+        <button aria-current={hash === "#/" ? "page" : undefined} aria-label={t("nav.home")} className={cn("bottom-nav__item", "bottom-nav__home", hash === "#/" && "bottom-nav__item--active")} onClick={() => { haptic.impact(); window.location.hash = "/"; }} type="button"><span aria-hidden="true" className="bottom-nav__icon"><Icon name="home" /></span><span className="bottom-nav__label">{t("nav.home")}</span></button>
         {items.slice(2).map(renderItem)}
       </div>
     </nav>

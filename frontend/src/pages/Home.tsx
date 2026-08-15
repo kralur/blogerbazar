@@ -13,6 +13,7 @@ type HomeData = Awaited<ReturnType<typeof getMarketplaceHome>>;
 type HomeRole = MarketplaceRole;
 
 type HeroContent = {
+  eyebrow: string;
   title: string;
   description: string;
   primary: { label: string; href: string };
@@ -49,18 +50,21 @@ function HomeHero({ role }: { role: HomeRole }) {
   const { t } = useI18n();
   const content: Record<HomeRole, HeroContent> = {
     Business: {
+      eyebrow: t("home.businessEyebrow"),
       title: t("home.businessHeroTitle"),
       description: t("home.businessHeroDescription"),
       primary: { label: t("home.findCreator"), href: "#/search" },
       secondary: [{ label: t("nav.campaigns"), href: "#/campaigns" }, { label: t("nav.requests"), href: "#/requests" }]
     },
     Blogger: {
+      eyebrow: t("home.bloggerEyebrow"),
       title: t("home.bloggerHeroTitle"),
       description: t("home.bloggerHeroDescription"),
       primary: { label: t("home.viewCampaigns"), href: "#/campaigns" },
       secondary: [{ label: t("home.myApplications"), href: "#/requests" }]
     },
     BrandFace: {
+      eyebrow: t("home.brandFaceEyebrow"),
       title: t("home.brandFaceHeroTitle"),
       description: t("home.brandFaceHeroDescription"),
       primary: { label: t("home.openProfile"), href: "#/profile" },
@@ -69,7 +73,7 @@ function HomeHero({ role }: { role: HomeRole }) {
   };
   const hero = content[role];
   return <section aria-labelledby="home-hero-title" className="home-hero">
-    <p className="home-hero__eyebrow">{t("common.appName")}</p>
+    <p className="home-hero__eyebrow">{hero.eyebrow}</p>
     <h2 id="home-hero-title">{hero.title}</h2>
     <p className="home-hero__description">{hero.description}</p>
     <div className="home-hero__actions">

@@ -49,7 +49,7 @@ export function HomePreview() {
     ? { ...previewData, promotedBloggers: [], promotedCampaigns: [], topRatedBloggers: [], newBloggers: [], newBrandFaces: [], categories: [], statistics: { approvedBloggers: 0, companies: 0, activeCampaigns: 0, completedDeals: 0, averageRating: null } }
     : previewData;
 
-  return <FavoritesProvider enabled={false}>
+  return <main className="app-shell"><FavoritesProvider enabled={false}>
     <Home initialData={state === "error" || state === "loading" ? null : data} initialError={state === "error"} initialLoading={state === "loading"} role={queryRole()} />
-  </FavoritesProvider>;
+  </FavoritesProvider></main>;
 }

@@ -1,6 +1,6 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({ getMarketplaceHome: vi.fn() }));
@@ -49,6 +49,8 @@ async function waitForData() {
 }
 
 describe("Home", () => {
+  afterEach(() => cleanup());
+
   beforeEach(() => {
     vi.clearAllMocks();
     profileRefresh = undefined;
@@ -60,6 +62,8 @@ describe("Home", () => {
     await waitForData();
 
     expect(screen.getByRole("heading", { name: translate("home.businessHeroTitle", undefined, "ru") })).toBeInTheDocument();
+    expect(screen.getByText(translate("home.businessEyebrow", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getAllByText(translate("common.appName", undefined, "ru"))).toHaveLength(1);
     expect(screen.getByRole("link", { name: translate("home.findCreator", undefined, "ru") })).toHaveAttribute("href", "#/search");
     expect(screen.getByText("12")).toBeInTheDocument();
     expect(screen.getByText("8")).toBeInTheDocument();
@@ -90,6 +94,8 @@ describe("Home", () => {
     rerender(<I18nProvider><Home role="BrandFace" /></I18nProvider>);
     expect(await screen.findByRole("heading", { name: translate("home.brandFaceHeroTitle", undefined, "ru") })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: translate("home.openProfile", undefined, "ru") })).toHaveAttribute("href", "#/profile");
+    expect(screen.getByText(translate("home.brandFaceEyebrow", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText(translate("home.brandFaceHeroDescription", undefined, "ru"))).not.toHaveTextContent("без обещаний отклика");
     expect(screen.queryByText(/подать заявку/i)).not.toBeInTheDocument();
   });
 
@@ -102,6 +108,22 @@ describe("Home", () => {
     expect(screen.getByRole("navigation", { name: "bottom-nav" })).toBeInTheDocument();
   });
 
+  it("uses truthful, emoji-free Home section headings", async () => {
+    renderHome("Blogger");
+    await screen.findByText("Promoted campaign");
+    expect(screen.getByRole("heading", { name: translate("home.promotedCampaigns", undefined, "ru") })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: translate("home.categories", undefined, "ru") })).toBeInTheDocument();
+    expect(screen.queryByText("Рекомендуемые кампании")).not.toBeInTheDocument();
+    expect(screen.queryByText("Популярные категории")).not.toBeInTheDocument();
+    expect(screen.queryByText(/[🔥📢⭐🆕📊]/)).not.toBeInTheDocument();
+  });
+
+  it("keeps new Brand Face and campaign copy localized in Uzbek", () => {
+    expect(translate("home.brandFaceHeroDescription", undefined, "uz")).toContain("mavjud kampaniyalarni");
+    expect(translate("home.promotedCampaigns", undefined, "uz")).toContain("Targ‘ib");
+    expect(translate("home.brandFaceEyebrow", undefined, "uz")).toBe("Brend-yuz uchun");
+  });
+
   it("shows neutral loading, preserves the header and hero on failure, and retries only the Home request", async () => {
     let rejectFirst!: () => void;
     api.getMarketplaceHome.mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; })).mockResolvedValueOnce(response);
@@ -110,7 +132,7 @@ describe("Home", () => {
     expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
     await act(async () => rejectFirst());
     expect(await screen.findByText(translate("home.errorTitle", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getAllByText(translate("common.appName", undefined, "ru"))).toHaveLength(2);
+    expect(screen.getAllByText(translate("common.appName", undefined, "ru"))).toHaveLength(1);
     expect(screen.getByRole("heading", { name: translate("home.businessHeroTitle", undefined, "ru") })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: translate("common.retry", undefined, "ru") }));
     await waitForData();
