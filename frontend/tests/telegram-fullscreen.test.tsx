@@ -40,6 +40,32 @@ describe("Telegram fullscreen", () => {
     expect(webApp.requestFullscreen).not.toHaveBeenCalled();
   });
 
+  it("updates the shared content-safe inset after a Telegram viewport event", async () => {
+    const handlers = new Map<string, () => void>();
+    const webApp = {
+      platform: "ios",
+      colorScheme: "light" as const,
+      contentSafeAreaInset: { top: 56, bottom: 20 },
+      safeAreaInset: { top: 24, bottom: 12 },
+      expand: vi.fn(),
+      ready: vi.fn(),
+      requestFullscreen: vi.fn(),
+      disableVerticalSwipes: vi.fn(),
+      MainButton: { hide: vi.fn() },
+      SettingsButton: { hide: vi.fn() },
+      onEvent: vi.fn((event: string, handler: () => void) => handlers.set(event, handler)),
+      offEvent: vi.fn()
+    };
+    window.Telegram = { WebApp: webApp };
+    render(<I18nProvider><TelegramProvider><p>ready</p></TelegramProvider></I18nProvider>);
+    await screen.findByText("ready");
+    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("56px");
+
+    webApp.contentSafeAreaInset.top = 72;
+    handlers.get("contentSafeAreaChanged")?.();
+    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("72px");
+  });
+
   it("registers a modal back handler once when its parent rerenders", async () => {
     const onClick = vi.fn();
     window.Telegram = { WebApp: {

@@ -7,6 +7,7 @@ export function TelegramAuthorization({ isTelegram, loading, failed, onContinue 
   const title = failed ? t("firstRun.authFailedTitle") : isTelegram ? t("firstRun.telegramTitle") : t("firstRun.telegramOutsideTitle");
   const subtitle = failed ? t("firstRun.authFailedSubtitle") : isTelegram ? t("firstRun.telegramSubtitle") : t("firstRun.telegramOutsideSubtitle");
   const action = failed || !isTelegram ? t("common.retry") : t("firstRun.continueTelegram");
+  const showRetryIcon = !isTelegram && !loading;
   return <main className="ftue-screen">
     <div className="ftue-screen__layout">
       <section className="ftue-screen__content">
@@ -15,7 +16,7 @@ export function TelegramAuthorization({ isTelegram, loading, failed, onContinue 
         <p className="ftue-screen__description ftue-screen__description--left">{subtitle}</p>
         <div className="ftue-screen__info"><Icon className="h-5 w-5" name="lock" /><p>{t("firstRun.telegramPrivacy")}</p></div>
       </section>
-      <Button aria-busy={loading} className="ftue-primary-button w-full" disabled={loading} onClick={onContinue} type="button" variant="secondary"><Icon name="refresh" />{loading ? t("firstRun.authorizing") : action}</Button>
+      <Button aria-busy={loading} className="ftue-primary-button w-full" disabled={loading} onClick={onContinue} type="button" variant="secondary">{showRetryIcon && <Icon name="refresh" />}{loading ? t("firstRun.authorizing") : action}</Button>
     </div>
   </main>;
 }

@@ -1,26 +1,51 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button, Icon } from "./ui";
 
+export function getKeyboardViewportState(layoutViewportHeight: number, viewport?: Pick<VisualViewport, "height" | "offsetTop">) {
+  const keyboardOffset = viewport ? Math.max(0, layoutViewportHeight - viewport.height - viewport.offsetTop) : 0;
+  return { keyboardOffset, isOpen: keyboardOffset > 0 };
+}
+
 export function WizardLayout({ children, actionBar }: { children: ReactNode; actionBar: ReactNode }) {
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const keyboardOpenRef = useRef(false);
   useEffect(() => {
     const root = document.documentElement;
     const updateKeyboardOffset = () => {
       const viewport = window.visualViewport;
-      const offset = viewport ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0;
-      root.style.setProperty("--wizard-keyboard-offset", `${offset}px`);
+      const state = getKeyboardViewportState(window.innerHeight, viewport ?? undefined);
+      keyboardOpenRef.current = state.isOpen;
+      root.style.setProperty("--wizard-keyboard-offset", `${state.keyboardOffset}px`);
+      setKeyboardOpen((current) => current === state.isOpen ? current : state.isOpen);
+      if (state.isOpen) {
+        window.requestAnimationFrame(() => {
+          const activeElement = document.activeElement;
+          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLSelectElement) {
+            activeElement.scrollIntoView({ block: "nearest", inline: "nearest" });
+          }
+        });
+      }
+    };
+
+    const keepFocusedFieldVisible = (event: FocusEvent) => {
+      const target = event.target;
+      if (!keyboardOpenRef.current || !(target instanceof HTMLElement)) return;
+      window.requestAnimationFrame(() => target.scrollIntoView({ block: "nearest", inline: "nearest" }));
     };
 
     updateKeyboardOffset();
     window.visualViewport?.addEventListener("resize", updateKeyboardOffset);
     window.visualViewport?.addEventListener("scroll", updateKeyboardOffset);
+    document.addEventListener("focusin", keepFocusedFieldVisible);
     return () => {
       window.visualViewport?.removeEventListener("resize", updateKeyboardOffset);
       window.visualViewport?.removeEventListener("scroll", updateKeyboardOffset);
+      document.removeEventListener("focusin", keepFocusedFieldVisible);
       root.style.removeProperty("--wizard-keyboard-offset");
     };
   }, []);
 
-  return <section className="wizard-screen"><div className="wizard-screen__content">{children}</div>{actionBar}</section>;
+  return <section className="wizard-screen" data-keyboard-open={keyboardOpen || undefined}><div className="wizard-screen__content">{children}</div>{actionBar}</section>;
 }
 
 export function WizardHeader({ title, stepTitle, step, totalSteps, backLabel, progressLabel, onBack }: {
@@ -76,9 +101,9 @@ export function FixedActionBar({ backLabel, continueLabel, disabled = false, loa
   </div>;
 }
 
-export function ReviewSection({ title, editLabel, children, onEdit }: { title: string; editLabel: string; children: ReactNode; onEdit: () => void }) {
+export function ReviewSection({ title, editLabel, editAriaLabel, children, onEdit }: { title: string; editLabel: string; editAriaLabel: string; children: ReactNode; onEdit: () => void }) {
   return <section className="wizard-review-section">
-    <div className="wizard-review-section__header"><h3>{title}</h3><button className="wizard-review-section__edit" onClick={onEdit} type="button">{editLabel}</button></div>
+    <div className="wizard-review-section__header"><h3>{title}</h3><button aria-label={editAriaLabel} className="wizard-review-section__edit" onClick={onEdit} type="button">{editLabel}</button></div>
     <dl className="wizard-review-section__content">{children}</dl>
   </section>;
 }

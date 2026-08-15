@@ -250,12 +250,12 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
       {step === 2 && <WizardStep stepKey={stepTitles[2]}>
         <div className="wizard-review">
           {reviewLogoUrl && <img alt={t("profileMedia.title")} className="wizard-review__logo" src={reviewLogoUrl} />}
-          <ReviewSection editLabel={t("wizard.editSection", { section: stepTitles[0] })} onEdit={() => setStep(0)} title={stepTitles[0]}>
+          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[0] })} editLabel={t("common.edit")} onEdit={() => setStep(0)} title={stepTitles[0]}>
             <ReviewItem label={t("form.companyName")} value={form.name.trim()} />
             <ReviewItem label={t("form.telegramUsername")} value={form.username.trim()} />
             <ReviewItem label={t("common.city")} value={cityLabel(form.city, language)} />
           </ReviewSection>
-          <ReviewSection editLabel={t("wizard.editSection", { section: stepTitles[1] })} onEdit={() => setStep(1)} title={stepTitles[1]}>
+          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[1] })} editLabel={t("common.edit")} onEdit={() => setStep(1)} title={stepTitles[1]}>
             <ReviewItem label={t("form.websiteOptional")} value={form.website.trim()} />
             <ReviewItem label={t("form.aboutCompany")} value={form.description.trim()} />
             <ReviewItem label={t("common.phone")} value={form.phone} />

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { ApiError } from "../src/api/client";
 import { I18nProvider, translate } from "../src/i18n";
+import { getKeyboardViewportState } from "../src/components/Wizard";
 
 const api = vi.hoisted(() => ({
   createBusinessProfile: vi.fn(),
@@ -131,8 +132,15 @@ describe("Business profile wizard", () => {
     renderCreate();
     await completeStepOne(user);
     await completeStepTwo(user);
-    await user.click(screen.getByRole("button", { name: translate("wizard.editSection", { section: translate("wizard.businessCompanyStep", undefined, "ru") }, "ru") }));
+    const editButton = screen.getByRole("button", { name: translate("wizard.editSection", { section: translate("wizard.businessCompanyStep", undefined, "ru") }, "ru") });
+    expect(editButton).toHaveTextContent(translate("common.edit", undefined, "ru"));
+    await user.click(editButton);
     expect(screen.getByDisplayValue("Lumi Beauty")).toBeInTheDocument();
+  });
+
+  it("detects keyboard state from the visual viewport without device-specific constants", () => {
+    expect(getKeyboardViewportState(844, { height: 844, offsetTop: 0 })).toEqual({ keyboardOffset: 0, isOpen: false });
+    expect(getKeyboardViewportState(844, { height: 520, offsetTop: 0 })).toEqual({ keyboardOffset: 324, isOpen: true });
   });
 
   it("routes a server validation failure to its field step", async () => {
