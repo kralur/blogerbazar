@@ -1,8 +1,10 @@
 export const TelegramLaunch = {
-  splashBackground: "#F8FAFC",
-  splashHeader: "#F8FAFC",
-  accent: "#2563EB",
-  accentHighlight: "#06B6D4"
+  splashBackground: "#F6F6F2",
+  splashBackgroundDark: "#090909",
+  splashHeader: "#F6F6F2",
+  splashHeaderDark: "#090909",
+  accent: "#C8FF00",
+  accentHighlight: "#B5E600"
 } as const;
 
 export const TelegramSafeArea = {

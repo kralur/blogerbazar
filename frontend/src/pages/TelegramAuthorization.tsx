@@ -1,4 +1,5 @@
 import { Button, Icon } from "../components/ui";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
 import officialLogo from "../assets/bloggerbazar-logo-original.png";
 
@@ -11,6 +12,7 @@ export function TelegramAuthorization({ isTelegram, loading, failed, onContinue 
   return <main className="ftue-screen">
     <div className="ftue-screen__layout">
       <section className="ftue-screen__content" data-content-header>
+        <div className="ftue-screen__language"><LanguageSwitcher /></div>
         <img alt={t("common.appName")} className="ftue-screen__logo ftue-screen__logo--compact" src={officialLogo} />
         <h1 className="ftue-screen__title">{title}</h1>
         <p className="ftue-screen__description ftue-screen__description--left">{subtitle}</p>

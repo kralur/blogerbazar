@@ -1,6 +1,7 @@
-import { lazy, memo, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, type MarketplaceRole } from "./api/marketplace";
 import { LoadingState } from "./components/ui";
+import { LaunchScreen } from "./components/LaunchScreen";
 import { useTelegram } from "./telegram/TelegramProvider";
 import { FavoritesProvider } from "./features/favorites/FavoritesProvider";
 import { RootScreenVisibility } from "./navigation/RootScreenVisibility";
@@ -70,6 +71,8 @@ export function App() {
   const route = useRoute();
   const { isTelegram, setBackButtonHandler } = useTelegram();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(initialOnboardingStep);
+  const [initialDestinationResolved, setInitialDestinationResolved] = useState(false);
+  const initialBootstrapStarted = useRef(false);
   const [selectedRole, setSelectedRole] = useState<MarketplaceRole>();
   const [authorizationFailed, setAuthorizationFailed] = useState(false);
   const [visitedRootRoutes, setVisitedRootRoutes] = useState<Set<string>>(() => new Set(rootRoutes.includes(route.path) ? [route.path] : ["/"]));
@@ -81,7 +84,7 @@ export function App() {
     }
   }, [onboardingStep, route.path]);
 
-  const authorize = async () => {
+  const resolveDestination = useCallback(async () => {
     setAuthorizationFailed(false);
     if (!isTelegram) {
       setOnboardingStep("telegram");
@@ -111,6 +114,23 @@ export function App() {
       setAuthorizationFailed(true);
       setOnboardingStep("telegram");
     }
+  }, [isTelegram]);
+
+  useEffect(() => {
+    if (initialBootstrapStarted.current) return;
+    initialBootstrapStarted.current = true;
+
+    if (localStorage.getItem(onboardingWelcomeKey) !== "true") {
+      setOnboardingStep("welcome");
+      setInitialDestinationResolved(true);
+      return;
+    }
+
+    void resolveDestination().finally(() => setInitialDestinationResolved(true));
+  }, [resolveDestination]);
+
+  const authorize = async () => {
+    await resolveDestination();
   };
 
   const beginAuthorization = () => {
@@ -153,7 +173,7 @@ export function App() {
   const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
-      : onboardingStep === "checking" ? <div className="screen"><LoadingState /></div>
+      : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
         : onboardingStep === "role" ? <Onboarding onRoleSelected={handleRoleSelected} />
           : onboardingStep === "profile" && selectedRole === "Blogger" ? <BloggerProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
             : onboardingStep === "profile" && selectedRole === "BrandFace" ? <BrandFaceProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
@@ -161,7 +181,9 @@ export function App() {
                 : onboardingStep === "success" ? <OnboardingSuccess onContinue={finishOnboarding} />
                   : <div className="screen"><LoadingState /></div>;
 
-  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><main className={`app-shell bg-soft-radial ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><Suspense fallback={<div className="screen"><LoadingState /></div>}>
+  if (!initialDestinationResolved) return <LaunchScreen />;
+
+  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome /></RootScreenVisibility>}
       {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onSessionReset={resetToWelcome} /></RootScreenVisibility>}

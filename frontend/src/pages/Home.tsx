@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { getMarketplaceHome } from "../api/marketplace";
 import { BloggerCard } from "../components/BloggerCard";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { CampaignCard } from "../components/CampaignCard";
 import { Avatar, BottomNav, Button, Card, Chip, ErrorState, Icon, PromotionCard, Skeleton, StatsCard } from "../components/ui";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
@@ -16,7 +17,7 @@ function Rail({ title, empty, children }: { title: string; empty: string; childr
 }
 
 export function Home() {
-  const { language, setLanguage, t } = useI18n();
+  const { language, t } = useI18n();
   useScrollRestoration("home");
   const [data, setData] = useState<HomeData | null>(null);
   const [failed, setFailed] = useState(false);
@@ -25,7 +26,7 @@ export function Home() {
   useProfileDataRefresh(load);
 
   return <div className="home-showcase screen screen--with-nav">
-    <header className="flex items-start justify-between gap-4"><div><h1 className="text-3xl font-extrabold tracking-tight">{t("home.title")}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">{t("home.subtitle")}</p></div><button aria-label={t("language.aria")} className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-xs font-extrabold text-brand-blue shadow-card" onClick={() => setLanguage(language === "ru" ? "uz" : "ru")} type="button">{language === "ru" ? "UZ" : "RU"}</button></header>
+    <header className="flex items-start justify-between gap-4"><div><h1 className="text-3xl font-extrabold tracking-tight">{t("home.title")}</h1><p className="mt-2 text-sm leading-5 text-brand-muted">{t("home.subtitle")}</p></div><LanguageSwitcher /></header>
     <section className="home-showcase__hero relative mt-5 overflow-hidden rounded-[32px] p-5"><div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-cyan-300/40 blur-2xl" /><div className="relative"><p className="text-sm font-bold text-brand-blue">{t("common.appName")}</p><p className="mt-2 max-w-[240px] text-xl font-extrabold leading-6">{t("home.hero")}</p><a className="mt-4 inline-flex" href="#/search"><Button><Icon name="search" />{t("home.iNeedBlogger")}</Button></a></div></section>
     {failed ? <div className="mt-5"><ErrorState onRetry={load} subtitle={t("home.loadFailed")} title={t("home.loadFailed")} /></div> : !data ? <HomeSkeleton /> : <>
       <Rail empty={t("home.promotedBloggersEmpty")} title={t("home.promotedBloggers")}>{data.promotedBloggers.length ? data.promotedBloggers.map(blogger => <div className="home-rail__blogger shrink-0 snap-start" key={blogger.id}><BloggerCard blogger={blogger} /></div>) : null}</Rail>

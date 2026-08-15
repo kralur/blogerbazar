@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "../src/i18n";
 import { WizardHeader } from "../src/components/Wizard";
 
 function renderHeader(showBackButton: boolean) {
-  render(<WizardHeader backLabel="Back" onBack={vi.fn()} progressLabel="Step 1 of 3" showBackButton={showBackButton} step={1} stepTitle="Company" totalSteps={3} />);
+  render(<I18nProvider><WizardHeader backLabel="Back" onBack={vi.fn()} progressLabel="Step 1 of 3" showBackButton={showBackButton} step={1} stepTitle="Company" totalSteps={3} /></I18nProvider>);
 }
 
 describe("WizardHeader", () => {
@@ -13,6 +14,7 @@ describe("WizardHeader", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Company" }).closest(".wizard-header")).toHaveAttribute("data-content-header");
     expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
     expect(document.querySelector(".wizard-header__back-placeholder")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Язык интерфейса" })).toBeInTheDocument();
   });
 
   it("keeps browser Back action separate from the title and progress content", () => {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button, Icon } from "./ui";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function getKeyboardViewportState(layoutViewportHeight: number, viewport?: Pick<VisualViewport, "height" | "offsetTop">) {
   const keyboardOffset = viewport ? Math.max(0, layoutViewportHeight - viewport.height - viewport.offsetTop) : 0;
@@ -63,6 +64,7 @@ export function WizardHeader({ title, stepTitle, step, totalSteps, backLabel, pr
   showBackButton?: boolean;
 }) {
   return <header className="wizard-header" data-content-header>
+    <div className="wizard-header__language"><LanguageSwitcher /></div>
     {showBackButton && <button aria-label={backLabel} className="wizard-header__back" onClick={onBack} type="button"><Icon name="back" /></button>}
     <div className="wizard-header__copy">{title && <p>{title}</p>}<h1>{stepTitle}</h1></div>
     <ProgressIndicator current={step} label={progressLabel} total={totalSteps} />

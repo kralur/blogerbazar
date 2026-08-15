@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { deleteCurrentAccount, deleteProfileImage, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplications, getMyDeals, normalizeMarketplaceRole, selectMarketplaceRole, uploadProfileImage, type MarketplaceRole, type MyBloggerProfile, type MyBrandFaceProfile, type MyBusinessProfile, type ProfileMediaTarget } from "../api/marketplace";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { Badge, BottomNav, Button, Card, EmptyState, ErrorState, Icon, Modal, Skeleton, StatsCard, Toast } from "../components/ui";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
@@ -175,7 +176,7 @@ export function ProfileDashboard({ onSessionReset }: { onSessionReset?: () => vo
 
   return (
     <div className="screen screen--with-nav space-y-5 px-4 pt-5">
-      <header className="flex items-center justify-between"><div><p className="text-sm font-semibold text-brand-muted">{t("profile.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{t("profile.title")}</h1></div><button aria-label={t("language.aria")} className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-xs font-extrabold text-brand-blue shadow-card" onClick={() => setLanguage(language === "ru" ? "uz" : "ru")} type="button">{language === "ru" ? "UZ" : "RU"}</button></header>
+      <header className="flex items-center justify-between"><div><p className="text-sm font-semibold text-brand-muted">{t("profile.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{t("profile.title")}</h1></div><LanguageSwitcher /></header>
       <Card className="flex items-center gap-4"><ProfileMediaPicker canRemove={Boolean(activeStoredImage)} compact currentUrl={activeStoredImage} disabled={!activeProfile || accountImageSaving} fallbackUrl={telegramUser?.photo_url} name={activeProfile?.name || telegramUser?.first_name || t("profile.telegramUser")} onChange={(image) => void changeAccountImage(image)} pending={accountImagePending} /><div className="min-w-0"><div className="truncate text-lg font-extrabold">{telegramUser?.first_name || t("profile.telegramUser")}</div><p className="mt-1 truncate text-sm text-brand-muted">{username}</p><Badge tone="blue">{t("profile.telegramAccount")}</Badge></div></Card>
       {loading ? <><Skeleton className="h-28" /><Skeleton className="h-20" /></> : loadFailed ? <ErrorState onRetry={loadDashboard} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /> : <>
         <section><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-extrabold">{t("profile.role")}</h2></div><div className="grid grid-cols-3 gap-3">

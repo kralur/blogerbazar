@@ -5,6 +5,7 @@ import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { ContactList, hasContacts } from "../components/ContactList";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 
@@ -54,6 +55,7 @@ export function BloggerDetails({ id }: { id: string }) {
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   const portfolio = blogger.portfolioItems;
   return <div className="screen screen--with-nav">
+    <div className="mb-3 flex justify-end"><LanguageSwitcher /></div>
     <div className="relative -mx-5 h-48 overflow-hidden bg-gradient-to-br from-violet-200 via-blue-100 to-cyan-100">
       {blogger.coverUrl && <img alt="" className="image-fade h-full w-full object-cover opacity-35" decoding="async" src={blogger.coverUrl} />}
       <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-white/80" /><a className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-white/85 shadow-card" href="#/search"><Icon name="back" /></a><FavoriteButton bloggerId={blogger.id} className="absolute right-4 top-4" />

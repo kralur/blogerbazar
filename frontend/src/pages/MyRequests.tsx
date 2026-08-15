@@ -9,6 +9,7 @@ import {
   type MyDeal
 } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
@@ -114,7 +115,7 @@ export function MyRequests() {
           <p className="text-sm font-semibold text-brand-muted">{t("requests.eyebrow")}</p>
           <h1 className="text-3xl font-extrabold tracking-tight">{t("requests.title")}</h1>
         </div>
-        <button aria-label={t("requests.dateFilter")} className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-brand-blue" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button>
+        <div className="flex shrink-0 items-center gap-2"><LanguageSwitcher /><button aria-label={t("requests.dateFilter")} className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-brand-blue" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button></div>
       </header>
 
       <div className="mt-5 grid grid-cols-2 rounded-2xl bg-slate-100 p-1">

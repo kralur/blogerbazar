@@ -8,8 +8,26 @@ type Values = Record<string, string | number>;
 const dictionaries: Record<Language, Dictionary> = { ru, uz };
 const storageKey = "bloggerbazar.language";
 
+function toSupportedLanguage(value?: string | null): Language | undefined {
+  return value === "ru" || value === "uz" ? value : undefined;
+}
+
+function storedLanguage(): Language | undefined {
+  try {
+    return toSupportedLanguage(localStorage.getItem(storageKey));
+  } catch {
+    return undefined;
+  }
+}
+
+function telegramLanguage(): Language | undefined {
+  if (typeof window === "undefined") return undefined;
+  const telegram = window.Telegram?.WebApp?.initDataUnsafe?.user as { language_code?: string } | undefined;
+  return toSupportedLanguage(telegram?.language_code?.toLowerCase());
+}
+
 export function currentLanguage(): Language {
-  return localStorage.getItem(storageKey) === "uz" ? "uz" : "ru";
+  return storedLanguage() ?? telegramLanguage() ?? "ru";
 }
 
 export function translate(key: string, values?: Values, language = currentLanguage()) {
@@ -33,7 +51,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(currentLanguage);
   const value = useMemo<I18nContextValue>(() => ({
     language,
-    setLanguage: (nextLanguage) => { localStorage.setItem(storageKey, nextLanguage); setLanguageState(nextLanguage); },
+    setLanguage: (nextLanguage) => {
+      try { localStorage.setItem(storageKey, nextLanguage); } catch {}
+      setLanguageState(nextLanguage);
+    },
     t: (key, values) => translate(key, values, language)
   }), [language]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

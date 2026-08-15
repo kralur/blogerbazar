@@ -4,6 +4,7 @@ import { Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, Loadi
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 
 export function CampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
@@ -64,7 +65,7 @@ export function CampaignDetails({ id }: { id: string }) {
     <div className="screen screen--with-nav">
       <header className="flex items-center justify-between">
         <a className="grid h-11 w-11 place-items-center rounded-2xl bg-white shadow-card" href="#/campaigns"><Icon name="back" /></a>
-        <Badge tone={campaign.isPromoted ? "gold" : "blue"}>{campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>
+        <div className="flex items-center gap-2"><Badge tone={campaign.isPromoted ? "gold" : "blue"}>{campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge><LanguageSwitcher /></div>
       </header>
       <Card className="mt-5 overflow-hidden p-0">
         <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 p-5 text-white">

@@ -20,8 +20,8 @@
     --bb-warning: #E6A700;
     --bb-error: #D64545;
     --bb-info: #3D7EFF;
-    color: var(--telegram-text, #111827);
-    background: var(--telegram-bg, #f8fafc);
+    color: var(--bb-text);
+    background: var(--bb-background);
     font-family: Inter, "SF Pro Display", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -53,10 +53,7 @@
     min-width: 320px;
     min-height: var(--tg-viewport-height, 100dvh);
     margin: 0;
-    background:
-      radial-gradient(circle at 15% 0%, rgba(37, 99, 235, 0.08), transparent 32%),
-      radial-gradient(circle at 95% 5%, rgba(6, 182, 212, 0.1), transparent 30%),
-      var(--telegram-bg, #f8fafc);
+    background: var(--bb-background);
   }
 
   #root {
@@ -68,7 +65,7 @@
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    outline: 3px solid rgba(37, 99, 235, 0.35);
+    outline: 3px solid var(--bb-accent);
     outline-offset: 2px;
   }
 
@@ -84,8 +81,8 @@
   .app-shell {
     min-height: var(--tg-viewport-height, 100dvh);
     @apply mx-auto w-full max-w-[430px] overflow-x-hidden text-brand-ink shadow-soft;
-    background-color: var(--telegram-bg, #f8fafc);
-    color: var(--telegram-text, #111827);
+    background-color: var(--bb-background);
+    color: var(--bb-text);
   }
 
   .app-shell--first-run { padding-bottom: 0; }
@@ -132,6 +129,7 @@
   }
 
   .ftue-screen__content {
+    position: relative;
     display: flex;
     flex: 1 0 auto;
     flex-direction: column;
@@ -147,6 +145,8 @@
     align-items: center;
     width: 100%;
   }
+
+  .ftue-screen__language { position: absolute; top: 0; right: 0; }
 
   .ftue-screen__logo {
     display: block;
@@ -235,11 +235,52 @@
     cursor: not-allowed;
   }
 
+  .launch-screen {
+    display: grid;
+    min-height: var(--tg-viewport-height, 100dvh);
+    place-items: center;
+    padding: max(1rem, var(--tg-effective-content-top, env(safe-area-inset-top))) 1rem max(1rem, var(--tg-content-safe-bottom, env(safe-area-inset-bottom)));
+    background: var(--bb-background);
+    color: var(--bb-text);
+  }
+
+  .launch-screen__content { display: grid; justify-items: center; gap: 1rem; }
+  .launch-screen__logo { display: block; width: 5.5rem; height: 5.5rem; object-fit: contain; }
+  .launch-screen h1 { margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.2; }
+  .launch-screen__progress { display: block; width: 3.5rem; height: .1875rem; border-radius: 999px; background: var(--bb-accent); animation: launch-progress 1s ease-in-out infinite alternate; }
+
+  .language-switcher {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(2.75rem, 1fr));
+    min-width: 5.5rem;
+    overflow: hidden;
+    border: 1px solid var(--bb-border);
+    border-radius: .75rem;
+    background: var(--bb-surface);
+  }
+
+  .language-switcher__option {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border: 0;
+    background: transparent;
+    color: var(--bb-text-secondary);
+    font-size: .75rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .language-switcher__option[aria-pressed="true"] { background: var(--bb-accent); color: var(--bb-accent-text); }
+  .language-switcher__option:not([aria-pressed="true"]):hover { background: var(--bb-surface-secondary); }
+  .language-switcher__option:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--bb-text); outline-offset: -2px; }
+
   .ftue-role-selection__header {
     width: 100%;
     max-width: 26rem;
     margin: 0 auto;
   }
+
+  .ftue-role-selection__language { display: flex; justify-content: flex-end; margin-bottom: .75rem; }
 
   .ftue-role-selection__title {
     margin: .75rem 0 0;
@@ -378,7 +419,8 @@
 
   .wizard-screen__top-scrim { position: fixed; top: 0; right: 0; left: 0; z-index: 30; width: min(100%, 430px); height: var(--tg-content-safe-top, 0px); margin: 0 auto; background: var(--bb-background); pointer-events: none; }
   .wizard-screen__content { width: 100%; max-width: 26rem; margin: 0 auto; }
-  .wizard-header { display: grid; gap: .75rem; width: 100%; min-width: 0; margin-bottom: 1.5rem; }
+  .wizard-header { position: relative; display: grid; gap: .75rem; width: 100%; min-width: 0; margin-bottom: 1.5rem; }
+  .wizard-header__language { position: absolute; top: 0; right: 0; }
   .wizard-header__back { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
   .wizard-header__copy { width: 100%; min-width: 0; }
   .wizard-header__copy p { margin: .15rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 700; }
@@ -519,6 +561,7 @@
   .wizard-loading { min-height: 12rem; border-radius: 1rem; background: var(--bb-surface-secondary); animation: shimmer 1.35s ease-in-out infinite; }
 
   .ftue-success__content { align-items: center; text-align: center; }
+  .ftue-success__language { position: absolute; top: 0; right: 0; }
   .ftue-success__logo { display: block; width: min(29vw, 6.75rem); aspect-ratio: 1; margin: 0 auto; object-fit: contain; }
   .ftue-success__indicator { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; margin-top: 1.5rem; border: 1px solid color-mix(in srgb, var(--bb-success) 50%, var(--bb-border)); border-radius: 50%; background: color-mix(in srgb, var(--bb-success) 12%, var(--bb-surface)); color: var(--bb-success); }
   .ftue-success__indicator svg { width: 1.125rem; height: 1.125rem; }
@@ -708,45 +751,6 @@
     bottom: max(5.25rem, calc(4.75rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom))));
   }
 
-  .splash-screen {
-    min-height: var(--tg-viewport-height, 100dvh);
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: .9rem;
-    padding: 1.5rem;
-    background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--telegram-button, #2563eb) 18%, transparent), transparent 30%), var(--telegram-bg, #f8fafc);
-    color: var(--telegram-text, #111827);
-    animation: fade-in 220ms ease-out both;
-  }
-
-  .splash-screen__logo {
-    display: grid;
-    height: 5.5rem;
-    width: 5.5rem;
-    place-items: center;
-    border: 4px solid color-mix(in srgb, var(--telegram-secondary-bg, #fff) 88%, transparent);
-    border-radius: 999px;
-    background: var(--telegram-secondary-bg, #fff);
-    box-shadow: 0 16px 40px color-mix(in srgb, var(--telegram-button, #2563eb) 32%, transparent);
-    animation: splash-pop 520ms cubic-bezier(.2, .9, .3, 1.2) both;
-  }
-
-  .splash-screen h1 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: -.03em;
-  }
-
-  .splash-screen__shimmer {
-    height: .25rem;
-    width: 6.5rem;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(37, 99, 235, .12), rgba(6, 182, 212, .9), rgba(37, 99, 235, .12));
-    background-size: 200% 100%;
-    animation: splash-shimmer 1s ease-in-out infinite;
-  }
 }
 
 html[data-telegram-theme] .text-brand-ink {
@@ -799,14 +803,9 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes splash-pop {
-  from { opacity: 0; transform: scale(.82); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes splash-shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
+@keyframes launch-progress {
+  from { opacity: .45; transform: scaleX(.72); }
+  to { opacity: 1; transform: scaleX(1); }
 }
 
 @keyframes home-fab-ripple {

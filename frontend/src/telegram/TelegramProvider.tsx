@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { BloggerBazarLogo } from "../components/BloggerBazarLogo";
+import { LaunchScreen } from "../components/LaunchScreen";
 import { resolveTelegramContentTop, TelegramLaunch } from "./telegramTheme";
 
-type TelegramUser = { id: number; username?: string; first_name?: string; photo_url?: string };
+type TelegramUser = { id: number; username?: string; first_name?: string; photo_url?: string; language_code?: string };
 type TelegramBackButton = { show?: () => void; hide?: () => void; onClick?: (handler: () => void) => void; offClick?: (handler: () => void) => void };
 type TelegramHaptic = { selectionChanged?: () => void; impactOccurred?: (style: "light" | "medium" | "heavy" | "rigid" | "soft") => void; notificationOccurred?: (type: "error" | "success" | "warning") => void };
 type TelegramInset = { top?: number; bottom?: number; left?: number; right?: number };
@@ -25,6 +25,7 @@ type TelegramWebApp = {
   requestFullscreen?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
+  setBottomBarColor?: (color: string) => void;
   BackButton?: TelegramBackButton;
   MainButton?: TelegramNativeButton;
   SettingsButton?: TelegramNativeButton;
@@ -66,10 +67,6 @@ type TelegramContextValue = {
 };
 
 const TelegramContext = createContext<TelegramContextValue | null>(null);
-
-function SplashScreen() {
-  return <main aria-label="BloggerBazar" className="splash-screen"><div className="splash-screen__logo"><BloggerBazarLogo size={88} /></div><h1>BloggerBazar</h1><div className="splash-screen__shimmer" /></main>;
-}
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
   const [booting, setBooting] = useState(true);
@@ -117,15 +114,16 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         safeTop: safeInsets?.top,
         isEmbedded: Boolean(app)
       });
-      const background = theme?.bg_color ?? TelegramLaunch.splashBackground;
+      const isDark = app?.colorScheme === "dark";
+      const background = isDark ? TelegramLaunch.splashBackgroundDark : TelegramLaunch.splashBackground;
       const secondaryBackground = theme?.secondary_bg_color ?? background;
       root.dataset.telegramTheme = app?.colorScheme ?? "light";
       root.dataset.telegramEmbedded = app ? "true" : "false";
       root.style.setProperty("--telegram-bg", background);
       root.style.setProperty("--telegram-secondary-bg", secondaryBackground);
-      root.style.setProperty("--telegram-text", theme?.text_color ?? "#111827");
-      root.style.setProperty("--telegram-hint", theme?.hint_color ?? "#64748b");
-      root.style.setProperty("--telegram-separator", theme?.section_separator_color ?? "rgba(148, 163, 184, .35)");
+      root.style.setProperty("--telegram-text", theme?.text_color ?? (isDark ? "#F5F5F0" : "#0A0A0A"));
+      root.style.setProperty("--telegram-hint", theme?.hint_color ?? (isDark ? "#9A9A92" : "#6F6F68"));
+      root.style.setProperty("--telegram-separator", theme?.section_separator_color ?? (isDark ? "#2A2A28" : "#D8D8D0"));
       root.style.setProperty("--telegram-button", theme?.button_color ?? TelegramLaunch.accent);
       root.style.setProperty("--tg-safe-area-top", `${safeInsets?.top ?? 0}px`);
       root.style.setProperty("--tg-safe-area-bottom", `${safeInsets?.bottom ?? 0}px`);
@@ -135,8 +133,10 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       const browserViewportHeight = window.visualViewport?.height ?? window.innerHeight;
       root.style.setProperty("--tg-viewport-height", `${app?.viewportStableHeight ?? app?.viewportHeight ?? browserViewportHeight}px`);
       try {
-        app?.setHeaderColor?.(theme?.bg_color ?? TelegramLaunch.splashHeader);
+        const chromeColor = isDark ? TelegramLaunch.splashHeaderDark : TelegramLaunch.splashHeader;
+        app?.setHeaderColor?.(chromeColor);
         app?.setBackgroundColor?.(background);
+        app?.setBottomBarColor?.(background);
       } catch {}
       setEnvironment({
         colorScheme: app?.colorScheme ?? "light",
@@ -171,9 +171,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     window.addEventListener("resize", onBrowserViewportChange, { passive: true });
     window.addEventListener("orientationchange", onBrowserViewportChange, { passive: true });
     document.addEventListener("visibilitychange", onBrowserViewportChange);
-    const timer = window.setTimeout(() => setBooting(false), 260);
+    setBooting(false);
     return () => {
-      window.clearTimeout(timer);
       window.clearTimeout(settleTimer);
       events.forEach((event) => app?.offEvent?.(event, applyEnvironment));
       app?.offEvent?.("fullscreenFailed", onFullscreenFailed);
@@ -258,7 +257,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     }
   }), [app, environment, registerBackButtonHandler, setBackButtonHandler, setClosingConfirmation]);
 
-  return <TelegramContext.Provider value={value}>{booting ? <SplashScreen /> : children}</TelegramContext.Provider>;
+  return <TelegramContext.Provider value={value}>{booting ? <LaunchScreen /> : children}</TelegramContext.Provider>;
 }
 
 export function useTelegram() {

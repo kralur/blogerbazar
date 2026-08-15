@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { selectMarketplaceRole, type MarketplaceRole } from "../api/marketplace";
 import { Button, Icon, Toast } from "../components/ui";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
 
@@ -42,6 +43,7 @@ export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: Marketp
   return <main className="ftue-screen ftue-role-selection">
     <div className="ftue-screen__layout">
       <div className="ftue-role-selection__header" data-content-header>
+        <div className="ftue-role-selection__language"><LanguageSwitcher /></div>
         <h1 className="ftue-role-selection__title">{t("onboarding.title")}</h1>
         <p className="ftue-role-selection__subtitle">{t("onboarding.subtitle")}</p>
       </div>
