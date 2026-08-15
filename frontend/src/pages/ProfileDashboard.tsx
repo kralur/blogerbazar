@@ -20,7 +20,7 @@ function bloggerStatus(status: number | undefined, t: (key: string) => string) {
   return { label: t("profile.pending"), tone: "gold" as const };
 }
 
-export function ProfileDashboard({ onSessionReset }: { onSessionReset?: () => void }) {
+export function ProfileDashboard({ onSessionReset, onMarketplaceRoleSelected }: { onSessionReset?: () => void; onMarketplaceRoleSelected?: (role: MarketplaceRole) => void }) {
   const { haptic, user: telegramUser } = useTelegram();
   useScrollRestoration("profile");
   const [blogger, setBlogger] = useState<MyBloggerProfile | null>(null);
@@ -89,6 +89,7 @@ export function ProfileDashboard({ onSessionReset }: { onSessionReset?: () => vo
       await selectMarketplaceRole(apiRole[nextRole]);
       setRole(nextRole);
       localStorage.setItem(selectedRoleKey, nextRole);
+      onMarketplaceRoleSelected?.(apiRole[nextRole]);
       await refreshFavorites();
     } catch (error) {
       setToastTone("error");

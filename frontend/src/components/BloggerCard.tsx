@@ -29,9 +29,28 @@ function Metric({ icon, value, label }: { icon: string; value: string; label: st
   return <div className="rounded-2xl bg-slate-50 px-2 py-2 text-center"><div className="flex items-center justify-center gap-1 text-[13px] font-extrabold"><Icon className="h-3.5 w-3.5 text-brand-muted" name={icon} />{value}</div><div className="mt-0.5 text-[10px] text-brand-muted">{label}</div></div>;
 }
 
-export function BloggerCard({ blogger }: { blogger: BloggerCardData }) {
+export function BloggerCard({ blogger, variant = "default" }: { blogger: BloggerCardData; variant?: "default" | "home" }) {
   const { t } = useI18n();
   const primaryPrice = blogger.storiesPrice ?? blogger.priceFrom;
+  if (variant === "home") {
+    return <article className="home-blogger-card card-enter relative overflow-hidden">
+      <a aria-label={t("home.openBlogger", { name: blogger.name })} className="block" href={`#/blogger/${blogger.id}`}>
+        <div className="flex min-w-0 items-start gap-3">
+          <Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} variant="home" verified={blogger.verified} />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2"><strong className="truncate text-[15px] font-extrabold tracking-tight">{blogger.name}</strong>{blogger.isPromoted && <span className="home-card__badge">{t("card.promoted")}</span>}</div>
+            <p className="mt-1 truncate text-xs text-[color:var(--bb-text-secondary)]">{cityLabel(blogger.city)}{blogger.platform ? ` · ${blogger.platform}` : ""}</p>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">{blogger.categories.slice(0, 2).map((category) => <span className="home-card__chip" key={category}>{categoryLabel(category)}</span>)}</div>
+        <div className="home-blogger-card__metrics mt-4 grid grid-cols-2 gap-2">
+          <div><span>{t("common.followers")}</span><strong>{formatNumber(blogger.totalFollowers)}</strong></div>
+          <div><span>{t("card.stories")}</span><strong>{primaryPrice == null ? t("card.onRequest") : formatCurrency(primaryPrice)}</strong></div>
+        </div>
+      </a>
+      <FavoriteButton bloggerId={blogger.id} className="absolute right-3 top-3 home-favorite-button" />
+    </article>;
+  }
   return <article className="card-enter glass-card pressable relative overflow-hidden p-4"><a className="block" href={`#/blogger/${blogger.id}`}>
     <div className="flex gap-3">
       <Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} verified={blogger.verified} />

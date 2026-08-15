@@ -185,8 +185,8 @@ export function App() {
 
   return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
-      {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome /></RootScreenVisibility>}
-      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onSessionReset={resetToWelcome} /></RootScreenVisibility>}
+      {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome role={selectedRole} /></RootScreenVisibility>}
+      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={setSelectedRole} onSessionReset={resetToWelcome} /></RootScreenVisibility>}
       {route.path === "/favorites" && <Favorites />}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
       {route.path === "/business" && <BusinessProfileForm />}

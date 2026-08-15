@@ -203,17 +203,17 @@ export function Price({ value, className }: { value?: number | null; className?:
   return <span className={cn("font-extrabold tracking-tight", className)}>{formatCurrency(value)}</span>;
 }
 
-export function Avatar({ src, name, size = "md", verified = false }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean }) {
+export function Avatar({ src, name, size = "md", verified = false, variant = "default" }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean; variant?: "default" | "home" }) {
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [src]);
   const sizes = { sm: "h-12 w-12", md: "h-16 w-16", lg: "h-24 w-24", xl: "h-32 w-32" };
   return (
-    <div className="relative shrink-0">
-      <div className={cn("overflow-hidden rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 ring-4 ring-white", sizes[size])}>
+    <div className={cn("relative shrink-0", variant === "home" && "home-avatar")}>
+      <div className={cn("overflow-hidden rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 ring-4 ring-white", variant === "home" && "home-avatar__image", sizes[size])}>
         {src && !imageFailed ? <img alt={name} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" onError={() => setImageFailed(true)} src={src} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
       </div>
       {verified && (
-        <span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white shadow-glow ring-4 ring-white">
+        <span className={cn("absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white shadow-glow ring-4 ring-white", variant === "home" && "home-avatar__verified")}>
           <Icon className="h-4 w-4" name="check" />
         </span>
       )}

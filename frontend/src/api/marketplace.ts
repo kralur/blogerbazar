@@ -325,8 +325,8 @@ export async function getBloggers(filters: BloggerSearchFilters = {}, signal?: A
   return { ...response, bloggers: response.bloggers.map(asBloggerCard) };
 }
 
-export async function getMarketplaceHome() {
-  const home = await api<MarketplaceHome>("/api/marketplace/home");
+export async function getMarketplaceHome(signal?: AbortSignal) {
+  const home = await api<MarketplaceHome>("/api/marketplace/home", { signal });
   return {
     ...home,
     promotedBloggers: home.promotedBloggers.map(asBloggerCard),
