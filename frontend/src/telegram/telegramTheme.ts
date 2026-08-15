@@ -6,7 +6,7 @@ export const TelegramLaunch = {
 } as const;
 
 export const TelegramSafeArea = {
-  chromeTopFallback: 80,
+  minimumChromeTop: 80,
   contentGap: 16
 } as const;
 
@@ -20,7 +20,9 @@ export function resolveTelegramContentTop({
   isEmbedded?: boolean;
 }) {
   const reportedTop = Math.max(contentTop, safeTop, 0);
-  const chromeTop = reportedTop || (isEmbedded ? TelegramSafeArea.chromeTopFallback : 0);
+  const chromeTop = isEmbedded
+    ? Math.max(reportedTop, TelegramSafeArea.minimumChromeTop)
+    : reportedTop;
 
   return {
     chromeTop,

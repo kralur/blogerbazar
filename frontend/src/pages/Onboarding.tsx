@@ -41,7 +41,7 @@ export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: Marketp
 
   return <main className="ftue-screen ftue-role-selection">
     <div className="ftue-screen__layout">
-      <div className="ftue-role-selection__header">
+      <div className="ftue-role-selection__header" data-content-header>
         <h1 className="ftue-role-selection__title">{t("onboarding.title")}</h1>
         <p className="ftue-role-selection__subtitle">{t("onboarding.subtitle")}</p>
       </div>

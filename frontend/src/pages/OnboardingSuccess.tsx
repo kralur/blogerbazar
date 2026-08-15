@@ -11,7 +11,7 @@ export function OnboardingSuccess({ onContinue }: { onContinue: () => void }) {
   };
   return <main className="ftue-screen ftue-success">
     <div className="ftue-screen__layout">
-      <section className="ftue-screen__content ftue-success__content">
+      <section className="ftue-screen__content ftue-success__content" data-content-header>
         <img alt={t("common.appName")} className="ftue-success__logo" src={officialLogo} />
         <span aria-hidden="true" className="ftue-success__indicator"><Icon name="check" /></span>
         <h1 className="ftue-success__title">{t("firstRun.successTitle")}</h1>

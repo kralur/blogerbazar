@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BloggerBazarLogo } from "../components/BloggerBazarLogo";
 import { resolveTelegramContentTop, TelegramLaunch } from "./telegramTheme";
 
@@ -106,7 +106,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const applyEnvironment = () => {
       const theme = app?.themeParams;
       const contentInsets = app?.contentSafeAreaInset;

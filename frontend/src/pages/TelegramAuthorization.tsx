@@ -10,7 +10,7 @@ export function TelegramAuthorization({ isTelegram, loading, failed, onContinue 
   const showRetryIcon = !isTelegram && !loading;
   return <main className="ftue-screen">
     <div className="ftue-screen__layout">
-      <section className="ftue-screen__content">
+      <section className="ftue-screen__content" data-content-header>
         <img alt={t("common.appName")} className="ftue-screen__logo ftue-screen__logo--compact" src={officialLogo} />
         <h1 className="ftue-screen__title">{title}</h1>
         <p className="ftue-screen__description ftue-screen__description--left">{subtitle}</p>

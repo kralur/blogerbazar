@@ -60,13 +60,13 @@ describe("Telegram fullscreen", () => {
     window.Telegram = { WebApp: webApp };
     render(<I18nProvider><TelegramProvider><p>ready</p></TelegramProvider></I18nProvider>);
     await screen.findByText("ready");
-    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("56px");
-    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("72px");
+    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("80px");
+    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("96px");
 
     webApp.contentSafeAreaInset.top = 72;
     handlers.get("contentSafeAreaChanged")?.();
-    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("72px");
-    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("88px");
+    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("80px");
+    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("96px");
 
     webApp.contentSafeAreaInset.top = 80;
     handlers.get("fullscreenChanged")?.();
@@ -95,7 +95,8 @@ describe("Telegram fullscreen", () => {
   });
 
   it("does not combine a valid Telegram inset with the fallback or add Telegram clearance outside the app", () => {
-    expect(resolveTelegramContentTop({ contentTop: 72, safeTop: 24, isEmbedded: true })).toEqual({ chromeTop: 72, effectiveTop: 88 });
+    expect(resolveTelegramContentTop({ contentTop: 72, safeTop: 24, isEmbedded: true })).toEqual({ chromeTop: 80, effectiveTop: 96 });
+    expect(resolveTelegramContentTop({ contentTop: 112, safeTop: 24, isEmbedded: true })).toEqual({ chromeTop: 112, effectiveTop: 128 });
     expect(resolveTelegramContentTop({ contentTop: 0, safeTop: 0, isEmbedded: false })).toEqual({ chromeTop: 0, effectiveTop: 0 });
   });
 
