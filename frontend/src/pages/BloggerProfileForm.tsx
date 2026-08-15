@@ -11,7 +11,7 @@ import { notifyProfileDataChanged } from "../hooks/useProfileDataRefresh";
 import { useTelegramBackHandler } from "../hooks/useTelegramBackHandler";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { normalizeWebsite, safeExternalUrl, socialHandle, socialUrl } from "../lib/contacts";
-import { formatCurrency, formatNumericInput, formatNumber, formatPhoneInput, normalizeNumericInput } from "../lib/currency";
+import { formatCurrency, formatDecimalInput, formatNumericInput, formatNumber, formatPercentage, formatPhoneInput, normalizeDecimalInput, normalizeNumericInput } from "../lib/currency";
 import { isOtherCategory, normalizeRegion, otherCategoryPrefix } from "../lib/taxonomy";
 import { useTelegram } from "../telegram/TelegramProvider";
 
@@ -48,7 +48,7 @@ function validate(form: BloggerForm, categories: string[], t: (key: string) => s
   if (!categories.length || categories.length > 5) errors.categories = t("form.validation.categories");
   if (normalizeNumericInput(form.totalFollowers) <= 0) errors.totalFollowers = t("form.validation.followers");
   if (normalizeNumericInput(form.averageReach) <= 0) errors.averageReach = t("form.validation.reach");
-  const engagementRate = Number(form.engagementRate);
+  const engagementRate = normalizeDecimalInput(form.engagementRate);
   if (!Number.isFinite(engagementRate) || engagementRate < 0.1 || engagementRate > 100) errors.engagementRate = t("form.validation.er");
   if (normalizeNumericInput(form.storiesPrice) <= 0) errors.storiesPrice = t("form.validation.stories");
   if (normalizeNumericInput(form.reelsPrice) <= 0) errors.reelsPrice = t("form.validation.reels");
@@ -126,7 +126,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
     getMyBloggerProfile().then((profile) => {
       if (!active) return;
       const platform = (type: string) => socialHandle(profile.platforms.find((item) => item.type.toLowerCase() === type)?.url ?? "");
-      setForm({ name: profile.name, lastName: profile.lastName ?? "", username: profile.username ?? "", city: normalizeRegion(profile.city) || initial.city, phone: formatPhoneInput(profile.phone ?? initial.phone), email: profile.email ?? "", totalFollowers: formatNumericInput(String(profile.totalFollowers)), averageReach: formatNumericInput(String(profile.averageReach ?? "")), engagementRate: String(profile.engagementRate ?? ""), storiesPrice: formatNumericInput(String(profile.storiesPrice ?? "")), reelsPrice: formatNumericInput(String(profile.reelsPrice ?? "")), postPrice: formatNumericInput(String(profile.postPrice ?? "")), integrationPrice: formatNumericInput(String(profile.integrationPrice ?? "")), bio: profile.bio ?? "", portfolioUrl: profile.portfolioItems[0]?.url ?? "", instagram: platform("instagram"), tiktok: platform("tiktok"), youtube: profile.platforms.find((item) => item.type.toLowerCase() === "youtube")?.url ?? "" });
+      setForm({ name: profile.name, lastName: profile.lastName ?? "", username: profile.username ?? "", city: normalizeRegion(profile.city) || initial.city, phone: formatPhoneInput(profile.phone ?? initial.phone), email: profile.email ?? "", totalFollowers: formatNumericInput(String(profile.totalFollowers)), averageReach: formatNumericInput(String(profile.averageReach ?? "")), engagementRate: formatDecimalInput(profile.engagementRate ?? ""), storiesPrice: formatNumericInput(String(profile.storiesPrice ?? "")), reelsPrice: formatNumericInput(String(profile.reelsPrice ?? "")), postPrice: formatNumericInput(String(profile.postPrice ?? "")), integrationPrice: formatNumericInput(String(profile.integrationPrice ?? "")), bio: profile.bio ?? "", portfolioUrl: profile.portfolioItems[0]?.url ?? "", instagram: platform("instagram"), tiktok: platform("tiktok"), youtube: profile.platforms.find((item) => item.type.toLowerCase() === "youtube")?.url ?? "" });
       setSelectedCategories(profile.categories);
       setBarterEnabled(profile.barterEnabled);
       setAvatarUrl(profile.avatarUrl ?? null);
@@ -167,6 +167,12 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
     setForm((current) => ({ ...current, [key]: formatNumericInput(event.target.value) }));
   };
 
+  const decimal = (event: ChangeEvent<HTMLInputElement>) => {
+    setDirty(true);
+    clearServerError("engagementRate");
+    setForm((current) => ({ ...current, engagementRate: event.target.value }));
+  };
+
   const selectCity = (event: ChangeEvent<HTMLSelectElement>) => {
     setDirty(true);
     clearServerError("city");
@@ -182,6 +188,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   const blur = (field: Field | "categories") => () => {
     setTouched((current) => ({ ...current, [field]: true }));
     if (field === "portfolioUrl" || field === "youtube") setForm((current) => ({ ...current, [field]: normalizeWebsite(current[field]) }));
+    if (field === "engagementRate") setForm((current) => ({ ...current, engagementRate: formatDecimalInput(current.engagementRate) }));
   };
 
   const markStepTouched = useCallback((currentStep: Exclude<Step, 4>) => {
@@ -247,7 +254,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
       setServerSummary("");
       const portfolioUrl = normalizeWebsite(form.portfolioUrl);
       const youtubeUrl = normalizeWebsite(form.youtube);
-      const input = { name: form.name.trim(), lastName: form.lastName.trim() || undefined, username: form.username.trim(), city: form.city.trim(), categories: selectedCategories, bio: form.bio.trim() || undefined, avatarUrl, phone: form.phone.trim(), email: form.email.trim() || undefined, totalFollowers: normalizeNumericInput(form.totalFollowers), averageReach: normalizeNumericInput(form.averageReach), engagementRate: Number(form.engagementRate), storiesPrice: normalizeNumericInput(form.storiesPrice), reelsPrice: normalizeNumericInput(form.reelsPrice), postPrice: normalizeNumericInput(form.postPrice) || undefined, integrationPrice: normalizeNumericInput(form.integrationPrice) || undefined, barterEnabled, portfolioItems: portfolioUrl ? [{ title: t("form.blogger.portfolioTitle"), type: "IMAGE" as const, url: portfolioUrl }] : [], platforms: ([form.instagram.trim() ? { type: "instagram", url: socialUrl("instagram", form.instagram) } : null, form.tiktok.trim() ? { type: "tiktok", url: socialUrl("tiktok", form.tiktok) } : null, youtubeUrl ? { type: "youtube", url: youtubeUrl } : null].filter(Boolean) as Array<{ type: string; url: string }>) };
+      const input = { name: form.name.trim(), lastName: form.lastName.trim() || undefined, username: form.username.trim(), city: form.city.trim(), categories: selectedCategories, bio: form.bio.trim() || undefined, avatarUrl, phone: form.phone.trim(), email: form.email.trim() || undefined, totalFollowers: normalizeNumericInput(form.totalFollowers), averageReach: normalizeNumericInput(form.averageReach), engagementRate: normalizeDecimalInput(form.engagementRate), storiesPrice: normalizeNumericInput(form.storiesPrice), reelsPrice: normalizeNumericInput(form.reelsPrice), postPrice: normalizeNumericInput(form.postPrice) || undefined, integrationPrice: normalizeNumericInput(form.integrationPrice) || undefined, barterEnabled, portfolioItems: portfolioUrl ? [{ title: t("form.blogger.portfolioTitle"), type: "IMAGE" as const, url: portfolioUrl }] : [], platforms: ([form.instagram.trim() ? { type: "instagram", url: socialUrl("instagram", form.instagram) } : null, form.tiktok.trim() ? { type: "tiktok", url: socialUrl("tiktok", form.tiktok) } : null, youtubeUrl ? { type: "youtube", url: youtubeUrl } : null].filter(Boolean) as Array<{ type: string; url: string }>) };
       if (existing) await updateBloggerProfile(input); else { await createBloggerProfile(input); setExisting(true); }
       let mediaWarning = "";
       try {
@@ -312,13 +319,13 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
         <div data-wizard-field="categories"><CategoryMultiSelect error={touched.categories ? errors.categories : undefined} onChange={updateCategories} required value={selectedCategories} /></div>
         <div data-wizard-field="totalFollowers"><Input className="wizard-input" error={touched.totalFollowers ? errors.totalFollowers : undefined} inputMode="numeric" label={t("common.followers")} onBlur={blur("totalFollowers")} onChange={numeric("totalFollowers")} placeholder="25 000" required value={form.totalFollowers} /></div>
         <div data-wizard-field="averageReach"><Input className="wizard-input" error={touched.averageReach ? errors.averageReach : undefined} inputMode="numeric" label={t("common.reach")} onBlur={blur("averageReach")} onChange={numeric("averageReach")} placeholder="15 000" required value={form.averageReach} /></div>
-        <div data-wizard-field="engagementRate"><Input className="wizard-input" error={touched.engagementRate ? errors.engagementRate : undefined} inputMode="decimal" label={t("search.er")} max="100" min="0.1" onBlur={blur("engagementRate")} onChange={update("engagementRate")} placeholder="5.5" required step="0.1" type="number" value={form.engagementRate} /></div>
+        <div data-wizard-field="engagementRate"><Input aria-describedby="engagement-rate-helper" className="wizard-input" error={touched.engagementRate ? errors.engagementRate : undefined} inputMode="decimal" label={t("form.engagementRateLabel")} maxLength={6} onBlur={blur("engagementRate")} onChange={decimal} placeholder="5,5" required suffix="%" value={form.engagementRate} /><p className="wizard-field-helper" id="engagement-rate-helper">{t("form.engagementRateHelper")}</p></div>
       </div></WizardStep>}
       {step === 2 && <WizardStep stepKey={stepTitles[2]}><div className="wizard-fields">
-        <div data-wizard-field="storiesPrice"><Input className="wizard-input" error={touched.storiesPrice ? errors.storiesPrice : undefined} inputMode="numeric" label={t("card.stories")} onBlur={blur("storiesPrice")} onChange={numeric("storiesPrice")} placeholder="200 000" required value={form.storiesPrice} /></div>
-        <div data-wizard-field="reelsPrice"><Input className="wizard-input" error={touched.reelsPrice ? errors.reelsPrice : undefined} inputMode="numeric" label={t("card.reels")} onBlur={blur("reelsPrice")} onChange={numeric("reelsPrice")} placeholder="500 000" required value={form.reelsPrice} /></div>
-        <div data-wizard-field="postPrice"><Input className="wizard-input" inputMode="numeric" label={t("card.post")} onBlur={blur("postPrice")} onChange={numeric("postPrice")} placeholder="350 000" value={form.postPrice} /></div>
-        <div data-wizard-field="integrationPrice"><Input className="wizard-input" inputMode="numeric" label={t("card.integration")} onBlur={blur("integrationPrice")} onChange={numeric("integrationPrice")} placeholder="900 000" value={form.integrationPrice} /></div>
+        <div data-wizard-field="storiesPrice"><Input className="wizard-input" error={touched.storiesPrice ? errors.storiesPrice : undefined} inputMode="numeric" label={t("card.stories")} onBlur={blur("storiesPrice")} onChange={numeric("storiesPrice")} placeholder="200 000" required suffix={t("currency.uzs")} value={form.storiesPrice} /></div>
+        <div data-wizard-field="reelsPrice"><Input className="wizard-input" error={touched.reelsPrice ? errors.reelsPrice : undefined} inputMode="numeric" label={t("card.reels")} onBlur={blur("reelsPrice")} onChange={numeric("reelsPrice")} placeholder="500 000" required suffix={t("currency.uzs")} value={form.reelsPrice} /></div>
+        <div data-wizard-field="postPrice"><Input className="wizard-input" inputMode="numeric" label={t("form.optionalField", { label: t("card.post") })} onBlur={blur("postPrice")} onChange={numeric("postPrice")} placeholder="350 000" suffix={t("currency.uzs")} value={form.postPrice} /></div>
+        <div data-wizard-field="integrationPrice"><Input className="wizard-input" inputMode="numeric" label={t("form.optionalField", { label: t("card.integration") })} onBlur={blur("integrationPrice")} onChange={numeric("integrationPrice")} placeholder="900 000" suffix={t("currency.uzs")} value={form.integrationPrice} /></div>
         <button aria-checked={barterEnabled} aria-label={t("form.barterTitle")} className="wizard-toggle" onClick={() => { setDirty(true); setBarterEnabled((value) => !value); }} role="switch" type="button"><span><strong>{t("form.barterTitle")}</strong><small>{t("form.barterSubtitle")}</small></span><span aria-hidden="true" className="wizard-toggle__control"><span /></span></button>
       </div></WizardStep>}
       {step === 3 && <WizardStep stepKey={stepTitles[3]}><div className="wizard-fields">
@@ -334,10 +341,10 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
           <ReviewItem label={t("form.name")} value={[form.name.trim(), form.lastName.trim()].filter(Boolean).join(" ")} /><ReviewItem label={t("form.telegramUsername")} value={form.username.trim()} /><ReviewItem label={t("common.city")} value={cityLabel(form.city, language)} /><ReviewItem label={t("common.phone")} value={form.phone} /><ReviewItem label={t("form.emailOptional")} value={form.email.trim()} />
         </ReviewSection>
         <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[1] })} editLabel={t("wizard.change")} onEdit={() => setStep(1)} title={stepTitles[1]}>
-          <ReviewItem label={t("common.categories")} value={selectedCategories.map((category) => reviewCategory(category, language)).join(", ")} /><ReviewItem label={t("common.followers")} value={formatNumber(normalizeNumericInput(form.totalFollowers))} /><ReviewItem label={t("common.reach")} value={formatNumber(normalizeNumericInput(form.averageReach))} /><ReviewItem label={t("search.er")} value={`${form.engagementRate}%`} />
+          <ReviewItem label={t("common.categories")} value={selectedCategories.map((category) => reviewCategory(category, language)).join(", ")} /><ReviewItem label={t("common.followers")} value={formatNumber(normalizeNumericInput(form.totalFollowers))} /><ReviewItem label={t("common.reach")} value={formatNumber(normalizeNumericInput(form.averageReach))} /><ReviewItem label={t("form.engagementRateLabel")} value={formatPercentage(form.engagementRate)} />
         </ReviewSection>
         <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[2] })} editLabel={t("wizard.change")} onEdit={() => setStep(2)} title={stepTitles[2]}>
-          <ReviewItem label={t("card.stories")} value={formatCurrency(normalizeNumericInput(form.storiesPrice))} /><ReviewItem label={t("card.reels")} value={formatCurrency(normalizeNumericInput(form.reelsPrice))} /><ReviewItem label={t("card.post")} value={form.postPrice ? formatCurrency(normalizeNumericInput(form.postPrice)) : undefined} /><ReviewItem label={t("card.integration")} value={form.integrationPrice ? formatCurrency(normalizeNumericInput(form.integrationPrice)) : undefined} /><ReviewItem label={t("form.barterTitle")} value={barterEnabled ? t("common.yes") : t("common.no")} />
+          <ReviewItem label={t("card.stories")} value={formatCurrency(normalizeNumericInput(form.storiesPrice))} /><ReviewItem label={t("card.reels")} value={formatCurrency(normalizeNumericInput(form.reelsPrice))} /><ReviewItem label={t("card.post")} value={form.postPrice ? formatCurrency(normalizeNumericInput(form.postPrice)) : undefined} /><ReviewItem label={t("card.integration")} value={form.integrationPrice ? formatCurrency(normalizeNumericInput(form.integrationPrice)) : undefined} /><ReviewItem label={t("form.barterReviewTitle")} value={barterEnabled ? t("common.yes") : t("common.no")} />
         </ReviewSection>
         <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[3] })} editLabel={t("wizard.change")} emptyLabel={t("common.notSpecified")} isEmpty={!hasPortfolioDetails} onEdit={() => setStep(3)} title={stepTitles[3]}>
           {reviewAvatarUrl && <img alt={t("profileMedia.title")} className="wizard-review__logo" src={reviewAvatarUrl} />}<ReviewItem label={t("form.aboutMe")} value={form.bio.trim()} /><ReviewItem label={t("form.portfolioUrl")} value={form.portfolioUrl.trim()} /><ReviewItem label={t("form.instagram")} value={form.instagram.trim()} /><ReviewItem label={t("form.tiktok")} value={form.tiktok.trim()} /><ReviewItem label={t("form.youtube")} value={form.youtube.trim()} />

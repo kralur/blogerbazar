@@ -98,26 +98,32 @@ export function Divider({ className }: { className?: string }) {
   return <div className={cn("h-px bg-brand-line", className)} />;
 }
 
-export function Input({ label, error, className, onInvalid, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string }) {
+export function Input({ label, error, suffix, className, onInvalid, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string; suffix?: ReactNode }) {
   const { haptic } = useTelegram();
+  const errorId = `${props.id ?? props.name ?? label}-error`;
+  const describedBy = [props["aria-describedby"], error ? errorId : undefined].filter(Boolean).join(" ") || undefined;
   return (
     <label className="grid gap-2">
       {label && <span className="text-[13px] font-bold text-brand-muted">{label}{props.required && <span aria-hidden="true" className="ml-1 text-brand-danger">*</span>}</span>}
-      <input
-        className={cn(
-          "h-[52px] rounded-2xl border border-brand-line bg-white px-4 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
-          error && "border-brand-danger focus:border-brand-danger focus:ring-red-100",
-          className
-        )}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${props.id ?? props.name ?? label}-error` : undefined}
-        onInvalid={(event) => {
-          haptic.error();
-          onInvalid?.(event);
-        }}
-        {...props}
-      />
-      {error && <span className="text-xs font-semibold text-brand-danger" id={`${props.id ?? props.name ?? label}-error`}>{error}</span>}
+      <span className="input-control">
+        <input
+          {...props}
+          className={cn(
+            "h-[52px] rounded-2xl border border-brand-line bg-white px-4 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
+            Boolean(suffix) && "input-control__input--with-suffix",
+            error && "border-brand-danger focus:border-brand-danger focus:ring-red-100",
+            className
+          )}
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
+          onInvalid={(event) => {
+            haptic.error();
+            onInvalid?.(event);
+          }}
+        />
+        {suffix && <span aria-hidden="true" className="input-control__suffix">{suffix}</span>}
+      </span>
+      {error && <span className="text-xs font-semibold text-brand-danger" id={errorId}>{error}</span>}
     </label>
   );
 }

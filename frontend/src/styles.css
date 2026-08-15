@@ -376,6 +376,7 @@
     color: var(--bb-text);
   }
 
+  .wizard-screen__top-scrim { position: fixed; top: 0; right: 0; left: 0; z-index: 30; width: min(100%, 430px); height: var(--tg-content-safe-top, 0px); margin: 0 auto; background: var(--bb-background); pointer-events: none; }
   .wizard-screen__content { width: 100%; max-width: 26rem; margin: 0 auto; }
   .wizard-header { display: grid; gap: .75rem; width: 100%; min-width: 0; margin-bottom: 1.5rem; }
   .wizard-header__back { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
@@ -469,6 +470,9 @@
   .wizard-screen .wizard-region-select select:focus { border-color: var(--bb-accent) !important; box-shadow: 0 0 0 3px var(--bb-accent-subtle) !important; }
   .wizard-screen .wizard-input[aria-invalid="true"],
   .wizard-screen .wizard-region-select select[aria-invalid="true"] { border-color: var(--bb-error) !important; }
+  .wizard-screen .input-control { position: relative; display: block; min-width: 0; }
+  .wizard-screen .input-control__input--with-suffix { width: 100%; padding-right: 5.5rem !important; }
+  .wizard-screen .input-control__suffix { position: absolute; top: 50%; right: 1rem; max-width: 4rem; overflow: hidden; color: var(--bb-text-secondary); font-size: .875rem; font-weight: 700; line-height: 1; pointer-events: none; text-overflow: ellipsis; transform: translateY(-50%); white-space: nowrap; }
   .wizard-screen label > span:first-child,
   .wizard-screen .wizard-field-helper { color: var(--bb-text-secondary) !important; }
   .wizard-field-helper { margin: .5rem 0 0; font-size: .75rem; line-height: 1.4; }

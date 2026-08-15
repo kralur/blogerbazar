@@ -73,6 +73,8 @@ describe("Blogger profile wizard", () => {
     renderCreate();
     expect(screen.getByRole("heading", { level: 1, name: translate("wizard.bloggerBasicStep", undefined, "ru") })).toBeInTheDocument();
     expect(screen.getByDisplayValue("Madina")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(translate("form.blogger.lastNamePlaceholder", undefined, "ru"))).toHaveValue("");
+    expect(document.querySelector(".wizard-screen__top-scrim")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
     await user.click(screen.getByPlaceholderText("+998 90 123 45 67"));
     await user.tab();
@@ -146,6 +148,33 @@ describe("Blogger profile wizard", () => {
     })));
   });
 
+  it("renders the visible RU ER and currency adornments without adding them to editable values", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await completeBasic(user);
+    expect(screen.getByText(translate("form.engagementRateLabel", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText(translate("form.engagementRateHelper", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText("%")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("5.5")).toHaveValue("5.5");
+    await completeAudience(user);
+    expect(screen.getAllByText(translate("currency.uzs", undefined, "ru"))).toHaveLength(4);
+    expect(screen.getByDisplayValue("250 000")).toHaveValue("250 000");
+    expect(document.querySelectorAll(".input-control__input--with-suffix")).toHaveLength(4);
+  });
+
+  it("accepts a comma or dot ER value, submits numeric 5.5 and localizes the Review percentage", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await completeBasic(user);
+    fireEvent.change(screen.getByDisplayValue("5.5"), { target: { value: "5,5" } });
+    await completeAudience(user);
+    await completePrices(user);
+    await user.click(screen.getByRole("button", { name: continueLabel() }));
+    expect(screen.getByText("5,5%")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: translate("wizard.createProfile", undefined, "ru") }));
+    await waitFor(() => expect(api.createBloggerProfile).toHaveBeenCalledWith(expect.objectContaining({ engagementRate: 5.5, storiesPrice: 250000, reelsPrice: 500000 })));
+  });
+
   it("keeps optional empty prices out of the payload and preserves Other", async () => {
     const user = userEvent.setup();
     renderCreate();
@@ -197,6 +226,8 @@ describe("Blogger profile wizard", () => {
     await screen.findByDisplayValue("Aziza");
     await completeBasic(user);
     await completeAudience(user);
+    expect(screen.getByDisplayValue("200 000")).toHaveValue("200 000");
+    expect(screen.getAllByText(translate("currency.uzs", undefined, "ru"))).toHaveLength(4);
     await completePrices(user);
     await user.click(screen.getByRole("button", { name: continueLabel() }));
     await user.click(screen.getByRole("button", { name: translate("wizard.saveChanges", undefined, "ru") }));
@@ -223,5 +254,19 @@ describe("Blogger profile wizard", () => {
     fireEvent.click(submit);
     expect(api.createBloggerProfile).toHaveBeenCalledTimes(1);
     resolveRequest?.();
+  });
+
+  it("renders the UZ ER copy, optional price labels and currency suffixes", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("bloggerbazar.language", "uz");
+    renderCreate();
+    fireEvent.change(screen.getByPlaceholderText("+998 90 123 45 67"), { target: { value: "+998 88 123 45 67" } });
+    await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "uz") }));
+    expect(screen.getByText(translate("form.engagementRateLabel", undefined, "uz"))).toBeInTheDocument();
+    expect(screen.getByText(translate("form.engagementRateHelper", undefined, "uz"))).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "uz") }));
+    expect(screen.getAllByText(translate("currency.uzs", undefined, "uz"))).toHaveLength(4);
+    expect(screen.getByText(translate("form.optionalField", { label: translate("card.post", undefined, "uz") }, "uz"))).toBeInTheDocument();
+    localStorage.setItem("bloggerbazar.language", "ru");
   });
 });

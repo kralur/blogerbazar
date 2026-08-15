@@ -45,7 +45,11 @@ export function WizardLayout({ children, actionBar }: { children: ReactNode; act
     };
   }, []);
 
-  return <section className="wizard-screen" data-keyboard-open={keyboardOpen || undefined}><div className="wizard-screen__content">{children}</div>{actionBar}</section>;
+  return <section className="wizard-screen" data-keyboard-open={keyboardOpen || undefined}>
+    <div aria-hidden="true" className="wizard-screen__top-scrim" />
+    <div className="wizard-screen__content">{children}</div>
+    {actionBar}
+  </section>;
 }
 
 export function WizardHeader({ title, stepTitle, step, totalSteps, backLabel, progressLabel, onBack, showBackButton = true }: {
