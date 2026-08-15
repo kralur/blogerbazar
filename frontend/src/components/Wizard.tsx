@@ -49,7 +49,7 @@ export function WizardLayout({ children, actionBar }: { children: ReactNode; act
 }
 
 export function WizardHeader({ title, stepTitle, step, totalSteps, backLabel, progressLabel, onBack, showBackButton = true }: {
-  title: string;
+  title?: string;
   stepTitle: string;
   step: number;
   totalSteps: number;
@@ -60,7 +60,7 @@ export function WizardHeader({ title, stepTitle, step, totalSteps, backLabel, pr
 }) {
   return <header className="wizard-header">
     {showBackButton ? <button aria-label={backLabel} className="wizard-header__back" onClick={onBack} type="button"><Icon name="back" /></button> : <span aria-hidden="true" className="wizard-header__back-placeholder" />}
-    <div className="wizard-header__copy"><p>{title}</p><h1>{stepTitle}</h1></div>
+    <div className="wizard-header__copy">{title && <p>{title}</p>}<h1>{stepTitle}</h1></div>
     <ProgressIndicator current={step} label={progressLabel} total={totalSteps} />
   </header>;
 }

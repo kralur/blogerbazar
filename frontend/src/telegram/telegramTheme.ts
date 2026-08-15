@@ -5,8 +5,25 @@ export const TelegramLaunch = {
   accentHighlight: "#06B6D4"
 } as const;
 
-// Some embedded Telegram clients report a zero content inset until fullscreen
-// settles. This fallback is used only when the Telegram WebApp bridge exists.
 export const TelegramSafeArea = {
-  contentTopFallback: 56
+  chromeTopFallback: 80,
+  contentGap: 16
 } as const;
+
+export function resolveTelegramContentTop({
+  contentTop = 0,
+  safeTop = 0,
+  isEmbedded = false
+}: {
+  contentTop?: number;
+  safeTop?: number;
+  isEmbedded?: boolean;
+}) {
+  const reportedTop = Math.max(contentTop, safeTop, 0);
+  const chromeTop = reportedTop || (isEmbedded ? TelegramSafeArea.chromeTopFallback : 0);
+
+  return {
+    chromeTop,
+    effectiveTop: chromeTop + (isEmbedded ? TelegramSafeArea.contentGap : 0)
+  };
+}

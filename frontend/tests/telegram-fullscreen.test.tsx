@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Modal } from "../src/components/ui";
 import { I18nProvider } from "../src/i18n";
 import { TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
+import { resolveTelegramContentTop } from "../src/telegram/telegramTheme";
 
 function renderTelegram(platform: string) {
   const webApp = {
@@ -60,14 +61,17 @@ describe("Telegram fullscreen", () => {
     render(<I18nProvider><TelegramProvider><p>ready</p></TelegramProvider></I18nProvider>);
     await screen.findByText("ready");
     expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("56px");
+    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("72px");
 
     webApp.contentSafeAreaInset.top = 72;
     handlers.get("contentSafeAreaChanged")?.();
     expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("72px");
+    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("88px");
 
     webApp.contentSafeAreaInset.top = 80;
     handlers.get("fullscreenChanged")?.();
     expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("80px");
+    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("96px");
   });
 
   it("uses the centralized Telegram-only content inset fallback until a client reports its value", async () => {
@@ -86,7 +90,13 @@ describe("Telegram fullscreen", () => {
     window.Telegram = { WebApp: webApp };
     render(<I18nProvider><TelegramProvider><p>ready</p></TelegramProvider></I18nProvider>);
     await screen.findByText("ready");
-    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("56px");
+    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("80px");
+    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("96px");
+  });
+
+  it("does not combine a valid Telegram inset with the fallback or add Telegram clearance outside the app", () => {
+    expect(resolveTelegramContentTop({ contentTop: 72, safeTop: 24, isEmbedded: true })).toEqual({ chromeTop: 72, effectiveTop: 88 });
+    expect(resolveTelegramContentTop({ contentTop: 0, safeTop: 0, isEmbedded: false })).toEqual({ chromeTop: 0, effectiveTop: 0 });
   });
 
   it("registers a modal back handler once when its parent rerenders", async () => {

@@ -65,7 +65,19 @@ describe("Business profile wizard", () => {
   it("starts on Company and blocks an invalid first step", () => {
     renderCreate();
     expect(screen.getByRole("heading", { level: 1, name: translate("wizard.businessCompanyStep", undefined, "ru") })).toBeInTheDocument();
+    expect(document.querySelector(".wizard-screen")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeDisabled();
+    expect(api.createBusinessProfile).not.toHaveBeenCalled();
+  });
+
+  it("enables Step 1 as soon as valid Telegram-prefilled values and company name are present", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+
+    await user.type(screen.getByPlaceholderText("Lumi Beauty"), "Lumi Beauty");
+
+    expect(screen.getByDisplayValue("@lumibeauty")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeEnabled();
     expect(api.createBusinessProfile).not.toHaveBeenCalled();
   });
 
@@ -192,6 +204,13 @@ describe("Business profile wizard", () => {
     await new Promise((resolve) => window.setTimeout(resolve));
     nativeBack();
     expect(await screen.findByRole("heading", { level: 1, name: translate("wizard.businessCompanyStep", undefined, "ru") })).toBeInTheDocument();
+    expect(telegram.setBackButtonHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not replace the native BackButton listener while typing", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await user.type(screen.getByPlaceholderText("Lumi Beauty"), "L");
     expect(telegram.setBackButtonHandler).toHaveBeenCalledTimes(1);
   });
 

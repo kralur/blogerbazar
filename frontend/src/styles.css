@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --app-page-gutter: 1.25rem;
-    --tg-header-offset: max(var(--tg-content-safe-top, 0px), var(--tg-safe-area-top, 0px), env(safe-area-inset-top));
+    --tg-page-content-top: max(var(--app-page-gutter), var(--tg-effective-content-top, 0px), env(safe-area-inset-top));
     --bb-background: #F6F6F2;
     --bb-surface: #FFFFFF;
     --bb-surface-secondary: #ECECE6;
@@ -94,7 +94,7 @@
 
   .screen {
     min-height: var(--tg-viewport-height, 100dvh);
-    padding-top: calc(var(--tg-header-offset) + var(--app-page-gutter)) !important;
+    padding-top: var(--tg-page-content-top) !important;
     padding-bottom: max(var(--app-page-gutter), var(--tg-content-safe-bottom, env(safe-area-inset-bottom)));
     @apply px-4;
     animation: fade-in 180ms ease-out both;
@@ -113,7 +113,7 @@
     display: flex;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: calc(var(--tg-header-offset) + 1rem) 1rem max(1rem, var(--tg-content-safe-bottom, env(safe-area-inset-bottom)));
+    padding: var(--tg-page-content-top) 1rem max(1rem, var(--tg-content-safe-bottom, env(safe-area-inset-bottom)));
     background: var(--bb-background);
     color: var(--bb-text);
     animation: screen-in 180ms cubic-bezier(.2,.8,.2,1) both;
@@ -235,15 +235,6 @@
     width: 100%;
     max-width: 26rem;
     margin: 0 auto;
-    padding-top: .5rem;
-  }
-
-  .ftue-role-selection__eyebrow {
-    margin: 0;
-    color: var(--bb-text-secondary);
-    font-size: .8125rem;
-    font-weight: 700;
-    letter-spacing: -.01em;
   }
 
   .ftue-role-selection__title {
@@ -289,10 +280,14 @@
 
   .ftue-role-card:active { transform: scale(.99); }
 
-  .ftue-role-card:hover { border-color: var(--bb-accent); }
+  @media (hover: hover) {
+    .ftue-role-card:not(.ftue-role-card--selected):hover {
+      background: color-mix(in srgb, var(--bb-surface-secondary) 55%, var(--bb-surface));
+    }
+  }
 
   .ftue-role-card:not(.ftue-role-card--selected):focus-visible {
-    outline: 2px solid var(--bb-accent);
+    outline: 2px solid var(--bb-text);
     outline-offset: 2px;
   }
 
@@ -301,7 +296,10 @@
     background: var(--bb-accent-subtle);
   }
 
-  .ftue-role-card--selected:focus-visible { outline: none; }
+  .ftue-role-card--selected:focus-visible {
+    outline: 2px solid var(--bb-text);
+    outline-offset: 2px;
+  }
 
   .ftue-role-card__icon {
     display: inline-flex;
@@ -366,7 +364,7 @@
 
   .wizard-screen {
     min-height: var(--tg-viewport-height, 100dvh);
-    padding: calc(var(--tg-header-offset) + 1rem) 1rem calc(6.75rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom)));
+    padding: var(--tg-page-content-top) 1rem calc(6.75rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom)));
     background: var(--bb-background);
     color: var(--bb-text);
   }
@@ -433,7 +431,7 @@
   .ftue-success__notice { width: 100%; max-width: 22rem; margin: 1.5rem 0 0; padding: .875rem 1rem; border: 1px solid color-mix(in srgb, var(--bb-warning) 45%, var(--bb-border)); border-radius: .75rem; background: color-mix(in srgb, var(--bb-warning) 8%, var(--bb-surface)); color: var(--bb-text); font-size: .875rem; font-weight: 650; line-height: 1.45; text-align: left; }
 
   @media (max-height: 42rem) {
-    .wizard-screen { padding-top: calc(var(--tg-header-offset) + .75rem); }
+    .wizard-screen { padding-top: var(--tg-page-content-top); }
     .wizard-header { margin-bottom: 1rem; }
     .wizard-header__copy h1 { font-size: 1.6rem; }
     .wizard-review-section { padding: .875rem; }
@@ -450,7 +448,6 @@
     .ftue-screen__description { margin-top: .75rem; }
     .ftue-screen__info { margin-top: 1.25rem; }
 
-    .ftue-role-selection__header { padding-top: 0; }
     .ftue-role-selection__list { gap: .5rem; margin-top: 1rem; }
     .ftue-role-card { min-height: 5.5rem; padding: .75rem; }
     .ftue-role-selection__cta { margin-top: 1rem; }

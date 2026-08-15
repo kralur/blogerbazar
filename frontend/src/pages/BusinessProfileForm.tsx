@@ -27,6 +27,11 @@ const stepFields: Record<Exclude<Step, 2>, Field[]> = {
 const usernamePattern = /^@[A-Za-z0-9_]{5,32}$/;
 const phonePattern = /^\+998\s\d{2}\s\d{3}\s\d{2}\s\d{2}$/;
 
+function initialBusinessForm(username?: string) {
+  const normalizedUsername = username?.trim().replace(/^@+/, "");
+  return normalizedUsername ? { ...initial, username: `@${normalizedUsername}` } : initial;
+}
+
 function validate(form: typeof initial, t: (key: string) => string): Errors {
   const errors: Errors = {};
   if (!form.name.trim()) errors.name = t("form.validation.company");
@@ -64,7 +69,7 @@ function stepForField(field: Field): Step {
 export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted?: () => void; onBackToRole?: () => void }) {
   const { language, t } = useI18n();
   const { haptic, isTelegram, user } = useTelegram();
-  const [form, setForm] = useState(initial);
+  const [form, setForm] = useState(() => initialBusinessForm(user?.username));
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [serverErrors, setServerErrors] = useState<Errors>({});
   const [step, setStep] = useState<Step>(0);
@@ -86,7 +91,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
 
   useEffect(() => {
     if (!user?.username) return;
-    setForm((current) => current.username ? current : { ...current, username: `@${user.username}` });
+    setForm((current) => current.username ? current : initialBusinessForm(user.username));
   }, [user?.username]);
 
   useEffect(() => {
@@ -227,7 +232,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
 
   return <form noValidate onSubmit={submit}>
     <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 2 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 2 ? undefined : continueStep} submit={step === 2} />}>
-      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} step={step + 1} stepTitle={stepTitles[step]} title={existing ? t("form.business.editTitle") : t("form.business.createTitle")} totalSteps={3} />
+      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} step={step + 1} stepTitle={stepTitles[step]} totalSteps={3} />
       <WizardErrorSummary message={serverSummary} />
       {step === 0 && <WizardStep stepKey={stepTitles[0]}>
         <div className="wizard-fields">

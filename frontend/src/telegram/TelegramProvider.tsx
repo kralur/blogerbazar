@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BloggerBazarLogo } from "../components/BloggerBazarLogo";
-import { TelegramLaunch, TelegramSafeArea } from "./telegramTheme";
+import { resolveTelegramContentTop, TelegramLaunch } from "./telegramTheme";
 
 type TelegramUser = { id: number; username?: string; first_name?: string; photo_url?: string };
 type TelegramBackButton = { show?: () => void; hide?: () => void; onClick?: (handler: () => void) => void; offClick?: (handler: () => void) => void };
@@ -112,8 +112,11 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       const contentInsets = app?.contentSafeAreaInset;
       const safeInsets = app?.safeAreaInset;
       const root = document.documentElement;
-      const reportedContentTop = Math.max(contentInsets?.top ?? 0, safeInsets?.top ?? 0);
-      const contentTop = reportedContentTop || (app ? TelegramSafeArea.contentTopFallback : 0);
+      const { chromeTop, effectiveTop } = resolveTelegramContentTop({
+        contentTop: contentInsets?.top,
+        safeTop: safeInsets?.top,
+        isEmbedded: Boolean(app)
+      });
       const background = theme?.bg_color ?? TelegramLaunch.splashBackground;
       const secondaryBackground = theme?.secondary_bg_color ?? background;
       root.dataset.telegramTheme = app?.colorScheme ?? "light";
@@ -126,7 +129,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       root.style.setProperty("--telegram-button", theme?.button_color ?? TelegramLaunch.accent);
       root.style.setProperty("--tg-safe-area-top", `${safeInsets?.top ?? 0}px`);
       root.style.setProperty("--tg-safe-area-bottom", `${safeInsets?.bottom ?? 0}px`);
-      root.style.setProperty("--tg-content-safe-top", `${contentTop}px`);
+      root.style.setProperty("--tg-content-safe-top", `${chromeTop}px`);
+      root.style.setProperty("--tg-effective-content-top", `${effectiveTop}px`);
       root.style.setProperty("--tg-content-safe-bottom", `${Math.max(contentInsets?.bottom ?? 0, safeInsets?.bottom ?? 0)}px`);
       const browserViewportHeight = window.visualViewport?.height ?? window.innerHeight;
       root.style.setProperty("--tg-viewport-height", `${app?.viewportStableHeight ?? app?.viewportHeight ?? browserViewportHeight}px`);

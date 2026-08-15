@@ -37,4 +37,22 @@ describe("role selection", () => {
     expect(onRoleSelected).toHaveBeenCalledWith("BrandFace");
     expect(haptic.selection).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps focus separate from selection and only activates the CTA after a role is chosen", async () => {
+    const user = userEvent.setup();
+    render(<I18nProvider><Onboarding /></I18nProvider>);
+
+    const bloggerCard = screen.getByRole("radio", { name: /Блогер/i });
+    const continueButton = screen.getByRole("button", { name: translate("onboarding.selectRole", undefined, "ru") });
+    await user.tab();
+
+    expect(bloggerCard).toHaveAttribute("aria-checked", "false");
+    expect(bloggerCard).not.toHaveClass("ftue-role-card--selected");
+    expect(continueButton).toBeDisabled();
+
+    await user.click(bloggerCard);
+    expect(bloggerCard).toHaveAttribute("aria-checked", "true");
+    expect(bloggerCard).toHaveClass("ftue-role-card--selected");
+    expect(continueButton).toBeEnabled();
+  });
 });
