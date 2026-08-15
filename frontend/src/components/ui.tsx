@@ -161,8 +161,8 @@ export function Chip({ children, active = false }: { children: ReactNode; active
   return (
     <span
       className={cn(
-        "inline-flex h-9 items-center whitespace-nowrap rounded-full border px-4 text-[13px] font-bold",
-        active ? "border-brand-blue bg-blue-50 text-brand-blue" : "border-brand-line bg-white text-brand-ink"
+        "marketplace-chip",
+        active && "marketplace-chip--active"
       )}
     >
       {children}

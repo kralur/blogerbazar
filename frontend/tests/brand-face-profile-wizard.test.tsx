@@ -103,8 +103,48 @@ describe("Brand Face profile wizard", () => {
     await reachReview(user);
     expect(screen.getByRole("heading", { level: 1, name: translate("wizard.brandFaceReviewStep", undefined, "ru") })).toBeInTheDocument();
     expect(api.upsertBrandFaceProfile).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: translate("wizard.editSection", { section: translate("wizard.brandFacePositioningStep", undefined, "ru") }, "ru") }));
+    await user.click(screen.getByRole("button", { name: translate("wizard.changeSection", { section: translate("wizard.brandFacePositioningStep", undefined, "ru") }, "ru") }));
     expect(screen.getByRole("heading", { level: 1, name: translate("wizard.brandFacePositioningStep", undefined, "ru") })).toBeInTheDocument();
+  });
+
+  it("shows one localized empty state instead of empty optional Review rows", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await reachReview(user);
+    const section = screen.getByRole("heading", { level: 3, name: translate("wizard.brandFacePortfolioStep", undefined, "ru") }).closest("section");
+    expect(section).toHaveTextContent(translate("common.notSpecified", undefined, "ru"));
+    expect(section).not.toHaveTextContent(translate("brandFace.instagram", undefined, "ru"));
+  });
+
+  it("shows only supplied optional values on the populated Review section", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await completeStepOne(user);
+    await completeStepTwo(user);
+    await user.type(screen.getByPlaceholderText("@username"), "@madina_style");
+    await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
+    const section = screen.getByRole("heading", { level: 3, name: translate("wizard.brandFacePortfolioStep", undefined, "ru") }).closest("section");
+    expect(section).toHaveTextContent("@madina_style");
+    expect(section).not.toHaveTextContent(translate("common.notSpecified", undefined, "ru"));
+    expect(section).not.toHaveTextContent(translate("brandFace.portfolio", undefined, "ru"));
+  });
+
+  it("uses the short Change action with a section-specific accessible name", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await reachReview(user);
+    const change = screen.getByRole("button", { name: translate("wizard.changeSection", { section: translate("wizard.brandFacePositioningStep", undefined, "ru") }, "ru") });
+    expect(change).toHaveTextContent(translate("wizard.change", undefined, "ru"));
+  });
+
+  it("blocks more than five normalized languages before Positioning", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    const languages = screen.getByPlaceholderText(translate("brandFace.languagesPlaceholder", undefined, "ru"));
+    await user.type(languages, "A, B, C, D, E, F");
+    await user.tab();
+    expect(screen.getByText(translate("brandFace.languagesLimit", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: translate("wizard.brandFaceAboutStep", undefined, "ru") })).toBeInTheDocument();
   });
 
   it("submits the compatible payload only from Review and uploads media afterwards", async () => {

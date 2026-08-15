@@ -30,6 +30,8 @@ export function safeExternalUrl(value: string) {
 export function socialHandle(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return "";
+  const directHandle = trimmed.replace(/^@/, "");
+  if (/^[A-Za-z0-9._]{1,30}$/.test(directHandle)) return directHandle;
   try {
     const url = new URL(normalizeWebsite(trimmed));
     const segments = url.pathname.split("/").filter(Boolean);

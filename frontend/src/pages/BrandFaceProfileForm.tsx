@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { deleteProfileImage, getMyBrandFaceProfile, upsertBrandFaceProfile, uploadProfileImage } from "../api/marketplace";
 import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
@@ -153,8 +153,8 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const unsavedChanges = useUnsavedChanges(dirty);
-  const clientErrors = useMemo(() => validate(form, categories, t), [categories, form, language, t]);
-  const errors = useMemo(() => ({ ...clientErrors, ...serverErrors }), [clientErrors, serverErrors]);
+  const clientErrors = validate(form, categories, t);
+  const errors = { ...clientErrors, ...Object.fromEntries(Object.entries(serverErrors).filter(([, value]) => Boolean(value))) } as Errors;
   const currentStepValid = step === 3 || stepFields[step].every((field) => !errors[field]);
   const stepTitles = [t("wizard.brandFaceAboutStep"), t("wizard.brandFacePositioningStep"), t("wizard.brandFacePortfolioStep"), t("wizard.brandFaceReviewStep")];
 
@@ -366,6 +366,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
   const progressLabel = t("wizard.stepOf", { current: step + 1, total: 4 });
   const submitLabel = existing ? t("wizard.saveChanges") : t("wizard.createProfile");
   const actionLabel = step === 3 ? (saving ? t("brandFace.saving") : submitLabel) : t("wizard.continue");
+  const hasPortfolioDetails = Boolean(reviewAvatarUrl || form.instagram.trim() || form.portfolioUrl.trim() || form.collaborationPrice || form.experience.trim() || form.description.trim());
 
   return <form noValidate onSubmit={submit}>
     <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 3 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 3 ? undefined : continueStep} submit={step === 3} />}>
@@ -397,16 +398,16 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
       {step === 3 && <WizardStep stepKey={stepTitles[3]}>
         <div className="wizard-review">
           {reviewAvatarUrl && <img alt={t("profileMedia.title")} className="wizard-review__logo" src={reviewAvatarUrl} />}
-          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[0] })} editLabel={t("common.edit")} onEdit={() => setStep(0)} title={stepTitles[0]}>
+          <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[0] })} editLabel={t("wizard.change")} onEdit={() => setStep(0)} title={stepTitles[0]}>
             <ReviewItem label={t("form.name")} value={form.name.trim()} />
             <ReviewItem label={t("common.city")} value={cityLabel(form.city, language)} />
             <ReviewItem label={t("brandFace.languages")} value={normalizedLanguages(form.languages).join(", ")} />
           </ReviewSection>
-          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[1] })} editLabel={t("common.edit")} onEdit={() => setStep(1)} title={stepTitles[1]}>
+          <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[1] })} editLabel={t("wizard.change")} onEdit={() => setStep(1)} title={stepTitles[1]}>
             <ReviewItem label={t("common.categories")} value={categories.map((category) => isOtherCategory(category) ? category.slice(otherCategoryPrefix.length) : categoryLabel(category, language)).join(", ")} />
             <ReviewItem label={t("form.telegramUsername")} value={form.telegram.trim()} />
           </ReviewSection>
-          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[2] })} editLabel={t("common.edit")} onEdit={() => setStep(2)} title={stepTitles[2]}>
+          <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[2] })} editLabel={t("wizard.change")} emptyLabel={t("common.notSpecified")} isEmpty={!hasPortfolioDetails} onEdit={() => setStep(2)} title={stepTitles[2]}>
             <ReviewItem label={t("brandFace.instagram")} value={form.instagram.trim()} />
             <ReviewItem label={t("brandFace.portfolio")} value={form.portfolioUrl.trim()} />
             <ReviewItem label={t("brandFace.price")} value={form.collaborationPrice ? formatCurrency(normalizeNumericInput(form.collaborationPrice)) : undefined} />

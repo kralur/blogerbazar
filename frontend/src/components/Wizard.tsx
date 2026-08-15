@@ -102,10 +102,10 @@ export function FixedActionBar({ backLabel, continueLabel, disabled = false, loa
   </div>;
 }
 
-export function ReviewSection({ title, editLabel, editAriaLabel, children, onEdit }: { title: string; editLabel: string; editAriaLabel: string; children: ReactNode; onEdit: () => void }) {
+export function ReviewSection({ title, editLabel, editAriaLabel, children, emptyLabel, isEmpty = false, onEdit }: { title: string; editLabel: string; editAriaLabel: string; children: ReactNode; emptyLabel?: string; isEmpty?: boolean; onEdit: () => void }) {
   return <section className="wizard-review-section">
     <div className="wizard-review-section__header"><h3>{title}</h3><button aria-label={editAriaLabel} className="wizard-review-section__edit" onClick={onEdit} type="button">{editLabel}</button></div>
-    <dl className="wizard-review-section__content">{children}</dl>
+    {isEmpty ? <p className="wizard-review-section__empty">{emptyLabel}</p> : <dl className="wizard-review-section__content">{children}</dl>}
   </section>;
 }
 
