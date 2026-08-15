@@ -17,4 +17,11 @@ describe("Telegram page header clearance", () => {
     expect(styles).toMatch(/form\.screen \.grid\.grid-cols-2 > \* \{[\s\S]*?min-width: 0;[\s\S]*?width: 100%;/);
     expect(styles).toMatch(/form\.screen \.grid\.grid-cols-2 input,[\s\S]*?max-width: 100%;/);
   });
+
+  it("keeps wizard title and progress on the same full-width left boundary", () => {
+    expect(styles).toMatch(/\.wizard-header \{[\s\S]*?width: 100%;[\s\S]*?min-width: 0;/);
+    expect(styles).toMatch(/\.wizard-header__copy \{ width: 100%; min-width: 0; \}/);
+    expect(styles).toMatch(/\.wizard-progress \{ display: grid; gap: \.5rem; width: 100%; min-width: 0; \}/);
+    expect(styles).not.toContain("wizard-header__back-placeholder");
+  });
 });

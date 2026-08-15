@@ -59,7 +59,7 @@ export function WizardHeader({ title, stepTitle, step, totalSteps, backLabel, pr
   showBackButton?: boolean;
 }) {
   return <header className="wizard-header" data-content-header>
-    {showBackButton ? <button aria-label={backLabel} className="wizard-header__back" onClick={onBack} type="button"><Icon name="back" /></button> : <span aria-hidden="true" className="wizard-header__back-placeholder" />}
+    {showBackButton && <button aria-label={backLabel} className="wizard-header__back" onClick={onBack} type="button"><Icon name="back" /></button>}
     <div className="wizard-header__copy">{title && <p>{title}</p>}<h1>{stepTitle}</h1></div>
     <ProgressIndicator current={step} label={progressLabel} total={totalSteps} />
   </header>;
