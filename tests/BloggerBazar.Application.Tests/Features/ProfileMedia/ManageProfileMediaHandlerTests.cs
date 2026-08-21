@@ -39,6 +39,22 @@ public sealed class ManageProfileMediaHandlerTests
     }
 
     [Fact]
+    public async Task Database_failure_restores_previous_image_and_cleans_up_only_new_object()
+    {
+        var previousUrl = "https://media.example/profiles/bloggers/old.webp";
+        var uploadedUrl = "https://media.example/profiles/bloggers/new.webp";
+        var profile = CreateBlogger(previousUrl);
+        var storage = new FakeStorage(uploadedUrl);
+        var handler = CreateUploadHandler(profile, storage, new SpyUnitOfWork { ThrowOnSave = true });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.Handle(new UploadProfileMediaCommand(101, ProfileMediaTarget.Blogger, new byte[] { 1 }, "avatar.png", "image/png"), CancellationToken.None));
+
+        Assert.Equal(previousUrl, profile.AvatarUrl);
+        Assert.Equal([uploadedUrl], storage.DeletedUrls);
+    }
+
+    [Fact]
     public async Task Delete_removes_primary_image_and_storage_object()
     {
         var previousUrl = "https://media.example/profiles/bloggers/old.webp";
@@ -58,12 +74,12 @@ public sealed class ManageProfileMediaHandlerTests
         Assert.Equal([previousUrl], storage.DeletedUrls);
     }
 
-    private static UploadProfileMediaHandler CreateUploadHandler(BloggerProfile profile, FakeStorage storage) => new(
+    private static UploadProfileMediaHandler CreateUploadHandler(BloggerProfile profile, FakeStorage storage, IUnitOfWork? unitOfWork = null) => new(
         new BloggerRepository(profile),
         new EmptyBrandFaceRepository(),
         new EmptyBusinessRepository(),
         storage,
-        new SpyUnitOfWork(),
+        unitOfWork ?? new SpyUnitOfWork(),
         NullLogger<UploadProfileMediaHandler>.Instance);
 
     private static BloggerProfile CreateBlogger(string? avatarUrl)
@@ -117,6 +133,10 @@ public sealed class ManageProfileMediaHandlerTests
 
     private sealed class SpyUnitOfWork : IUnitOfWork
     {
-        public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+        public bool ThrowOnSave { get; init; }
+
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => ThrowOnSave
+            ? Task.FromException<int>(new InvalidOperationException("Database write failed."))
+            : Task.FromResult(1);
     }
 }

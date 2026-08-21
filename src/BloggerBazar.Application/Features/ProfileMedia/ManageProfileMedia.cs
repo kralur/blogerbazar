@@ -40,6 +40,7 @@ public sealed class UploadProfileMediaHandler(
         }
         catch
         {
+            profile.SetPrimaryImageUrl(profile.CurrentImageUrl);
             await TryDeleteUploadedFileAsync(uploaded.PublicUrl, storage, logger, cancellationToken);
             throw;
         }

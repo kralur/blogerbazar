@@ -53,21 +53,27 @@ internal sealed class S3ProfileMediaStorage(
         }
         catch (AmazonS3Exception exception)
         {
-            logger.LogError(exception, "Profile media upload failed with storage error {StorageErrorCode}", exception.ErrorCode);
+            logger.LogError(
+                "Profile media upload failed. StatusCode {StatusCode}; ErrorCode {ErrorCode}; RequestId {RequestId}",
+                (int)exception.StatusCode,
+                exception.ErrorCode ?? "unknown",
+                exception.RequestId ?? "unknown");
             throw new ProfileMediaStorageUnavailableException();
         }
         catch (HttpRequestException exception)
         {
-            logger.LogError(exception, "Profile media upload could not reach object storage");
+            logger.LogError(
+                "Profile media upload could not reach object storage. StatusCode {StatusCode}",
+                exception.StatusCode is null ? "unknown" : ((int)exception.StatusCode.Value).ToString());
             throw new ProfileMediaStorageUnavailableException();
         }
 
-        return new StoredProfileMedia(BuildPublicUrl(objectKey));
+        return new StoredProfileMedia(BuildPublicUrl(_options.PublicBaseUrl!, objectKey));
     }
 
     public async Task DeleteAsync(string publicUrl, CancellationToken cancellationToken)
     {
-        if (!_options.IsConfigured || !TryGetManagedObjectKey(publicUrl, out var objectKey))
+        if (!_options.IsConfigured || !TryGetManagedObjectKey(_options.PublicBaseUrl!, publicUrl, out var objectKey))
         {
             return;
         }
@@ -79,12 +85,18 @@ internal sealed class S3ProfileMediaStorage(
         }
         catch (AmazonS3Exception exception)
         {
-            logger.LogWarning(exception, "Profile media delete failed with storage error {StorageErrorCode}", exception.ErrorCode);
+            logger.LogWarning(
+                "Profile media delete failed. StatusCode {StatusCode}; ErrorCode {ErrorCode}; RequestId {RequestId}",
+                (int)exception.StatusCode,
+                exception.ErrorCode ?? "unknown",
+                exception.RequestId ?? "unknown");
             throw new ProfileMediaStorageUnavailableException();
         }
         catch (HttpRequestException exception)
         {
-            logger.LogWarning(exception, "Profile media delete could not reach object storage");
+            logger.LogWarning(
+                "Profile media delete could not reach object storage. StatusCode {StatusCode}",
+                exception.StatusCode is null ? "unknown" : ((int)exception.StatusCode.Value).ToString());
             throw new ProfileMediaStorageUnavailableException();
         }
     }
@@ -144,22 +156,23 @@ internal sealed class S3ProfileMediaStorage(
 
     private AmazonS3Client CreateClient() => new(
         new BasicAWSCredentials(_options.AccessKey!, _options.SecretKey!),
-        new AmazonS3Config
-        {
-            ServiceURL = _options.ServiceUrl,
-            AuthenticationRegion = _options.Region,
-            ForcePathStyle = _options.ForcePathStyle
-        });
+        CreateS3Config(_options));
 
-    private string BuildPublicUrl(string objectKey) => $"{_options.PublicBaseUrl!.TrimEnd('/')}/{objectKey}";
-
-    private bool TryGetManagedObjectKey(string publicUrl, out string objectKey)
+    internal static AmazonS3Config CreateS3Config(ProfileMediaOptions options) => new()
     {
-        var prefix = $"{_options.PublicBaseUrl!.TrimEnd('/')}/";
+        ServiceURL = options.ServiceUrl,
+        AuthenticationRegion = options.Region,
+        ForcePathStyle = options.ForcePathStyle
+    };
+
+    internal static string BuildPublicUrl(string publicBaseUrl, string objectKey) => $"{publicBaseUrl.TrimEnd('/')}/{objectKey}";
+
+    internal static bool TryGetManagedObjectKey(string publicBaseUrl, string publicUrl, out string objectKey)
+    {
+        var prefix = $"{publicBaseUrl.TrimEnd('/')}/";
         if (!publicUrl.StartsWith(prefix, StringComparison.Ordinal))
         {
             objectKey = string.Empty;
-            logger.LogInformation("Skipped profile media cleanup for an unmanaged URL");
             return false;
         }
 

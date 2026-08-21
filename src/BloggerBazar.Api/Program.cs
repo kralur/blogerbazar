@@ -27,10 +27,16 @@ try
         .WriteTo.Console());
 
     var profileMediaOptions = builder.Configuration.GetSection(ProfileMediaOptions.SectionName).Get<ProfileMediaOptions>() ?? new ProfileMediaOptions();
-    if (!profileMediaOptions.IsConfigured)
-    {
-        Log.Warning("Profile media storage is not configured. Profile image uploads are unavailable until ProfileMedia settings are provided.");
-    }
+    Log.Information(
+        "Profile media configuration. Configured {Configured}; ServiceUrlConfigured {ServiceUrlConfigured}; PublicBaseUrlConfigured {PublicBaseUrlConfigured}; BucketConfigured {BucketConfigured}; AccessKeyConfigured {AccessKeyConfigured}; SecretKeyConfigured {SecretKeyConfigured}; Region {Region}; ForcePathStyle {ForcePathStyle}",
+        profileMediaOptions.IsConfigured,
+        !string.IsNullOrWhiteSpace(profileMediaOptions.ServiceUrl),
+        !string.IsNullOrWhiteSpace(profileMediaOptions.PublicBaseUrl),
+        !string.IsNullOrWhiteSpace(profileMediaOptions.Bucket),
+        !string.IsNullOrWhiteSpace(profileMediaOptions.AccessKey),
+        !string.IsNullOrWhiteSpace(profileMediaOptions.SecretKey),
+        profileMediaOptions.Region,
+        profileMediaOptions.ForcePathStyle);
 
     builder.Services.AddProblemDetails();
     builder.Services.AddControllers(options =>
