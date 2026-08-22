@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getCurrentPlatformUser, getFavorites, normalizeMarketplaceRole, removeFavorite, saveFavorite } from "../../api/marketplace";
 
 type FavoritesContextValue = {
@@ -15,13 +15,17 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => new Set());
   const [isEligible, setIsEligible] = useState(false);
   const [ready, setReady] = useState(false);
+  const stateVersionRef = useRef(0);
+  const mutationVersionsRef = useRef(new Map<string, number>());
 
   const refreshFavorites = useCallback(async () => {
-    setReady(false);
+    const refreshVersion = stateVersionRef.current;
+    if (refreshVersion === 0) setReady(false);
     try {
       const user = await getCurrentPlatformUser();
       const role = normalizeMarketplaceRole(user.selectedMarketplaceRole);
       const canManageFavorites = role === "Business" || role === "BrandFace";
+      if (refreshVersion !== stateVersionRef.current) return;
       setIsEligible(canManageFavorites);
       if (!canManageFavorites) {
         setFavoriteIds(new Set());
@@ -29,12 +33,14 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
       }
 
       const response = await getFavorites();
+      if (refreshVersion !== stateVersionRef.current) return;
       setFavoriteIds(new Set(response.items.map((item) => item.bloggerId)));
     } catch {
+      if (refreshVersion !== stateVersionRef.current) return;
       setIsEligible(false);
       setFavoriteIds(new Set());
     } finally {
-      setReady(true);
+      if (refreshVersion === stateVersionRef.current) setReady(true);
     }
   }, []);
 
@@ -44,6 +50,7 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
       return;
     }
 
+    stateVersionRef.current += 1;
     setIsEligible(false);
     setFavoriteIds(new Set());
     setReady(false);
@@ -51,6 +58,8 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
 
   const toggleFavorite = useCallback(async (bloggerId: string) => {
     const saved = favoriteIds.has(bloggerId);
+    const mutationVersion = ++stateVersionRef.current;
+    mutationVersionsRef.current.set(bloggerId, mutationVersion);
     setFavoriteIds((current) => {
       const next = new Set(current);
       if (saved) next.delete(bloggerId); else next.add(bloggerId);
@@ -61,6 +70,7 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
       if (saved) await removeFavorite(bloggerId); else await saveFavorite(bloggerId);
       return !saved;
     } catch (error) {
+      if (mutationVersionsRef.current.get(bloggerId) !== mutationVersion) throw error;
       setFavoriteIds((current) => {
         const next = new Set(current);
         if (saved) next.add(bloggerId); else next.delete(bloggerId);

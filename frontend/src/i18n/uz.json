@@ -264,4 +264,11 @@
   ,"home.businessEyebrow": "Biznes uchun"
   ,"home.bloggerEyebrow": "Bloger uchun"
   ,"home.brandFaceEyebrow": "Brend-yuz uchun"
+  ,"search.activeFilters": "Faol filtrlar"
+  ,"search.removeFilterAria": "{filter} filtrini olib tashlash"
+  ,"search.resetAll": "Barchasini tozalash"
+  ,"search.endOfList": "Barcha blogerlarni ko‘rdingiz"
+  ,"search.followersAtLeast": "{count} dan"
+  ,"search.erAtLeast": "{value} dan"
+  ,"search.priceUpTo": "{amount} gacha"
 }

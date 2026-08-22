@@ -265,4 +265,11 @@
   ,"home.businessEyebrow": "Для бизнеса"
   ,"home.bloggerEyebrow": "Для блогера"
   ,"home.brandFaceEyebrow": "Для бренд-фейса"
+  ,"search.activeFilters": "Активные фильтры"
+  ,"search.removeFilterAria": "Убрать фильтр {filter}"
+  ,"search.resetAll": "Сбросить всё"
+  ,"search.endOfList": "Вы просмотрели всех блогеров"
+  ,"search.followersAtLeast": "от {count}"
+  ,"search.erAtLeast": "от {value}"
+  ,"search.priceUpTo": "до {amount}"
 }

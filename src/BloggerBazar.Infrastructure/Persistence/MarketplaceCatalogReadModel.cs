@@ -9,11 +9,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BloggerBazar.Infrastructure.Persistence;
 
+internal static class MarketplaceCatalogVisibility
+{
+    internal static IQueryable<BloggerProfile> PublicBloggers(IQueryable<BloggerProfile> query) =>
+        query.Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
+}
+
 internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContext) : IMarketplaceCatalogReadModel
 {
     public async Task<SearchBloggersResult> SearchBloggersAsync(BloggerCatalogSearch search, CancellationToken cancellationToken)
     {
-        var query = dbContext.BloggerProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
+        var query = MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking());
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
             var pattern = PostgresSearchPattern.Contains(search.Query.Trim());
@@ -69,7 +75,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
     }
 
     public async Task<BloggerProfileDto?> GetBloggerAsync(Guid id, CancellationToken cancellationToken) =>
-        (await ProjectBloggersAsync(dbContext.BloggerProfiles.AsNoTracking().Where(profile => profile.Id == id && !profile.IsDeleted), cancellationToken)).SingleOrDefault();
+        (await ProjectBloggersAsync(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking()).Where(profile => profile.Id == id), cancellationToken)).SingleOrDefault();
 
     public async Task<MyBloggerProfileDto?> GetMyBloggerAsync(long telegramUserId, CancellationToken cancellationToken)
     {

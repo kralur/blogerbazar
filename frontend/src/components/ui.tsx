@@ -153,10 +153,10 @@ export function Textarea({ label, error, className, onInvalid, ...props }: Texta
   );
 }
 
-export function SearchBar({ placeholder, value, onChange }: { placeholder?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement> }) {
+export function SearchBar({ placeholder, value, onChange, className }: { placeholder?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; className?: string }) {
   const { t } = useI18n();
   return (
-    <div className="flex h-[52px] items-center gap-3 rounded-2xl bg-white px-4 shadow-card ring-1 ring-brand-line/80">
+    <div className={cn("flex h-[52px] items-center gap-3 rounded-2xl bg-white px-4 shadow-card ring-1 ring-brand-line/80", className)}>
       <Icon className="text-brand-muted" name="search" />
       <input aria-label={placeholder ?? t("search.placeholder")} className="w-full bg-transparent text-[15px] outline-none placeholder:text-slate-400" onChange={onChange} placeholder={placeholder ?? t("search.placeholder")} value={value} />
     </div>
@@ -203,17 +203,17 @@ export function Price({ value, className }: { value?: number | null; className?:
   return <span className={cn("font-extrabold tracking-tight", className)}>{formatCurrency(value)}</span>;
 }
 
-export function Avatar({ src, name, size = "md", verified = false, variant = "default" }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean; variant?: "default" | "home" }) {
+export function Avatar({ src, name, size = "md", verified = false, variant = "default" }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean; variant?: "default" | "home" | "catalog" }) {
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [src]);
   const sizes = { sm: "h-12 w-12", md: "h-16 w-16", lg: "h-24 w-24", xl: "h-32 w-32" };
   return (
-    <div className={cn("relative shrink-0", variant === "home" && "home-avatar")}>
-      <div className={cn("overflow-hidden rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 ring-4 ring-white", variant === "home" && "home-avatar__image", sizes[size])}>
+    <div className={cn("relative shrink-0", variant === "home" && "home-avatar", variant === "catalog" && "catalog-avatar")}>
+      <div className={cn("overflow-hidden rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 ring-4 ring-white", variant === "home" && "home-avatar__image", variant === "catalog" && "catalog-avatar__image", sizes[size])}>
         {src && !imageFailed ? <img alt={name} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" onError={() => setImageFailed(true)} src={src} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
       </div>
       {verified && (
-        <span className={cn("absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white shadow-glow ring-4 ring-white", variant === "home" && "home-avatar__verified")}>
+        <span className={cn("absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white shadow-glow ring-4 ring-white", variant === "home" && "home-avatar__verified", variant === "catalog" && "catalog-avatar__verified")}>
           <Icon className="h-4 w-4" name="check" />
         </span>
       )}
@@ -344,7 +344,7 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
   );
 }
 
-export function Modal({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
+export function Modal({ open, title, children, onClose, id }: { open: boolean; title: string; children: ReactNode; onClose: () => void; id?: string }) {
   const { t } = useI18n();
   const { registerBackButtonHandler } = useTelegram();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -391,7 +391,7 @@ export function Modal({ open, title, children, onClose }: { open: boolean; title
   if (typeof document === "undefined") return null;
   return createPortal(
     <div aria-modal="true" className="bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
-      <div aria-labelledby="bottom-sheet-title" className="bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft" ref={dialogRef} tabIndex={-1}>
+      <div aria-labelledby="bottom-sheet-title" className="bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft" id={id} ref={dialogRef} tabIndex={-1}>
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-200" />
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-extrabold" id="bottom-sheet-title">{title}</h3>
@@ -406,8 +406,8 @@ export function Modal({ open, title, children, onClose }: { open: boolean; title
   );
 }
 
-export function BottomSheet({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
-  return <Modal onClose={onClose} open={open} title={title}>{children}</Modal>;
+export function BottomSheet({ open, title, children, onClose, id }: { open: boolean; title: string; children: ReactNode; onClose: () => void; id?: string }) {
+  return <Modal id={id} onClose={onClose} open={open} title={title}>{children}</Modal>;
 }
 
 export function FixedActionBar({ children }: { children: ReactNode }) {
