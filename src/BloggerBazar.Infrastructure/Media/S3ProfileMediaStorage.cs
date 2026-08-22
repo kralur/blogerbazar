@@ -43,21 +43,16 @@ internal sealed class S3ProfileMediaStorage(
         try
         {
             using var client = CreateClient();
-            await client.PutObjectAsync(new PutObjectRequest
-            {
-                BucketName = _options.Bucket,
-                Key = objectKey,
-                InputStream = output,
-                ContentType = "image/webp"
-            }, cancellationToken);
+            await client.PutObjectAsync(CreatePutObjectRequest(_options.Bucket!, objectKey, output), cancellationToken);
         }
         catch (AmazonS3Exception exception)
         {
             logger.LogError(
-                "Profile media upload failed. StatusCode {StatusCode}; ErrorCode {ErrorCode}; RequestId {RequestId}",
+                "Profile media upload failed. StatusCode {StatusCode}; ErrorCode {ErrorCode}; RequestId {RequestId}; StorageMessage {StorageMessage}",
                 (int)exception.StatusCode,
                 exception.ErrorCode ?? "unknown",
-                exception.RequestId ?? "unknown");
+                exception.RequestId ?? "unknown",
+                GetSafeStorageErrorMessage(exception));
             throw new ProfileMediaStorageUnavailableException();
         }
         catch (HttpRequestException exception)
@@ -86,10 +81,11 @@ internal sealed class S3ProfileMediaStorage(
         catch (AmazonS3Exception exception)
         {
             logger.LogWarning(
-                "Profile media delete failed. StatusCode {StatusCode}; ErrorCode {ErrorCode}; RequestId {RequestId}",
+                "Profile media delete failed. StatusCode {StatusCode}; ErrorCode {ErrorCode}; RequestId {RequestId}; StorageMessage {StorageMessage}",
                 (int)exception.StatusCode,
                 exception.ErrorCode ?? "unknown",
-                exception.RequestId ?? "unknown");
+                exception.RequestId ?? "unknown",
+                GetSafeStorageErrorMessage(exception));
             throw new ProfileMediaStorageUnavailableException();
         }
         catch (HttpRequestException exception)
@@ -162,8 +158,25 @@ internal sealed class S3ProfileMediaStorage(
     {
         ServiceURL = options.ServiceUrl,
         AuthenticationRegion = options.Region,
-        ForcePathStyle = options.ForcePathStyle
+        ForcePathStyle = options.ForcePathStyle,
+        RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
+        ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
     };
+
+    internal static PutObjectRequest CreatePutObjectRequest(string bucket, string objectKey, Stream content)
+    {
+        var request = new PutObjectRequest
+        {
+            BucketName = bucket,
+            Key = objectKey,
+            InputStream = content,
+            ContentType = "image/webp",
+            UseChunkEncoding = false,
+            DisablePayloadSigning = false
+        };
+        request.Headers.ContentLength = content.Length;
+        return request;
+    }
 
     internal static string BuildPublicUrl(string publicBaseUrl, string objectKey) => $"{publicBaseUrl.TrimEnd('/')}/{objectKey}";
 
@@ -178,6 +191,23 @@ internal sealed class S3ProfileMediaStorage(
 
         objectKey = publicUrl[prefix.Length..];
         return objectKey.StartsWith("profiles/", StringComparison.Ordinal) && objectKey.EndsWith(".webp", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetSafeStorageErrorMessage(AmazonS3Exception exception)
+    {
+        var message = exception.Message;
+        if (string.IsNullOrWhiteSpace(message) ||
+            message.Contains("authorization", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("accesskey", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("secretkey", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("credential=", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("signature=", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("x-amz-", StringComparison.OrdinalIgnoreCase))
+        {
+            return "redacted";
+        }
+
+        return message;
     }
 
     private static string ToStorageSegment(ProfileMediaTarget target) => target switch

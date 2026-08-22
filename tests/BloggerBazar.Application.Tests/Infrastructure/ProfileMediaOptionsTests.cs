@@ -2,6 +2,7 @@ using BloggerBazar.Application.Abstractions.Media;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Infrastructure.Configuration;
 using BloggerBazar.Infrastructure.Media;
+using Amazon.Runtime;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -48,6 +49,8 @@ public sealed class ProfileMediaOptionsTests
                 Assert.True(options.IsConfigured);
                 Assert.Equal("auto", clientConfiguration.AuthenticationRegion);
                 Assert.True(clientConfiguration.ForcePathStyle);
+                Assert.Equal(RequestChecksumCalculation.WHEN_REQUIRED, clientConfiguration.RequestChecksumCalculation);
+                Assert.Equal(ResponseChecksumValidation.WHEN_REQUIRED, clientConfiguration.ResponseChecksumValidation);
                 Assert.Equal("https://account.r2.cloudflarestorage.com/", clientConfiguration.ServiceURL);
             }
             finally
@@ -68,6 +71,24 @@ public sealed class ProfileMediaOptionsTests
             "profiles/bloggers/00000000000000000000000000000000/image.webp");
 
         Assert.Equal($"{PublicBaseUrl}/profiles/bloggers/00000000000000000000000000000000/image.webp", url);
+    }
+
+    [Fact]
+    public void R2_put_object_uses_a_known_length_non_chunked_webp_request()
+    {
+        const string objectKey = "profiles/bloggers/00000000000000000000000000000000/image.webp";
+        using var content = new MemoryStream(new byte[1234], writable: false);
+
+        var request = S3ProfileMediaStorage.CreatePutObjectRequest("bloggerbazar-profile-media", objectKey, content);
+
+        Assert.Equal("bloggerbazar-profile-media", request.BucketName);
+        Assert.Equal(objectKey, request.Key);
+        Assert.Equal(1234, request.Headers.ContentLength);
+        Assert.Equal("image/webp", request.ContentType);
+        Assert.False(request.UseChunkEncoding);
+        Assert.False(request.DisablePayloadSigning);
+        Assert.Null(request.ChecksumAlgorithm);
+        Assert.Same(content, request.InputStream);
     }
 
     [Fact]
