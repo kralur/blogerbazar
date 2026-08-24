@@ -10,6 +10,22 @@ namespace BloggerBazar.Api.Controllers;
 [Route("api/campaigns")]
 public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
+    [HttpGet("catalog")]
+    [ProducesResponseType<CampaignCatalogResult>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<CampaignCatalogResult>> Catalog(
+        [FromQuery] string? query,
+        [FromQuery] string? city,
+        [FromQuery] string? category,
+        [FromQuery] int? minBudget,
+        [FromQuery] int? maxBudget,
+        [FromQuery] DateTime? deadlineFrom,
+        [FromQuery] DateTime? deadlineTo,
+        [FromQuery] string? sort = "promoted",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default) =>
+        Ok(await sender.Send(new SearchCampaignCatalogQuery(query, city, category, minBudget, maxBudget, deadlineFrom, deadlineTo, sort, page, pageSize), cancellationToken));
+
     [HttpGet]
     [ProducesResponseType<SearchCampaignsResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<SearchCampaignsResponse>> Search(
