@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getBloggers, getCategories, type BloggerSearchFilters } from "../api/marketplace";
 import { BloggerCard, type BloggerCardData } from "../components/BloggerCard";
+import { BrandFaceCatalog } from "../components/catalog/BrandFaceCatalog";
+import { CatalogHeader, CatalogState, FilterSelect, SearchSkeleton, ActiveFilterChips } from "../components/catalog/CatalogShared";
+import { CatalogTypeSegmentedControl, type CatalogType } from "../components/catalog/CatalogTypeSegmentedControl";
+import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
-import { BottomNav, BottomSheet, Icon, SearchBar, Skeleton } from "../components/ui";
+import { BottomNav, BottomSheet, Icon, SearchBar } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
@@ -16,7 +20,6 @@ const defaultFilters: BloggerSearchFilters = { sort: "popular", pageSize };
 const filterSheetId = "blogger-search-filters";
 
 type FilterKey = "category" | "city" | "platform" | "minFollowers" | "minEr" | "maxPrice" | "sort";
-type SearchFailure = "offline" | "server" | null;
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
 function hashCategory() {
@@ -39,74 +42,49 @@ function filtersEqual(left: BloggerSearchFilters, right: BloggerSearchFilters) {
 }
 
 export function BloggerSearch() {
+  const [catalogType, setCatalogType] = useState<CatalogType>(hashCatalogType);
+  const { haptic } = useTelegram();
+
+  useEffect(() => {
+    const syncType = () => setCatalogType(hashCatalogType());
+    window.addEventListener("hashchange", syncType);
+    return () => window.removeEventListener("hashchange", syncType);
+  }, []);
+
+  const selectType = useCallback((type: CatalogType) => {
+    haptic.selection();
+    const params = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+    params.set("type", type);
+    params.delete("category");
+    window.location.hash = `/search?${params.toString()}`;
+  }, [haptic]);
+
+  return <>
+    <BloggerCatalog active={catalogType === "blogger"} onSelectType={selectType} />
+    <BrandFaceCatalog active={catalogType === "brand-face"} onSelectType={selectType} />
+    <BottomNav />
+  </>;
+}
+
+function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectType: (type: CatalogType) => void }) {
   const { t } = useI18n();
   const { haptic } = useTelegram();
-  useScrollRestoration("search");
+  useScrollRestoration("search:blogger", active);
   const initialCategory = hashCategory() ?? "";
-  const [bloggers, setBloggers] = useState<BloggerCardData[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [loadMoreFailed, setLoadMoreFailed] = useState(false);
-  const [failure, setFailure] = useState<SearchFailure>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [appliedFilters, setAppliedFilters] = useState<BloggerSearchFilters>(() => normalizedFilters({ category: initialCategory }));
   const [draftFilters, setDraftFilters] = useState<BloggerSearchFilters>(() => normalizedFilters({ category: initialCategory }));
   const draftFiltersRef = useRef<BloggerSearchFilters>(normalizedFilters({ category: initialCategory }));
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadedInitialResult, setLoadedInitialResult] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const requestIdRef = useRef(0);
-  const abortControllerRef = useRef<AbortController>();
-  const loadingPagesRef = useRef(new Set<number>());
   const debouncedQuery = useDebouncedValue(query, 300);
 
-  const load = useCallback(async (requestedPage: number, append: boolean) => {
-    if (append && loadingPagesRef.current.has(requestedPage)) return;
-    if (!append) {
-      abortControllerRef.current?.abort();
-      loadingPagesRef.current.clear();
-    }
-
-    const requestId = ++requestIdRef.current;
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-    loadingPagesRef.current.add(requestedPage);
-
-    if (append) {
-      setLoadingMore(true);
-      setLoadMoreFailed(false);
-    } else {
-      setLoading(true);
-      setFailure(null);
-      setLoadedInitialResult(false);
-    }
-
-    try {
-      const result = await getBloggers({ ...appliedFilters, query: debouncedQuery || undefined, page: requestedPage, pageSize }, abortController.signal);
-      if (requestId !== requestIdRef.current) return;
-      setBloggers((current) => append
-        ? [...current, ...result.bloggers.filter((blogger) => !current.some((item) => item.id === blogger.id))]
-        : result.bloggers);
-      setTotal(result.total);
-      setPage(result.page);
-      setHasMore(result.page * result.pageSize < result.total);
-      setLoadedInitialResult(true);
-    } catch (error) {
-      if (abortController.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
-      if (requestId !== requestIdRef.current) return;
-      if (append) setLoadMoreFailed(true);
-      else setFailure(navigator.onLine === false ? "offline" : "server");
-    } finally {
-      loadingPagesRef.current.delete(requestedPage);
-      if (requestId !== requestIdRef.current) return;
-      if (append) setLoadingMore(false);
-      else setLoading(false);
-    }
+  const fetchPage = useCallback(async (requestedPage: number, signal: AbortSignal) => {
+    const result = await getBloggers({ ...appliedFilters, query: debouncedQuery || undefined, page: requestedPage, pageSize }, signal);
+    return { items: result.bloggers, total: result.total, page: result.page, hasMore: result.page * result.pageSize < result.total };
   }, [appliedFilters, debouncedQuery]);
+  const { items: bloggers, total, loading, loadingMore, loadMoreFailed, failure, page, hasMore, loadedInitialResult, load, cancel } = usePaginatedCatalog<BloggerCardData>({ active, fetchPage });
 
   const refresh = useCallback(() => { void load(1, false); }, [load]);
 
@@ -115,18 +93,22 @@ export function BloggerSearch() {
   }, []);
 
   useEffect(() => {
+    if (!active) {
+      setFiltersOpen(false);
+      cancel();
+      return;
+    }
     void load(1, false);
     return () => {
-      requestIdRef.current += 1;
-      abortControllerRef.current?.abort();
-      loadingPagesRef.current.clear();
+      cancel();
     };
-  }, [load]);
+  }, [active, cancel, load]);
 
   useProfileDataRefresh(refresh);
 
   useEffect(() => {
     const syncHashCategory = () => {
+      if (!active) return;
       const category = hashCategory();
       if (category === null) return;
       setAppliedFilters((current) => {
@@ -137,11 +119,13 @@ export function BloggerSearch() {
       draftFiltersRef.current = nextDraft;
       setDraftFilters(nextDraft);
     };
+    syncHashCategory();
     window.addEventListener("hashchange", syncHashCategory);
     return () => window.removeEventListener("hashchange", syncHashCategory);
-  }, []);
+  }, [active]);
 
   useEffect(() => {
+    if (!active) return;
     const sentinel = sentinelRef.current;
     if (!sentinel || loading || loadingMore || loadMoreFailed || !hasMore || failure) return;
     const observer = new IntersectionObserver(([entry]) => {
@@ -149,7 +133,7 @@ export function BloggerSearch() {
     }, { rootMargin: "240px" });
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [failure, hasMore, load, loadMoreFailed, loading, loadingMore, page]);
+  }, [active, failure, hasMore, load, loadMoreFailed, loading, loadingMore, page]);
 
   const setDraft = (key: FilterKey, value: string | number | undefined) => {
     const next = normalizedFilters({ ...draftFiltersRef.current, [key]: value || undefined });
@@ -196,11 +180,12 @@ export function BloggerSearch() {
 
   const activeChips = useMemo(() => buildActiveChips(appliedFilters, t), [appliedFilters, t]);
 
-  return <div className="catalog-search screen screen--with-nav">
-    <header className="catalog-search__header">
+  return <div aria-hidden={!active} className="catalog-search screen screen--with-nav" hidden={!active}>
+    <CatalogHeader>
       <div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("search.eyebrow")}</p><h1>{t("search.title")}</h1></div>
       <LanguageSwitcher />
-    </header>
+    </CatalogHeader>
+    <CatalogTypeSegmentedControl onChange={onSelectType} value="blogger" />
     <div className="catalog-search__searchbar"><SearchBar className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} placeholder={t("search.placeholder")} value={query} /></div>
     <div className="catalog-search__controls">
       <button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("search.filters")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button>
@@ -227,8 +212,13 @@ export function BloggerSearch() {
         {loadedInitialResult && !hasMore && !loadingMore && !loadMoreFailed && <p className="catalog-search__end">{t("search.endOfList")}</p>}
       </>}
     </section>
-    <BottomNav />
   </div>;
+}
+
+function hashCatalogType(): CatalogType {
+  const hash = window.location.hash;
+  if (!hash.startsWith("#/search")) return "blogger";
+  return new URLSearchParams(hash.split("?")[1] ?? "").get("type") === "brand-face" ? "brand-face" : "blogger";
 }
 
 function buildActiveChips(filters: BloggerSearchFilters, t: Translate) {
@@ -243,25 +233,6 @@ function buildActiveChips(filters: BloggerSearchFilters, t: Translate) {
   return chips;
 }
 
-function ActiveFilterChips({ chips, onRemove, onReset }: { chips: Array<{ key: FilterKey; label: string }>; onRemove: (key: FilterKey) => void; onReset: () => void }) {
-  const { t } = useI18n();
-  if (!chips.length) return null;
-  return <div aria-label={t("search.activeFilters")} className="catalog-search__chips" role="group">{chips.map((chip) => <button aria-label={t("search.removeFilterAria", { filter: chip.label })} className="catalog-search__chip" key={chip.key} onClick={() => onRemove(chip.key)} type="button"><span>{chip.label}</span><Icon aria-hidden="true" className="h-3.5 w-3.5" name="close" /></button>)}<button className="catalog-search__reset-all" onClick={onReset} type="button">{t("search.resetAll")}</button></div>;
-}
-
-function FilterSelect({ label, value, options, onChange }: { label: string; value: string; options: string[][]; onChange: (value: string) => void }) {
-  const { haptic } = useTelegram();
-  return <label className="catalog-search__filter-select"><span>{label}</span><select onChange={(event) => { haptic.selection(); onChange(event.target.value); }} value={value}>{options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}</select></label>;
-}
-
-function SearchSkeleton({ count, compact = false }: { count: number; compact?: boolean }) {
-  return <div aria-hidden="true" className={compact ? "catalog-search__next-skeletons" : "catalog-search__skeletons"}>{Array.from({ length: count }, (_, index) => <Skeleton className={compact ? "catalog-search__skeleton catalog-search__skeleton--compact" : "catalog-search__skeleton"} key={index} />)}</div>;
-}
-
-function CatalogState({ title, subtitle, icon, onRetry, compact = false }: { title: string; subtitle: string; icon: string; onRetry?: () => void; compact?: boolean }) {
-  const { t } = useI18n();
-  return <div className={`catalog-search__state${compact ? " catalog-search__state--compact" : ""}`} role="status"><span aria-hidden="true" className="catalog-search__state-icon"><Icon name={icon} /></span><h2>{title}</h2><p>{subtitle}</p>{onRetry && <button className="catalog-search__primary-button" onClick={onRetry} type="button">{t("common.retry")}</button>}</div>;
-}
 
 function safeCategoryLabel(value: string, t: Translate) {
   const label = categoryLabel(value);

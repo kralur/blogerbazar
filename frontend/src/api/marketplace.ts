@@ -144,6 +144,36 @@ export type MarketplaceBusiness = {
 };
 export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; instagram?: string | null; telegram?: string | null; portfolioUrl?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean };
 export type BrandFaceDetails = BrandFaceCard;
+export type BrandFaceCatalogSort = "promoted" | "newest" | "price_asc" | "price_desc";
+export type BrandFaceCatalogFilters = {
+  query?: string;
+  city?: string;
+  category?: string;
+  language?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sort?: BrandFaceCatalogSort;
+  page?: number;
+  pageSize?: number;
+};
+export type BrandFaceCatalogItem = {
+  id: string;
+  name: string;
+  city: string;
+  languages: string[];
+  categories: string[];
+  collaborationPrice?: number | null;
+  avatarUrl?: string | null;
+  isPromoted: boolean;
+  createdAtUtc: string;
+};
+export type BrandFaceCatalogResult = {
+  items: BrandFaceCatalogItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+};
 export type MarketplaceHome = {
   promotedBloggers: ApiBlogger[];
   promotedCampaigns: ApiCampaign[];
@@ -465,6 +495,14 @@ export async function getMyBrandFaceProfile() {
 
 export async function getBrandFace(id: string) {
   return api<BrandFaceDetails>(`/api/brand-faces/${id}`);
+}
+
+export async function getBrandFaceCatalog(filters: BrandFaceCatalogFilters = {}, signal?: AbortSignal): Promise<BrandFaceCatalogResult> {
+  const params = new URLSearchParams();
+  Object.entries({ ...filters, page: filters.page ?? 1, pageSize: filters.pageSize ?? 20 }).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  return api<BrandFaceCatalogResult>(`/api/brand-faces/catalog?${params.toString()}`, { signal });
 }
 
 export async function upsertBrandFaceProfile(input: Omit<MyBrandFaceProfile, "id" | "isPromoted">) {

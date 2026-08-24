@@ -99,6 +99,13 @@ describe("Home", () => {
     expect(screen.queryByText(/подать заявку/i)).not.toBeInTheDocument();
   });
 
+  it("opens the Brand Face rail in the Brand Face catalog", async () => {
+    renderHome("Business");
+    await waitForData();
+    const action = screen.getByRole("link", { name: translate("home.viewAllSection", { section: translate("home.newBrandFaces", undefined, "ru") }, "ru") });
+    expect(action).toHaveAttribute("href", "#/search?type=brand-face");
+  });
+
   it("keeps useful UI for a successful but fully empty response", async () => {
     api.getMarketplaceHome.mockResolvedValue({ ...response, promotedBloggers: [], promotedCampaigns: [], topRatedBloggers: [], newBloggers: [], newBrandFaces: [], categories: [], statistics: { approvedBloggers: 0, companies: 0, activeCampaigns: 0, completedDeals: 0, averageRating: null } });
     renderHome("Business");

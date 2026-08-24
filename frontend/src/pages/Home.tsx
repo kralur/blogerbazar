@@ -164,7 +164,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
         <HomeCategories categories={data.categories} language={language} />
         {data.promotedBloggers.length > 0 && <HomeSection actionHref="#/search" title={t("home.promotedBloggers")}>{data.promotedBloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>}
         {data.topRatedBloggers.length > 0 && <HomeSection actionHref="#/search" title={t("home.topRated")}>{data.topRatedBloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>}
-        {data.newBrandFaces.length > 0 && <HomeSection title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceHomeCard profile={profile} /></div>)}</HomeSection>}
+        {data.newBrandFaces.length > 0 && <HomeSection actionHref="#/search?type=brand-face" title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceHomeCard profile={profile} /></div>)}</HomeSection>}
         {data.newBloggers.length > 0 && <HomeSection actionHref="#/search" title={t("home.newBloggers")}>{data.newBloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>}
         {!hasAnyBlogger && <HomeEmptyAction description={t("home.businessNoCreatorsDescription")} href="#/search" title={t("home.businessNoCreatorsTitle")} />}
       </>}
@@ -176,7 +176,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
         <HomeCategories categories={data.categories} language={language} />
       </>}
       {resolvedRole === "BrandFace" && <>
-        {data.newBrandFaces.length > 0 && <HomeSection title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceHomeCard profile={profile} /></div>)}</HomeSection>}
+        {data.newBrandFaces.length > 0 && <HomeSection actionHref="#/search?type=brand-face" title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceHomeCard profile={profile} /></div>)}</HomeSection>}
         {data.promotedCampaigns.length > 0 && <HomeSection actionHref="#/campaigns" title={t("home.promotedCampaigns")}>{data.promotedCampaigns.map((campaign) => <div className="home-rail__campaign" key={campaign.id}><CampaignCard campaign={campaign} variant="home" /></div>)}</HomeSection>}
         {data.topRatedBloggers.length > 0 && <HomeSection actionHref="#/search" title={t("home.topRated")}>{data.topRatedBloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>}
         {data.newBloggers.length > 0 && <HomeSection actionHref="#/search" title={t("home.newBloggers")}>{data.newBloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>}

@@ -36,6 +36,7 @@ function renderSearch() {
 describe("BloggerSearch", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.location.hash = "#/search";
     api.getCategories.mockResolvedValue(["beauty", "food"]);
     api.getBloggers.mockResolvedValue(firstPage);
     observerCallback = undefined;
@@ -100,7 +101,7 @@ describe("BloggerSearch", () => {
       let resolveSecond!: (value: typeof firstPage) => void;
       api.getBloggers.mockImplementationOnce(() => new Promise<typeof firstPage>((resolve) => { resolveFirst = resolve; })).mockImplementationOnce(() => new Promise<typeof firstPage>((resolve) => { resolveSecond = resolve; }));
       renderSearch();
-      fireEvent.change(screen.getByLabelText(translate("search.placeholder", undefined, "ru")), { target: { value: "fresh" } });
+      fireEvent.change(screen.getAllByLabelText(translate("search.placeholder", undefined, "ru"))[0], { target: { value: "fresh" } });
       await act(async () => { await vi.advanceTimersByTimeAsync(300); });
       expect(api.getBloggers).toHaveBeenCalledTimes(2);
       await act(async () => resolveSecond({ ...firstPage, bloggers: [{ ...firstPage.bloggers[0], name: "Fresh" }] }));

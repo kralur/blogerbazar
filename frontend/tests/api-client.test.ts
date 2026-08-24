@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, getApiErrorMessage } from "../src/api/client";
 import { translate } from "../src/i18n";
+import { getBrandFaceCatalog } from "../src/api/marketplace";
 
 describe("API client", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -31,5 +32,16 @@ describe("API client", () => {
     const error = await api("/api/businesses", { method: "POST", body: "{}" }).catch((reason: unknown) => reason);
 
     expect(getApiErrorMessage(error, "fallback", { validationMessages: { username: "Введите Telegram username" } })).toBe("Введите Telegram username");
+  });
+
+  it("uses the Brand Face catalog endpoint with only its supported query parameters", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, hasMore: false }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const controller = new AbortController();
+
+    await getBrandFaceCatalog({ query: "Dilnoza", city: "tashkent-city", category: "beauty", language: "Русский", minPrice: 100_000, maxPrice: 300_000, sort: "price_asc", page: 1, pageSize: 20 }, controller.signal);
+
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/brand-faces/catalog?query=Dilnoza&city=tashkent-city&category=beauty&language=%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9&minPrice=100000&maxPrice=300000&sort=price_asc&page=1&pageSize=20");
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
   });
 });
