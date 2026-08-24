@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, getApiErrorMessage } from "../src/api/client";
 import { translate } from "../src/i18n";
-import { getBrandFaceCatalog, getBrandFaceFavorites, removeBrandFaceFavorite, saveBrandFaceFavorite } from "../src/api/marketplace";
+import { getBrandFaceCatalog, getBrandFaceFavorites, getCampaignCatalog, getCampaigns, removeBrandFaceFavorite, saveBrandFaceFavorite } from "../src/api/marketplace";
 
 describe("API client", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -63,5 +63,26 @@ describe("API client", () => {
     ]);
     expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "POST" });
     expect(fetchMock.mock.calls[2][1]).toMatchObject({ method: "DELETE" });
+  });
+
+  it("uses the paged Campaign Catalog contract without changing the legacy Campaign client", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: "campaign-a", title: "Campaign", businessName: "Business", businessAvatarUrl: null, city: null, categories: ["beauty"], requirements: null, minBudget: null, maxBudget: null, deadline: null, status: 1, isPromoted: false, createdAtUtc: "2026-08-24T00:00:00Z" }], total: 1, page: 2, pageSize: 10, hasMore: false }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ campaigns: [] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const controller = new AbortController();
+
+    await expect(getCampaignCatalog({ query: "Coffee", city: "tashkent-city", category: "beauty", minBudget: 100_000, maxBudget: 300_000, deadlineFrom: "2026-08-01", deadlineTo: "2026-08-31", sort: "budget_desc", page: 2, pageSize: 10 }, controller.signal)).resolves.toMatchObject({
+      items: [{ city: null, businessAvatarUrl: null, minBudget: null, maxBudget: null, deadline: null }],
+      total: 1,
+      page: 2,
+      pageSize: 10,
+      hasMore: false
+    });
+    await getCampaigns();
+
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/campaigns/catalog?query=Coffee&city=tashkent-city&category=beauty&minBudget=100000&maxBudget=300000&deadlineFrom=2026-08-01&deadlineTo=2026-08-31&sort=budget_desc&page=2&pageSize=10");
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/campaigns?pageSize=20");
   });
 });

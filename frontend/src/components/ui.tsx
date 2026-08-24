@@ -153,12 +153,13 @@ export function Textarea({ label, error, className, onInvalid, ...props }: Texta
   );
 }
 
-export function SearchBar({ placeholder, value, onChange, className }: { placeholder?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; className?: string }) {
+export function SearchBar({ placeholder, value, onChange, onClear, clearAriaLabel, className }: { placeholder?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; onClear?: () => void; clearAriaLabel?: string; className?: string }) {
   const { t } = useI18n();
   return (
     <div className={cn("flex h-[52px] items-center gap-3 rounded-2xl bg-white px-4 shadow-card ring-1 ring-brand-line/80", className)}>
       <Icon className="text-brand-muted" name="search" />
       <input aria-label={placeholder ?? t("search.placeholder")} className="w-full bg-transparent text-[15px] outline-none placeholder:text-slate-400" onChange={onChange} placeholder={placeholder ?? t("search.placeholder")} value={value} />
+      {value && onClear && <button aria-label={clearAriaLabel ?? t("ui.close")} className="search-bar__clear" onClick={onClear} type="button"><Icon className="h-4 w-4" name="close" /></button>}
     </div>
   );
 }
@@ -345,7 +346,7 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
   );
 }
 
-export function Modal({ open, title, children, onClose, id }: { open: boolean; title: string; children: ReactNode; onClose: () => void; id?: string }) {
+export function Modal({ open, title, children, onClose, id, variant = "default" }: { open: boolean; title: string; children: ReactNode; onClose: () => void; id?: string; variant?: "default" | "neutral" }) {
   const { t } = useI18n();
   const { registerBackButtonHandler } = useTelegram();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -391,8 +392,8 @@ export function Modal({ open, title, children, onClose, id }: { open: boolean; t
   if (!open) return null;
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div aria-modal="true" className="bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
-      <div aria-labelledby="bottom-sheet-title" className="bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft" id={id} ref={dialogRef} tabIndex={-1}>
+    <div aria-modal="true" className={cn("bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm", variant === "neutral" && "bottom-sheet-backdrop--neutral")} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
+      <div aria-labelledby="bottom-sheet-title" className={cn("bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft", variant === "neutral" && "bottom-sheet--neutral")} id={id} ref={dialogRef} tabIndex={-1}>
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-200" />
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-extrabold" id="bottom-sheet-title">{title}</h3>
@@ -407,8 +408,8 @@ export function Modal({ open, title, children, onClose, id }: { open: boolean; t
   );
 }
 
-export function BottomSheet({ open, title, children, onClose, id }: { open: boolean; title: string; children: ReactNode; onClose: () => void; id?: string }) {
-  return <Modal id={id} onClose={onClose} open={open} title={title}>{children}</Modal>;
+export function BottomSheet({ open, title, children, onClose, id, variant }: { open: boolean; title: string; children: ReactNode; onClose: () => void; id?: string; variant?: "default" | "neutral" }) {
+  return <Modal id={id} onClose={onClose} open={open} title={title} variant={variant}>{children}</Modal>;
 }
 
 export function FixedActionBar({ children }: { children: ReactNode }) {

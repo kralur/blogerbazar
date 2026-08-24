@@ -21,6 +21,9 @@ export function usePaginatedCatalog<TItem>({ active, fetchPage, getItemId = defa
     requestIdRef.current += 1;
     abortControllerRef.current?.abort();
     loadingPagesRef.current.clear();
+    setLoading(false);
+    setLoadingMore(false);
+    setLoadMoreFailed(false);
   }, []);
 
   const load = useCallback(async (requestedPage: number, append: boolean) => {

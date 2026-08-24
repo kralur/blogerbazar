@@ -36,6 +36,45 @@ export type CampaignDetails = CampaignCardData & {
   requirements: string[];
 };
 
+export type CampaignCatalogSort = "promoted" | "newest" | "deadline_asc" | "budget_asc" | "budget_desc";
+
+export type CampaignCatalogQuery = {
+  query?: string;
+  city?: string;
+  category?: string;
+  minBudget?: number;
+  maxBudget?: number;
+  deadlineFrom?: string;
+  deadlineTo?: string;
+  sort?: CampaignCatalogSort;
+  page?: number;
+  pageSize?: number;
+};
+
+export type CampaignCatalogItem = {
+  id: string;
+  title: string;
+  businessName: string;
+  businessAvatarUrl?: string | null;
+  city?: string | null;
+  categories: string[];
+  requirements?: string[] | null;
+  minBudget?: number | null;
+  maxBudget?: number | null;
+  deadline?: string | null;
+  status: number;
+  isPromoted: boolean;
+  createdAtUtc: string;
+};
+
+export type CampaignCatalogResponse = {
+  items: CampaignCatalogItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+};
+
 type ApiBlogger = {
   id: string;
   name: string;
@@ -384,6 +423,14 @@ export async function getBloggerReviews(id: string): Promise<BloggerReview[]> {
 export async function getCampaigns(): Promise<CampaignCardData[]> {
   const response = await api<{ campaigns: ApiCampaign[] }>("/api/campaigns?pageSize=20");
   return response.campaigns.map(asCampaignCard);
+}
+
+export async function getCampaignCatalog(query: CampaignCatalogQuery = {}, signal?: AbortSignal): Promise<CampaignCatalogResponse> {
+  const params = new URLSearchParams();
+  Object.entries({ ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 20 }).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  return api<CampaignCatalogResponse>(`/api/campaigns/catalog?${params.toString()}`, { signal });
 }
 
 export async function getCampaign(id: string): Promise<CampaignDetails> {
