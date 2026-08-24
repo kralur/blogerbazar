@@ -440,10 +440,11 @@ export function BottomNav() {
     { href: "#/profile", label: t("nav.profile"), icon: "user" }
   ];
   const isActive = (href: string) => {
-    if (href === "#/search") return hash.startsWith("#/search") || hash.startsWith("#/blogger/");
+    if (href === "#/search") return hash.startsWith("#/search") || hash.startsWith("#/blogger/") || hash.startsWith("#/brand-face-detail/");
     if (href === "#/campaigns") return hash.startsWith("#/campaigns") || hash.startsWith("#/campaign/");
     if (href === "#/requests") return hash.startsWith("#/requests");
-    return ["#/profile", "#/favorites", "#/blogger-form", "#/business", "#/brand-face", "#/brand-face-detail"].some((route) => hash.startsWith(route));
+    return ["#/profile", "#/favorites", "#/blogger-form", "#/business"].some((route) => hash.startsWith(route))
+      || (hash.startsWith("#/brand-face") && !hash.startsWith("#/brand-face-detail/"));
   };
   const renderItem = (item: typeof items[number]) => {
     const active = isActive(item.href);

@@ -68,4 +68,18 @@ describe("Favorites page", () => {
     await user.click(screen.getByRole("button", { name: translate("favorites.typeBloggers", undefined, "ru") }));
     expect(screen.getAllByText("Amina").length).toBeGreaterThan(0);
   });
+
+  it("shows a retry state for a Brand Face favorites API failure instead of an empty state", async () => {
+    api.getBrandFaceFavorites.mockRejectedValueOnce(new Error("server unavailable"));
+    const user = userEvent.setup();
+    render(<I18nProvider><Favorites /></I18nProvider>);
+
+    await user.click(screen.getByRole("button", { name: translate("favorites.typeBrandFaces", undefined, "ru") }));
+
+    expect(await screen.findByText(translate("favorites.brandFacesLoadFailedTitle", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.queryByText(translate("favorites.brandFacesEmptyTitle", undefined, "ru"))).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: translate("common.retry", undefined, "ru") }));
+    await waitFor(() => expect(api.getBrandFaceFavorites).toHaveBeenCalledTimes(2));
+    expect(api.getFavorites).toHaveBeenCalledTimes(1);
+  });
 });

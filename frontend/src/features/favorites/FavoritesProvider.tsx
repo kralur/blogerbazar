@@ -23,30 +23,35 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
   const refreshFavorites = useCallback(async () => {
     const refreshVersion = stateVersionRef.current;
     if (refreshVersion === 0) setReady(false);
+
+    let role: MarketplaceRole | undefined;
     try {
       const user = await getCurrentPlatformUser();
-      const role = normalizeMarketplaceRole(user.selectedMarketplaceRole);
+      role = normalizeMarketplaceRole(user.selectedMarketplaceRole);
       const canManageFavorites = role === "Business" || role === "BrandFace";
       if (refreshVersion !== stateVersionRef.current) return;
       setIsEligible(canManageFavorites);
       setMarketplaceRole(role);
+      setReady(true);
       if (!canManageFavorites) {
         setFavoriteKeys(new Set());
         return;
       }
-
-      const bloggerIds = await loadAllBloggerFavoriteIds();
-      const brandFaceIds = role === "Business" ? await loadAllBrandFaceFavoriteIds() : [];
-      if (refreshVersion !== stateVersionRef.current) return;
-      setFavoriteKeys(new Set([...bloggerIds.map((id) => favoriteKey("blogger", id)), ...brandFaceIds.map((id) => favoriteKey("brandFace", id))]));
     } catch {
       if (refreshVersion !== stateVersionRef.current) return;
       setIsEligible(false);
       setMarketplaceRole(undefined);
       setFavoriteKeys(new Set());
-    } finally {
-      if (refreshVersion === stateVersionRef.current) setReady(true);
+      setReady(true);
+      return;
     }
+
+    try {
+      const bloggerIds = await loadAllBloggerFavoriteIds();
+      const brandFaceIds = role === "Business" ? await loadAllBrandFaceFavoriteIds() : [];
+      if (refreshVersion !== stateVersionRef.current) return;
+      setFavoriteKeys(new Set([...bloggerIds.map((id) => favoriteKey("blogger", id)), ...brandFaceIds.map((id) => favoriteKey("brandFace", id))]));
+    } catch { }
   }, []);
 
   useEffect(() => {

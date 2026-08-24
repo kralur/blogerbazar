@@ -70,6 +70,27 @@ describe("FavoritesProvider", () => {
     expect(api.getBrandFaceFavorites).not.toHaveBeenCalled();
   });
 
+  it("uses the active MarketplaceRole rather than another available role", async () => {
+    api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace", roles: ["Business", "BrandFace"] });
+    renderFavorites(<FavoriteButton brandFaceId="face" />);
+
+    await waitFor(() => expect(api.getCurrentPlatformUser).toHaveBeenCalled());
+
+    expect(screen.queryByRole("button", { name: translate("favorites.saveBrandFaceAria", undefined, "ru") })).not.toBeInTheDocument();
+    expect(api.getBrandFaceFavorites).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Brand Face action available when its initial favorites prefetch fails", async () => {
+    api.getBrandFaceFavorites.mockRejectedValueOnce(new Error("catalog unavailable"));
+    const user = userEvent.setup();
+    renderFavorites(<FavoriteButton brandFaceId="face" />);
+
+    const button = await screen.findByRole("button", { name: translate("favorites.saveBrandFaceAria", undefined, "ru") });
+    expect(api.getBrandFaceFavorites).toHaveBeenCalled();
+    await user.click(button);
+    await waitFor(() => expect(api.saveBrandFaceFavorite).toHaveBeenCalledWith("face"));
+  });
+
   it("rolls back an optimistic Brand Face favorite and shows localized feedback", async () => {
     api.saveBrandFaceFavorite.mockRejectedValueOnce(new Error("failed"));
     const user = userEvent.setup();

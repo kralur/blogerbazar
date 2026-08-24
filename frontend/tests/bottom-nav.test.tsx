@@ -33,11 +33,21 @@ describe("BottomNav", () => {
     ["#/campaign/123", "nav.campaigns"],
     ["#/requests", "nav.requests"],
     ["#/favorites", "nav.profile"],
-    ["#/brand-face-detail/123", "nav.profile"]
+    ["#/brand-face-detail/123", "nav.search"],
+    ["#/brand-face", "nav.profile"],
+    ["#/blogger-form", "nav.profile"]
   ] as const)("marks %s as active in its parent tab", (hash, key) => {
     window.location.hash = hash;
     render(<I18nProvider><BottomNav /></I18nProvider>);
     expect(screen.getByRole("link", { name: translate(key, undefined, "ru") })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("does not mark Profile active for public Brand Face Details", () => {
+    window.location.hash = "#/brand-face-detail/123";
+    render(<I18nProvider><BottomNav /></I18nProvider>);
+
+    expect(screen.getByRole("link", { name: translate("nav.search", undefined, "ru") })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: translate("nav.profile", undefined, "ru") })).not.toHaveAttribute("aria-current");
   });
 
   it("keeps five localized routes and a neutral token-based visual system", async () => {
