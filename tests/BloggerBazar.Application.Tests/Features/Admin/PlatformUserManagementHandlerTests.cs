@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Features.Admin;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -50,6 +51,21 @@ public sealed class PlatformUserManagementHandlerTests
         Assert.Equal("platform-user.blocked", Assert.Single(auditLogs.Entries).Action);
     }
 
+    [Fact]
+    public async Task Blocking_or_unblocking_a_user_rotates_the_catalog_namespace()
+    {
+        var owner = PlatformUser.Create(1, "Owner", "owner");
+        owner.SetRole(PlatformRole.Owner);
+        var member = PlatformUser.Create(2, "Member", "member");
+        var cache = new RecordingCache();
+        var handler = new SetPlatformUserBlockedHandler(new InMemoryPlatformUserRepository(owner, member), new InMemoryAuditLogRepository(), new SpyUnitOfWork(), cache);
+
+        await handler.Handle(new SetPlatformUserBlockedCommand(owner.TelegramUserId, member.TelegramUserId, true), CancellationToken.None);
+        await handler.Handle(new SetPlatformUserBlockedCommand(owner.TelegramUserId, member.TelegramUserId, false), CancellationToken.None);
+
+        Assert.Equal(2, cache.Rotations);
+    }
+
     private sealed class InMemoryPlatformUserRepository(params PlatformUser[] initial) : IPlatformUserRepository
     {
         private readonly List<PlatformUser> users = [.. initial];
@@ -69,5 +85,13 @@ public sealed class PlatformUserManagementHandlerTests
     private sealed class SpyUnitOfWork : IUnitOfWork
     {
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+    }
+
+    private sealed class RecordingCache : ICatalogCache
+    {
+        public int Rotations { get; private set; }
+        public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken) where T : class => Task.FromResult<T?>(null);
+        public Task SetAsync<T>(string key, T value, TimeSpan timeToLive, CancellationToken cancellationToken) where T : class => Task.CompletedTask;
+        public Task RotateNamespaceVersionAsync(CancellationToken cancellationToken) { Rotations++; return Task.CompletedTask; }
     }
 }

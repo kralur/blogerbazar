@@ -10,6 +10,20 @@ namespace BloggerBazar.Api.Controllers;
 [Route("api/brand-faces")]
 public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
+    [HttpGet("catalog")]
+    public async Task<ActionResult<BrandFaceCatalogResult>> Catalog(
+        [FromQuery] string? query,
+        [FromQuery] string? city,
+        [FromQuery] string? category,
+        [FromQuery] string? language,
+        [FromQuery] int? minPrice,
+        [FromQuery] int? maxPrice,
+        [FromQuery] string? sort = "promoted",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default) =>
+        Ok(await sender.Send(new SearchBrandFaceCatalogQuery(query, city, category, language, minPrice, maxPrice, sort, page, pageSize), cancellationToken));
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<BrandFacePublicDto>>> Search([FromQuery] string? query, [FromQuery] string? city, [FromQuery] string? category, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default) =>
         Ok(await sender.Send(new SearchBrandFacesQuery(query, city, category, page, pageSize), cancellationToken));

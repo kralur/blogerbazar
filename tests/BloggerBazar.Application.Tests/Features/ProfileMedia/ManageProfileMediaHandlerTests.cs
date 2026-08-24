@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Media;
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.ProfileMedia;
 using BloggerBazar.Domain.Entities;
@@ -74,6 +75,23 @@ public sealed class ManageProfileMediaHandlerTests
         Assert.Equal([previousUrl], storage.DeletedUrls);
     }
 
+    [Fact]
+    public async Task Brand_face_media_upload_and_delete_rotate_the_catalog_namespace()
+    {
+        var profile = BrandFaceProfile.Create(202, "Brand Face", "tashkent", ["beauty"]);
+        profile.Update("Brand Face", "tashkent", null, null, ["uz"], ["beauty"], null, null, "@brandface", null, null, null, null);
+        var cache = new RecordingCache();
+        var storage = new FakeStorage("https://media.example/profiles/brand-faces/new.webp");
+        var brandFaces = new BrandFaceRepository(profile);
+        var upload = new UploadProfileMediaHandler(new BloggerRepository(CreateBlogger(null)), brandFaces, new EmptyBusinessRepository(), storage, new SpyUnitOfWork(), NullLogger<UploadProfileMediaHandler>.Instance, cache);
+        var delete = new DeleteProfileMediaHandler(new BloggerRepository(CreateBlogger(null)), brandFaces, new EmptyBusinessRepository(), storage, new SpyUnitOfWork(), NullLogger<DeleteProfileMediaHandler>.Instance, cache);
+
+        await upload.Handle(new UploadProfileMediaCommand(202, ProfileMediaTarget.BrandFace, new byte[] { 1 }, "avatar.png", "image/png"), CancellationToken.None);
+        await delete.Handle(new DeleteProfileMediaCommand(202, ProfileMediaTarget.BrandFace), CancellationToken.None);
+
+        Assert.Equal(2, cache.Rotations);
+    }
+
     private static UploadProfileMediaHandler CreateUploadHandler(BloggerProfile profile, FakeStorage storage, IUnitOfWork? unitOfWork = null) => new(
         new BloggerRepository(profile),
         new EmptyBrandFaceRepository(),
@@ -124,6 +142,15 @@ public sealed class ManageProfileMediaHandlerTests
         public Task<IReadOnlyList<BrandFaceProfile>> SearchAsync(string? query, string? city, string? category, int skip, int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BrandFaceProfile>>([]);
     }
 
+    private sealed class BrandFaceRepository(BrandFaceProfile profile) : IBrandFaceProfileRepository
+    {
+        public Task AddAsync(BrandFaceProfile value, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<BrandFaceProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<BrandFaceProfile?>(id == profile.Id ? profile : null);
+        public Task<BrandFaceProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult<BrandFaceProfile?>(telegramUserId == profile.TelegramUserId ? profile : null);
+        public Task<IReadOnlyList<BrandFaceProfile>> GetAllAsync(int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BrandFaceProfile>>([]);
+        public Task<IReadOnlyList<BrandFaceProfile>> SearchAsync(string? query, string? city, string? category, int skip, int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BrandFaceProfile>>([]);
+    }
+
     private sealed class EmptyBusinessRepository : IBusinessProfileRepository
     {
         public Task AddAsync(BusinessProfile profile, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -138,5 +165,13 @@ public sealed class ManageProfileMediaHandlerTests
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => ThrowOnSave
             ? Task.FromException<int>(new InvalidOperationException("Database write failed."))
             : Task.FromResult(1);
+    }
+
+    private sealed class RecordingCache : ICatalogCache
+    {
+        public int Rotations { get; private set; }
+        public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken) where T : class => Task.FromResult<T?>(null);
+        public Task SetAsync<T>(string key, T value, TimeSpan timeToLive, CancellationToken cancellationToken) where T : class => Task.CompletedTask;
+        public Task RotateNamespaceVersionAsync(CancellationToken cancellationToken) { Rotations++; return Task.CompletedTask; }
     }
 }

@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using MediatR;
@@ -64,7 +65,7 @@ public sealed class UpdatePlatformUserRoleHandler(IPlatformUserRepository users,
             : throw new UnauthorizedAccessException("Only the owner can manage platform roles.");
 }
 
-public sealed class SetPlatformUserBlockedHandler(IPlatformUserRepository users, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork)
+public sealed class SetPlatformUserBlockedHandler(IPlatformUserRepository users, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork, ICatalogCache? cache = null)
     : IRequestHandler<SetPlatformUserBlockedCommand, AdminPlatformUserDto>
 {
     public async Task<AdminPlatformUserDto> Handle(SetPlatformUserBlockedCommand command, CancellationToken cancellationToken)
@@ -79,6 +80,7 @@ public sealed class SetPlatformUserBlockedHandler(IPlatformUserRepository users,
         target.SetBlocked(command.IsBlocked);
         await auditLogs.AddAsync(AuditLog.Create(actor.TelegramUserId, command.IsBlocked ? "platform-user.blocked" : "platform-user.unblocked", "PlatformUser", target.TelegramUserId.ToString()), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return AdminPlatformUserDto.From(target);
     }
 }
