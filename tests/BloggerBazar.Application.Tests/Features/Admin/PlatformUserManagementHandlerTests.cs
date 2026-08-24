@@ -64,6 +64,7 @@ public sealed class PlatformUserManagementHandlerTests
         await handler.Handle(new SetPlatformUserBlockedCommand(owner.TelegramUserId, member.TelegramUserId, false), CancellationToken.None);
 
         Assert.Equal(2, cache.Rotations);
+        Assert.Equal(2, cache.CampaignRotations);
     }
 
     private sealed class InMemoryPlatformUserRepository(params PlatformUser[] initial) : IPlatformUserRepository
@@ -90,8 +91,14 @@ public sealed class PlatformUserManagementHandlerTests
     private sealed class RecordingCache : ICatalogCache
     {
         public int Rotations { get; private set; }
+        public int CampaignRotations { get; private set; }
         public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken) where T : class => Task.FromResult<T?>(null);
         public Task SetAsync<T>(string key, T value, TimeSpan timeToLive, CancellationToken cancellationToken) where T : class => Task.CompletedTask;
         public Task RotateNamespaceVersionAsync(CancellationToken cancellationToken) { Rotations++; return Task.CompletedTask; }
+        public Task RotateNamespaceVersionAsync(string catalog, CancellationToken cancellationToken)
+        {
+            if (catalog == "campaigns") CampaignRotations++;
+            return Task.CompletedTask;
+        }
     }
 }

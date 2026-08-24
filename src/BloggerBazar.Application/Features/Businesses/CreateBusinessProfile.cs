@@ -2,6 +2,7 @@ using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Application.Validation;
+using BloggerBazar.Application.Features.Campaigns;
 using FluentValidation;
 using MediatR;
 
@@ -53,7 +54,11 @@ public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository busi
             await businesses.AddAsync(profile, cancellationToken);
         }
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
+        if (cache is not null)
+        {
+            await cache.RotateNamespaceVersionAsync(cancellationToken);
+            await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
+        }
         return BusinessProfileDto.From(profile);
     }
 }

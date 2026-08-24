@@ -1,6 +1,7 @@
 import { api } from "./client";
 import type { BloggerCardData } from "../components/BloggerCard";
 import type { CampaignCardData } from "../components/CampaignCard";
+import type { CampaignApplicationStatus } from "../lib/campaignApplicationStatus";
 
 export type PlatformDetails = {
   id: string;
@@ -29,12 +30,9 @@ export type BloggerDetails = BloggerCardData & {
 export type CampaignDetails = CampaignCardData & {
   businessId: string;
   company: string;
-  logo: string;
-  city: string;
-  budgetFrom: number;
-  budgetTo: number;
-  date: string;
-  applicants: number;
+  city?: string | null;
+  budgetFrom?: number | null;
+  budgetTo?: number | null;
   requirements: string[];
 };
 
@@ -337,8 +335,6 @@ const asCampaignCard = (campaign: ApiCampaign): CampaignCardData => ({
   business: { name: campaign.businessName }
 });
 
-const initials = (name: string) => name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-
 type DisplayPlatformType = "instagram" | "telegram" | "tiktok" | "youtube" | "threads";
 
 function isDisplayPlatformType(value: string): value is DisplayPlatformType {
@@ -349,12 +345,6 @@ const asCampaignDetails = (campaign: ApiCampaign): CampaignDetails => ({
   ...asCampaignCard(campaign),
   businessId: campaign.businessId,
   company: campaign.businessName,
-  logo: initials(campaign.businessName),
-  city: campaign.city ?? "uzbekistan",
-  budgetFrom: campaign.budgetFrom ?? 0,
-  budgetTo: campaign.budgetTo ?? 0,
-  date: new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(new Date(campaign.createdAtUtc)),
-  applicants: campaign.applicationsCount,
   requirements: campaign.requirements
 });
 
@@ -411,7 +401,7 @@ export type MyCampaignApplication = {
   counterpartyName: string;
   counterpartyImageUrl?: string | null;
   message?: string | null;
-  status: number;
+  status: CampaignApplicationStatus;
   canAccept: boolean;
   createdAtUtc: string;
 };

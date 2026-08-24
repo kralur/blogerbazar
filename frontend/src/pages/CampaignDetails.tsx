@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { applyToCampaign, getCampaign, getPublicContact, type CampaignDetails, type ContactDetails } from "../api/marketplace";
-import { Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { applyToCampaign, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getPublicContact, normalizeMarketplaceRole, type CampaignDetails, type ContactDetails } from "../api/marketplace";
+import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
@@ -15,6 +15,7 @@ export function CampaignDetails({ id }: { id: string }) {
   const [applicationOpen, setApplicationOpen] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState("");
   const [applying, setApplying] = useState(false);
+  const [canApply, setCanApply] = useState(false);
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
 
@@ -35,12 +36,31 @@ export function CampaignDetails({ id }: { id: string }) {
       .catch(() => undefined);
   }, [campaign?.businessId, id]);
 
+  useEffect(() => {
+    if (!campaign) {
+      setCanApply(false);
+      return;
+    }
+
+    let cancelled = false;
+    Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBusinessProfile()]).then(([userResult, bloggerResult, businessResult]) => {
+      if (cancelled) return;
+      const activeRole = userResult.status === "fulfilled" ? normalizeMarketplaceRole(userResult.value.selectedMarketplaceRole) : undefined;
+      const bloggerIsApproved = bloggerResult.status === "fulfilled" && bloggerResult.value.status === 1;
+      const isOwnCampaign = businessResult.status === "fulfilled" && businessResult.value.id === campaign.businessId;
+      setCanApply(activeRole === "Blogger" && bloggerIsApproved && campaign.status === 1 && !isOwnCampaign);
+    });
+
+    return () => { cancelled = true; };
+  }, [campaign]);
+
   const apply = async () => {
     try {
       setApplying(true);
       await applyToCampaign(id, applicationMessage.trim() || t("campaign.defaultApplicationMessage"));
       setApplicationOpen(false);
       setApplicationMessage("");
+      setCanApply(false);
       setToastTone("success");
       setToast(t("campaign.applicationSent"));
     } catch {
@@ -61,6 +81,12 @@ export function CampaignDetails({ id }: { id: string }) {
     contact?.websiteUrl ? { kind: "website" as const, value: contact.websiteUrl } : null,
     contact?.email ? { kind: "email" as const, value: contact.email } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
+  const budget = campaign.budgetFrom != null && campaign.budgetTo != null
+    ? `${formatCurrency(campaign.budgetFrom)}–${formatCurrency(campaign.budgetTo)}`
+    : campaign.budgetFrom != null ? formatCurrency(campaign.budgetFrom)
+      : campaign.budgetTo != null ? formatCurrency(campaign.budgetTo)
+        : null;
+  const companyInitials = campaign.company.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return (
     <div className="screen screen--with-nav">
       <header className="flex items-center justify-between">
@@ -69,14 +95,14 @@ export function CampaignDetails({ id }: { id: string }) {
       </header>
       <Card className="mt-5 overflow-hidden p-0">
         <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 p-5 text-white">
-          <div className="flex items-center gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/20 font-extrabold">{campaign.logo}</span><div><p className="text-sm text-white/75">{campaign.company}</p><h1 className="mt-1 text-2xl font-extrabold leading-7">{campaign.title}</h1></div></div>
+          <div className="flex items-center gap-3"><Avatar name={companyInitials} size="sm" variant="neutral" /><div><p className="text-sm text-white/75">{campaign.company}</p><h1 className="mt-1 text-2xl font-extrabold leading-7">{campaign.title}</h1></div></div>
         </div>
-        <div className="p-5"><p className="text-sm leading-6 text-brand-muted">{campaign.description}</p><div className="mt-5 grid grid-cols-2 gap-2"><div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-brand-muted">{t("common.budget")}</p><p className="mt-1 text-sm font-extrabold">{formatCurrency(campaign.budgetFrom)}–{formatCurrency(campaign.budgetTo)}</p></div><div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-brand-muted">{t("campaign.location")}</p><p className="mt-1 text-sm font-extrabold">{cityLabel(campaign.city, language)}</p></div></div></div>
+        <div className="p-5"><p className="text-sm leading-6 text-brand-muted">{campaign.description}</p>{(budget || campaign.city) && <div className="mt-5 grid grid-cols-2 gap-2">{budget && <div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-brand-muted">{t("common.budget")}</p><p className="mt-1 text-sm font-extrabold">{budget}</p></div>}{campaign.city && <div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-brand-muted">{t("campaign.location")}</p><p className="mt-1 text-sm font-extrabold">{cityLabel(campaign.city, language)}</p></div>}</div>}</div>
       </Card>
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.suitable")}</h2><div className="flex flex-wrap gap-2">{campaign.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div></section>
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("common.requirements")}</h2><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></section>
       {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.businessContact")}</h2><ContactList items={contacts} /></section>}
-      <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar>
+      {canApply && <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar>}
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
       <Toast message={toast} tone={toastTone} /><BottomNav />
     </div>

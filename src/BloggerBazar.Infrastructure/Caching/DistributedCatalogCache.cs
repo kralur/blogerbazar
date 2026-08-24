@@ -26,4 +26,12 @@ internal sealed class DistributedCatalogCache(IDistributedCache cache) : ICatalo
 
     public Task RotateNamespaceVersionAsync(CancellationToken cancellationToken) =>
         cache.SetStringAsync(NamespaceVersionKey, Guid.NewGuid().ToString("N"), new DistributedCacheEntryOptions(), cancellationToken);
+
+    public async Task<string> GetNamespaceVersionAsync(string catalog, CancellationToken cancellationToken) =>
+        await cache.GetStringAsync(CatalogNamespaceVersionKey(catalog), cancellationToken) ?? "0";
+
+    public Task RotateNamespaceVersionAsync(string catalog, CancellationToken cancellationToken) =>
+        cache.SetStringAsync(CatalogNamespaceVersionKey(catalog), Guid.NewGuid().ToString("N"), new DistributedCacheEntryOptions(), cancellationToken);
+
+    private static string CatalogNamespaceVersionKey(string catalog) => $"catalog:{catalog}:namespace-version";
 }

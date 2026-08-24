@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -24,7 +25,7 @@ public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCo
     }
 }
 
-public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses, ICampaignRepository campaigns, IUnitOfWork unitOfWork)
+public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses, ICampaignRepository campaigns, IUnitOfWork unitOfWork, ICatalogCache? cache = null)
     : IRequestHandler<CreateCampaignCommand, CampaignDto>
 {
     public async Task<CampaignDto> Handle(CreateCampaignCommand command, CancellationToken cancellationToken)
@@ -39,6 +40,7 @@ public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses,
 
         await campaigns.AddAsync(campaign, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
         return CampaignDto.From(campaign, business.Name);
     }
 }

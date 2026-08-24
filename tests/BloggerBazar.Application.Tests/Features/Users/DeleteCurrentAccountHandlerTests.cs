@@ -32,6 +32,7 @@ public sealed class DeleteCurrentAccountHandlerTests
         Assert.Equal("platform-user.account-deleted", audit.Action);
         Assert.Equal("trace-42", audit.CorrelationId);
         Assert.Equal(1, cache.Rotations);
+        Assert.Equal(1, cache.CampaignRotations);
     }
 
     [Fact]
@@ -48,6 +49,7 @@ public sealed class DeleteCurrentAccountHandlerTests
         Assert.True(repeated.AlreadyDeleted);
         Assert.Single(audits.Entries);
         Assert.Equal(1, cache.Rotations);
+        Assert.Equal(1, cache.CampaignRotations);
     }
 
     private static DeleteCurrentAccountHandler CreateHandler(PlatformUser user, BloggerProfile? blogger, BrandFaceProfile? brandFace, BusinessProfile? business, InMemoryAuditLogs audits, InMemoryCache cache) =>
@@ -123,9 +125,15 @@ public sealed class DeleteCurrentAccountHandlerTests
     private sealed class InMemoryCache : ICatalogCache
     {
         public int Rotations { get; private set; }
+        public int CampaignRotations { get; private set; }
         public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken) where T : class => Task.FromResult<T?>(null);
         public Task SetAsync<T>(string key, T value, TimeSpan timeToLive, CancellationToken cancellationToken) where T : class => Task.CompletedTask;
         public Task RotateNamespaceVersionAsync(CancellationToken cancellationToken) { Rotations++; return Task.CompletedTask; }
+        public Task RotateNamespaceVersionAsync(string catalog, CancellationToken cancellationToken)
+        {
+            if (catalog == "campaigns") CampaignRotations++;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class UnitOfWork : IUnitOfWork

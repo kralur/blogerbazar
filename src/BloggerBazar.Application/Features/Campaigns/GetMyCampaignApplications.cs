@@ -10,8 +10,8 @@ public sealed record MyCampaignApplicationDto(Guid Id, Guid CampaignId, string C
     public static MyCampaignApplicationDto ForBlogger(Domain.Entities.CampaignApplication application) =>
         new(application.Id, application.CampaignId, application.Campaign.Title, application.Campaign.Business.Name, application.Campaign.Business.LogoUrl, application.Message, (int)application.Status, false, application.CreatedAtUtc);
 
-    public static MyCampaignApplicationDto ForBusiness(Domain.Entities.CampaignApplication application) =>
-        new(application.Id, application.CampaignId, application.Campaign.Title, application.Blogger.Name, application.Blogger.AvatarUrl, application.Message, (int)application.Status, true, application.CreatedAtUtc);
+    public static MyCampaignApplicationDto ForBusiness(Domain.Entities.CampaignApplication application, Domain.Entities.BloggerProfile blogger) =>
+        new(application.Id, application.CampaignId, application.Campaign.Title, blogger.Name, blogger.AvatarUrl, application.Message, (int)application.Status, true, application.CreatedAtUtc);
 }
 
 public sealed class GetMyCampaignApplicationsHandler(

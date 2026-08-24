@@ -13,6 +13,18 @@ internal static class MarketplaceCatalogVisibility
 {
     internal static IQueryable<BloggerProfile> PublicBloggers(IQueryable<BloggerProfile> query) =>
         query.Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
+
+    internal static IQueryable<Campaign> PublicCampaigns(
+        IQueryable<Campaign> campaigns,
+        IQueryable<BusinessProfile> businesses,
+        IQueryable<PlatformUser> platformUsers) =>
+        from campaign in campaigns
+        join business in businesses on campaign.BusinessId equals business.Id
+        where campaign.Status == CampaignStatus.Published
+            && !business.IsDeleted
+            && business.ModerationStatus == BloggerStatus.Approved
+            && !platformUsers.Any(user => user.TelegramUserId == business.TelegramUserId && (user.IsBlocked || user.IsDeleted))
+        select campaign;
 }
 
 internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContext) : IMarketplaceCatalogReadModel
@@ -99,7 +111,10 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
 
     public async Task<IReadOnlyList<CampaignDto>> SearchCampaignsAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
-        var query = dbContext.Campaigns.AsNoTracking().Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted);
+        var query = MarketplaceCatalogVisibility.PublicCampaigns(
+            dbContext.Campaigns.AsNoTracking(),
+            dbContext.BusinessProfiles.AsNoTracking(),
+            dbContext.PlatformUsers.AsNoTracking());
         if (!string.IsNullOrWhiteSpace(city)) query = query.Where(campaign => campaign.City == city.Trim());
         if (!string.IsNullOrWhiteSpace(category)) query = query.Where(campaign => campaign.Categories.Contains(category.Trim()));
         return await ProjectCampaigns(query.OrderByDescending(campaign => campaign.IsPromoted).ThenByDescending(campaign => campaign.CreatedAtUtc).Skip(skip).Take(take))
@@ -107,7 +122,10 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
     }
 
     public Task<CampaignDto?> GetCampaignAsync(Guid id, CancellationToken cancellationToken) =>
-        ProjectCampaigns(dbContext.Campaigns.AsNoTracking().Where(campaign => campaign.Id == id && campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted))
+        ProjectCampaigns(MarketplaceCatalogVisibility.PublicCampaigns(
+            dbContext.Campaigns.AsNoTracking(),
+            dbContext.BusinessProfiles.AsNoTracking(),
+            dbContext.PlatformUsers.AsNoTracking()).Where(campaign => campaign.Id == id))
             .SingleOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyList<MyCampaignApplicationDto>> GetCampaignApplicationsAsync(Guid? bloggerId, Guid? businessId, CancellationToken cancellationToken)

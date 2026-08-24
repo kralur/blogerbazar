@@ -6,4 +6,6 @@ public interface ICatalogCache
     Task SetAsync<T>(string key, T value, TimeSpan timeToLive, CancellationToken cancellationToken) where T : class;
     Task<string> GetNamespaceVersionAsync(CancellationToken cancellationToken) => Task.FromResult("0");
     Task RotateNamespaceVersionAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    Task<string> GetNamespaceVersionAsync(string catalog, CancellationToken cancellationToken) => GetNamespaceVersionAsync(cancellationToken);
+    Task RotateNamespaceVersionAsync(string catalog, CancellationToken cancellationToken) => RotateNamespaceVersionAsync(cancellationToken);
 }

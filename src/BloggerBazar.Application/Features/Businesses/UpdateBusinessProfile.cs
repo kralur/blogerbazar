@@ -2,6 +2,7 @@ using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
 using FluentValidation;
 using BloggerBazar.Application.Validation;
+using BloggerBazar.Application.Features.Campaigns;
 using MediatR;
 
 namespace BloggerBazar.Application.Features.Businesses;
@@ -58,7 +59,11 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
             command.Email?.Trim());
         profile.Approve();
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
+        if (cache is not null)
+        {
+            await cache.RotateNamespaceVersionAsync(cancellationToken);
+            await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
+        }
         return BusinessProfileDto.From(profile);
     }
 }

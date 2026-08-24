@@ -1,6 +1,8 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.CollaborationRequests;
+using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Domain.Enums;
 using BloggerBazar.Domain.Entities;
 using FluentValidation;
@@ -60,7 +62,7 @@ public sealed class ModerateCampaignValidator : AbstractValidator<ModerateCampai
     }
 }
 
-public sealed class ModerateCampaignHandler(ICampaignRepository campaigns, IAdminAccessPolicy access, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork) : IRequestHandler<ModerateCampaignCommand, AdminCampaignDto>
+public sealed class ModerateCampaignHandler(ICampaignRepository campaigns, IAdminAccessPolicy access, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork, ICatalogCache? cache = null) : IRequestHandler<ModerateCampaignCommand, AdminCampaignDto>
 {
     public async Task<AdminCampaignDto> Handle(ModerateCampaignCommand command, CancellationToken cancellationToken)
     {
@@ -74,6 +76,7 @@ public sealed class ModerateCampaignHandler(ICampaignRepository campaigns, IAdmi
             await auditLogs.AddAsync(AuditLog.Create(command.TelegramUserId, command.IsPromoted.Value ? "campaign.promoted" : "campaign.promotion-removed", "Campaign", campaign.Id.ToString()), cancellationToken);
         }
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
         return AdminCampaignDto.From(campaign);
     }
 }

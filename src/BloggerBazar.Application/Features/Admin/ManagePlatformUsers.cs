@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
+using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using MediatR;
@@ -80,7 +81,11 @@ public sealed class SetPlatformUserBlockedHandler(IPlatformUserRepository users,
         target.SetBlocked(command.IsBlocked);
         await auditLogs.AddAsync(AuditLog.Create(actor.TelegramUserId, command.IsBlocked ? "platform-user.blocked" : "platform-user.unblocked", "PlatformUser", target.TelegramUserId.ToString()), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
+        if (cache is not null)
+        {
+            await cache.RotateNamespaceVersionAsync(cancellationToken);
+            await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
+        }
         return AdminPlatformUserDto.From(target);
     }
 }

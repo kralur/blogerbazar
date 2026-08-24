@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
+using BloggerBazar.Application.Features.Campaigns;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -71,6 +72,7 @@ public sealed class DeleteCurrentAccountHandler(
             try
             {
                 await cache.RotateNamespaceVersionAsync(cancellationToken);
+                await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
             }
             catch (Exception exception)
             {

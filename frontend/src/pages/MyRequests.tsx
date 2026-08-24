@@ -13,15 +13,21 @@ import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
+import { CampaignApplicationStatus, campaignApplicationStatusTone, canAcceptCampaignApplication } from "../lib/campaignApplicationStatus";
 
-const applicationStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : status === 2 ? "gray" : "purple";
 const dealStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : "gray";
 const formatDate = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
 
 export function MyRequests() {
   const { language, t } = useI18n();
   useScrollRestoration("requests");
-  const applicationStatusLabels: Record<number, string> = { 0: t("requests.applicationNew"), 1: t("requests.applicationAccepted"), 2: t("requests.applicationRejected"), 3: t("requests.applicationWithdrawn") };
+  const applicationStatusLabels: Record<CampaignApplicationStatus, string> = {
+    [CampaignApplicationStatus.Sent]: t("requests.applicationSent"),
+    [CampaignApplicationStatus.Viewed]: t("requests.applicationViewed"),
+    [CampaignApplicationStatus.Accepted]: t("requests.applicationAccepted"),
+    [CampaignApplicationStatus.Rejected]: t("requests.applicationRejected"),
+    [CampaignApplicationStatus.Withdrawn]: t("requests.applicationWithdrawn")
+  };
   const dealStatusLabels: Record<number, string> = { 0: t("requests.dealActive"), 1: t("requests.dealCompleted"), 2: t("requests.dealCancelled") };
   const locale = language === "uz" ? "uz-UZ" : "ru-RU";
   const [view, setView] = useState<"applications" | "deals">("applications");
@@ -68,7 +74,7 @@ export function MyRequests() {
   const accept = async (id: string) => {
     try {
       await acceptCampaignApplication(id);
-      setRequests((current) => current.map((request) => request.id === id ? { ...request, status: 1, canAccept: false } : request));
+      setRequests((current) => current.map((request) => request.id === id ? { ...request, status: CampaignApplicationStatus.Accepted, canAccept: false } : request));
       setSelectedRequest(null);
       setToastTone("success");
       setToast(t("requests.accepted"));
@@ -128,7 +134,7 @@ export function MyRequests() {
           <div className="mt-5 grid gap-3">
             {visibleRequests.map((request) => (
               <button className="text-left" key={request.id} onClick={() => setSelectedRequest(request)} type="button">
-                <Card><div className="flex gap-3"><Avatar name={request.counterpartyName} size="sm" src={request.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{request.counterpartyName}</h2><Badge tone={applicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{request.campaignTitle}</p><p className="mt-2 text-xs text-brand-muted">{formatDate(request.createdAtUtc, locale)}</p></div></div></Card>
+                <Card><div className="flex gap-3"><Avatar name={request.counterpartyName} size="sm" src={request.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{request.counterpartyName}</h2><Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{request.campaignTitle}</p><p className="mt-2 text-xs text-brand-muted">{formatDate(request.createdAtUtc, locale)}</p></div></div></Card>
               </button>
             ))}
           </div>
@@ -146,7 +152,7 @@ export function MyRequests() {
       )}
 
       <Modal onClose={() => setSelectedRequest(null)} open={Boolean(selectedRequest)} title={selectedRequest?.campaignTitle ?? t("requests.title")}>
-        {selectedRequest && <><p className="text-sm font-bold">{selectedRequest.counterpartyName}</p><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && selectedRequest.status === 0 ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}</>}
+        {selectedRequest && <><p className="text-sm font-bold">{selectedRequest.counterpartyName}</p><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status) ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}</>}
       </Modal>
 
       <Modal onClose={() => setSelectedDeal(null)} open={Boolean(selectedDeal)} title={selectedDeal?.title ?? t("requests.deals")}>

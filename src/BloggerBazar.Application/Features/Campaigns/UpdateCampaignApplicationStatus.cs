@@ -26,7 +26,7 @@ public sealed class UpdateCampaignApplicationStatusHandler(
     ICampaignApplicationRepository applications,
     IBusinessProfileRepository businesses,
     IUnitOfWork unitOfWork,
-    IBloggerProfileRepository? bloggers = null,
+    IBloggerProfileRepository bloggers,
     ITelegramBotClient? botClient = null,
     ILogger<UpdateCampaignApplicationStatusHandler>? logger = null) : IRequestHandler<UpdateCampaignApplicationStatusCommand, MyCampaignApplicationDto>
 {
@@ -40,6 +40,8 @@ public sealed class UpdateCampaignApplicationStatusHandler(
         {
             throw new UnauthorizedAccessException("You cannot update an application for another business.");
         }
+        var blogger = await bloggers.GetByIdAsync(application.BloggerId, cancellationToken)
+            ?? throw new InvalidOperationException("Blogger profile was not found.");
 
         if (command.Status == CampaignApplicationStatus.Viewed)
         {
@@ -51,11 +53,10 @@ public sealed class UpdateCampaignApplicationStatusHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        if (command.Status == CampaignApplicationStatus.Rejected && bloggers is not null)
+        if (command.Status == CampaignApplicationStatus.Rejected)
         {
-            var blogger = await bloggers.GetByIdAsync(application.BloggerId, cancellationToken);
-            if (blogger is not null) await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, $"BloggerBazar: заявка на кампанию «{application.Campaign.Title}» отклонена.", cancellationToken);
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, $"BloggerBazar: заявка на кампанию «{application.Campaign.Title}» отклонена.", cancellationToken);
         }
-        return MyCampaignApplicationDto.ForBusiness(application);
+        return MyCampaignApplicationDto.ForBusiness(application, blogger);
     }
 }
