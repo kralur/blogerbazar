@@ -22,6 +22,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
     public DbSet<CreditLedgerEntry> CreditLedgerEntries => Set<CreditLedgerEntry>();
     public DbSet<PlatformUser> PlatformUsers => Set<PlatformUser>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<BrandFaceFavorite> BrandFaceFavorites => Set<BrandFaceFavorite>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<BrandFaceProfile> BrandFaceProfiles => Set<BrandFaceProfile>();
 
@@ -76,6 +77,15 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         favorite.HasIndex(entity => new { entity.PlatformUserId, entity.BloggerId }).IsUnique();
         favorite.HasIndex(entity => new { entity.PlatformUserId, entity.CreatedAtUtc });
         favorite.HasIndex(entity => entity.BloggerId);
+
+        var brandFaceFavorite = modelBuilder.Entity<BrandFaceFavorite>();
+        brandFaceFavorite.ToTable("brand_face_favorites");
+        brandFaceFavorite.HasKey(entity => entity.Id);
+        brandFaceFavorite.HasOne<PlatformUser>().WithMany().HasForeignKey(entity => entity.PlatformUserId).OnDelete(DeleteBehavior.Cascade);
+        brandFaceFavorite.HasOne<BrandFaceProfile>().WithMany().HasForeignKey(entity => entity.BrandFaceId).OnDelete(DeleteBehavior.Cascade);
+        brandFaceFavorite.HasIndex(entity => new { entity.PlatformUserId, entity.BrandFaceId }).IsUnique();
+        brandFaceFavorite.HasIndex(entity => new { entity.PlatformUserId, entity.CreatedAtUtc, entity.Id });
+        brandFaceFavorite.HasIndex(entity => entity.BrandFaceId);
 
         var auditLog = modelBuilder.Entity<AuditLog>();
         auditLog.ToTable("audit_logs");

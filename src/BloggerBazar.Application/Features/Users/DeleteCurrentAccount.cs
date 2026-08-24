@@ -15,6 +15,7 @@ public sealed class DeleteCurrentAccountHandler(
     IBrandFaceProfileRepository brandFaces,
     IBusinessProfileRepository businesses,
     IFavoriteRepository favorites,
+    IBrandFaceFavoriteRepository brandFaceFavorites,
     IAuditLogRepository auditLogs,
     IUnitOfWork unitOfWork,
     ICatalogCache cache,
@@ -45,9 +46,14 @@ public sealed class DeleteCurrentAccountHandler(
             brandFace?.SoftDelete();
             business?.SoftDelete();
             await favorites.DeleteForPlatformUserAsync(user.Id, transactionCancellationToken);
+            await brandFaceFavorites.DeleteForPlatformUserAsync(user.Id, transactionCancellationToken);
             if (blogger is not null)
             {
                 await favorites.DeleteForBloggerAsync(blogger.Id, transactionCancellationToken);
+            }
+            if (brandFace is not null)
+            {
+                await brandFaceFavorites.DeleteForBrandFaceAsync(brandFace.Id, transactionCancellationToken);
             }
 
             await auditLogs.AddAsync(BloggerBazar.Domain.Entities.AuditLog.Create(

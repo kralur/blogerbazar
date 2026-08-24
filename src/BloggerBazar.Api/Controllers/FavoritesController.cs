@@ -32,4 +32,28 @@ public sealed class FavoritesController(ISender sender, ITelegramWebAppValidator
         var actor = GetTelegramUser();
         return Ok(await sender.Send(new RemoveFavoriteCommand(actor.Id, bloggerId), cancellationToken));
     }
+
+    [HttpGet("brand-faces")]
+    [ProducesResponseType<BrandFaceFavoritesPageDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<BrandFaceFavoritesPageDto>> GetBrandFaces([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetBrandFaceFavoritesQuery(actor.Id, page, pageSize), cancellationToken));
+    }
+
+    [HttpPost("brand-faces/{brandFaceId:guid}")]
+    [ProducesResponseType<FavoriteOperationDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<FavoriteOperationDto>> SaveBrandFace(Guid brandFaceId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new SaveBrandFaceFavoriteCommand(actor.Id, brandFaceId), cancellationToken));
+    }
+
+    [HttpDelete("brand-faces/{brandFaceId:guid}")]
+    [ProducesResponseType<FavoriteOperationDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<FavoriteOperationDto>> DeleteBrandFace(Guid brandFaceId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new RemoveBrandFaceFavoriteCommand(actor.Id, brandFaceId), cancellationToken));
+    }
 }

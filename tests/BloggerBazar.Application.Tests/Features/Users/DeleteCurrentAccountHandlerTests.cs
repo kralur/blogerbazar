@@ -51,7 +51,7 @@ public sealed class DeleteCurrentAccountHandlerTests
     }
 
     private static DeleteCurrentAccountHandler CreateHandler(PlatformUser user, BloggerProfile? blogger, BrandFaceProfile? brandFace, BusinessProfile? business, InMemoryAuditLogs audits, InMemoryCache cache) =>
-        new(new InMemoryUsers(user), new InMemoryBloggers(blogger), new InMemoryBrandFaces(brandFace), new InMemoryBusinesses(business), new InMemoryFavorites(), audits, new UnitOfWork(), cache, NullLogger<DeleteCurrentAccountHandler>.Instance);
+        new(new InMemoryUsers(user), new InMemoryBloggers(blogger), new InMemoryBrandFaces(brandFace), new InMemoryBusinesses(business), new InMemoryFavorites(), new InMemoryBrandFaceFavorites(), audits, new UnitOfWork(), cache, NullLogger<DeleteCurrentAccountHandler>.Instance);
 
     private sealed class InMemoryUsers(params PlatformUser[] users) : IPlatformUserRepository
     {
@@ -109,6 +109,15 @@ public sealed class DeleteCurrentAccountHandlerTests
         public Task<bool> DeleteAsync(Guid platformUserId, Guid bloggerId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task DeleteForPlatformUserAsync(Guid platformUserId, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task DeleteForBloggerAsync(Guid bloggerId, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryBrandFaceFavorites : IBrandFaceFavoriteRepository
+    {
+        public Task<BrandFaceFavorite?> GetAsync(Guid platformUserId, Guid brandFaceId, CancellationToken cancellationToken) => Task.FromResult<BrandFaceFavorite?>(null);
+        public Task AddAsync(BrandFaceFavorite favorite, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<bool> DeleteAsync(Guid platformUserId, Guid brandFaceId, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task DeleteForPlatformUserAsync(Guid platformUserId, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task DeleteForBrandFaceAsync(Guid brandFaceId, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class InMemoryCache : ICatalogCache

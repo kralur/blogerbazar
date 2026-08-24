@@ -17,6 +17,7 @@ vi.mock("../src/hooks/useProfileDataRefresh", () => ({ useProfileDataRefresh: vi
 vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => ({ haptic: { selection: vi.fn() } }) }));
 vi.mock("../src/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => <span>language</span> }));
 vi.mock("../src/components/BloggerCard", () => ({ BloggerCard: ({ blogger }: { blogger: { name: string } }) => <article>{blogger.name}</article> }));
+vi.mock("../src/components/FavoriteButton", () => ({ FavoriteButton: () => null }));
 vi.mock("../src/components/ui", () => ({
   BottomNav: () => <nav aria-label="bottom-nav" />,
   BottomSheet: ({ open, title, id, children, onClose }: { open: boolean; title: string; id?: string; children: React.ReactNode; onClose: () => void }) => open ? <section aria-label={title} id={id}><button onClick={onClose} type="button">close</button>{children}</section> : null,

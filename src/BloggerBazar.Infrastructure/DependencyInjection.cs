@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentOrderRepository, PaymentOrderRepository>();
         services.AddScoped<IContactUnlockRepository, ContactUnlockRepository>();
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+        services.AddScoped<IBrandFaceFavoriteRepository, BrandFaceFavoriteRepository>();
         services.AddScoped<IPortfolioItemRepository, PortfolioItemRepository>();
         services.AddScoped<ICollaborationRequestRepository, CollaborationRequestRepository>();
         services.AddScoped<ICreditAccountRepository, CreditAccountRepository>();
@@ -44,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<IMarketplaceCatalogReadModel, MarketplaceCatalogReadModel>();
         services.AddScoped<IBrandFaceCatalogReadModel, BrandFaceCatalogReadModel>();
         services.AddScoped<IFavoritesReadModel, FavoritesReadModel>();
+        services.AddScoped<IBrandFaceFavoritesReadModel, BrandFaceFavoritesReadModel>();
         services.AddScoped<IAdminMarketplaceReadModel, AdminMarketplaceReadModel>();
         services.AddScoped<IReviewReadModel, ReviewReadModel>();
         services.AddSingleton<IContactUnlockPricing, ContactUnlockPricing>();

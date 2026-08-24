@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 export type CatalogFailure = "offline" | "server" | null;
 export type CatalogPage<TItem> = { items: TItem[]; total: number; page: number; hasMore: boolean };
 
-export function usePaginatedCatalog<TItem>({ active, fetchPage }: { active: boolean; fetchPage: (page: number, signal: AbortSignal) => Promise<CatalogPage<TItem>> }) {
+export function usePaginatedCatalog<TItem>({ active, fetchPage, getItemId = defaultItemId }: { active: boolean; fetchPage: (page: number, signal: AbortSignal) => Promise<CatalogPage<TItem>>; getItemId?: (item: TItem) => string }) {
   const [items, setItems] = useState<TItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -72,6 +72,6 @@ export function usePaginatedCatalog<TItem>({ active, fetchPage }: { active: bool
   return { items, total, loading, loadingMore, loadMoreFailed, failure, page, hasMore, loadedInitialResult, load, cancel };
 }
 
-function getItemId(item: unknown) {
-  return (item as { id?: string }).id;
+function defaultItemId(item: unknown) {
+  return (item as { id?: string }).id ?? "";
 }

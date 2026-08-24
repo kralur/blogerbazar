@@ -2,8 +2,9 @@ import type { BrandFaceCatalogItem } from "../api/marketplace";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { Avatar } from "./ui";
+import { FavoriteButton } from "./FavoriteButton";
 
-export function BrandFaceCard({ profile }: { profile: BrandFaceCatalogItem }) {
+export function BrandFaceCard({ profile, onFavoriteChanged }: { profile: Pick<BrandFaceCatalogItem, "id" | "name" | "city" | "categories" | "languages" | "collaborationPrice" | "avatarUrl" | "isPromoted">; onFavoriteChanged?: (isFavorite: boolean) => void }) {
   const { language, t } = useI18n();
   const categories = profile.categories.slice(0, 2);
   const languages = profile.languages.slice(0, 2);
@@ -29,5 +30,6 @@ export function BrandFaceCard({ profile }: { profile: BrandFaceCatalogItem }) {
         <strong>{profile.collaborationPrice == null ? t("search.priceNotSpecified") : formatCurrency(profile.collaborationPrice)}</strong>
       </div>
     </a>
+    <FavoriteButton brandFaceId={profile.id} className="catalog-brand-face-card__favorite" onChanged={onFavoriteChanged} />
   </article>;
 }

@@ -109,6 +109,19 @@ export type FavoriteBlogger = {
 };
 
 export type FavoritesPage = { items: FavoriteBlogger[]; total: number; page: number; pageSize: number };
+export type FavoriteTarget = "blogger" | "brandFace";
+export type FavoriteOperation = { isFavorite: boolean };
+export type FavoriteBrandFace = {
+  id: string;
+  name: string;
+  city: string;
+  categories: string[];
+  languages: string[];
+  collaborationPrice?: number | null;
+  avatarUrl?: string | null;
+  isPromoted: boolean;
+};
+export type BrandFaceFavoritesPage = { items: FavoriteBrandFace[]; total: number; page: number; pageSize: number; hasMore: boolean };
 
 export function normalizeMarketplaceRole(value: MarketplaceRoleValue | null | undefined): MarketplaceRole | undefined {
   if (value === "Blogger" || value === 0) return "Blogger";
@@ -450,11 +463,23 @@ export async function getFavorites(page = 1, pageSize = 50) {
 }
 
 export async function saveFavorite(bloggerId: string) {
-  return api<{ isFavorite: boolean }>(`/api/favorites/${bloggerId}`, { method: "POST" });
+  return api<FavoriteOperation>(`/api/favorites/${bloggerId}`, { method: "POST" });
 }
 
 export async function removeFavorite(bloggerId: string) {
-  return api<{ isFavorite: boolean }>(`/api/favorites/${bloggerId}`, { method: "DELETE" });
+  return api<FavoriteOperation>(`/api/favorites/${bloggerId}`, { method: "DELETE" });
+}
+
+export async function getBrandFaceFavorites(page = 1, pageSize = 20) {
+  return api<BrandFaceFavoritesPage>(`/api/favorites/brand-faces?page=${page}&pageSize=${pageSize}`);
+}
+
+export async function saveBrandFaceFavorite(brandFaceId: string) {
+  return api<FavoriteOperation>(`/api/favorites/brand-faces/${brandFaceId}`, { method: "POST" });
+}
+
+export async function removeBrandFaceFavorite(brandFaceId: string) {
+  return api<FavoriteOperation>(`/api/favorites/brand-faces/${brandFaceId}`, { method: "DELETE" });
 }
 
 export async function deleteCurrentAccount() {

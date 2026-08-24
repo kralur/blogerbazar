@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, getApiErrorMessage } from "../src/api/client";
 import { translate } from "../src/i18n";
-import { getBrandFaceCatalog } from "../src/api/marketplace";
+import { getBrandFaceCatalog, getBrandFaceFavorites, removeBrandFaceFavorite, saveBrandFaceFavorite } from "../src/api/marketplace";
 
 describe("API client", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -43,5 +43,25 @@ describe("API client", () => {
 
     expect(fetchMock.mock.calls[0][0]).toBe("/api/brand-faces/catalog?query=Dilnoza&city=tashkent-city&category=beauty&language=%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9&minPrice=100000&maxPrice=300000&sort=price_asc&page=1&pageSize=20");
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
+  });
+
+  it("uses additive Brand Face Favorites routes without changing Blogger Favorites routes", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, hasMore: false }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ isFavorite: true }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ isFavorite: false }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getBrandFaceFavorites();
+    await saveBrandFaceFavorite("face-a");
+    await removeBrandFaceFavorite("face-a");
+
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      "/api/favorites/brand-faces?page=1&pageSize=20",
+      "/api/favorites/brand-faces/face-a",
+      "/api/favorites/brand-faces/face-a"
+    ]);
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "POST" });
+    expect(fetchMock.mock.calls[2][1]).toMatchObject({ method: "DELETE" });
   });
 });

@@ -981,7 +981,8 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .catalog-search__filter-button:focus-visible,
 .catalog-search__chip:focus-visible,
 .catalog-search__reset-all:focus-visible,
-.catalog-brand-face-card__link:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
+.catalog-brand-face-card__link:focus-visible,
+.catalog-favorite-button:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .catalog-search__searchbar { margin-top: 1rem; }
 .catalog-search .catalog-search__search-control { border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); box-shadow: none; color: var(--bb-text); }
 .catalog-search .catalog-search__search-control input { color: var(--bb-text); }
@@ -1073,9 +1074,10 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .catalog-favorite-button--saved { border-color: var(--bb-accent); background: var(--bb-accent-subtle); color: var(--bb-text); }
 .catalog-favorite-button:disabled { cursor: wait; opacity: .55; }
 
-.catalog-brand-face-card { overflow: hidden; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); }
+.catalog-brand-face-card { position: relative; overflow: hidden; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); }
 .catalog-brand-face-card__link { display: block; padding: 1rem; color: inherit; text-decoration: none; }
-.catalog-brand-face-card__identity { display: flex; align-items: flex-start; gap: .75rem; }
+.catalog-brand-face-card__identity { display: flex; align-items: flex-start; gap: .75rem; padding-right: 2.75rem; }
+.catalog-brand-face-card__favorite { position: absolute; top: 1rem; right: 1rem; }
 .catalog-brand-face-card__heading { min-width: 0; flex: 1; }
 .catalog-brand-face-card__name-row { display: flex; align-items: center; gap: .5rem; min-width: 0; }
 .catalog-brand-face-card__name-row strong { overflow: hidden; min-width: 0; color: var(--bb-text); font-size: 1rem; font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
