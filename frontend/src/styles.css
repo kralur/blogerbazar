@@ -103,6 +103,10 @@
     padding-bottom: max(6rem, calc(var(--bb-bottom-nav-height) + 1.25rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom)))) !important;
   }
 
+  html[data-virtual-keyboard-open="true"] .screen--with-nav {
+    padding-bottom: max(var(--app-page-gutter), var(--tg-content-safe-bottom, env(safe-area-inset-bottom))) !important;
+  }
+
   .screen--without-nav {
     padding-bottom: max(var(--app-page-gutter), var(--tg-content-safe-bottom, env(safe-area-inset-bottom))) !important;
   }

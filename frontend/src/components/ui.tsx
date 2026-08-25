@@ -4,6 +4,7 @@ import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
+import { useVirtualKeyboard } from "../layout/VirtualKeyboardProvider";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -393,7 +394,7 @@ export function Modal({ open, title, children, onClose, id, variant = "default" 
   if (typeof document === "undefined") return null;
   return createPortal(
     <div aria-modal="true" className={cn("bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm", variant === "neutral" && "bottom-sheet-backdrop--neutral")} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
-      <div aria-labelledby="bottom-sheet-title" className={cn("bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft", variant === "neutral" && "bottom-sheet--neutral")} id={id} ref={dialogRef} tabIndex={-1}>
+      <div aria-labelledby="bottom-sheet-title" className={cn("bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft", variant === "neutral" && "bottom-sheet--neutral")} data-keyboard-scroll-container id={id} ref={dialogRef} tabIndex={-1}>
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-200" />
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-extrabold" id="bottom-sheet-title">{title}</h3>
@@ -427,6 +428,7 @@ export function BottomNav() {
   const { t } = useI18n();
   const { haptic } = useTelegram();
   const rootScreenVisible = useRootScreenVisibility();
+  const { isOpen: keyboardOpen } = useVirtualKeyboard();
   const [hash, setHash] = useState(window.location.hash || "#/");
 
   useEffect(() => {
@@ -453,7 +455,7 @@ export function BottomNav() {
     return <a aria-current={active ? "page" : undefined} className={cn("bottom-nav__item", active && "bottom-nav__item--active")} href={item.href} key={item.href} onClick={() => haptic.selection()}><span aria-hidden="true" className="bottom-nav__icon"><Icon name={item.icon} /></span><span className="bottom-nav__label">{item.label}</span></a>;
   };
 
-  if (!rootScreenVisible || typeof document === "undefined") return null;
+  if (!rootScreenVisible || keyboardOpen || typeof document === "undefined") return null;
 
   return createPortal(
     <nav aria-label={t("nav.aria")} className="bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px]">

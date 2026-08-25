@@ -1,50 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { getKeyboardViewportState, useVirtualKeyboard } from "../layout/VirtualKeyboardProvider";
 import { Button, Icon } from "./ui";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
-export function getKeyboardViewportState(layoutViewportHeight: number, viewport?: Pick<VisualViewport, "height" | "offsetTop">) {
-  const keyboardOffset = viewport ? Math.max(0, layoutViewportHeight - viewport.height - viewport.offsetTop) : 0;
-  return { keyboardOffset, isOpen: keyboardOffset > 0 };
-}
+export { getKeyboardViewportState } from "../layout/VirtualKeyboardProvider";
 
 export function WizardLayout({ children, actionBar }: { children: ReactNode; actionBar: ReactNode }) {
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const keyboardOpenRef = useRef(false);
-  useEffect(() => {
-    const root = document.documentElement;
-    const updateKeyboardOffset = () => {
-      const viewport = window.visualViewport;
-      const state = getKeyboardViewportState(window.innerHeight, viewport ?? undefined);
-      keyboardOpenRef.current = state.isOpen;
-      root.style.setProperty("--wizard-keyboard-offset", `${state.keyboardOffset}px`);
-      setKeyboardOpen((current) => current === state.isOpen ? current : state.isOpen);
-      if (state.isOpen) {
-        window.requestAnimationFrame(() => {
-          const activeElement = document.activeElement;
-          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLSelectElement) {
-            activeElement.scrollIntoView({ block: "nearest", inline: "nearest" });
-          }
-        });
-      }
-    };
-
-    const keepFocusedFieldVisible = (event: FocusEvent) => {
-      const target = event.target;
-      if (!keyboardOpenRef.current || !(target instanceof HTMLElement)) return;
-      window.requestAnimationFrame(() => target.scrollIntoView({ block: "nearest", inline: "nearest" }));
-    };
-
-    updateKeyboardOffset();
-    window.visualViewport?.addEventListener("resize", updateKeyboardOffset);
-    window.visualViewport?.addEventListener("scroll", updateKeyboardOffset);
-    document.addEventListener("focusin", keepFocusedFieldVisible);
-    return () => {
-      window.visualViewport?.removeEventListener("resize", updateKeyboardOffset);
-      window.visualViewport?.removeEventListener("scroll", updateKeyboardOffset);
-      document.removeEventListener("focusin", keepFocusedFieldVisible);
-      root.style.removeProperty("--wizard-keyboard-offset");
-    };
-  }, []);
+  const { isOpen: keyboardOpen } = useVirtualKeyboard();
 
   return <section className="wizard-screen" data-keyboard-open={keyboardOpen || undefined}>
     <div aria-hidden="true" className="wizard-screen__top-scrim" />
