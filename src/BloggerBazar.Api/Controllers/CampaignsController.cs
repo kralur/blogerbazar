@@ -36,6 +36,30 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
         CancellationToken cancellationToken = default) =>
         Ok(new SearchCampaignsResponse(await sender.Send(new SearchCampaignsQuery(city, category, page, pageSize), cancellationToken)));
 
+    [HttpGet("mine")]
+    [ProducesResponseType<MyCampaignsResult>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<MyCampaignsResult>> Mine(
+        [FromQuery] int? status,
+        [FromQuery] string? query,
+        [FromQuery] string? sort = "newest",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new SearchMyCampaignsQuery(actor.Id, status, query, sort, page, pageSize), cancellationToken));
+    }
+
+    [HttpGet("mine/{campaignId:guid}")]
+    [ProducesResponseType<MyCampaignDetailsDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<MyCampaignDetailsDto>> GetMineById(Guid campaignId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        var campaign = await sender.Send(new GetMyCampaignQuery(actor.Id, campaignId), cancellationToken);
+        return campaign is null ? NotFound() : Ok(campaign);
+    }
+
     [HttpGet("{campaignId:guid}")]
     [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
