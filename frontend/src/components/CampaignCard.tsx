@@ -59,7 +59,7 @@ export function CampaignCard({ campaign, variant = "default" }: { campaign: Camp
     {requirements.length > 0 && <p className="campaign-catalog-card__requirements">{requirements.join(" · ")}</p>}
     <dl className="campaign-catalog-card__facts">
       {campaign.city && <div><dt>{t("common.city")}</dt><dd>{cityLabel(campaign.city)}</dd></div>}
-      {budget && <div><dt>{t("common.budget")}</dt><dd>{budget}</dd></div>}
+      {budget && <div className="campaign-catalog-card__fact--budget"><dt>{t("common.budget")}</dt><dd>{budget}</dd></div>}
       {deadline && <div><dt>{t("campaigns.deadline")}</dt><dd>{deadline}</dd></div>}
     </dl>
   </a>;

@@ -33,10 +33,20 @@ describe("CampaignCard", () => {
     expect(screen.queryByText(translate("common.applications", undefined, "ru"))).not.toBeInTheDocument();
   });
 
-  it("renders real budget variants and a small promoted indicator", () => {
-    renderCard({ budgetFrom: 100_000, budgetTo: 300_000, isPromoted: true });
+  it("renders the complete budget range on a dedicated fact row", () => {
+    const { container } = renderCard({ budgetFrom: 500_000, budgetTo: 1_500_000, isPromoted: true });
 
-    expect(screen.getByText(/от 100.*до 300.*сум/)).toBeInTheDocument();
+    const budget = container.querySelector(".campaign-catalog-card__fact--budget dd");
+    expect(budget).toHaveTextContent(/от 500.*до 1.*500.*сум/);
     expect(screen.getByText(translate("card.promoted", undefined, "ru"))).toBeInTheDocument();
+  });
+
+  it("renders min-only and max-only budgets without inventing a range", () => {
+    const minOnly = renderCard({ budgetFrom: 500_000, budgetTo: null });
+    expect(minOnly.container.querySelector(".campaign-catalog-card__fact--budget dd")).toHaveTextContent(/от 500.*сум/);
+    minOnly.unmount();
+
+    const maxOnly = renderCard({ budgetFrom: null, budgetTo: 1_500_000 });
+    expect(maxOnly.container.querySelector(".campaign-catalog-card__fact--budget dd")).toHaveTextContent(/до 1.*500.*сум/);
   });
 });

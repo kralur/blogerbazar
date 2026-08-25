@@ -1111,6 +1111,19 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .campaign-catalog__date-field button:active { background: var(--bb-surface); }
 .campaign-catalog__filter-error { margin: 0; color: var(--bb-error); font-size: .8125rem; font-weight: 650; line-height: 1.4; }
 
+#campaign-create-sheet { width: 100%; max-width: 100%; overflow-x: clip; }
+.campaign-create-form,
+.campaign-create-form > *,
+.campaign-create-form__budget-grid > * { min-width: 0; max-width: 100%; }
+.campaign-create-form { width: 100%; }
+.campaign-create-form .input-control { display: block; width: 100%; min-width: 0; }
+.campaign-create-form__input,
+.campaign-create-form__textarea,
+.campaign-create-form select { width: 100%; max-width: 100%; min-width: 0; }
+.campaign-create-form__textarea { overflow-wrap: anywhere; }
+.campaign-create-form__budget-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; width: 100%; min-width: 0; }
+.campaign-create-form__submit { width: 100%; max-width: 100%; min-width: 0; }
+
 .campaign-catalog-card { display: block; overflow: hidden; padding: 1rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); text-decoration: none; transition: border-color 150ms ease, transform 150ms ease; }
 .campaign-catalog-card:active { transform: scale(.985); }
 .campaign-catalog-card:hover { border-color: var(--bb-text-secondary); }
@@ -1128,6 +1141,8 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .campaign-catalog-card__facts > div { min-width: 0; flex: 1 1 7.5rem; }
 .campaign-catalog-card__facts dt { color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 650; }
 .campaign-catalog-card__facts dd { overflow: hidden; margin: .2rem 0 0; color: var(--bb-text); font-size: .8125rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.campaign-catalog-card__fact--budget { flex: 1 0 100% !important; order: 1; }
+.campaign-catalog-card__fact--budget dd { overflow: visible; overflow-wrap: anywhere; text-overflow: clip; white-space: normal; }
 .search-bar__clear { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border: 0; border-radius: 50%; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); }
 .search-bar__clear:active { background: var(--bb-accent-subtle); color: var(--bb-text); }
 .bottom-sheet-backdrop--neutral { background: color-mix(in srgb, var(--bb-text) 26%, transparent); backdrop-filter: none; }
@@ -1136,6 +1151,10 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 @media (max-width: 390px) {
   .campaign-catalog__budget-grid,
   .campaign-catalog__date-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 22.5rem) {
+  .campaign-create-form__budget-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @keyframes shimmer {

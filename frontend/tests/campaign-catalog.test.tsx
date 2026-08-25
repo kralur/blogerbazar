@@ -36,7 +36,7 @@ vi.mock("../src/components/ui", () => ({
   FloatingActionButton: ({ ariaLabel, children, onClick }: { ariaLabel: string; children: React.ReactNode; onClick: () => void }) => <button aria-label={ariaLabel} onClick={onClick} type="button">{children}</button>,
   Icon: () => <svg />,
   Input: ({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) => <label>{label}<input {...props} /></label>,
-  Modal: ({ children, open }: { children: React.ReactNode; open: boolean }) => open ? <section>{children}</section> : null,
+  Modal: ({ children, id, open }: { children: React.ReactNode; id?: string; open: boolean }) => open ? <section data-testid="campaign-modal" id={id}>{children}</section> : null,
   SearchBar: ({ value, onChange, onClear, placeholder, clearAriaLabel }: { value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; onClear?: () => void; placeholder?: string; clearAriaLabel?: string }) => <><input aria-label={placeholder} onChange={onChange} value={value} />{value && onClear && <button aria-label={clearAriaLabel} onClick={onClear} type="button">clear</button>}</>,
   Skeleton: () => <div>loading</div>,
   Textarea: ({ label, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }) => <label>{label}<textarea {...props} /></label>,
@@ -135,6 +135,23 @@ describe("Campaign catalog", () => {
     renderCampaigns();
     await screen.findByText("Coffee launch");
     await waitFor(() => expect(screen.queryByRole("button", { name: translate("campaigns.createAria", undefined, "ru") })).not.toBeInTheDocument());
+  });
+
+  it("uses a shrink-safe create form for long budget values on narrow sheets", async () => {
+    renderCampaigns();
+    await screen.findByText("Coffee launch");
+    fireEvent.click(screen.getByRole("button", { name: translate("campaigns.createAria", undefined, "ru") }));
+
+    const modal = screen.getByTestId("campaign-modal");
+    expect(modal).toHaveAttribute("id", "campaign-create-sheet");
+    const form = modal.querySelector(".campaign-create-form");
+    const budgetGrid = modal.querySelector(".campaign-create-form__budget-grid");
+    expect(form).toBeInTheDocument();
+    expect(budgetGrid).toBeInTheDocument();
+    expect(screen.getByLabelText(translate("campaigns.budgetFrom", undefined, "ru"))).toHaveClass("campaign-create-form__input");
+    expect(screen.getByLabelText(translate("campaigns.budgetTo", undefined, "ru"))).toHaveClass("campaign-create-form__input");
+    expect(screen.getByLabelText(translate("campaigns.budgetTo", undefined, "ru"))).toHaveValue("1 500 000");
+    expect(modal.querySelector(".campaign-create-form__submit")).toBeInTheDocument();
   });
 
   it("keeps empty budget and deadline filters out of the default request and uses the localized any placeholder", async () => {

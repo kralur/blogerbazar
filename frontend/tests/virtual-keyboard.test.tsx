@@ -152,12 +152,13 @@ describe("virtual keyboard detection", () => {
 
   it("uses the nearest sheet scroll container instead of the background page for an obscured field", async () => {
     const scrollBy = vi.fn();
-    renderKeyboard(<div data-keyboard-scroll-container ref={(element) => { if (element) Object.defineProperty(element, "scrollBy", { configurable: true, value: scrollBy }); }}><label>Message<textarea aria-label="message" /></label></div>);
+    renderKeyboard(<div data-keyboard-scroll-container ref={(element) => { if (element) { Object.defineProperty(element, "scrollBy", { configurable: true, value: scrollBy }); Object.defineProperty(element, "scrollLeft", { configurable: true, value: 0, writable: true }); } }}><label>Message<textarea aria-label="message" /></label></div>);
     const textarea = screen.getByLabelText("message");
     vi.spyOn(textarea.closest("label")!, "getBoundingClientRect").mockReturnValue({ top: 500, bottom: 620 } as DOMRect);
     textarea.focus();
     resizeViewport(520);
-    await waitFor(() => expect(scrollBy).toHaveBeenCalled());
+    await waitFor(() => expect(scrollBy).toHaveBeenCalledWith({ top: 116, behavior: "auto" }));
+    expect(textarea.closest("[data-keyboard-scroll-container]")).toHaveProperty("scrollLeft", 0);
   });
 
   it("does not scroll a field that already fits between Telegram chrome and the keyboard", async () => {
