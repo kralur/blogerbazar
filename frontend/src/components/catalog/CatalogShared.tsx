@@ -21,9 +21,9 @@ export function SearchSkeleton({ count, compact = false }: { count: number; comp
   return <div aria-hidden="true" className={compact ? "catalog-search__next-skeletons" : "catalog-search__skeletons"}>{Array.from({ length: count }, (_, index) => <Skeleton className={compact ? "catalog-search__skeleton catalog-search__skeleton--compact" : "catalog-search__skeleton"} key={index} />)}</div>;
 }
 
-export function CatalogState({ title, subtitle, icon, onRetry, compact = false }: { title: string; subtitle: string; icon: string; onRetry?: () => void; compact?: boolean }) {
+export function CatalogState({ title, subtitle, icon, onRetry, actionLabel, compact = false }: { title: string; subtitle: string; icon: string; onRetry?: () => void; actionLabel?: string; compact?: boolean }) {
   const { t } = useI18n();
-  return <div className={`catalog-search__state${compact ? " catalog-search__state--compact" : ""}`} role="status"><span aria-hidden="true" className="catalog-search__state-icon"><Icon name={icon} /></span><h2>{title}</h2><p>{subtitle}</p>{onRetry && <button className="catalog-search__primary-button" onClick={onRetry} type="button">{t("common.retry")}</button>}</div>;
+  return <div className={`catalog-search__state${compact ? " catalog-search__state--compact" : ""}`} role="status"><span aria-hidden="true" className="catalog-search__state-icon"><Icon name={icon} /></span><h2>{title}</h2><p>{subtitle}</p>{onRetry && <button className="catalog-search__primary-button" onClick={onRetry} type="button">{actionLabel ?? t("common.retry")}</button>}</div>;
 }
 
 export function CatalogHeader({ children }: { children: ReactNode }) {

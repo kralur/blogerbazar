@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { getApiErrorMessage } from "../api/client";
+import { ApiError, getApiErrorMessage } from "../api/client";
 import { createCampaign, getCampaignCatalog, getCategories, getCurrentPlatformUser, getMyBusinessProfile, normalizeMarketplaceRole, type CampaignCatalogItem, type CampaignCatalogQuery, type CampaignCatalogSort } from "../api/marketplace";
 import { CampaignCard, type CampaignCardData } from "../components/CampaignCard";
 import { ActiveFilterChips, CatalogHeader, CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
@@ -24,6 +24,7 @@ const defaultFilters: CampaignCatalogQuery = { sort: "promoted", pageSize };
 
 type CampaignFilterKey = "category" | "city" | "minBudget" | "maxBudget" | "deadlineFrom" | "deadlineTo";
 type CampaignActiveFilterKey = CampaignFilterKey | "budget" | "deadline";
+type CreateCapability = "none" | "profileMissing" | "ready";
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
 function normalizeFilters(filters: CampaignCatalogQuery): CampaignCatalogQuery {
@@ -62,7 +63,7 @@ export function Campaigns() {
   const [createOpen, setCreateOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [canCreate, setCanCreate] = useState(false);
+  const [createCapability, setCreateCapability] = useState<CreateCapability>("none");
   const [query, setQuery] = useState("");
   const [appliedFilters, setAppliedFilters] = useState<CampaignCatalogQuery>(() => normalizeFilters({}));
   const [draftFilters, setDraftFilters] = useState<CampaignCatalogQuery>(() => normalizeFilters({}));
@@ -83,6 +84,10 @@ export function Campaigns() {
   const activeChips = useMemo(() => buildActiveChips(appliedFilters, language, t), [appliedFilters, language, t]);
   const filterError = getFilterError(draftFilters, t);
   const hasFilterOrQuery = activeChips.length > 0 || Boolean(debouncedQuery.trim());
+  const canCreate = createCapability === "ready";
+  const needsBusinessProfile = createCapability === "profileMissing";
+  const isEmptyResult = !loading && !failure && items.length === 0;
+  const isDefaultEmpty = isEmptyResult && !hasFilterOrQuery;
 
   const refreshCatalog = useCallback(() => {
     if (!active) return;
@@ -94,13 +99,13 @@ export function Campaigns() {
     try {
       const user = await getCurrentPlatformUser();
       if (normalizeMarketplaceRole(user.selectedMarketplaceRole) !== "Business") {
-        setCanCreate(false);
+        setCreateCapability("none");
         return;
       }
       await getMyBusinessProfile();
-      setCanCreate(true);
-    } catch {
-      setCanCreate(false);
+      setCreateCapability("ready");
+    } catch (error) {
+      setCreateCapability(error instanceof ApiError && error.status === 404 ? "profileMissing" : "none");
     }
   }, []);
 
@@ -223,7 +228,7 @@ export function Campaigns() {
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetCatalog} showReset={activeChips.length >= 2} />
     <p aria-live="polite" className="catalog-search__results-count">{loading ? t("campaigns.loading") : t("campaigns.found", { count: total })}</p>
     <section aria-busy={loading || loadingMore} aria-live="polite" className="catalog-search__results">
-      {loading ? <SearchSkeleton count={3} /> : failure === "offline" ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t("ui.offlineSubtitle")} title={t("ui.offlineTitle")} /> : failure === "server" ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t("campaigns.loadFailedSubtitle")} title={t("campaigns.loadFailedTitle")} /> : items.length ? items.map((campaign) => <CampaignCard campaign={campaign} key={campaign.id} />) : <CatalogState icon="search" onRetry={hasFilterOrQuery ? resetCatalog : undefined} subtitle={hasFilterOrQuery ? t("campaigns.emptySearchSubtitle") : t("campaigns.emptySubtitle")} title={hasFilterOrQuery ? t("campaigns.emptySearchTitle") : t("campaigns.emptyTitle")} />}
+      {loading ? <SearchSkeleton count={3} /> : failure === "offline" ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t("ui.offlineSubtitle")} title={t("ui.offlineTitle")} /> : failure === "server" ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t("campaigns.loadFailedSubtitle")} title={t("campaigns.loadFailedTitle")} /> : items.length ? items.map((campaign) => <CampaignCard campaign={campaign} key={campaign.id} />) : <CatalogState actionLabel={hasFilterOrQuery ? t("search.resetAll") : canCreate ? t("campaigns.create") : needsBusinessProfile ? t("campaigns.createBusinessProfile") : undefined} icon="search" onRetry={hasFilterOrQuery ? resetCatalog : canCreate ? () => setCreateOpen(true) : needsBusinessProfile ? () => { window.location.hash = "/business"; } : undefined} subtitle={hasFilterOrQuery ? t("campaigns.emptySearchSubtitle") : canCreate ? t("campaigns.emptyBusinessSubtitle") : needsBusinessProfile ? t("campaigns.emptyBusinessProfileSubtitle") : t("campaigns.emptySubtitle")} title={hasFilterOrQuery ? t("campaigns.emptySearchTitle") : t("campaigns.emptyTitle")} />}
       {!loading && !failure && items.length > 0 && <>
         <div aria-hidden="true" ref={sentinelRef} />
         {loadingMore && <SearchSkeleton compact count={2} />}
@@ -231,7 +236,7 @@ export function Campaigns() {
         {loadedInitialResult && !hasMore && !loadingMore && !loadMoreFailed && <p className="catalog-search__end">{t("campaigns.endOfList")}</p>}
       </>}
     </section>
-    {canCreate && <FloatingActionButton ariaLabel={t("campaigns.createAria")} onClick={() => setCreateOpen(true)}><Icon name="plus" /></FloatingActionButton>}
+    {canCreate && !isDefaultEmpty && !(isEmptyResult && hasFilterOrQuery) && <FloatingActionButton ariaLabel={t("campaigns.createAria")} onClick={() => setCreateOpen(true)}><Icon name="plus" /></FloatingActionButton>}
     <CampaignFiltersSheet categories={categories} error={filterError} filters={draftFilters} onApply={applyFilters} onClose={closeFilters} onReset={resetCatalog} onSetFilter={setDraft} open={filtersOpen} />
     <Modal onClose={() => setCreateOpen(false)} open={createOpen} title={t("campaigns.newTitle")}><div className="grid gap-3"><Input label={t("campaigns.name")} maxLength={150} onChange={updateForm("title")} placeholder={t("campaigns.namePlaceholder")} required value={form.title} /><Textarea label={t("campaigns.description")} maxLength={1000} onChange={updateForm("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /><CategoryMultiSelect onChange={(categories) => setForm((current) => ({ ...current, categories }))} required value={form.categories} /><Textarea label={t("campaigns.requirements")} maxLength={1000} onChange={updateForm("requirements")} placeholder={t("campaigns.requirementsPlaceholder")} value={form.requirements} /><RegionSelect onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} value={form.city} /><Input label={t("campaigns.deadline")} onChange={updateForm("deadline")} type="date" value={form.deadline} /><div className="grid grid-cols-2 gap-3"><Input inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setForm((current) => ({ ...current, budgetFrom: formatNumericInput(event.target.value) }))} placeholder="200 000" value={form.budgetFrom} /><Input inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setForm((current) => ({ ...current, budgetTo: formatNumericInput(event.target.value) }))} placeholder="1 000 000" value={form.budgetTo} /></div><Button aria-busy={saving} disabled={saving || !form.title.trim() || !form.description.trim() || !form.categories.length} onClick={create} type="button">{saving ? t("campaigns.publishing") : t("campaigns.publish")}</Button></div></Modal>
     <Toast message={toast} tone={toastTone} />
@@ -241,29 +246,44 @@ export function Campaigns() {
 
 function CampaignFiltersSheet({ open, onClose, filters, categories, error, onSetFilter, onApply, onReset }: { open: boolean; onClose: () => void; filters: CampaignCatalogQuery; categories: string[]; error: string | null; onSetFilter: (key: CampaignFilterKey, value: string | number | undefined) => void; onApply: () => void; onReset: () => void }) {
   const { t } = useI18n();
-  const budgetValue = (value: number | undefined) => value == null ? "" : formatNumericInput(String(value));
+  const [budgetInputs, setBudgetInputs] = useState({ minBudget: "", maxBudget: "" });
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !wasOpenRef.current) setBudgetInputs({ minBudget: budgetValue(filters.minBudget), maxBudget: budgetValue(filters.maxBudget) });
+    wasOpenRef.current = open;
+  }, [filters.maxBudget, filters.minBudget, open]);
+
+  const budgetInputError = Object.values(budgetInputs).some((value) => value !== "" && !/^\d[\d\s]*$/.test(value)) ? t("campaigns.budgetInvalid") : null;
   const updateBudget = (key: "minBudget" | "maxBudget") => (event: ChangeEvent<HTMLInputElement>) => {
-    const hasDigits = /\d/.test(event.target.value);
-    onSetFilter(key, hasDigits ? normalizeNumericInput(event.target.value) : undefined);
+    const raw = event.target.value;
+    const digits = raw.replace(/\s/g, "");
+    const isValid = digits === "" || /^\d+$/.test(digits);
+    setBudgetInputs((current) => ({ ...current, [key]: isValid ? formatNumericInput(digits) : raw }));
+    onSetFilter(key, digits === "" || !isValid ? undefined : Number(digits));
   };
   return <BottomSheet id={filterSheetId} onClose={onClose} open={open} title={t("campaigns.filtersTitle")} variant="neutral"><div className="catalog-search__sheet-content campaign-catalog__sheet-content">
     <FilterSelect label={t("common.categories")} onChange={(value) => onSetFilter("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, safeCategoryLabel(category, t)])]} value={filters.category ?? ""} />
     <FilterSelect label={t("common.city")} onChange={(value) => onSetFilter("city", value)} options={[["", t("common.any")], ...uzbekistanRegions.map((city) => [city, cityLabel(city)])]} value={filters.city ?? ""} />
     <div className="campaign-catalog__budget-grid">
-      <CurrencyFilterInput label={t("campaigns.minBudget")} onChange={updateBudget("minBudget")} value={budgetValue(filters.minBudget)} currency={t("currency.uzs")} />
-      <CurrencyFilterInput label={t("campaigns.maxBudget")} onChange={updateBudget("maxBudget")} value={budgetValue(filters.maxBudget)} currency={t("currency.uzs")} />
+      <CurrencyFilterInput label={t("campaigns.minBudget")} onChange={updateBudget("minBudget")} value={budgetInputs.minBudget} currency={t("currency.uzs")} />
+      <CurrencyFilterInput label={t("campaigns.maxBudget")} onChange={updateBudget("maxBudget")} value={budgetInputs.maxBudget} currency={t("currency.uzs")} />
     </div>
     <div className="campaign-catalog__date-grid">
       <DateFilterInput label={t("campaigns.deadlineFrom")} onChange={(event) => onSetFilter("deadlineFrom", event.target.value || undefined)} onClear={() => onSetFilter("deadlineFrom", undefined)} value={filters.deadlineFrom ?? ""} />
       <DateFilterInput label={t("campaigns.deadlineTo")} onChange={(event) => onSetFilter("deadlineTo", event.target.value || undefined)} onClear={() => onSetFilter("deadlineTo", undefined)} value={filters.deadlineTo ?? ""} />
     </div>
-    {error && <p className="campaign-catalog__filter-error" role="alert">{error}</p>}
-    <div className="catalog-search__sheet-actions"><button className="catalog-search__secondary-button" onClick={onReset} type="button">{t("common.reset")}</button><button className="catalog-search__primary-button" disabled={Boolean(error)} onClick={onApply} type="button">{t("common.apply")}</button></div>
+    {(error || budgetInputError) && <p className="campaign-catalog__filter-error" role="alert">{budgetInputError ?? error}</p>}
+    <div className="catalog-search__sheet-actions"><button className="catalog-search__secondary-button" onClick={onReset} type="button">{t("common.reset")}</button><button className="catalog-search__primary-button" disabled={Boolean(error || budgetInputError)} onClick={onApply} type="button">{t("common.apply")}</button></div>
   </div></BottomSheet>;
 }
 
+function budgetValue(value: number | undefined) {
+  return value == null ? "" : formatNumericInput(String(value));
+}
+
 function CurrencyFilterInput({ label, value, currency, onChange }: { label: string; value: string; currency: string; onChange: (event: ChangeEvent<HTMLInputElement>) => void }) {
-  return <label className="catalog-search__filter-select campaign-catalog__currency-field"><span>{label}</span><span><input aria-label={label} inputMode="numeric" onChange={onChange} placeholder="0" value={value} /><b aria-hidden="true">{currency}</b></span></label>;
+  const { t } = useI18n();
+  return <label className="catalog-search__filter-select campaign-catalog__currency-field"><span>{label}</span><span><input aria-label={label} inputMode="numeric" onChange={onChange} placeholder={t("common.any")} value={value} /><b aria-hidden="true">{currency}</b></span></label>;
 }
 
 function DateFilterInput({ label, value, onChange, onClear }: { label: string; value: string; onChange: (event: ChangeEvent<HTMLInputElement>) => void; onClear: () => void }) {
