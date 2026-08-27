@@ -445,7 +445,7 @@ export function BottomNav() {
   ];
   const isActive = (href: string) => {
     if (href === "#/search") return hash.startsWith("#/search") || hash.startsWith("#/blogger/") || hash.startsWith("#/brand-face-detail/");
-    if (href === "#/campaigns") return hash.startsWith("#/campaigns") || hash.startsWith("#/campaign/");
+    if (href === "#/campaigns") return hash.startsWith("#/campaigns") || hash.startsWith("#/campaign/") || hash.startsWith("#/my-campaigns") || hash.startsWith("#/my-campaign/");
     if (href === "#/requests") return hash.startsWith("#/requests");
     return ["#/profile", "#/favorites", "#/blogger-form", "#/business"].some((route) => hash.startsWith(route))
       || (hash.startsWith("#/brand-face") && !hash.startsWith("#/brand-face-detail/"));

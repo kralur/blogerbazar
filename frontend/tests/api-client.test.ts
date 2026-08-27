@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, getApiErrorMessage } from "../src/api/client";
 import { translate } from "../src/i18n";
-import { getBrandFaceCatalog, getBrandFaceFavorites, getCampaignCatalog, getCampaigns, removeBrandFaceFavorite, saveBrandFaceFavorite } from "../src/api/marketplace";
+import { getBrandFaceCatalog, getBrandFaceFavorites, getCampaignCatalog, getCampaigns, getMyCampaign, getMyCampaigns, removeBrandFaceFavorite, saveBrandFaceFavorite } from "../src/api/marketplace";
 
 describe("API client", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -84,5 +84,23 @@ describe("API client", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/campaigns/catalog?query=Coffee&city=tashkent-city&category=beauty&minBudget=100000&maxBudget=300000&deadlineFrom=2026-08-01&deadlineTo=2026-08-31&sort=budget_desc&page=2&pageSize=10");
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
     expect(fetchMock.mock.calls[1][0]).toBe("/api/campaigns?pageSize=20");
+  });
+
+  it("uses private My Campaigns endpoints without sending a BusinessId or reusing public catalog routes", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [], total: 0, page: 2, pageSize: 10, hasMore: false }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "campaign-a", title: "Private campaign" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const controller = new AbortController();
+
+    await getMyCampaigns({ status: 1, query: " Coffee ", sort: "deadline_asc", page: 2, pageSize: 10 }, controller.signal);
+    await getMyCampaign("campaign-a", controller.signal);
+
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/campaigns/mine?status=1&query=Coffee&sort=deadline_asc&page=2&pageSize=10");
+    expect(fetchMock.mock.calls[0][0]).not.toContain("businessId");
+    expect(fetchMock.mock.calls[0][0]).not.toContain("/catalog");
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/campaigns/mine/campaign-a");
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({ signal: controller.signal });
   });
 });

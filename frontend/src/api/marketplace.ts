@@ -75,6 +75,26 @@ export type CampaignCatalogResponse = {
   hasMore: boolean;
 };
 
+export type MyCampaignStatus = 0 | 1 | 2 | 3;
+export type MyCampaignSort = "newest" | "oldest" | "deadline_asc" | "deadline_desc" | "budget_asc" | "budget_desc";
+export type MyCampaignQuery = { status?: MyCampaignStatus; query?: string; sort?: MyCampaignSort; page?: number; pageSize?: number };
+export type MyCampaign = {
+  id: string;
+  title: string;
+  city?: string | null;
+  categories: string[];
+  minBudget?: number | null;
+  maxBudget?: number | null;
+  deadline?: string | null;
+  status: MyCampaignStatus;
+  isPromoted: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  applicationsCount: number;
+};
+export type MyCampaignsResponse = { items: MyCampaign[]; total: number; page: number; pageSize: number; hasMore: boolean };
+export type MyCampaignDetails = MyCampaign & { description: string; requirements: string[] };
+
 type ApiBlogger = {
   id: string;
   name: string;
@@ -435,6 +455,19 @@ export async function getCampaignCatalog(query: CampaignCatalogQuery = {}, signa
 
 export async function getCampaign(id: string): Promise<CampaignDetails> {
   return asCampaignDetails(await api<ApiCampaign>(`/api/campaigns/${id}`));
+}
+
+export async function getMyCampaigns(query: MyCampaignQuery = {}, signal?: AbortSignal): Promise<MyCampaignsResponse> {
+  const params = new URLSearchParams();
+  Object.entries({ ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 20 }).forEach(([key, value]) => {
+    const normalizedValue = key === "query" && typeof value === "string" ? value.trim() : value;
+    if (normalizedValue !== undefined && normalizedValue !== "") params.set(key, String(normalizedValue));
+  });
+  return api<MyCampaignsResponse>(`/api/campaigns/mine?${params.toString()}`, { signal });
+}
+
+export async function getMyCampaign(id: string, signal?: AbortSignal): Promise<MyCampaignDetails> {
+  return api<MyCampaignDetails>(`/api/campaigns/mine/${id}`, { signal });
 }
 
 export async function applyToCampaign(id: string, message: string) {

@@ -1148,13 +1148,60 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .bottom-sheet-backdrop--neutral { background: color-mix(in srgb, var(--bb-text) 26%, transparent); backdrop-filter: none; }
 .bottom-sheet--neutral { border: 1px solid var(--bb-border); border-bottom: 0; background: var(--bb-surface); box-shadow: none; color: var(--bb-text); }
 
+.campaign-catalog__header-actions,
+.my-campaigns__header-actions { display: inline-flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .5rem; }
+.my-campaigns__back { display: grid; width: 2.75rem; height: 2.75rem; flex: 0 0 auto; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
+.my-campaigns__back:focus-visible,
+.my-campaigns__create:focus-visible,
+.my-campaign-card:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
+.my-campaigns__create { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; padding: 0 .75rem; border: 1px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-accent); color: var(--bb-accent-text); font-size: .8125rem; font-weight: 800; line-height: 1.15; text-align: center; text-decoration: none; }
+.my-campaigns__create:active { border-color: var(--bb-accent-pressed); background: var(--bb-accent-pressed); }
+.my-campaigns__controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: .5rem; margin-top: .75rem; align-items: end; }
+.my-campaigns__controls .catalog-search__filter-select { min-width: 0; }
+.my-campaigns__controls .catalog-search__filter-select select { width: 100%; }
+.my-campaigns__controls .catalog-search__reset-all { min-height: 2.75rem; padding: 0 .5rem; white-space: nowrap; }
+.my-campaign-card { position: relative; display: block; min-width: 0; overflow: hidden; padding: 1rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); text-decoration: none; transition: border-color 150ms ease, transform 150ms ease; }
+.my-campaign-card:active { transform: scale(.99); }
+.my-campaign-card:hover { border-color: var(--bb-text-secondary); }
+.my-campaign-card__header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.my-campaign-card__header > div { min-width: 0; }
+.my-campaign-card h2 { margin: 0; overflow-wrap: anywhere; font-size: 1rem; font-weight: 800; line-height: 1.3; }
+.my-campaign-card__header p { margin: .3rem 0 0; color: var(--bb-text-secondary); font-size: .75rem; line-height: 1.35; }
+.my-campaign-card__categories { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .75rem; }
+.my-campaign-card__categories span { max-width: 100%; padding: .25rem .5rem; overflow: hidden; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; overflow-wrap: anywhere; }
+.my-campaign-card__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem 1rem; margin: 1rem 0 0; padding-top: .875rem; border-top: 1px solid var(--bb-border); }
+.my-campaign-card__facts > div { min-width: 0; }
+.my-campaign-card__facts dt { color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 650; }
+.my-campaign-card__facts dd { display: flex; min-width: 0; align-items: center; gap: .3rem; margin: .25rem 0 0; color: var(--bb-text); font-size: .8125rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
+.my-campaign-card__budget { grid-column: 1 / -1; }
+.my-campaign-card__promoted { display: inline-flex; margin-top: .875rem; padding: .2rem .4rem; border: 1px solid var(--bb-accent); border-radius: .5rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .625rem; font-weight: 800; line-height: 1; }
+.my-campaign-details__header { display: flex; align-items: center; justify-content: space-between; }
+.my-campaign-details__hero { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
+.my-campaign-details__hero > div { min-width: 0; }
+.my-campaign-details__hero h1 { margin: .75rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: clamp(1.625rem, 7vw, 2.125rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.12; }
+.my-campaign-details__hero p { margin: .75rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; }
+.my-campaign-details__section { margin-top: 1rem; }
+.my-campaign-details__section h2 { margin: 0; font-size: 1rem; font-weight: 800; }
+.my-campaign-details__section > p { margin: .75rem 0 0; color: var(--bb-text-secondary); font-size: .9375rem; line-height: 1.55; overflow-wrap: anywhere; }
+.my-campaign-details__section ul { display: grid; gap: .625rem; margin: .75rem 0 0; padding: 0; list-style: none; }
+.my-campaign-details__section li { display: flex; gap: .5rem; color: var(--bb-text-secondary); font-size: .9375rem; line-height: 1.45; overflow-wrap: anywhere; }
+.my-campaign-details__section li svg { flex: 0 0 auto; color: var(--bb-text); }
+.my-campaign-details__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1rem; }
+.my-campaign-details__facts > div { min-width: 0; padding: .875rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface-secondary); }
+.my-campaign-details__facts dt { color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; }
+.my-campaign-details__facts dd { margin: .25rem 0 0; color: var(--bb-text); font-size: .8125rem; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
+
 @media (max-width: 390px) {
   .campaign-catalog__budget-grid,
   .campaign-catalog__date-grid { grid-template-columns: 1fr; }
+  .my-campaigns__controls { grid-template-columns: 1fr; }
+  .my-campaigns__controls .catalog-search__reset-all { justify-self: start; }
 }
 
 @media (max-width: 22.5rem) {
   .campaign-create-form__budget-grid { grid-template-columns: minmax(0, 1fr); }
+  .my-campaign-card__facts,
+  .my-campaign-details__facts { grid-template-columns: minmax(0, 1fr); }
 }
 
 @keyframes shimmer {

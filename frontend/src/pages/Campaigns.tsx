@@ -218,7 +218,7 @@ export function Campaigns() {
   return <div aria-hidden={!active} className="campaign-catalog catalog-search screen screen--with-nav" hidden={!active}>
     <CatalogHeader>
       <div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("campaigns.eyebrow")}</p><h1>{t("campaigns.title")}</h1></div>
-      <LanguageSwitcher />
+      <div className="campaign-catalog__header-actions">{canCreate && <a className="my-campaigns__create" href="#/my-campaigns">{t("myCampaigns.open")}</a>}<LanguageSwitcher /></div>
     </CatalogHeader>
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("campaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("campaigns.search")} value={query} /></div>
     <div className="catalog-search__controls">

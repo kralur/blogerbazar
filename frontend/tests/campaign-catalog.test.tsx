@@ -129,12 +129,14 @@ describe("Campaign catalog", () => {
     renderCampaigns();
     await screen.findByText("Coffee launch");
     await waitFor(() => expect(screen.getByRole("button", { name: translate("campaigns.createAria", undefined, "ru") })).toBeInTheDocument());
+    expect(screen.getByRole("link", { name: translate("myCampaigns.open", undefined, "ru") })).toHaveAttribute("href", "#/my-campaigns");
 
     cleanup();
     api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "Blogger" });
     renderCampaigns();
     await screen.findByText("Coffee launch");
     await waitFor(() => expect(screen.queryByRole("button", { name: translate("campaigns.createAria", undefined, "ru") })).not.toBeInTheDocument());
+    expect(screen.queryByRole("link", { name: translate("myCampaigns.open", undefined, "ru") })).not.toBeInTheDocument();
   });
 
   it("uses a shrink-safe create form for long budget values on narrow sheets", async () => {
