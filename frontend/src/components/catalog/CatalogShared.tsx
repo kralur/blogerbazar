@@ -26,6 +26,6 @@ export function CatalogState({ title, subtitle, icon, onRetry, actionLabel, comp
   return <div className={`catalog-search__state${compact ? " catalog-search__state--compact" : ""}`} role="status"><span aria-hidden="true" className="catalog-search__state-icon"><Icon name={icon} /></span><h2>{title}</h2><p>{subtitle}</p>{onRetry && <button className="catalog-search__primary-button" onClick={onRetry} type="button">{actionLabel ?? t("common.retry")}</button>}</div>;
 }
 
-export function CatalogHeader({ children }: { children: ReactNode }) {
-  return <header className="catalog-search__header">{children}</header>;
+export function CatalogHeader({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <header className={`catalog-search__header ${className}`.trim()}>{children}</header>;
 }

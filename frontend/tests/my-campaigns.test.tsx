@@ -85,6 +85,9 @@ describe("My Campaigns management", () => {
     renderList();
 
     await screen.findByText("Coffee launch");
+    expect(document.querySelector(".campaign-management-screen")).toBeInTheDocument();
+    expect(document.querySelector(".my-campaigns__header")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: translate("myCampaigns.backAria", undefined, "ru") })).not.toBeInTheDocument();
     expect(api.getMyCampaigns).toHaveBeenCalledWith({ page: 1, pageSize: 20, query: undefined, sort: "newest", status: undefined }, expect.any(AbortSignal));
     expect(screen.getByRole("link", { name: translate("myCampaigns.openAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign/campaign-a");
     expect(screen.getByText("0 заявок")).toBeInTheDocument();
@@ -168,6 +171,8 @@ describe("My Campaigns management", () => {
     await screen.findByText("Launch coffee");
     expect(screen.getByText("Reels")).toBeInTheDocument();
     expect(screen.getByText("0 заявок")).toBeInTheDocument();
+    expect(document.querySelector(".campaign-management-screen")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: translate("myCampaignDetails.backAria", undefined, "ru") })).not.toBeInTheDocument();
     expect(screen.queryByText(/views|reach|Редактировать|Закрыть кампанию/i)).not.toBeInTheDocument();
   });
 });

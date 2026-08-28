@@ -1150,8 +1150,9 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 
 .campaign-catalog__header-actions,
 .my-campaigns__header-actions { display: inline-flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .5rem; }
-.my-campaigns__back { display: grid; width: 2.75rem; height: 2.75rem; flex: 0 0 auto; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
-.my-campaigns__back:focus-visible,
+.campaign-management-screen { scroll-padding-top: var(--app-content-top); }
+html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: calc(var(--app-content-top) + var(--app-page-gutter)) !important; scroll-padding-top: calc(var(--app-content-top) + var(--app-page-gutter)); }
+.my-campaigns__header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 .my-campaigns__create:focus-visible,
 .my-campaign-card:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .my-campaigns__create { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; padding: 0 .75rem; border: 1px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-accent); color: var(--bb-accent-text); font-size: .8125rem; font-weight: 800; line-height: 1.15; text-align: center; text-decoration: none; }
@@ -1194,6 +1195,9 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 @media (max-width: 390px) {
   .campaign-catalog__budget-grid,
   .campaign-catalog__date-grid { grid-template-columns: 1fr; }
+  .my-campaigns__header { grid-template-columns: minmax(0, 1fr); }
+  .my-campaigns__header-actions { width: 100%; justify-content: space-between; }
+  .my-campaigns__create { flex: 1 1 auto; }
   .my-campaigns__controls { grid-template-columns: 1fr; }
   .my-campaigns__controls .catalog-search__reset-all { justify-self: start; }
 }

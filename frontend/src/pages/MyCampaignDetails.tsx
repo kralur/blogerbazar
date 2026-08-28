@@ -27,12 +27,12 @@ export function MyCampaignDetails({ id }: { id: string }) {
   }, [id]);
   useEffect(() => load(), [load]);
 
-  if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
-  if (failure || !campaign) return <div className="screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
+  if (loading) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
+  if (failure || !campaign) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
 
   const budget = formatBudget(campaign.minBudget, campaign.maxBudget, t);
-  return <div className="my-campaign-details screen screen--with-nav">
-    <header className="my-campaign-details__header"><a aria-label={t("myCampaignDetails.backAria")} className="my-campaigns__back" href="#/my-campaigns"><Icon name="back" /></a><LanguageSwitcher /></header>
+  return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
+    <header className="my-campaign-details__header"><LanguageSwitcher /></header>
     <section className="my-campaign-details__hero"><div className="min-w-0"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge><h1>{campaign.title}</h1><p>{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div>{campaign.isPromoted && <span className="my-campaign-card__promoted">{t("card.promoted")}</span>}</section>
     <Card className="my-campaign-details__section"><h2>{t("myCampaignDetails.description")}</h2><p>{campaign.description}</p></Card>
     <section className="my-campaign-details__facts">

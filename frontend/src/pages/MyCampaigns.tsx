@@ -4,7 +4,7 @@ import { MyCampaignCard } from "../components/MyCampaignCard";
 import { CatalogHeader, CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
-import { BottomNav, Icon, SearchBar } from "../components/ui";
+import { BottomNav, SearchBar } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useI18n } from "../i18n";
@@ -79,9 +79,8 @@ export function MyCampaigns() {
   const retry = () => void load(1, false);
   const retryMore = () => void load(page + 1, true);
 
-  return <div aria-hidden={!active} className="my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
-    <CatalogHeader>
-      <a aria-label={t("myCampaigns.backAria")} className="my-campaigns__back" href="#/profile"><Icon name="back" /></a>
+  return <div aria-hidden={!active} className="campaign-management-screen my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
+    <CatalogHeader className="my-campaigns__header">
       <div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("myCampaigns.eyebrow")}</p><h1>{t("myCampaigns.title")}</h1></div>
       <div className="my-campaigns__header-actions">{access === "allowed" && <a className="my-campaigns__create" href="#/campaigns">{t("myCampaigns.create")}</a>}<LanguageSwitcher /></div>
     </CatalogHeader>
