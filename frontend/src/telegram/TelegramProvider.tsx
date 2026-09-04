@@ -54,6 +54,8 @@ export const telegramBridge = {
 
 type TelegramContextValue = {
   isTelegram: boolean;
+  isEmbedded: boolean;
+  isEnvironmentReady: boolean;
   user?: TelegramUser;
   version?: string;
   theme: TelegramTheme;
@@ -75,7 +77,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const [overlayBackHandlers, setOverlayBackHandlers] = useState<Array<{ id: number; handler: () => void }>>([]);
   const overlayBackHandlersRef = useRef<Array<{ id: number; handler: () => void }>>([]);
   const nextBackHandlerId = useRef(0);
-  const app = webApp();
+  const [app, setApp] = useState<TelegramWebApp | undefined>(() => webApp());
+  const [environmentReady, setEnvironmentReady] = useState(() => Boolean(webApp()));
   const [environment, setEnvironment] = useState(() => ({
     colorScheme: app?.colorScheme ?? "light" as const,
     viewportHeight: app?.viewportStableHeight ?? app?.viewportHeight,
@@ -101,6 +104,32 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       overlayBackHandlersRef.current = nextHandlers;
       return nextHandlers;
     });
+  }, []);
+
+  useLayoutEffect(() => {
+    let disposed = false;
+    let frame = 0;
+    const resolveBridge = () => {
+      const nextApp = webApp();
+      if (nextApp) {
+        setApp((current) => current === nextApp ? current : nextApp);
+        if (!disposed) setEnvironmentReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (resolveBridge()) return;
+    frame = window.requestAnimationFrame(resolveBridge);
+    const timeout = window.setTimeout(() => {
+      resolveBridge();
+      if (!disposed) setEnvironmentReady(true);
+    }, 250);
+    return () => {
+      disposed = true;
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   useLayoutEffect(() => {
@@ -231,6 +260,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<TelegramContextValue>(() => ({
     isTelegram: Boolean(app?.initData),
+    isEmbedded: Boolean(app),
+    isEnvironmentReady: environmentReady,
     user: app?.initDataUnsafe?.user,
     version: app?.version,
     theme: environment.theme,
@@ -255,7 +286,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         window.location.assign(url);
       }
     }
-  }), [app, environment, registerBackButtonHandler, setBackButtonHandler, setClosingConfirmation]);
+  }), [app, environment, environmentReady, registerBackButtonHandler, setBackButtonHandler, setClosingConfirmation]);
 
   return <TelegramContext.Provider value={value}>{booting ? <LaunchScreen /> : children}</TelegramContext.Provider>;
 }

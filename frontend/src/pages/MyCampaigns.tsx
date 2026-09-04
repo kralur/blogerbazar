@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentPlatformUser, getMyCampaigns, normalizeMarketplaceRole, type MyCampaign, type MyCampaignQuery, type MyCampaignSort, type MyCampaignStatus } from "../api/marketplace";
 import { MyCampaignCard } from "../components/MyCampaignCard";
+import { ManagementBackLink } from "../components/ManagementBackLink";
 import { CatalogHeader, CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
@@ -81,7 +82,7 @@ export function MyCampaigns() {
 
   return <div aria-hidden={!active} className="campaign-management-screen my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
     <CatalogHeader className="my-campaigns__header">
-      <div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("myCampaigns.eyebrow")}</p><h1>{t("myCampaigns.title")}</h1></div>
+      <div className="my-campaigns__heading-row"><ManagementBackLink ariaLabel={t("myCampaigns.backAria")} href="#/profile" /><div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("myCampaigns.eyebrow")}</p><h1>{t("myCampaigns.title")}</h1></div></div>
       <div className="my-campaigns__header-actions">{access === "allowed" && <a className="my-campaigns__create" href="#/campaigns">{t("myCampaigns.create")}</a>}<LanguageSwitcher /></div>
     </CatalogHeader>
     {access === "checking" ? <SearchSkeleton count={3} /> : access === "denied" ? <CatalogState icon="lock" subtitle={t("myCampaigns.deniedSubtitle")} title={t("myCampaigns.deniedTitle")} /> : access === "failed" ? <CatalogState icon="refresh" onRetry={refreshAccess} subtitle={t("myCampaigns.accessErrorSubtitle")} title={t("myCampaigns.accessErrorTitle")} /> : <>

@@ -1153,6 +1153,10 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .campaign-management-screen { scroll-padding-top: var(--app-content-top); }
 html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: calc(var(--app-content-top) + var(--app-page-gutter)) !important; scroll-padding-top: calc(var(--app-content-top) + var(--app-page-gutter)); }
 .my-campaigns__header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.my-campaigns__heading-row { display: flex; min-width: 0; align-items: flex-start; gap: .75rem; }
+.management-back-link { display: grid; flex: 0 0 auto; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
+.management-back-link:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
+.management-back-link:active { border-color: var(--bb-text-secondary); background: var(--bb-surface-secondary); }
 .my-campaigns__create:focus-visible,
 .my-campaign-card:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .my-campaigns__create { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; padding: 0 .75rem; border: 1px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-accent); color: var(--bb-accent-text); font-size: .8125rem; font-weight: 800; line-height: 1.15; text-align: center; text-decoration: none; }

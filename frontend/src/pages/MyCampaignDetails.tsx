@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ApiError } from "../api/client";
 import { getMyCampaign, type MyCampaignDetails as MyCampaignDetailsData } from "../api/marketplace";
 import { BottomNav, Badge, Card, ErrorState, Icon, LoadingState } from "../components/ui";
+import { ManagementBackLink } from "../components/ManagementBackLink";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatDate, formatNumber } from "../lib/currency";
@@ -32,7 +33,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
 
   const budget = formatBudget(campaign.minBudget, campaign.maxBudget, t);
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
-    <header className="my-campaign-details__header"><LanguageSwitcher /></header>
+    <header className="my-campaign-details__header"><ManagementBackLink ariaLabel={t("myCampaignDetails.backAria")} href="#/my-campaigns" /><LanguageSwitcher /></header>
     <section className="my-campaign-details__hero"><div className="min-w-0"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge><h1>{campaign.title}</h1><p>{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div>{campaign.isPromoted && <span className="my-campaign-card__promoted">{t("card.promoted")}</span>}</section>
     <Card className="my-campaign-details__section"><h2>{t("myCampaignDetails.description")}</h2><p>{campaign.description}</p></Card>
     <section className="my-campaign-details__facts">
