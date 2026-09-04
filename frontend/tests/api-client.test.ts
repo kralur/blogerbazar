@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, getApiErrorMessage } from "../src/api/client";
 import { translate } from "../src/i18n";
-import { getBrandFaceCatalog, getBrandFaceFavorites, getCampaignCatalog, getCampaigns, getMyCampaign, getMyCampaigns, removeBrandFaceFavorite, saveBrandFaceFavorite } from "../src/api/marketplace";
+import { closeMyCampaign, getBrandFaceCatalog, getBrandFaceFavorites, getCampaignCatalog, getCampaigns, getMyCampaign, getMyCampaigns, removeBrandFaceFavorite, saveBrandFaceFavorite, updateMyCampaign } from "../src/api/marketplace";
 
 describe("API client", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -102,5 +102,21 @@ describe("API client", () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
     expect(fetchMock.mock.calls[1][0]).toBe("/api/campaigns/mine/campaign-a");
     expect(fetchMock.mock.calls[1][1]).toMatchObject({ signal: controller.signal });
+  });
+
+  it("uses private owner update and close routes with the published payload contract", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "campaign-a" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "campaign-a" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await updateMyCampaign("campaign-a", { title: "Coffee", description: "Launch", city: null, categories: ["food"], requirements: [], budgetFrom: 0, budgetTo: 500_000, deadline: null });
+    await closeMyCampaign("campaign-a");
+
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/campaigns/mine/campaign-a");
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "PUT" });
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1].body))).toEqual({ title: "Coffee", description: "Launch", city: null, categories: ["food"], requirements: [], budgetFrom: 0, budgetTo: 500_000, deadline: null });
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/campaigns/mine/campaign-a/close");
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "POST" });
   });
 });

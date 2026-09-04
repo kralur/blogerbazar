@@ -94,6 +94,33 @@ export type MyCampaign = {
 };
 export type MyCampaignsResponse = { items: MyCampaign[]; total: number; page: number; pageSize: number; hasMore: boolean };
 export type MyCampaignDetails = MyCampaign & { description: string; requirements: string[] };
+export type UpdateMyCampaignInput = {
+  title: string;
+  description: string;
+  city?: string | null;
+  categories: string[];
+  requirements?: string[] | null;
+  budgetFrom?: number | null;
+  budgetTo?: number | null;
+  deadline?: string | null;
+};
+export type CampaignMutationResponse = {
+  id: string;
+  businessId: string;
+  businessName: string;
+  title: string;
+  description: string;
+  city?: string | null;
+  categories: string[];
+  requirements: string[];
+  budgetFrom?: number | null;
+  budgetTo?: number | null;
+  deadline?: string | null;
+  isPromoted: boolean;
+  status: MyCampaignStatus;
+  applicationsCount: number;
+  createdAtUtc: string;
+};
 
 type ApiBlogger = {
   id: string;
@@ -470,6 +497,14 @@ export async function getMyCampaign(id: string, signal?: AbortSignal): Promise<M
   return api<MyCampaignDetails>(`/api/campaigns/mine/${id}`, { signal });
 }
 
+export async function updateMyCampaign(id: string, input: UpdateMyCampaignInput, signal?: AbortSignal): Promise<CampaignMutationResponse> {
+  return api<CampaignMutationResponse>(`/api/campaigns/mine/${id}`, { method: "PUT", body: JSON.stringify(input), signal });
+}
+
+export async function closeMyCampaign(id: string, signal?: AbortSignal): Promise<CampaignMutationResponse> {
+  return api<CampaignMutationResponse>(`/api/campaigns/mine/${id}/close`, { method: "POST", signal });
+}
+
 export async function applyToCampaign(id: string, message: string) {
   return api(`/api/campaigns/${id}/applications`, { method: "POST", body: JSON.stringify({ message }) });
 }
@@ -640,14 +675,6 @@ export async function createCampaign(input: {
   publishImmediately: boolean;
 }) {
   return api("/api/campaigns", { method: "POST", body: JSON.stringify(input) });
-}
-
-export async function updateCampaign(id: string, input: Parameters<typeof createCampaign>[0]) {
-  return api(`/api/campaigns/${id}`, { method: "PUT", body: JSON.stringify(input) });
-}
-
-export async function closeCampaign(id: string) {
-  return api(`/api/campaigns/${id}/close`, { method: "POST" });
 }
 
 export type PendingBloggerProfile = {

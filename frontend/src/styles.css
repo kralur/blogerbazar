@@ -1181,7 +1181,7 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .my-campaign-card__budget { grid-column: 1 / -1; }
 .my-campaign-card__promoted { display: inline-flex; margin-top: .875rem; padding: .2rem .4rem; border: 1px solid var(--bb-accent); border-radius: .5rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .625rem; font-weight: 800; line-height: 1; }
 .my-campaign-details__header { display: flex; align-items: center; justify-content: space-between; }
-.my-campaign-details__hero { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
+.my-campaign-details__hero { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-top: .75rem; padding: 1.25rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
 .my-campaign-details__hero > div { min-width: 0; }
 .my-campaign-details__hero h1 { margin: .75rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: clamp(1.625rem, 7vw, 2.125rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.12; }
 .my-campaign-details__hero p { margin: .75rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; }
@@ -1195,6 +1195,18 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .my-campaign-details__facts > div { min-width: 0; padding: .875rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface-secondary); }
 .my-campaign-details__facts dt { color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; }
 .my-campaign-details__facts dd { margin: .25rem 0 0; color: var(--bb-text); font-size: .8125rem; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
+.my-campaign-details__actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; margin-top: 1rem; }
+.my-campaign-details__edit { display: inline-flex; min-height: 3.25rem; align-items: center; justify-content: center; padding: 0 1rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); font-size: .9375rem; font-weight: 800; text-decoration: none; }
+.my-campaign-details__edit:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
+.my-campaign-details__closed-hint { margin: 1rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.5; }
+.my-campaign-edit__header { display: flex; align-items: center; justify-content: space-between; }
+.my-campaign-edit__heading { margin-top: .75rem; }
+.my-campaign-edit__heading p { margin: 0; color: var(--bb-text-secondary); font-size: .75rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.my-campaign-edit__heading h1 { margin: .35rem 0 0; color: var(--bb-text); font-size: clamp(1.625rem, 7vw, 2.125rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.12; }
+.my-campaign-edit__form { display: grid; min-width: 0; gap: 1rem; margin-top: 1.25rem; }
+.my-campaign-edit__budget-grid { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.my-campaign-edit__budget-grid > * { min-width: 0; }
+.my-campaign-edit__submit { width: 100%; margin-top: .5rem; }
 
 @media (max-width: 390px) {
   .campaign-catalog__budget-grid,
@@ -1209,7 +1221,9 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 @media (max-width: 22.5rem) {
   .campaign-create-form__budget-grid { grid-template-columns: minmax(0, 1fr); }
   .my-campaign-card__facts,
-  .my-campaign-details__facts { grid-template-columns: minmax(0, 1fr); }
+  .my-campaign-details__facts,
+  .my-campaign-details__actions,
+  .my-campaign-edit__budget-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @keyframes shimmer {

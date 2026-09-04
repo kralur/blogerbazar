@@ -9,6 +9,7 @@ import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { RegionSelect } from "../components/RegionSelect";
 import { BottomNav, BottomSheet, Button, FloatingActionButton, Icon, Input, Modal, SearchBar, Textarea, Toast } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
@@ -139,6 +140,7 @@ export function Campaigns() {
     void refreshCreateCapability();
     refreshCatalog();
   });
+  useCampaignDataRefresh(refreshCatalog, active);
 
   const openFilters = () => {
     draftFiltersRef.current = appliedFilters;

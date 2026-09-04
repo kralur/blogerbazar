@@ -21,6 +21,7 @@ const BrandFaceProfileForm = lazy(async () => ({ default: (await import("./pages
 const CampaignDetails = lazy(async () => ({ default: (await import("./pages/CampaignDetails")).CampaignDetails }));
 const Campaigns = lazy(async () => ({ default: (await import("./pages/Campaigns")).Campaigns }));
 const MyCampaignDetails = lazy(async () => ({ default: (await import("./pages/MyCampaignDetails")).MyCampaignDetails }));
+const MyCampaignEdit = lazy(async () => ({ default: (await import("./pages/MyCampaignEdit")).MyCampaignEdit }));
 const MyCampaigns = lazy(async () => ({ default: (await import("./pages/MyCampaigns")).MyCampaigns }));
 const Home = lazy(async () => ({ default: (await import("./pages/Home")).Home }));
 const MyRequests = lazy(async () => ({ default: (await import("./pages/MyRequests")).MyRequests }));
@@ -79,7 +80,7 @@ export function App() {
   const [selectedRole, setSelectedRole] = useState<MarketplaceRole>();
   const [authorizationFailed, setAuthorizationFailed] = useState(false);
   const [visitedRootRoutes, setVisitedRootRoutes] = useState<Set<string>>(() => new Set(rootRoutes.includes(route.path) ? [route.path] : ["/"]));
-  const [visitedMyCampaigns, setVisitedMyCampaigns] = useState(() => route.path === "/my-campaigns" || route.path === "/my-campaign");
+  const [visitedMyCampaigns, setVisitedMyCampaigns] = useState(() => ["/my-campaigns", "/my-campaign", "/my-campaign-edit"].includes(route.path));
   const [sessionEpoch, setSessionEpoch] = useState(0);
 
   useEffect(() => {
@@ -89,7 +90,7 @@ export function App() {
   }, [onboardingStep, route.path]);
 
   useEffect(() => {
-    if (onboardingStep === "complete" && (route.path === "/my-campaigns" || route.path === "/my-campaign")) setVisitedMyCampaigns(true);
+    if (onboardingStep === "complete" && ["/my-campaigns", "/my-campaign", "/my-campaign-edit"].includes(route.path)) setVisitedMyCampaigns(true);
   }, [onboardingStep, route.path]);
 
   const resolveDestination = useCallback(async () => {
@@ -173,12 +174,12 @@ export function App() {
   useTelegramBackHandler(goBackFromNestedRoute, onboardingStep === "complete" && !rootRoutes.includes(route.path));
 
   useEffect(() => {
-    if (["/blogger", "/brand-face-detail", "/campaign", "/my-campaign"].includes(route.path)) {
+    if (["/blogger", "/brand-face-detail", "/campaign", "/my-campaign", "/my-campaign-edit"].includes(route.path)) {
       window.scrollTo(0, 0);
     }
   }, [route.id, route.path]);
 
-  const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/requests", "/admin"];
+  const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
@@ -206,6 +207,7 @@ export function App() {
       {route.path === "/campaign" && route.id && <CampaignDetails id={route.id} />}
       {(visitedMyCampaigns || route.path === "/my-campaigns") && <RootScreenVisibility active={route.path === "/my-campaigns"}><CachedMyCampaigns /></RootScreenVisibility>}
       {route.path === "/my-campaign" && route.id && <MyCampaignDetails id={route.id} />}
+      {route.path === "/my-campaign-edit" && route.id && <MyCampaignEdit id={route.id} />}
       {(visitedRootRoutes.has("/requests") || route.path === "/requests") && <RootScreenVisibility active={route.path === "/requests"}><CachedRequests /></RootScreenVisibility>}
       {route.path === "/admin" && <Admin />}
       {!knownRoutes.includes(route.path) && <Home />}

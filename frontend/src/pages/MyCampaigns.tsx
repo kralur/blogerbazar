@@ -7,6 +7,7 @@ import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { BottomNav, SearchBar } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useI18n } from "../i18n";
 import { campaignStatusLabel } from "../lib/campaignStatus";
@@ -79,6 +80,13 @@ export function MyCampaigns() {
   };
   const retry = () => void load(1, false);
   const retryMore = () => void load(page + 1, true);
+  const refreshCampaigns = useCallback(() => {
+    if (active && access === "allowed") {
+      lastCatalogKeyRef.current = "";
+      void load(1, false);
+    }
+  }, [access, active, load]);
+  useCampaignDataRefresh(refreshCampaigns, active && access === "allowed");
 
   return <div aria-hidden={!active} className="campaign-management-screen my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
     <CatalogHeader className="my-campaigns__header">

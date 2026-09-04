@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({
   getCurrentPlatformUser: vi.fn(),
   getMyCampaigns: vi.fn(),
   getMyCampaign: vi.fn(),
+  closeMyCampaign: vi.fn(),
   normalizeMarketplaceRole: vi.fn((role: unknown) => role)
 }));
 
@@ -17,6 +18,7 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getCurrentPlatformUser: api.getCurrentPlatformUser,
   getMyCampaigns: api.getMyCampaigns,
   getMyCampaign: api.getMyCampaign,
+  closeMyCampaign: api.closeMyCampaign,
   normalizeMarketplaceRole: api.normalizeMarketplaceRole
 }));
 
@@ -26,12 +28,15 @@ vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => ({ hapti
 vi.mock("../src/components/ui", () => ({
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
   BottomNav: () => <nav aria-label="bottom-nav" />,
+  Button: ({ children, onClick, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button onClick={onClick} {...props}>{children}</button>,
   Card: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
   ErrorState: ({ title, subtitle, onRetry }: { title: string; subtitle: string; onRetry?: () => void }) => <section><h1>{title}</h1><p>{subtitle}</p>{onRetry && <button onClick={onRetry} type="button">retry</button>}</section>,
   Icon: () => <svg />,
   LoadingState: ({ title }: { title: string }) => <p>{title}</p>,
+  Modal: ({ children, open, title }: { children: React.ReactNode; open: boolean; title: string }) => open ? <section aria-label={title}>{children}</section> : null,
   SearchBar: ({ value, onChange, onClear, placeholder, clearAriaLabel }: { value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; onClear?: () => void; placeholder?: string; clearAriaLabel?: string }) => <><input aria-label={placeholder} onChange={onChange} value={value} />{value && onClear && <button aria-label={clearAriaLabel} onClick={onClear} type="button">clear</button>}</>,
-  Skeleton: () => <div>loading</div>
+  Skeleton: () => <div>loading</div>,
+  Toast: () => null
 }));
 
 import { MyCampaignDetails } from "../src/pages/MyCampaignDetails";
@@ -165,7 +170,7 @@ describe("My Campaigns management", () => {
     expect(screen.queryByText("Launch coffee")).not.toBeInTheDocument();
   });
 
-  it("renders real owner detail fields without fake analytics or lifecycle actions", async () => {
+  it("renders real owner detail fields and management actions only for an active campaign", async () => {
     render(<I18nProvider><MyCampaignDetails id="campaign-a" /></I18nProvider>);
 
     await screen.findByText("Launch coffee");
@@ -173,6 +178,18 @@ describe("My Campaigns management", () => {
     expect(screen.getByText("0 заявок")).toBeInTheDocument();
     expect(document.querySelector(".campaign-management-screen")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: translate("myCampaignDetails.backAria", undefined, "ru") })).not.toBeInTheDocument();
-    expect(screen.queryByText(/views|reach|Редактировать|Закрыть кампанию/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: translate("myCampaignDetails.editAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign-edit/campaign-a");
+    expect(screen.getByRole("button", { name: translate("myCampaignDetails.closeAria", { title: "Coffee launch" }, "ru") })).toBeInTheDocument();
+    expect(screen.queryByText(/views|reach/i)).not.toBeInTheDocument();
+  });
+
+  it("does not offer lifecycle actions for a closed campaign", async () => {
+    api.getMyCampaign.mockResolvedValueOnce({ ...campaign, status: 2, description: "Launch coffee", requirements: [] });
+    render(<I18nProvider><MyCampaignDetails id="campaign-a" /></I18nProvider>);
+
+    await screen.findByText("Coffee launch");
+    expect(screen.queryByRole("link", { name: /Редактировать кампанию/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Закрыть кампанию/i })).not.toBeInTheDocument();
+    expect(screen.getByText(translate("myCampaignDetails.closedHint", undefined, "ru"))).toBeInTheDocument();
   });
 });
