@@ -63,6 +63,7 @@ public sealed class ApplyToCampaignHandlerTests
     {
         public Task AddAsync(Campaign value, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<Campaign?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<Campaign?>(id == campaign.Id ? campaign : null);
+        public Task<Campaign?> GetByIdForBusinessAsync(Guid id, Guid businessId, CancellationToken cancellationToken) => Task.FromResult<Campaign?>(id == campaign.Id && campaign.BusinessId == businessId ? campaign : null);
         public Task<IReadOnlyList<Campaign>> SearchPublishedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Campaign>>([]);
     }
 

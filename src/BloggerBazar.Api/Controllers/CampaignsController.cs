@@ -78,16 +78,18 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
         return StatusCode(StatusCodes.Status201Created, campaign);
     }
 
-    [HttpPut("{campaignId:guid}")]
+    [HttpPut("mine/{campaignId:guid}")]
     [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<CampaignDto>> Update(Guid campaignId, CreateCampaignRequest request, CancellationToken cancellationToken)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CampaignDto>> Update(Guid campaignId, UpdateCampaignRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
-        return Ok(await sender.Send(new UpdateCampaignCommand(campaignId, actor.Id, request.Title, request.Description, request.City, request.Categories, request.Requirements, request.BudgetFrom, request.BudgetTo, request.Deadline, request.PublishImmediately), cancellationToken));
+        return Ok(await sender.Send(new UpdateCampaignCommand(campaignId, actor.Id, request.Title, request.Description, request.City, request.Categories, request.Requirements, request.BudgetFrom, request.BudgetTo, request.Deadline), cancellationToken));
     }
 
-    [HttpPost("{campaignId:guid}/close")]
+    [HttpPost("mine/{campaignId:guid}/close")]
     [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CampaignDto>> Close(Guid campaignId, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();

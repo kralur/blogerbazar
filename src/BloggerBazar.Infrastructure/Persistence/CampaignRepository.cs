@@ -11,6 +11,10 @@ internal sealed class CampaignRepository(BloggerBazarDbContext dbContext) : ICam
         dbContext.Campaigns.Include(campaign => campaign.Business)
             .SingleOrDefaultAsync(campaign => campaign.Id == id && !campaign.Business.IsDeleted, cancellationToken);
 
+    public Task<Campaign?> GetByIdForBusinessAsync(Guid id, Guid businessId, CancellationToken cancellationToken) =>
+        dbContext.Campaigns.Include(campaign => campaign.Business)
+            .SingleOrDefaultAsync(campaign => campaign.Id == id && campaign.BusinessId == businessId && !campaign.Business.IsDeleted, cancellationToken);
+
     public async Task<IReadOnlyList<Campaign>> SearchPublishedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
         var query = dbContext.Campaigns.AsNoTracking().Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted);

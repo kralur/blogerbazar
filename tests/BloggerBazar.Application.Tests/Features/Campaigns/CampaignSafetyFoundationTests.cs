@@ -60,12 +60,13 @@ public sealed class CampaignSafetyFoundationTests
         var cache = new RecordingCache();
         var unitOfWork = new UnitOfWork();
         var businesses = new InMemoryBusinessRepository(business);
+        var users = new InMemoryPlatformUserRepository(BusinessUser(10));
 
         await new CreateCampaignHandler(businesses, campaigns, unitOfWork, cache)
             .Handle(new CreateCampaignCommand(10, "New", "Description", "tashkent", ["beauty"], null, null, null, null, true), CancellationToken.None);
-        await new UpdateCampaignHandler(campaigns, businesses, unitOfWork, cache)
-            .Handle(new UpdateCampaignCommand(campaign.Id, 10, "Updated", "Description", "tashkent", ["beauty"], null, null, null, null, true), CancellationToken.None);
-        await new CloseCampaignHandler(campaigns, businesses, unitOfWork, cache)
+        await new UpdateCampaignHandler(campaigns, users, businesses, unitOfWork, cache)
+            .Handle(new UpdateCampaignCommand(campaign.Id, 10, "Updated", "Description", "tashkent", ["beauty"], null, null, null, null), CancellationToken.None);
+        await new CloseCampaignHandler(campaigns, users, businesses, unitOfWork, cache)
             .Handle(new CloseCampaignCommand(campaign.Id, 10), CancellationToken.None);
         await new ModerateCampaignHandler(campaigns, new AllowAdminAccess(), new InMemoryAuditLogs(), unitOfWork, cache)
             .Handle(new ModerateCampaignCommand(campaign.Id, 99, CampaignStatus.Published, true), CancellationToken.None);
@@ -189,6 +190,13 @@ public sealed class CampaignSafetyFoundationTests
         return profile;
     }
 
+    private static PlatformUser BusinessUser(long telegramUserId)
+    {
+        var user = PlatformUser.Create(telegramUserId, "Business", null);
+        user.SelectMarketplaceRole(MarketplaceRole.Business);
+        return user;
+    }
+
     private static Campaign PublishedCampaign(BusinessProfile business)
     {
         var campaign = Campaign.Create(business.Id, "Campaign", "Description", ["beauty"], null, null, null, "tashkent", null);
@@ -207,6 +215,7 @@ public sealed class CampaignSafetyFoundationTests
         private readonly List<Campaign> campaigns = [.. initial];
         public Task AddAsync(Campaign campaign, CancellationToken cancellationToken) { campaigns.Add(campaign); return Task.CompletedTask; }
         public Task<Campaign?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(campaigns.SingleOrDefault(campaign => campaign.Id == id));
+        public Task<Campaign?> GetByIdForBusinessAsync(Guid id, Guid businessId, CancellationToken cancellationToken) => Task.FromResult(campaigns.SingleOrDefault(campaign => campaign.Id == id && campaign.BusinessId == businessId));
         public Task<IReadOnlyList<Campaign>> SearchPublishedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Campaign>>([]);
     }
 
@@ -216,6 +225,15 @@ public sealed class CampaignSafetyFoundationTests
         public Task AddAsync(BusinessProfile profile, CancellationToken cancellationToken) { businesses.Add(profile); return Task.CompletedTask; }
         public Task<BusinessProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(businesses.SingleOrDefault(business => business.Id == id));
         public Task<BusinessProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult(businesses.SingleOrDefault(business => business.TelegramUserId == telegramUserId));
+    }
+
+    private sealed class InMemoryPlatformUserRepository(params PlatformUser[] initial) : IPlatformUserRepository
+    {
+        private readonly List<PlatformUser> users = [.. initial];
+        public Task<PlatformUser?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult(users.SingleOrDefault(user => user.TelegramUserId == telegramUserId));
+        public Task<IReadOnlyList<PlatformUser>> GetActiveAsync(int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<PlatformUser>>(users.Where(user => !user.IsDeleted).Take(take).ToArray());
+        public Task<int> CountActiveAsync(CancellationToken cancellationToken) => Task.FromResult(users.Count(user => !user.IsDeleted));
+        public Task AddAsync(PlatformUser user, CancellationToken cancellationToken) { users.Add(user); return Task.CompletedTask; }
     }
 
     private sealed class InMemoryBloggerRepository(BloggerProfile blogger) : IBloggerProfileRepository
