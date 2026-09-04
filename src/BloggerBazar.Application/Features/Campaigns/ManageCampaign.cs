@@ -39,9 +39,13 @@ public sealed class CloseCampaignHandler(ICampaignRepository campaigns, IPlatfor
     {
         var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
         var campaign = await campaigns.GetByIdForBusinessAsync(command.CampaignId, business.Id, cancellationToken) ?? throw new InvalidOperationException("Campaign was not found.");
-        if (campaign.Status != CampaignStatus.Archived) campaign.Archive();
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
+        if (campaign.Status != CampaignStatus.Archived)
+        {
+            campaign.Archive();
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
+        }
+
         return CampaignDto.From(campaign, business.Name);
     }
 }

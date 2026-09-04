@@ -124,7 +124,7 @@ public sealed class CampaignManagementMutationTests
 
         Assert.Equal(CampaignStatus.Archived, campaign.Status);
         Assert.Equal((int)CampaignStatus.Archived, repeated.Status);
-        Assert.Equal(["campaigns", "campaigns"], cache.RotatedCatalogs);
+        Assert.Equal(["campaigns"], cache.RotatedCatalogs);
     }
 
     [Theory]
