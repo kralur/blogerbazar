@@ -4,6 +4,7 @@ import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
+import { requestGuardedNavigation } from "../navigation/guardedNavigation";
 import { useVirtualKeyboard } from "../layout/VirtualKeyboardProvider";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
@@ -461,7 +462,7 @@ export function BottomNav() {
     <nav aria-label={t("nav.aria")} className="bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px]">
       <div className="bottom-nav__items">
         {items.slice(0, 2).map(renderItem)}
-        <button aria-current={hash === "#/" ? "page" : undefined} aria-label={t("nav.home")} className={cn("bottom-nav__item", "bottom-nav__home", hash === "#/" && "bottom-nav__item--active")} onClick={() => { haptic.impact(); window.location.hash = "/"; }} type="button"><span aria-hidden="true" className="bottom-nav__icon"><Icon name="home" /></span><span className="bottom-nav__label">{t("nav.home")}</span></button>
+        <button aria-current={hash === "#/" ? "page" : undefined} aria-label={t("nav.home")} className={cn("bottom-nav__item", "bottom-nav__home", hash === "#/" && "bottom-nav__item--active")} onClick={() => { haptic.impact(); if (!requestGuardedNavigation("/")) window.location.hash = "/"; }} type="button"><span aria-hidden="true" className="bottom-nav__icon"><Icon name="home" /></span><span className="bottom-nav__label">{t("nav.home")}</span></button>
         {items.slice(2).map(renderItem)}
       </div>
     </nav>

@@ -6,6 +6,7 @@ import { useTelegram } from "./telegram/TelegramProvider";
 import { FavoritesProvider } from "./features/favorites/FavoritesProvider";
 import { RootScreenVisibility } from "./navigation/RootScreenVisibility";
 import { useTelegramBackHandler } from "./hooks/useTelegramBackHandler";
+import { requestGuardedNavigation } from "./navigation/guardedNavigation";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
@@ -168,9 +169,14 @@ export function App() {
   }, [setBackButtonHandler]);
 
   const goBackFromNestedRoute = useCallback(() => {
+    if (route.path === "/my-campaign-edit" && route.id) {
+      const destination = `/my-campaign/${route.id}`;
+      if (!requestGuardedNavigation(destination)) window.location.hash = destination;
+      return;
+    }
     if (window.history.length > 1) window.history.back();
     else window.location.hash = "/";
-  }, []);
+  }, [route.id, route.path]);
   useTelegramBackHandler(goBackFromNestedRoute, onboardingStep === "complete" && !rootRoutes.includes(route.path));
 
   useEffect(() => {

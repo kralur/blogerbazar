@@ -163,6 +163,8 @@ export function MyCampaignEdit({ id }: { id: string }) {
     try {
       await updateMyCampaign(id, payload);
       notifyCampaignDataChanged();
+      setSnapshot(JSON.stringify(values));
+      unsavedChanges.markClean();
       sessionStorage.setItem(`bloggerbazar.my-campaign-feedback:${id}`, "saved");
       window.location.hash = `/my-campaign/${id}`;
     } catch (error) {
@@ -197,7 +199,7 @@ export function MyCampaignEdit({ id }: { id: string }) {
       <Input error={fieldErrors.deadline} label={t("campaigns.deadline")} onChange={(event) => setValue("deadline", event.target.value)} type="date" value={values.deadline} />
       <Button aria-busy={submitting} className="my-campaign-edit__submit" disabled={submitting || !dirty} type="submit">{submitting ? t("myCampaignEdit.saving") : t("myCampaignEdit.save")}</Button>
     </form>
-    <UnsavedChangesDialog guard={unsavedChanges} />
+    <UnsavedChangesDialog guard={unsavedChanges} labels={{ title: t("myCampaignEdit.unsavedTitle"), description: t("myCampaignEdit.unsavedDescription"), continueEditing: t("myCampaignEdit.continueEditing"), discard: t("myCampaignEdit.discard") }} />
     <Toast message={toast} tone="error" />
     <BottomNav />
   </div>;

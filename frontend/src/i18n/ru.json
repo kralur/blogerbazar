@@ -397,4 +397,8 @@
   ,"myCampaignEdit.deniedSubtitle": "Откройте кампанию из активного Business-профиля."
   ,"myCampaignEdit.errorTitle": "Не удалось загрузить кампанию"
   ,"myCampaignEdit.errorSubtitle": "Проверьте подключение и повторите попытку."
+  ,"myCampaignEdit.unsavedTitle": "Выйти без сохранения?"
+  ,"myCampaignEdit.unsavedDescription": "Внесённые изменения будут потеряны."
+  ,"myCampaignEdit.continueEditing": "Продолжить редактирование"
+  ,"myCampaignEdit.discard": "Выйти без сохранения"
 }

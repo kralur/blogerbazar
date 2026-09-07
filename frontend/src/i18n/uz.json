@@ -396,4 +396,8 @@
   ,"myCampaignEdit.deniedSubtitle": "Kampaniyani faol Business-profilidan oching."
   ,"myCampaignEdit.errorTitle": "Kampaniyani yuklab bo‘lmadi"
   ,"myCampaignEdit.errorSubtitle": "Ulanishni tekshiring va qayta urinib ko‘ring."
+  ,"myCampaignEdit.unsavedTitle": "Saqlamasdan chiqilsinmi?"
+  ,"myCampaignEdit.unsavedDescription": "Kiritilgan o‘zgarishlar yo‘qoladi."
+  ,"myCampaignEdit.continueEditing": "Tahrirlashni davom ettirish"
+  ,"myCampaignEdit.discard": "Saqlamasdan chiqish"
 }
