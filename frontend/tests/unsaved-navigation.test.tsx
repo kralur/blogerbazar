@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useCallback, useEffect, useState } from "react";
+import { StrictMode, useCallback, useEffect, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../src/hooks/useUnsavedChanges";
@@ -106,6 +106,80 @@ describe("native edit unsaved navigation", () => {
     await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
     fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.discard", undefined, "ru") }));
     await waitFor(() => expect(window.location.hash).toBe("#/profile"));
+  });
+
+  it("guards a real history.back host navigation", async () => {
+    window.history.replaceState(null, "", "#/my-campaign/campaign-a");
+    window.location.hash = "/my-campaign-edit/campaign-a";
+    const onClick = vi.fn();
+    renderHarness(onClick);
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    expect(screen.getByDisplayValue("Changed")).toBeInTheDocument();
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
+  });
+
+  it("reuses one sentinel across host Back, Cancel, and a second host Back", async () => {
+    window.history.replaceState(null, "", "#/my-campaign/campaign-a");
+    window.location.hash = "/my-campaign-edit/campaign-a";
+    const onClick = vi.fn();
+    renderHarness(onClick);
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.continueEditing", undefined, "ru") }));
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
+
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    expect(screen.getByDisplayValue("Changed")).toBeInTheDocument();
+  });
+
+  it("bypasses the sentinel once when a host Back is discarded", async () => {
+    window.history.replaceState(null, "", "#/my-campaign/campaign-a");
+    window.location.hash = "/my-campaign-edit/campaign-a";
+    const onClick = vi.fn();
+    renderHarness(onClick);
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.discard", undefined, "ru") }));
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("creates one sentinel for repeated edits in the same session", async () => {
+    const pushState = vi.spyOn(window.history, "pushState");
+    const onClick = vi.fn();
+    renderHarness(onClick);
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+    await waitFor(() => expect(pushState).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByLabelText("description"), { target: { value: "Changed description" } });
+    fireEvent.change(screen.getByLabelText("budget"), { target: { value: "200000" } });
+    expect(pushState).toHaveBeenCalledTimes(1);
+    pushState.mockRestore();
+  });
+
+  it("does not add a second sentinel in StrictMode", async () => {
+    const pushState = vi.spyOn(window.history, "pushState");
+    const onClick = vi.fn();
+    window.Telegram = { WebApp: { platform: "ios", colorScheme: "light", ready: vi.fn(), expand: vi.fn(), requestFullscreen: vi.fn(), disableVerticalSwipes: vi.fn(), BackButton: { show: vi.fn(), hide: vi.fn(), onClick, offClick: vi.fn() } } };
+    render(<StrictMode><I18nProvider><TelegramProvider><NativeEditHarness /></TelegramProvider></I18nProvider></StrictMode>);
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+    await waitFor(() => expect(pushState).toHaveBeenCalledTimes(1));
+    pushState.mockRestore();
+  });
+
+  it("clears the active sentinel before save navigation", async () => {
+    const onClick = vi.fn();
+    renderHarness(onClick);
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+    await waitFor(() => expect(window.history.state).toHaveProperty("bloggerbazarUnsavedGuard"));
+    fireEvent.click(screen.getByRole("button", { name: "saved" }));
+    await waitFor(() => expect(window.history.state).not.toHaveProperty("bloggerbazarUnsavedGuard"));
   });
 
   it("becomes clean again when a value is restored to its initial value", async () => {
