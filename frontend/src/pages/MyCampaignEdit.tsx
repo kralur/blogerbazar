@@ -83,7 +83,8 @@ export function MyCampaignEdit({ id }: { id: string }) {
   const detailsHash = `#/my-campaign/${id}`;
   const editHash = `#/my-campaign-edit/${id}`;
   const historyOrigin = useRef(getHistoryOrigin(window.history.state, editHash)).current;
-  const unsavedChanges = useUnsavedChanges(dirty, { historyExitHash: detailsHash, historyOriginHash: historyOrigin });
+  const canCompactHistory = historyOrigin === detailsHash;
+  const unsavedChanges = useUnsavedChanges(dirty, { canCompactHistory, historyExitHash: detailsHash });
 
   const load = useCallback(() => {
     const controller = new AbortController();

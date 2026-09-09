@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../src/hooks/useUnsavedChanges";
 import { requestGuardedNavigation } from "../src/navigation/guardedNavigation";
-import { navigateWithHistoryOrigin } from "../src/navigation/hashNavigation";
+import { replaceWithHistoryOrigin } from "../src/navigation/hashNavigation";
 import { TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
 
 const initialValues = { title: "Initial", description: "Description", category: "Food", requirements: "Reels", budget: "100000", deadline: "2026-12-31" };
@@ -16,8 +16,8 @@ function NativeEditHarness({ historyMode = "none" }: { historyMode?: HistoryMode
   const [values, setValues] = useState(initialValues);
   const [destination, setDestination] = useState("");
   const guard = useUnsavedChanges(JSON.stringify(values) !== JSON.stringify(initialValues), historyMode === "none" ? undefined : {
+    canCompactHistory: historyMode === "origin",
     historyExitHash: "#/my-campaign/campaign-a",
-    historyOriginHash: historyMode === "origin" ? "#/my-campaign/campaign-a" : null,
   });
   const { setBackButtonHandler } = useTelegram();
   const goBack = useCallback(() => {
@@ -57,7 +57,7 @@ function setupCampaignEditHistory() {
   window.history.replaceState(null, "", "#/campaigns");
   window.location.hash = "/my-campaigns";
   window.location.hash = "/my-campaign/campaign-a";
-  navigateWithHistoryOrigin("#/my-campaign/campaign-a", "#/my-campaign-edit/campaign-a");
+  replaceWithHistoryOrigin("#/my-campaign/campaign-a", "#/my-campaign-edit/campaign-a");
 }
 
 describe("native edit unsaved navigation", () => {
@@ -210,7 +210,7 @@ describe("native edit unsaved navigation", () => {
     historyGo.mockRestore();
   });
 
-  it("opens only a clean edit route through Forward after discard cleanup", async () => {
+  it("does not restore edit, dirty state, or a sentinel through Forward after discard cleanup", async () => {
     setupCampaignEditHistory();
     const onClick = vi.fn();
     renderHarness(onClick, "origin");
@@ -224,13 +224,6 @@ describe("native edit unsaved navigation", () => {
 
     await act(async () => { window.history.forward(); });
     await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
-    await act(async () => { window.history.forward(); });
-    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    await act(async () => { window.history.forward(); });
-    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
-    expect((window.history.state as Record<string, unknown>).bloggerbazarUnsavedGuard).toBeUndefined();
-    await act(async () => { window.history.back(); });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 

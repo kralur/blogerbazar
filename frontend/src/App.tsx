@@ -7,6 +7,7 @@ import { FavoritesProvider } from "./features/favorites/FavoritesProvider";
 import { RootScreenVisibility } from "./navigation/RootScreenVisibility";
 import { useTelegramBackHandler } from "./hooks/useTelegramBackHandler";
 import { requestGuardedNavigation } from "./navigation/guardedNavigation";
+import { replaceHistoryRoute } from "./navigation/hashNavigation";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
@@ -171,7 +172,7 @@ export function App() {
   const goBackFromNestedRoute = useCallback(() => {
     if (route.path === "/my-campaign-edit" && route.id) {
       const destination = `/my-campaign/${route.id}`;
-      if (!requestGuardedNavigation(destination)) window.location.hash = destination;
+      if (!requestGuardedNavigation(destination)) replaceHistoryRoute(`#${destination}`);
       return;
     }
     if (window.history.length > 1) window.history.back();

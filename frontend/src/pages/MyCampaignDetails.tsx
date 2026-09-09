@@ -8,7 +8,7 @@ import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatDate, formatNumber } from "../lib/currency";
 import { campaignApplicationsLabel, campaignStatusLabel, campaignStatusTone } from "../lib/campaignStatus";
-import { navigateWithHistoryOrigin } from "../navigation/hashNavigation";
+import { replaceWithHistoryOrigin } from "../navigation/hashNavigation";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 
@@ -89,7 +89,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
       <a aria-label={t("myCampaignDetails.editAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-edit/${id}`} onClick={(event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        navigateWithHistoryOrigin(window.location.hash, `#/my-campaign-edit/${id}`);
+        replaceWithHistoryOrigin(window.location.hash, `#/my-campaign-edit/${id}`);
       }}>{t("myCampaignDetails.edit")}</a>
       <Button aria-label={t("myCampaignDetails.closeAria", { title: campaign.title })} onClick={() => setCloseOpen(true)} type="button" variant="danger">{t("myCampaignDetails.close")}</Button>
     </section>}

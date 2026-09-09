@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Modal } from "../components/ui";
 import { useI18n } from "../i18n";
 import { guardedNavigationEvent, type GuardedNavigationDetail } from "../navigation/guardedNavigation";
+import { stateWithoutHistoryOrigin } from "../navigation/hashNavigation";
 import { useTelegram } from "../telegram/TelegramProvider";
 
 export type UnsavedChangesGuard = {
@@ -16,12 +17,12 @@ export type UnsavedChangesGuard = {
 
 export type UnsavedChangesOptions = {
   historyExitHash?: string;
-  historyOriginHash?: string | null;
+  canCompactHistory?: boolean;
 };
 
 const historyGuardKey = "bloggerbazarUnsavedGuard";
 type HistoryState = Record<string, unknown> & { [historyGuardKey]?: { hash: string } };
-type HistoryCleanupPhase = "idle" | "visit-sentinel" | "return-to-edit" | "return-to-origin";
+type HistoryCleanupPhase = "idle" | "compact-from-edit" | "compact-from-sentinel" | "replace-edit-with-exit";
 
 function hasHistoryGuard(state: unknown, hash: string) {
   return Boolean(state && typeof state === "object" && (state as HistoryState)[historyGuardKey]?.hash === hash);
@@ -37,7 +38,7 @@ export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptio
   const { setClosingConfirmation } = useTelegram();
   const currentHash = useRef(window.location.hash);
   const historyExitHash = useRef(options.historyExitHash);
-  const canCompactHistory = useRef(Boolean(options.historyExitHash && options.historyOriginHash && options.historyExitHash === options.historyOriginHash));
+  const canCompactHistory = useRef(Boolean(options.canCompactHistory));
   const bypassGuard = useRef(false);
   const leavingRef = useRef(false);
   const dirtyRef = useRef(isDirty);
@@ -60,7 +61,7 @@ export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptio
   }, []);
 
   const replaceCurrentHistoryEntry = useCallback((hash: string) => {
-    window.history.replaceState(withoutHistoryGuard(window.history.state), "", hash);
+    window.history.replaceState(stateWithoutHistoryOrigin(withoutHistoryGuard(window.history.state)), "", hash);
   }, []);
 
   const fallbackToHistoryExit = useCallback(() => {
@@ -70,6 +71,14 @@ export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptio
     currentHash.current = exitHash;
     window.dispatchEvent(new HashChangeEvent("hashchange"));
   }, [replaceCurrentHistoryEntry]);
+
+  const pushHistoryExit = useCallback(() => {
+    const exitHash = historyExitHash.current;
+    if (!exitHash) return;
+    window.history.pushState(stateWithoutHistoryOrigin(withoutHistoryGuard(window.history.state)), "", exitHash);
+    currentHash.current = exitHash;
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  }, []);
 
   const beginHistoryExit = useCallback(() => {
     const exitHash = historyExitHash.current;
@@ -81,27 +90,31 @@ export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptio
     pendingLeaveRef.current = false;
     sentinelActiveRef.current = false;
 
-    if (!canCompactHistory.current) {
-      deactivateHistoryGuard();
-      fallbackToHistoryExit();
-      return true;
-    }
-
     if (pendingHistoryBackRef.current) {
-      historyCleanupPhase.current = "visit-sentinel";
-      window.history.forward();
+      if (canCompactHistory.current) {
+        historyCleanupPhase.current = "compact-from-edit";
+        window.history.back();
+        return true;
+      }
+      fallbackToHistoryExit();
       return true;
     }
 
     if (hasHistoryGuard(window.history.state, currentHash.current)) {
       deactivateHistoryGuard();
-      window.history.go(-2);
+      if (canCompactHistory.current) {
+        historyCleanupPhase.current = "compact-from-sentinel";
+        window.history.go(-2);
+        return true;
+      }
+      historyCleanupPhase.current = "replace-edit-with-exit";
+      window.history.back();
       return true;
     }
 
     fallbackToHistoryExit();
     return true;
-  }, [deactivateHistoryGuard, fallbackToHistoryExit, replaceCurrentHistoryEntry]);
+  }, [deactivateHistoryGuard, fallbackToHistoryExit, pushHistoryExit, replaceCurrentHistoryEntry]);
 
   const requestLeave = useCallback((action: () => void, destination?: string) => {
     if (!dirtyRef.current) {
@@ -154,24 +167,15 @@ export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptio
     };
     const onPopState = (event: PopStateEvent) => {
       const nextHash = window.location.hash;
-      if (historyCleanupPhase.current === "visit-sentinel") {
-        if (hasHistoryGuard(event.state, nextHash)) {
-          window.history.replaceState(withoutHistoryGuard(window.history.state), "", window.location.href);
-          historyCleanupPhase.current = "return-to-edit";
-        } else {
-          historyCleanupPhase.current = "return-to-origin";
-        }
-        window.history.back();
-        return;
-      }
-      if (historyCleanupPhase.current === "return-to-edit") {
-        historyCleanupPhase.current = "return-to-origin";
-        window.history.back();
-        return;
-      }
-      if (historyCleanupPhase.current === "return-to-origin") {
+      if (historyCleanupPhase.current === "compact-from-edit" || historyCleanupPhase.current === "compact-from-sentinel") {
+        if (nextHash === currentHash.current) return;
         historyCleanupPhase.current = "idle";
-        currentHash.current = nextHash;
+        pushHistoryExit();
+        return;
+      }
+      if (historyCleanupPhase.current === "replace-edit-with-exit") {
+        historyCleanupPhase.current = "idle";
+        fallbackToHistoryExit();
         return;
       }
       if (leavingRef.current) {
@@ -246,7 +250,7 @@ export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptio
       window.removeEventListener(guardedNavigationEvent, onGuardedNavigation);
       document.removeEventListener("click", onDocumentClick, true);
     };
-  }, [requestLeave]);
+  }, [fallbackToHistoryExit, pushHistoryExit, requestLeave]);
 
   useEffect(() => {
     setClosingConfirmation(isDirty);
