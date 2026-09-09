@@ -14,7 +14,7 @@ vi.mock("../src/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => n
 vi.mock("../src/components/ManagementBackLink", () => ({ ManagementBackLink: ({ href }: { href: string }) => <a href={href}>back</a> }));
 vi.mock("../src/components/CategoryMultiSelect", () => ({ CategoryMultiSelect: ({ value }: { value: string[] }) => <div>{value.join(", ")}</div> }));
 vi.mock("../src/components/RegionSelect", () => ({ RegionSelect: ({ value, onChange }: { value: string; onChange: React.ChangeEventHandler<HTMLSelectElement> }) => <select aria-label="Город" onChange={onChange} value={value}><option value="">—</option><option value="tashkent">Ташкент</option></select> }));
-vi.mock("../src/hooks/useUnsavedChanges", () => ({ useUnsavedChanges: () => ({ hasPendingLeave: false, cancelLeave: vi.fn(), confirmLeave: vi.fn(), requestLeave: vi.fn(), markClean: vi.fn(), pendingHash: null }), UnsavedChangesDialog: () => null }));
+vi.mock("../src/hooks/useUnsavedChanges", () => ({ useUnsavedChanges: () => ({ hasPendingLeave: false, cancelLeave: vi.fn(), confirmLeave: vi.fn(), exitToHistoryOrigin: vi.fn(() => { window.location.hash = "/my-campaign/campaign-a"; }), requestLeave: vi.fn(), markClean: vi.fn(), pendingHash: null }), UnsavedChangesDialog: () => null }));
 vi.mock("../src/components/ui", () => ({
   BottomNav: () => <nav />,
   Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,

@@ -6,6 +6,7 @@ import { useTelegram } from "../telegram/TelegramProvider";
 
 export type UnsavedChangesGuard = {
   cancelLeave: () => void;
+  exitToHistoryOrigin: () => void;
   confirmLeave: () => void;
   pendingHash: string | null;
   hasPendingLeave: boolean;
@@ -13,8 +14,14 @@ export type UnsavedChangesGuard = {
   requestLeave: (action: () => void) => void;
 };
 
+export type UnsavedChangesOptions = {
+  historyExitHash?: string;
+  historyOriginHash?: string | null;
+};
+
 const historyGuardKey = "bloggerbazarUnsavedGuard";
 type HistoryState = Record<string, unknown> & { [historyGuardKey]?: { hash: string } };
+type HistoryCleanupPhase = "idle" | "visit-sentinel" | "return-to-edit" | "return-to-origin";
 
 function hasHistoryGuard(state: unknown, hash: string) {
   return Boolean(state && typeof state === "object" && (state as HistoryState)[historyGuardKey]?.hash === hash);
@@ -26,9 +33,11 @@ function withoutHistoryGuard(state: unknown): HistoryState {
   return rest;
 }
 
-export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
+export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptions = {}): UnsavedChangesGuard {
   const { setClosingConfirmation } = useTelegram();
   const currentHash = useRef(window.location.hash);
+  const historyExitHash = useRef(options.historyExitHash);
+  const canCompactHistory = useRef(Boolean(options.historyExitHash && options.historyOriginHash && options.historyExitHash === options.historyOriginHash));
   const bypassGuard = useRef(false);
   const leavingRef = useRef(false);
   const dirtyRef = useRef(isDirty);
@@ -38,8 +47,10 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
   const pendingHistoryBackRef = useRef(false);
   const restoringSentinelRef = useRef(false);
   const continuingCleanBackRef = useRef(false);
+  const historyCleanupPhase = useRef<HistoryCleanupPhase>("idle");
   const [pendingHash, setPendingHash] = useState<string | null>(null);
   const pendingAction = useRef<(() => void) | null>(null);
+  const pendingDestination = useRef<string | null>(null);
 
   const deactivateHistoryGuard = useCallback(() => {
     if (hasHistoryGuard(window.history.state, currentHash.current)) {
@@ -48,7 +59,51 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
     sentinelActiveRef.current = false;
   }, []);
 
-  const requestLeave = useCallback((action: () => void) => {
+  const replaceCurrentHistoryEntry = useCallback((hash: string) => {
+    window.history.replaceState(withoutHistoryGuard(window.history.state), "", hash);
+  }, []);
+
+  const fallbackToHistoryExit = useCallback(() => {
+    const exitHash = historyExitHash.current;
+    if (!exitHash) return;
+    replaceCurrentHistoryEntry(exitHash);
+    currentHash.current = exitHash;
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  }, [replaceCurrentHistoryEntry]);
+
+  const beginHistoryExit = useCallback(() => {
+    const exitHash = historyExitHash.current;
+    if (!exitHash) return false;
+
+    leavingRef.current = true;
+    dirtyRef.current = false;
+    pendingAction.current = null;
+    pendingLeaveRef.current = false;
+    sentinelActiveRef.current = false;
+
+    if (!canCompactHistory.current) {
+      deactivateHistoryGuard();
+      fallbackToHistoryExit();
+      return true;
+    }
+
+    if (pendingHistoryBackRef.current) {
+      historyCleanupPhase.current = "visit-sentinel";
+      window.history.forward();
+      return true;
+    }
+
+    if (hasHistoryGuard(window.history.state, currentHash.current)) {
+      deactivateHistoryGuard();
+      window.history.go(-2);
+      return true;
+    }
+
+    fallbackToHistoryExit();
+    return true;
+  }, [deactivateHistoryGuard, fallbackToHistoryExit, replaceCurrentHistoryEntry]);
+
+  const requestLeave = useCallback((action: () => void, destination?: string) => {
     if (!dirtyRef.current) {
       action();
       return;
@@ -56,6 +111,7 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
     if (pendingLeaveRef.current) return;
     pendingLeaveRef.current = true;
     pendingAction.current = action;
+    pendingDestination.current = destination ?? null;
     setPendingHash("");
   }, []);
 
@@ -69,6 +125,12 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
     }
     sentinelActiveRef.current = true;
   }, [isDirty]);
+
+  useEffect(() => {
+    if (!isDirty && hasHistoryGuard(window.history.state, currentHash.current)) {
+      deactivateHistoryGuard();
+    }
+  }, [deactivateHistoryGuard, isDirty]);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -92,6 +154,26 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
     };
     const onPopState = (event: PopStateEvent) => {
       const nextHash = window.location.hash;
+      if (historyCleanupPhase.current === "visit-sentinel") {
+        if (hasHistoryGuard(event.state, nextHash)) {
+          window.history.replaceState(withoutHistoryGuard(window.history.state), "", window.location.href);
+          historyCleanupPhase.current = "return-to-edit";
+        } else {
+          historyCleanupPhase.current = "return-to-origin";
+        }
+        window.history.back();
+        return;
+      }
+      if (historyCleanupPhase.current === "return-to-edit") {
+        historyCleanupPhase.current = "return-to-origin";
+        window.history.back();
+        return;
+      }
+      if (historyCleanupPhase.current === "return-to-origin") {
+        historyCleanupPhase.current = "idle";
+        currentHash.current = nextHash;
+        return;
+      }
       if (leavingRef.current) {
         currentHash.current = nextHash;
         return;
@@ -122,7 +204,7 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
       requestLeave(() => {
         bypassGuard.current = true;
         window.history.back();
-      });
+      }, historyExitHash.current);
     };
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!dirtyRef.current) return;
@@ -139,7 +221,7 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
       if (!pendingLeaveRef.current) {
         requestLeave(() => {
           window.location.hash = href.slice(1);
-        });
+        }, href.slice(1));
       }
     };
     const onGuardedNavigation = (event: Event) => {
@@ -149,7 +231,7 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
       if (!pendingLeaveRef.current) {
         requestLeave(() => {
           window.location.hash = destination;
-        });
+        }, destination);
       }
     };
     window.addEventListener("hashchange", onHashChange);
@@ -174,6 +256,7 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
   const cancelLeave = useCallback(() => {
     pendingAction.current = null;
     pendingLeaveRef.current = false;
+    pendingDestination.current = null;
     if (pendingHistoryBackRef.current) {
       pendingHistoryBackRef.current = false;
       restoringSentinelRef.current = true;
@@ -183,7 +266,10 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
   }, []);
   const confirmLeave = useCallback(() => {
     const action = pendingAction.current;
-    if (action) {
+    const exitsToHistoryOrigin = pendingHistoryBackRef.current || pendingDestination.current === historyExitHash.current || pendingHash === historyExitHash.current;
+    if (exitsToHistoryOrigin && beginHistoryExit()) {
+      // The cleanup state machine owns the next history transitions.
+    } else if (action) {
       bypassGuard.current = true;
       leavingRef.current = true;
       dirtyRef.current = false;
@@ -199,8 +285,9 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
     pendingAction.current = null;
     pendingLeaveRef.current = false;
     pendingHistoryBackRef.current = false;
+    pendingDestination.current = null;
     setPendingHash(null);
-  }, [deactivateHistoryGuard, pendingHash]);
+  }, [beginHistoryExit, deactivateHistoryGuard, pendingHash]);
 
   const markClean = useCallback(() => {
     leavingRef.current = true;
@@ -209,10 +296,16 @@ export function useUnsavedChanges(isDirty: boolean): UnsavedChangesGuard {
     pendingAction.current = null;
     pendingLeaveRef.current = false;
     pendingHistoryBackRef.current = false;
+    pendingDestination.current = null;
     setPendingHash(null);
   }, [deactivateHistoryGuard]);
 
-  return { pendingHash, hasPendingLeave: pendingHash !== null, cancelLeave, confirmLeave, requestLeave, markClean };
+  const exitToHistoryOrigin = useCallback(() => {
+    if (beginHistoryExit()) return;
+    markClean();
+  }, [beginHistoryExit, markClean]);
+
+  return { pendingHash, hasPendingLeave: pendingHash !== null, cancelLeave, confirmLeave, requestLeave, markClean, exitToHistoryOrigin };
 }
 
 export function UnsavedChangesDialog({ guard, labels }: { guard: UnsavedChangesGuard; labels?: { title: string; description: string; continueEditing: string; discard: string } }) {

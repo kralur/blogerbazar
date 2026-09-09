@@ -8,6 +8,7 @@ import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatDate, formatNumber } from "../lib/currency";
 import { campaignApplicationsLabel, campaignStatusLabel, campaignStatusTone } from "../lib/campaignStatus";
+import { navigateWithHistoryOrigin } from "../navigation/hashNavigation";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 
@@ -85,7 +86,11 @@ export function MyCampaignDetails({ id }: { id: string }) {
     <Card className="my-campaign-details__section"><h2>{t("common.categories")}</h2>{campaign.categories.length ? <div className="my-campaign-card__categories">{campaign.categories.map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div> : <p>{t("common.notSpecified")}</p>}</Card>
     <Card className="my-campaign-details__section"><h2>{t("common.requirements")}</h2>{campaign.requirements.length ? <ul>{campaign.requirements.map((requirement) => <li key={requirement}><Icon aria-hidden="true" name="check" />{requirement}</li>)}</ul> : <p>{t("common.notSpecified")}</p>}</Card>
     {canManage && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}>
-      <a aria-label={t("myCampaignDetails.editAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-edit/${id}`}>{t("myCampaignDetails.edit")}</a>
+      <a aria-label={t("myCampaignDetails.editAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-edit/${id}`} onClick={(event) => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        navigateWithHistoryOrigin(window.location.hash, `#/my-campaign-edit/${id}`);
+      }}>{t("myCampaignDetails.edit")}</a>
       <Button aria-label={t("myCampaignDetails.closeAria", { title: campaign.title })} onClick={() => setCloseOpen(true)} type="button" variant="danger">{t("myCampaignDetails.close")}</Button>
     </section>}
     {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t("myCampaignDetails.closedHint")}</p>}

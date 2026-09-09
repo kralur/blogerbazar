@@ -4,15 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../src/hooks/useUnsavedChanges";
 import { requestGuardedNavigation } from "../src/navigation/guardedNavigation";
+import { navigateWithHistoryOrigin } from "../src/navigation/hashNavigation";
 import { TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
 
 const initialValues = { title: "Initial", description: "Description", category: "Food", requirements: "Reels", budget: "100000", deadline: "2026-12-31" };
 type EditableField = keyof typeof initialValues;
 
-function NativeEditHarness() {
+type HistoryMode = "none" | "origin" | "fallback";
+
+function NativeEditHarness({ historyMode = "none" }: { historyMode?: HistoryMode }) {
   const [values, setValues] = useState(initialValues);
   const [destination, setDestination] = useState("");
-  const guard = useUnsavedChanges(JSON.stringify(values) !== JSON.stringify(initialValues));
+  const guard = useUnsavedChanges(JSON.stringify(values) !== JSON.stringify(initialValues), historyMode === "none" ? undefined : {
+    historyExitHash: "#/my-campaign/campaign-a",
+    historyOriginHash: historyMode === "origin" ? "#/my-campaign/campaign-a" : null,
+  });
   const { setBackButtonHandler } = useTelegram();
   const goBack = useCallback(() => {
     if (!requestGuardedNavigation("/my-campaign/campaign-a")) setDestination("/my-campaign/campaign-a");
@@ -28,15 +34,30 @@ function NativeEditHarness() {
     {(Object.keys(initialValues) as EditableField[]).map((field) => <input aria-label={field} key={field} onChange={update(field)} value={values[field]} />)}
     <a href="#/profile">profile</a>
     <button onClick={() => { if (!requestGuardedNavigation("/")) setDestination("/"); }} type="button">home</button>
-    <button onClick={() => { setValues(initialValues); guard.markClean(); }} type="button">saved</button>
+    <button onClick={() => {
+      if (historyMode !== "none") {
+        guard.exitToHistoryOrigin();
+        return;
+      }
+      setValues(initialValues);
+      guard.markClean();
+    }} type="button">saved</button>
     <output>{destination}</output>
     <UnsavedChangesDialog guard={guard} labels={{ title: translate("myCampaignEdit.unsavedTitle"), description: translate("myCampaignEdit.unsavedDescription"), continueEditing: translate("myCampaignEdit.continueEditing"), discard: translate("myCampaignEdit.discard") }} />
   </>;
 }
 
-function renderHarness(onClick: ReturnType<typeof vi.fn>) {
+function renderHarness(onClick: ReturnType<typeof vi.fn>, historyMode: HistoryMode = "none", strictMode = false) {
   window.Telegram = { WebApp: { platform: "ios", colorScheme: "light", ready: vi.fn(), expand: vi.fn(), requestFullscreen: vi.fn(), disableVerticalSwipes: vi.fn(), BackButton: { show: vi.fn(), hide: vi.fn(), onClick, offClick: vi.fn() } } };
-  return render(<I18nProvider><TelegramProvider><NativeEditHarness /></TelegramProvider></I18nProvider>);
+  const content = <I18nProvider><TelegramProvider><NativeEditHarness historyMode={historyMode} /></TelegramProvider></I18nProvider>;
+  return render(strictMode ? <StrictMode>{content}</StrictMode> : content);
+}
+
+function setupCampaignEditHistory() {
+  window.history.replaceState(null, "", "#/campaigns");
+  window.location.hash = "/my-campaigns";
+  window.location.hash = "/my-campaign/campaign-a";
+  navigateWithHistoryOrigin("#/my-campaign/campaign-a", "#/my-campaign-edit/campaign-a");
 }
 
 describe("native edit unsaved navigation", () => {
@@ -144,6 +165,99 @@ describe("native edit unsaved navigation", () => {
     renderHarness(onClick);
     fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
 
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.discard", undefined, "ru") }));
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("returns through owner details to My Campaigns after host Back, Cancel, and Discard", async () => {
+    setupCampaignEditHistory();
+    const onClick = vi.fn();
+    renderHarness(onClick, "origin");
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.continueEditing", undefined, "ru") }));
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
+
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.discard", undefined, "ru") }));
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaigns"));
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/campaigns"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("returns through owner details to My Campaigns after save", async () => {
+    setupCampaignEditHistory();
+    const onClick = vi.fn();
+    const historyGo = vi.spyOn(window.history, "go");
+    renderHarness(onClick, "origin");
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+    fireEvent.click(screen.getByRole("button", { name: "saved" }));
+
+    await waitFor(() => expect(historyGo).toHaveBeenCalledWith(-2));
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaigns"));
+    historyGo.mockRestore();
+  });
+
+  it("opens only a clean edit route through Forward after discard cleanup", async () => {
+    setupCampaignEditHistory();
+    const onClick = vi.fn();
+    renderHarness(onClick, "origin");
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.discard", undefined, "ru") }));
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaigns"));
+
+    await act(async () => { window.history.forward(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+    await act(async () => { window.history.forward(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await act(async () => { window.history.forward(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
+    expect((window.history.state as Record<string, unknown>).bloggerbazarUnsavedGuard).toBeUndefined();
+    await act(async () => { window.history.back(); });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps one sentinel through three host Back and Cancel cycles", async () => {
+    setupCampaignEditHistory();
+    const pushState = vi.spyOn(window.history, "pushState");
+    const onClick = vi.fn();
+    renderHarness(onClick, "origin", true);
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+    await waitFor(() => expect(pushState).toHaveBeenCalledTimes(1));
+
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await act(async () => { window.history.back(); });
+      await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+      fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.continueEditing", undefined, "ru") }));
+      await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
+    }
+
+    expect(pushState).toHaveBeenCalledTimes(1);
+    pushState.mockRestore();
+  });
+
+  it("uses a safe owner-details fallback after host Back and discard from a direct-open edit route", async () => {
+    window.history.replaceState(null, "", "#/my-campaign-edit/campaign-a");
+    const onClick = vi.fn();
+    renderHarness(onClick, "fallback");
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
     await act(async () => { window.history.back(); });
     await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
     fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.discard", undefined, "ru") }));

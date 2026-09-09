@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { getMyCampaign, updateMyCampaign, type MyCampaignDetails, type UpdateMyCampaignInput } from "../api/marketplace";
 import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
@@ -10,6 +10,7 @@ import { useCampaignDataRefresh, notifyCampaignDataChanged } from "../hooks/useC
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { useI18n } from "../i18n";
 import { formatNumericInput, normalizeNumericInput } from "../lib/currency";
+import { getHistoryOrigin } from "../navigation/hashNavigation";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 type FormValues = {
@@ -79,7 +80,10 @@ export function MyCampaignEdit({ id }: { id: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
   const dirty = Boolean(snapshot) && snapshot !== JSON.stringify(values);
-  const unsavedChanges = useUnsavedChanges(dirty);
+  const detailsHash = `#/my-campaign/${id}`;
+  const editHash = `#/my-campaign-edit/${id}`;
+  const historyOrigin = useRef(getHistoryOrigin(window.history.state, editHash)).current;
+  const unsavedChanges = useUnsavedChanges(dirty, { historyExitHash: detailsHash, historyOriginHash: historyOrigin });
 
   const load = useCallback(() => {
     const controller = new AbortController();
@@ -164,9 +168,8 @@ export function MyCampaignEdit({ id }: { id: string }) {
       await updateMyCampaign(id, payload);
       notifyCampaignDataChanged();
       setSnapshot(JSON.stringify(values));
-      unsavedChanges.markClean();
       sessionStorage.setItem(`bloggerbazar.my-campaign-feedback:${id}`, "saved");
-      window.location.hash = `/my-campaign/${id}`;
+      unsavedChanges.exitToHistoryOrigin();
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         sessionStorage.setItem(`bloggerbazar.my-campaign-feedback:${id}`, "conflict");
