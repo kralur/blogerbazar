@@ -51,13 +51,15 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
   const [appliedFilters, setAppliedFilters] = useState<BrandFaceCatalogFilters>(() => normalizedFilters({ category: initialCategory }));
   const [draftFilters, setDraftFilters] = useState<BrandFaceCatalogFilters>(() => normalizedFilters({ category: initialCategory }));
   const draftFiltersRef = useRef<BrandFaceCatalogFilters>(normalizedFilters({ category: initialCategory }));
+  const lastCatalogKeyRef = useRef("");
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const debouncedQuery = useDebouncedValue(query, 300);
+  const catalogKey = useMemo(() => JSON.stringify({ ...appliedFilters, query: debouncedQuery }), [appliedFilters, debouncedQuery]);
 
   const fetchPage = useCallback((requestedPage: number, signal: AbortSignal) => getBrandFaceCatalog({ ...appliedFilters, query: debouncedQuery || undefined, page: requestedPage, pageSize }, signal), [appliedFilters, debouncedQuery]);
   const { items, total, loading, loadingMore, loadMoreFailed, failure, page, hasMore, loadedInitialResult, load, cancel } = usePaginatedCatalog<BrandFaceCatalogItem>({ active, fetchPage });
 
-  const refresh = useCallback(() => { void load(1, false); }, [load]);
+  const refresh = useCallback(() => { void load(1, false, true); }, [load]);
 
   useEffect(() => {
     void getCategories().then(setCategories).catch(() => undefined);
@@ -69,11 +71,13 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
       cancel();
       return;
     }
-    void load(1, false);
+    const preservePrevious = lastCatalogKeyRef.current === catalogKey;
+    lastCatalogKeyRef.current = catalogKey;
+    void load(1, false, preservePrevious);
     return () => {
       cancel();
     };
-  }, [active, cancel, load]);
+  }, [active, cancel, catalogKey, load]);
 
   useProfileDataRefresh(refresh);
 
@@ -161,10 +165,12 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
       <FilterSelect label={t("search.sort")} onChange={(value) => setDraft("sort", value as BrandFaceCatalogSort)} options={sortOptions(t)} value={draftFilters.sort ?? "promoted"} />
       <div className="catalog-search__sheet-actions"><button className="catalog-search__secondary-button" onClick={resetFilters} type="button">{t("common.reset")}</button><button className="catalog-search__primary-button" onClick={applyFilters} type="button">{t("common.apply")}</button></div>
     </div></BottomSheet>
-    <p aria-live="polite" className="catalog-search__results-count">{loading ? t("search.brandFacesLoading") : t("search.found", { count: total })}</p>
+    <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("search.brandFacesLoading") : t("search.found", { count: total })}</p>
     <section aria-busy={loading || loadingMore} aria-live="polite" className="catalog-search__results">
-      {loading ? <SearchSkeleton count={3} /> : failure === "offline" ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("ui.offlineSubtitle")} title={t("ui.offlineTitle")} /> : failure === "server" ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("search.brandFaceLoadFailedSubtitle")} title={t("search.brandFaceLoadFailedTitle")} /> : items.length ? items.map((profile) => <BrandFaceCard key={profile.id} profile={profile} />) : <CatalogState icon="search" subtitle={t("search.brandFaceEmptySubtitle")} title={t("search.brandFaceEmptyTitle")} />}
-      {!loading && !failure && items.length > 0 && <>
+      {loading && !loadedInitialResult ? <SearchSkeleton count={3} /> : failure && !loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "search.brandFaceLoadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "search.brandFaceLoadFailedTitle")} /> : !failure && items.length === 0 ? <CatalogState icon="search" subtitle={t("search.brandFaceEmptySubtitle")} title={t("search.brandFaceEmptyTitle")} /> : null}
+      {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "search.brandFaceLoadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "search.brandFaceLoadFailedTitle")} />}
+      {items.map((profile) => <BrandFaceCard key={profile.id} profile={profile} />)}
+      {items.length > 0 && <>
         <div aria-hidden="true" ref={sentinelRef} />
         {loadingMore && <SearchSkeleton compact count={2} />}
         {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void load(page + 1, true)} subtitle={t("search.brandFaceLoadFailedSubtitle")} title={t("search.brandFaceLoadFailedTitle")} />}

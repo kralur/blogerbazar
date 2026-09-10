@@ -159,7 +159,8 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   return <div className="home screen screen--with-nav">
     <header className="home-header"><div><h1>{t("common.appName")}</h1><p>{t("home.marketplaceSubtitle")}</p></div><LanguageSwitcher /></header>
     <HomeHero role={resolvedRole} />
-    {failed ? <HomeError offline={offline} onRetry={load} /> : !data ? <HomeSkeleton role={resolvedRole} /> : <div className="home-content">
+    {failed && !data ? <HomeError offline={offline} onRetry={load} /> : !data ? <HomeSkeleton role={resolvedRole} /> : <div className="home-content">
+      {failed && <p className="text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       {resolvedRole === "Business" && <>
         <HomeCategories categories={data.categories} language={language} />
         {data.promotedBloggers.length > 0 && <HomeSection actionHref="#/search" title={t("home.promotedBloggers")}>{data.promotedBloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>}

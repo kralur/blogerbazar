@@ -11,6 +11,8 @@ import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChan
 import { useI18n } from "../i18n";
 import { formatNumericInput, normalizeNumericInput } from "../lib/currency";
 import { getHistoryOrigin } from "../navigation/hashNavigation";
+import { getCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
+import { removeCachedPublicDetail } from "../data/publicDetailCache";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 type FormValues = {
@@ -72,14 +74,19 @@ function errorState(error: unknown): DetailState {
 
 export function MyCampaignEdit({ id }: { id: string }) {
   const { t } = useI18n();
-  const [values, setValues] = useState<FormValues>(emptyValues);
-  const [snapshot, setSnapshot] = useState("");
-  const [loading, setLoading] = useState(true);
+  const cachedCampaign = getCachedMyCampaign(id);
+  const [values, setValues] = useState<FormValues>(() => cachedCampaign ? toValues(cachedCampaign) : emptyValues);
+  const [snapshot, setSnapshot] = useState(() => cachedCampaign ? JSON.stringify(toValues(cachedCampaign)) : "");
+  const [loading, setLoading] = useState(() => !cachedCampaign);
   const [failure, setFailure] = useState<DetailState>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
   const dirty = Boolean(snapshot) && snapshot !== JSON.stringify(values);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const requestVersionRef = useRef(0);
+  const activeRequestRef = useRef<AbortController>();
   const detailsHash = `#/my-campaign/${id}`;
   const editHash = `#/my-campaign-edit/${id}`;
   const historyOrigin = useRef(getHistoryOrigin(window.history.state, editHash)).current;
@@ -87,21 +94,29 @@ export function MyCampaignEdit({ id }: { id: string }) {
   const unsavedChanges = useUnsavedChanges(dirty, { canCompactHistory, historyExitHash: detailsHash });
 
   const load = useCallback(() => {
+    activeRequestRef.current?.abort();
     const controller = new AbortController();
-    setLoading(true);
+    activeRequestRef.current = controller;
+    const requestVersion = ++requestVersionRef.current;
+    const cached = getCachedMyCampaign(id);
+    setLoading(!cached);
     setFailure(null);
     getMyCampaign(id, controller.signal).then((campaign) => {
+      if (controller.signal.aborted || requestVersion !== requestVersionRef.current) return;
       if (campaign.status === 2) {
         setFailure("not-found");
         return;
       }
+      setCachedMyCampaign(campaign);
       const nextValues = toValues(campaign);
-      setValues(nextValues);
-      setSnapshot(JSON.stringify(nextValues));
+      if (!dirtyRef.current) {
+        setValues(nextValues);
+        setSnapshot(JSON.stringify(nextValues));
+      }
     }).catch((error: unknown) => {
-      if (!controller.signal.aborted) setFailure(errorState(error));
+      if (!controller.signal.aborted && requestVersion === requestVersionRef.current) setFailure(errorState(error));
     }).finally(() => {
-      if (!controller.signal.aborted) setLoading(false);
+      if (!controller.signal.aborted && requestVersion === requestVersionRef.current) setLoading(false);
     });
     return () => controller.abort();
   }, [id]);
@@ -166,7 +181,11 @@ export function MyCampaignEdit({ id }: { id: string }) {
     };
     setSubmitting(true);
     try {
+      requestVersionRef.current += 1;
+      activeRequestRef.current?.abort();
       await updateMyCampaign(id, payload);
+      updateCachedMyCampaign(id, (campaign) => ({ ...campaign, ...payload, requirements: payload.requirements ?? [], updatedAtUtc: new Date().toISOString() }));
+      removeCachedPublicDetail("campaign", id);
       notifyCampaignDataChanged();
       setSnapshot(JSON.stringify(values));
       sessionStorage.setItem(`bloggerbazar.my-campaign-feedback:${id}`, "saved");

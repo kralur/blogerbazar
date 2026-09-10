@@ -77,8 +77,10 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
   const [appliedFilters, setAppliedFilters] = useState<BloggerSearchFilters>(() => normalizedFilters({ category: initialCategory }));
   const [draftFilters, setDraftFilters] = useState<BloggerSearchFilters>(() => normalizedFilters({ category: initialCategory }));
   const draftFiltersRef = useRef<BloggerSearchFilters>(normalizedFilters({ category: initialCategory }));
+  const lastCatalogKeyRef = useRef("");
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const debouncedQuery = useDebouncedValue(query, 300);
+  const catalogKey = useMemo(() => JSON.stringify({ ...appliedFilters, query: debouncedQuery }), [appliedFilters, debouncedQuery]);
 
   const fetchPage = useCallback(async (requestedPage: number, signal: AbortSignal) => {
     const result = await getBloggers({ ...appliedFilters, query: debouncedQuery || undefined, page: requestedPage, pageSize }, signal);
@@ -86,7 +88,7 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
   }, [appliedFilters, debouncedQuery]);
   const { items: bloggers, total, loading, loadingMore, loadMoreFailed, failure, page, hasMore, loadedInitialResult, load, cancel } = usePaginatedCatalog<BloggerCardData>({ active, fetchPage });
 
-  const refresh = useCallback(() => { void load(1, false); }, [load]);
+  const refresh = useCallback(() => { void load(1, false, true); }, [load]);
 
   useEffect(() => {
     void getCategories().then(setCategories).catch(() => undefined);
@@ -98,11 +100,13 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
       cancel();
       return;
     }
-    void load(1, false);
+    const preservePrevious = lastCatalogKeyRef.current === catalogKey;
+    lastCatalogKeyRef.current = catalogKey;
+    void load(1, false, preservePrevious);
     return () => {
       cancel();
     };
-  }, [active, cancel, load]);
+  }, [active, cancel, catalogKey, load]);
 
   useProfileDataRefresh(refresh);
 
@@ -202,10 +206,12 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
       <FilterSelect label={t("search.sort")} onChange={(value) => setDraft("sort", value as NonNullable<BloggerSearchFilters["sort"]>)} options={sortOptions(t)} value={draftFilters.sort ?? "popular"} />
       <div className="catalog-search__sheet-actions"><button className="catalog-search__secondary-button" onClick={resetFilters} type="button">{t("common.reset")}</button><button className="catalog-search__primary-button" onClick={applyFilters} type="button">{t("common.apply")}</button></div>
     </div></BottomSheet>
-    <p aria-live="polite" className="catalog-search__results-count">{loading ? t("search.loading") : t("search.found", { count: total })}</p>
+    <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("search.loading") : t("search.found", { count: total })}</p>
     <section aria-busy={loading || loadingMore} aria-live="polite" className="catalog-search__results">
-      {loading ? <SearchSkeleton count={3} /> : failure === "offline" ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("ui.offlineSubtitle")} title={t("ui.offlineTitle")} /> : failure === "server" ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("search.loadFailedSubtitle")} title={t("search.loadFailedTitle")} /> : bloggers.length ? bloggers.map((blogger) => <BloggerCard blogger={blogger} key={blogger.id} />) : <CatalogState icon="search" subtitle={t("search.emptySubtitle")} title={t("search.emptyTitle")} />}
-      {!loading && !failure && bloggers.length > 0 && <>
+      {loading && !loadedInitialResult ? <SearchSkeleton count={3} /> : failure && !loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "search.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "search.loadFailedTitle")} /> : !failure && bloggers.length === 0 ? <CatalogState icon="search" subtitle={t("search.emptySubtitle")} title={t("search.emptyTitle")} /> : null}
+      {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "search.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "search.loadFailedTitle")} />}
+      {bloggers.map((blogger) => <BloggerCard blogger={blogger} key={blogger.id} />)}
+      {bloggers.length > 0 && <>
         <div aria-hidden="true" ref={sentinelRef} />
         {loadingMore && <SearchSkeleton compact count={2} />}
         {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void load(page + 1, true)} subtitle={t("search.loadFailedSubtitle")} title={t("search.loadFailedTitle")} />}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getBlogger, getBloggerReviews, getPublicContact, type BloggerDetails, type BloggerReview, type ContactDetails } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Rating, StatsCard, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
@@ -8,24 +8,43 @@ import { ContactList, hasContacts } from "../components/ContactList";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
+import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 
 export function BloggerDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
   const { openLink } = useTelegram();
-  const [blogger, setBlogger] = useState<BloggerDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [blogger, setBlogger] = useState<BloggerDetails | null>(() => getCachedPublicDetail<BloggerDetails>("blogger", id));
+  const [loading, setLoading] = useState(() => !getCachedPublicDetail<BloggerDetails>("blogger", id));
   const [failed, setFailed] = useState(false);
   const [contact, setContact] = useState<ContactDetails | null>(null);
   const [reviews, setReviews] = useState<BloggerReview[]>([]);
   const [toast, setToast] = useState("");
 
+  const requestIdRef = useRef(0);
   const loadBlogger = useCallback(() => {
-    setLoading(true);
+    const cached = getCachedPublicDetail<BloggerDetails>("blogger", id);
+    const requestId = ++requestIdRef.current;
+    if (cached) setBlogger(cached);
+    else setBlogger(null);
+    setLoading(!cached);
     setFailed(false);
-    getBlogger(id).then(setBlogger).catch(() => { setBlogger(null); setFailed(true); }).finally(() => setLoading(false));
+    getBlogger(id).then((response) => {
+      if (requestId !== requestIdRef.current) return;
+      setCachedPublicDetail("blogger", id, response);
+      setBlogger(response);
+    }).catch(() => {
+      if (requestId !== requestIdRef.current) return;
+      setFailed(true);
+      if (!cached) setBlogger(null);
+    }).finally(() => {
+      if (requestId === requestIdRef.current) setLoading(false);
+    });
   }, [id]);
 
-  useEffect(() => { loadBlogger(); }, [loadBlogger]);
+  useEffect(() => {
+    loadBlogger();
+    return () => { requestIdRef.current += 1; };
+  }, [loadBlogger]);
   useProfileDataRefresh(loadBlogger);
 
   useEffect(() => {
@@ -39,7 +58,7 @@ export function BloggerDetails({ id }: { id: string }) {
   }, [id]);
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
-  if (failed || !blogger) return <div className="screen screen--with-nav"><ErrorState onRetry={loadBlogger} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!blogger) return <div className="screen screen--with-nav"><ErrorState onRetry={loadBlogger} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
 
   const socialContact = (type: string, kind: "instagram" | "tiktok" | "youtube" | "telegram") => {
     const platform = blogger.platforms.find((item) => item.type.toLowerCase() === type);
@@ -63,6 +82,7 @@ export function BloggerDetails({ id }: { id: string }) {
     <div className="relative -mt-16 text-center"><div className="mx-auto w-fit"><Avatar name={blogger.name} size="xl" src={blogger.avatarUrl} verified={blogger.verified} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{blogger.name}</h1><p className="mt-1 text-sm text-brand-muted">{blogger.categories.map((category) => categoryLabel(category, language)).join(" · ")} · {cityLabel(blogger.city, language)}</p><div className="mt-2"><Rating count={blogger.reviewsCount} value={blogger.rating} /> <span className="text-sm text-brand-muted">· {t("details.deals", { count: blogger.completedDealsCount })}</span></div></div>
     <div className="mt-5 grid grid-cols-3 gap-2"><StatsCard label={t("details.followers")} value={`${Math.round(blogger.totalFollowers / 1000)}K`} /><StatsCard label="ER" value={`${blogger.engagementRate}%`} /><StatsCard label={t("details.completedDeals")} value={String(blogger.completedDealsCount)} /></div>
     <Card className="mt-5"><h2 className="font-extrabold">{t("details.about")}</h2><p className="mt-2 text-sm leading-6 text-brand-muted">{blogger.bio ?? t("details.filling")}</p><div className="mt-3 flex flex-wrap gap-2">{blogger.barterEnabled && <Badge tone="green">{t("card.barter")}</Badge>}{blogger.verified && <Badge tone="blue">{t("card.verified")}</Badge>}</div></Card>
+    {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     {portfolio.length > 0 && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.portfolio")}</h2><div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5">{portfolio.map((item) => <a className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100" href={item.url} key={item.id} onClick={(event) => { event.preventDefault(); openLink(item.url); }}><img alt={item.title} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" src={item.url} />{item.type === "VIDEO" && <span aria-label={t("details.video")} className="absolute inset-0 grid place-items-center bg-slate-950/30 text-white">▶</span>}</a>)}</div></section>}
     <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.reviews")}</h2>{reviews.length ? <div className="grid gap-2">{reviews.map((review) => <Card className="p-3" key={review.id}><div className="flex items-center justify-between"><Rating value={review.rating} /><span className="text-xs text-brand-muted">{new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(review.createdAtUtc))}</span></div>{review.reviewerName && <p className="mt-2 text-sm font-bold">{review.reviewerName}</p>}{review.comment && <p className="mt-1 text-sm leading-5 text-brand-muted">{review.comment}</p>}</Card>)}</div> : <Card><p className="text-sm text-brand-muted">{t("details.noReviews")}</p></Card>}</section>
     <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.adPrices")}</h2><div className="grid grid-cols-2 gap-2">{[[t("card.stories"), blogger.storiesPrice], [t("card.reels"), blogger.reelsPrice], [t("card.post"), blogger.postPrice], [t("card.integration"), blogger.integrationPrice]].map(([label, value]) => <Card className="p-3" key={String(label)}><p className="text-xs text-brand-muted">{label}</p><p className="mt-1 text-sm font-extrabold">{formatCurrency(Number(value))}</p></Card>)}</div></section>

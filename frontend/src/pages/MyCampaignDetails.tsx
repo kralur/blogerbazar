@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { closeMyCampaign, getMyCampaign, type MyCampaignDetails as MyCampaignDetailsData } from "../api/marketplace";
 import { BottomNav, Badge, Button, Card, ErrorState, Icon, LoadingState, Modal, Toast } from "../components/ui";
@@ -9,26 +9,43 @@ import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatDate, formatNumber } from "../lib/currency";
 import { campaignApplicationsLabel, campaignStatusLabel, campaignStatusTone } from "../lib/campaignStatus";
 import { navigateWithHistoryOrigin } from "../navigation/hashNavigation";
+import { getCachedMyCampaign, removeCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
+import { removeCachedPublicDetail } from "../data/publicDetailCache";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 
 export function MyCampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
-  const [campaign, setCampaign] = useState<MyCampaignDetailsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [campaign, setCampaign] = useState<MyCampaignDetailsData | null>(() => getCachedMyCampaign(id));
+  const [loading, setLoading] = useState(() => !getCachedMyCampaign(id));
   const [failure, setFailure] = useState<DetailState>(null);
   const [closeOpen, setCloseOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [toast, setToast] = useState("");
+  const requestVersionRef = useRef(0);
+  const activeRequestRef = useRef<AbortController>();
   const load = useCallback(() => {
+    activeRequestRef.current?.abort();
     const controller = new AbortController();
-    setLoading(true);
+    activeRequestRef.current = controller;
+    const requestVersion = ++requestVersionRef.current;
+    const cached = getCachedMyCampaign(id);
+    setCampaign(cached);
+    setLoading(!cached);
     setFailure(null);
-    getMyCampaign(id, controller.signal).then(setCampaign).catch((error: unknown) => {
-      if (controller.signal.aborted) return;
-      setCampaign(null);
-      setFailure(error instanceof ApiError && error.status === 404 ? "not-found" : error instanceof ApiError && (error.status === 401 || error.status === 403) ? "denied" : "failed");
-    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    getMyCampaign(id, controller.signal).then((response) => {
+      if (controller.signal.aborted || requestVersion !== requestVersionRef.current) return;
+      setCachedMyCampaign(response);
+      setCampaign(response);
+    }).catch((error: unknown) => {
+      if (controller.signal.aborted || requestVersion !== requestVersionRef.current) return;
+      const nextFailure = error instanceof ApiError && error.status === 404 ? "not-found" : error instanceof ApiError && (error.status === 401 || error.status === 403) ? "denied" : "failed";
+      if (!cached || nextFailure !== "failed") {
+        if (nextFailure !== "failed") removeCachedMyCampaign(id);
+        setCampaign(null);
+        setFailure(nextFailure);
+      }
+    }).finally(() => { if (!controller.signal.aborted && requestVersion === requestVersionRef.current) setLoading(false); });
     return () => controller.abort();
   }, [id]);
   useEffect(() => load(), [load]);
@@ -47,6 +64,8 @@ export function MyCampaignDetails({ id }: { id: string }) {
     try {
       await closeMyCampaign(id);
       setCampaign((current) => current ? { ...current, status: 2 } : current);
+      updateCachedMyCampaign(id, (current) => ({ ...current, status: 2 }));
+      removeCachedPublicDetail("campaign", id);
       setCloseOpen(false);
       setToast(t("myCampaignDetails.closed"));
       notifyCampaignDataChanged();
@@ -67,8 +86,8 @@ export function MyCampaignDetails({ id }: { id: string }) {
     }
   };
 
-  if (loading) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
-  if (failure || !campaign) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
+  if (loading && !campaign) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
+  if (!campaign) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
 
   const budget = formatBudget(campaign.minBudget, campaign.maxBudget, t);
   const canManage = campaign.status !== 2;

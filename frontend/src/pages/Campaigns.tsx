@@ -93,7 +93,7 @@ export function Campaigns() {
   const refreshCatalog = useCallback(() => {
     if (!active) return;
     lastCatalogKeyRef.current = catalogKey;
-    void load(1, false);
+    void load(1, false, true);
   }, [active, catalogKey, load]);
 
   const refreshCreateCapability = useCallback(async () => {
@@ -228,10 +228,12 @@ export function Campaigns() {
       <label className="catalog-search__sort"><span>{t("search.sort")}</span><select aria-label={t("search.sort")} onChange={(event) => changeSort(event.target.value as CampaignCatalogSort)} value={appliedFilters.sort ?? "promoted"}>{sortOptions(t).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     </div>
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetCatalog} showReset={activeChips.length >= 2} />
-    <p aria-live="polite" className="catalog-search__results-count">{loading ? t("campaigns.loading") : t("campaigns.found", { count: total })}</p>
+    <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("campaigns.loading") : t("campaigns.found", { count: total })}</p>
     <section aria-busy={loading || loadingMore} aria-live="polite" className="catalog-search__results">
-      {loading ? <SearchSkeleton count={3} /> : failure === "offline" ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t("ui.offlineSubtitle")} title={t("ui.offlineTitle")} /> : failure === "server" ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t("campaigns.loadFailedSubtitle")} title={t("campaigns.loadFailedTitle")} /> : items.length ? items.map((campaign) => <CampaignCard campaign={campaign} key={campaign.id} />) : <CatalogState actionLabel={hasFilterOrQuery ? t("search.resetAll") : canCreate ? t("campaigns.create") : needsBusinessProfile ? t("campaigns.createBusinessProfile") : undefined} icon="search" onRetry={hasFilterOrQuery ? resetCatalog : canCreate ? () => setCreateOpen(true) : needsBusinessProfile ? () => { window.location.hash = "/business"; } : undefined} subtitle={hasFilterOrQuery ? t("campaigns.emptySearchSubtitle") : canCreate ? t("campaigns.emptyBusinessSubtitle") : needsBusinessProfile ? t("campaigns.emptyBusinessProfileSubtitle") : t("campaigns.emptySubtitle")} title={hasFilterOrQuery ? t("campaigns.emptySearchTitle") : t("campaigns.emptyTitle")} />}
-      {!loading && !failure && items.length > 0 && <>
+      {loading && !loadedInitialResult ? <SearchSkeleton count={3} /> : failure && !loadedInitialResult ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "campaigns.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "campaigns.loadFailedTitle")} /> : !failure && items.length === 0 ? <CatalogState actionLabel={hasFilterOrQuery ? t("search.resetAll") : canCreate ? t("campaigns.create") : needsBusinessProfile ? t("campaigns.createBusinessProfile") : undefined} icon="search" onRetry={hasFilterOrQuery ? resetCatalog : canCreate ? () => setCreateOpen(true) : needsBusinessProfile ? () => { window.location.hash = "/business"; } : undefined} subtitle={hasFilterOrQuery ? t("campaigns.emptySearchSubtitle") : canCreate ? t("campaigns.emptyBusinessSubtitle") : needsBusinessProfile ? t("campaigns.emptyBusinessProfileSubtitle") : t("campaigns.emptySubtitle")} title={hasFilterOrQuery ? t("campaigns.emptySearchTitle") : t("campaigns.emptyTitle")} /> : null}
+      {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={refreshCatalog} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "campaigns.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "campaigns.loadFailedTitle")} />}
+      {items.map((campaign) => <CampaignCard campaign={campaign} key={campaign.id} />)}
+      {items.length > 0 && <>
         <div aria-hidden="true" ref={sentinelRef} />
         {loadingMore && <SearchSkeleton compact count={2} />}
         {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void load(page + 1, true)} subtitle={t("campaigns.loadFailedSubtitle")} title={t("campaigns.loadFailedTitle")} />}

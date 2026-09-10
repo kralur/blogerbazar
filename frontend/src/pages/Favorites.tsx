@@ -11,6 +11,7 @@ import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatNumber } from "../lib/currency";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 
 type FavoriteTab = "blogger" | "brandFace";
 type MutableRef<T> = { current: T };
@@ -19,6 +20,7 @@ const pageSize = 20;
 export function Favorites() {
   const { t } = useI18n();
   const { canManageFavorite, ready } = useFavorites();
+  const rootScreenVisible = useRootScreenVisibility();
   const canManageBrandFaceFavorites = canManageFavorite("brandFace");
   const [activeTab, setActiveTab] = useState<FavoriteTab>("blogger");
 
@@ -32,8 +34,8 @@ export function Favorites() {
       <FavoriteTabButton label={t("favorites.typeBloggers")} onClick={() => setActiveTab("blogger")} selected={activeTab === "blogger"} />
       <FavoriteTabButton label={t("favorites.typeBrandFaces")} onClick={() => setActiveTab("brandFace")} selected={activeTab === "brandFace"} />
     </div>}
-    <div className="mt-5" hidden={activeTab !== "blogger"}><BloggerFavorites active={activeTab === "blogger"} /></div>
-    {canManageBrandFaceFavorites && <div className="mt-5" hidden={activeTab !== "brandFace"}><BrandFaceFavorites active={activeTab === "brandFace"} /></div>}
+    <div className="mt-5" hidden={activeTab !== "blogger"}><BloggerFavorites active={rootScreenVisible && activeTab === "blogger"} /></div>
+    {canManageBrandFaceFavorites && <div className="mt-5" hidden={activeTab !== "brandFace"}><BrandFaceFavorites active={rootScreenVisible && activeTab === "brandFace"} /></div>}
     <BottomNav />
   </div>;
 }
@@ -52,14 +54,15 @@ function BloggerFavorites({ active }: { active: boolean }) {
     return { items: response.items, total: response.total, page: response.page, hasMore: response.page * response.pageSize < response.total };
   }, []);
   const catalog = usePaginatedCatalog<FavoriteBlogger>({ active, fetchPage, getItemId: (item) => item.bloggerId });
-  const refresh = useCallback(() => { void catalog.load(1, false); }, [catalog.load]);
+  const refresh = useCallback(() => { void catalog.load(1, false, true); }, [catalog.load]);
 
   useInitialFavoriteLoad(active, startedRef, catalog.load, catalog.cancel);
   useProfileDataRefresh(useCallback(() => { if (active) refresh(); }, [active, refresh]));
   useInfiniteFavoritesScroll({ active, failure: catalog.failure, hasMore: catalog.hasMore, load: catalog.load, loadMoreFailed: catalog.loadMoreFailed, loading: catalog.loading, loadingMore: catalog.loadingMore, page: catalog.page, sentinelRef });
 
   return <section aria-busy={catalog.loading || catalog.loadingMore} aria-live="polite" className="catalog-search__results">
-    {catalog.loading ? <SearchSkeleton count={3} /> : catalog.failure ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} /> : catalog.items.length === 0 ? <CatalogState icon="bookmark" subtitle={t("favorites.emptySubtitle")} title={t("favorites.emptyTitle")} /> : catalog.items.map((blogger) => <Card className="relative p-3" key={blogger.bloggerId}><a className="flex min-w-0 items-center gap-3 pr-10" href={`#/blogger/${blogger.bloggerId}`}><Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} /><span className="min-w-0 flex-1"><strong className="block truncate">{blogger.name}</strong><span className="mt-1 block truncate text-sm text-brand-muted">{cityLabel(blogger.city, language)} · {blogger.categories.map((category) => categoryLabel(category, language)).join(", ")}</span><span className="mt-1 block text-xs font-semibold text-brand-muted">{formatNumber(blogger.totalFollowers)} {t("common.followers").toLowerCase()}</span></span></a><FavoriteButton bloggerId={blogger.bloggerId} className="absolute right-3 top-1/2 -translate-y-1/2" /></Card>)}
+    {catalog.loading && !catalog.loadedInitialResult ? <SearchSkeleton count={3} /> : catalog.failure && !catalog.loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} /> : !catalog.failure && catalog.items.length === 0 ? <CatalogState icon="bookmark" subtitle={t("favorites.emptySubtitle")} title={t("favorites.emptyTitle")} /> : catalog.items.map((blogger) => <Card className="relative p-3" key={blogger.bloggerId}><a className="flex min-w-0 items-center gap-3 pr-10" href={`#/blogger/${blogger.bloggerId}`}><Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} /><span className="min-w-0 flex-1"><strong className="block truncate">{blogger.name}</strong><span className="mt-1 block truncate text-sm text-brand-muted">{cityLabel(blogger.city, language)} · {blogger.categories.map((category) => categoryLabel(category, language)).join(", ")}</span><span className="mt-1 block text-xs font-semibold text-brand-muted">{formatNumber(blogger.totalFollowers)} {t("common.followers").toLowerCase()}</span></span></a><FavoriteButton bloggerId={blogger.bloggerId} className="absolute right-3 top-1/2 -translate-y-1/2" /></Card>)}
+    {catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} />}
     <FavoriteListFooter catalog={catalog} onRetry={() => void catalog.load(catalog.page + 1, true)} sentinelRef={sentinelRef} />
   </section>;
 }
@@ -71,14 +74,15 @@ function BrandFaceFavorites({ active }: { active: boolean }) {
   useScrollRestoration("favorites:brand-face", active);
   const fetchPage = useCallback((page: number) => getBrandFaceFavorites(page, pageSize), []);
   const catalog = usePaginatedCatalog<FavoriteBrandFace>({ active, fetchPage, getItemId: (item) => item.id });
-  const refresh = useCallback(() => { void catalog.load(1, false); }, [catalog.load]);
+  const refresh = useCallback(() => { void catalog.load(1, false, true); }, [catalog.load]);
 
   useInitialFavoriteLoad(active, startedRef, catalog.load, catalog.cancel);
   useProfileDataRefresh(useCallback(() => { if (active) refresh(); }, [active, refresh]));
   useInfiniteFavoritesScroll({ active, failure: catalog.failure, hasMore: catalog.hasMore, load: catalog.load, loadMoreFailed: catalog.loadMoreFailed, loading: catalog.loading, loadingMore: catalog.loadingMore, page: catalog.page, sentinelRef });
 
   return <section aria-busy={catalog.loading || catalog.loadingMore} aria-live="polite" className="catalog-search__results">
-    {catalog.loading ? <SearchSkeleton count={3} /> : catalog.failure ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.brandFacesLoadFailedSubtitle")} title={t("favorites.brandFacesLoadFailedTitle")} /> : catalog.items.length === 0 ? <CatalogState icon="bookmark" subtitle={t("favorites.brandFacesEmptySubtitle")} title={t("favorites.brandFacesEmptyTitle")} /> : catalog.items.map((brandFace) => <BrandFaceCard key={brandFace.id} onFavoriteChanged={(isFavorite) => { if (!isFavorite) refresh(); }} profile={brandFace} />)}
+    {catalog.loading && !catalog.loadedInitialResult ? <SearchSkeleton count={3} /> : catalog.failure && !catalog.loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.brandFacesLoadFailedSubtitle")} title={t("favorites.brandFacesLoadFailedTitle")} /> : !catalog.failure && catalog.items.length === 0 ? <CatalogState icon="bookmark" subtitle={t("favorites.brandFacesEmptySubtitle")} title={t("favorites.brandFacesEmptyTitle")} /> : catalog.items.map((brandFace) => <BrandFaceCard key={brandFace.id} onFavoriteChanged={(isFavorite) => { if (!isFavorite) refresh(); }} profile={brandFace} />)}
+    {catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t("favorites.brandFacesLoadFailedSubtitle")} title={t("favorites.brandFacesLoadFailedTitle")} />}
     <FavoriteListFooter catalog={catalog} onRetry={() => void catalog.load(catalog.page + 1, true)} sentinelRef={sentinelRef} />
   </section>;
 }

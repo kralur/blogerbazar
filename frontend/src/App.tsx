@@ -8,6 +8,8 @@ import { RootScreenVisibility } from "./navigation/RootScreenVisibility";
 import { useTelegramBackHandler } from "./hooks/useTelegramBackHandler";
 import { requestGuardedNavigation } from "./navigation/guardedNavigation";
 import { replaceHistoryRoute } from "./navigation/hashNavigation";
+import { clearMyCampaignCache } from "./data/myCampaignCache";
+import { clearPublicDetailCache } from "./data/publicDetailCache";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
@@ -37,6 +39,7 @@ const CachedHome = memo(Home);
 const CachedSearch = memo(BloggerSearch);
 const CachedCampaigns = memo(Campaigns);
 const CachedMyCampaigns = memo(MyCampaigns);
+const CachedFavorites = memo(Favorites);
 const CachedRequests = memo(MyRequests);
 const CachedProfile = memo(ProfileDashboard);
 const rootRoutes = ["/", "/search", "/campaigns", "/requests", "/profile"];
@@ -83,6 +86,7 @@ export function App() {
   const [authorizationFailed, setAuthorizationFailed] = useState(false);
   const [visitedRootRoutes, setVisitedRootRoutes] = useState<Set<string>>(() => new Set(rootRoutes.includes(route.path) ? [route.path] : ["/"]));
   const [visitedMyCampaigns, setVisitedMyCampaigns] = useState(() => ["/my-campaigns", "/my-campaign", "/my-campaign-edit"].includes(route.path));
+  const [visitedFavorites, setVisitedFavorites] = useState(() => route.path === "/favorites");
   const [sessionEpoch, setSessionEpoch] = useState(0);
 
   useEffect(() => {
@@ -93,6 +97,9 @@ export function App() {
 
   useEffect(() => {
     if (onboardingStep === "complete" && ["/my-campaigns", "/my-campaign", "/my-campaign-edit"].includes(route.path)) setVisitedMyCampaigns(true);
+  }, [onboardingStep, route.path]);
+  useEffect(() => {
+    if (onboardingStep === "complete" && route.path === "/favorites") setVisitedFavorites(true);
   }, [onboardingStep, route.path]);
 
   const resolveDestination = useCallback(async () => {
@@ -164,10 +171,17 @@ export function App() {
     setSelectedRole(undefined);
     setAuthorizationFailed(false);
     setVisitedRootRoutes(new Set(["/"]));
+    clearMyCampaignCache();
+    clearPublicDetailCache();
     setSessionEpoch((current) => current + 1);
     setOnboardingStep("welcome");
     if (window.location.hash !== "#/") window.location.hash = "/";
   }, [setBackButtonHandler]);
+
+  const handleMarketplaceRoleSelected = useCallback((role: MarketplaceRole) => {
+    clearMyCampaignCache();
+    setSelectedRole(role);
+  }, []);
 
   const goBackFromNestedRoute = useCallback(() => {
     if (route.path === "/my-campaign-edit" && route.id) {
@@ -201,9 +215,9 @@ export function App() {
 
   return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
-      {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome role={selectedRole} /></RootScreenVisibility>}
-      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={setSelectedRole} onSessionReset={resetToWelcome} /></RootScreenVisibility>}
-      {route.path === "/favorites" && <Favorites />}
+      {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome key={selectedRole ?? "none"} role={selectedRole} /></RootScreenVisibility>}
+      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={handleMarketplaceRoleSelected} onSessionReset={resetToWelcome} /></RootScreenVisibility>}
+      {(visitedFavorites || route.path === "/favorites") && <RootScreenVisibility active={route.path === "/favorites"}><CachedFavorites /></RootScreenVisibility>}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
       {route.path === "/business" && <BusinessProfileForm />}
       {route.path === "/brand-face" && <BrandFaceProfileForm />}
@@ -212,7 +226,7 @@ export function App() {
       {route.path === "/blogger" && route.id && <BloggerDetails id={route.id} />}
       {(visitedRootRoutes.has("/campaigns") || route.path === "/campaigns") && <RootScreenVisibility active={route.path === "/campaigns"}><CachedCampaigns /></RootScreenVisibility>}
       {route.path === "/campaign" && route.id && <CampaignDetails id={route.id} />}
-      {(visitedMyCampaigns || route.path === "/my-campaigns") && <RootScreenVisibility active={route.path === "/my-campaigns"}><CachedMyCampaigns /></RootScreenVisibility>}
+      {(visitedMyCampaigns || route.path === "/my-campaigns") && <RootScreenVisibility active={route.path === "/my-campaigns"}><CachedMyCampaigns key={selectedRole ?? "none"} /></RootScreenVisibility>}
       {route.path === "/my-campaign" && route.id && <MyCampaignDetails id={route.id} />}
       {route.path === "/my-campaign-edit" && route.id && <MyCampaignEdit id={route.id} />}
       {(visitedRootRoutes.has("/requests") || route.path === "/requests") && <RootScreenVisibility active={route.path === "/requests"}><CachedRequests /></RootScreenVisibility>}

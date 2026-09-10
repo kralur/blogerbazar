@@ -16,6 +16,7 @@ export function usePaginatedCatalog<TItem>({ active, fetchPage, getItemId = defa
   const requestIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController>();
   const loadingPagesRef = useRef(new Set<number>());
+  const loadedInitialResultRef = useRef(false);
 
   const cancel = useCallback(() => {
     requestIdRef.current += 1;
@@ -26,15 +27,19 @@ export function usePaginatedCatalog<TItem>({ active, fetchPage, getItemId = defa
     setLoadMoreFailed(false);
   }, []);
 
-  const load = useCallback(async (requestedPage: number, append: boolean) => {
+  const load = useCallback(async (requestedPage: number, append: boolean, preservePrevious = false) => {
     if (!active || (append && loadingPagesRef.current.has(requestedPage))) return;
     if (!append) {
       abortControllerRef.current?.abort();
       loadingPagesRef.current.clear();
-      setItems([]);
-      setTotal(0);
-      setPage(1);
-      setHasMore(false);
+      if (!preservePrevious || !loadedInitialResultRef.current) {
+        loadedInitialResultRef.current = false;
+        setItems([]);
+        setTotal(0);
+        setPage(1);
+        setHasMore(false);
+        setLoadedInitialResult(false);
+      }
     }
 
     const requestId = ++requestIdRef.current;
@@ -48,7 +53,6 @@ export function usePaginatedCatalog<TItem>({ active, fetchPage, getItemId = defa
     } else {
       setLoading(true);
       setFailure(null);
-      setLoadedInitialResult(false);
     }
 
     try {
@@ -58,6 +62,7 @@ export function usePaginatedCatalog<TItem>({ active, fetchPage, getItemId = defa
       setTotal(result.total);
       setPage(result.page);
       setHasMore(result.hasMore);
+      loadedInitialResultRef.current = true;
       setLoadedInitialResult(true);
     } catch (error) {
       if (abortController.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;

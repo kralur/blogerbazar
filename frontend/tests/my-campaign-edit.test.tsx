@@ -26,6 +26,7 @@ vi.mock("../src/components/ui", () => ({
 }));
 
 import { MyCampaignEdit } from "../src/pages/MyCampaignEdit";
+import { clearMyCampaignCache, setCachedMyCampaign } from "../src/data/myCampaignCache";
 
 const campaign = {
   id: "campaign-a", title: "Coffee launch", description: "Launch coffee", city: "tashkent", categories: ["food"], requirements: ["Reels"], minBudget: 0, maxBudget: 500_000, deadline: "2026-08-31T00:00:00Z", status: 1 as const, isPromoted: false, createdAtUtc: "2026-08-20T00:00:00Z", updatedAtUtc: "2026-08-21T00:00:00Z", applicationsCount: 0
@@ -34,6 +35,7 @@ const campaign = {
 describe("My Campaign edit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearMyCampaignCache();
     window.location.hash = "/my-campaign-edit/campaign-a";
     api.getMyCampaign.mockResolvedValue(campaign);
     api.updateMyCampaign.mockResolvedValue({ id: "campaign-a" });
@@ -46,6 +48,16 @@ describe("My Campaign edit", () => {
     expect(screen.getAllByText(translate("currency.uzs", undefined, "ru"))).toHaveLength(2);
     expect(screen.getByText("food")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: translate("myCampaignEdit.save", undefined, "ru") })).toBeDisabled();
+  });
+
+  it("keeps a cached private campaign visible during a background refetch", () => {
+    setCachedMyCampaign(campaign);
+    api.getMyCampaign.mockReturnValue(new Promise(() => undefined));
+
+    render(<I18nProvider><MyCampaignEdit id="campaign-a" /></I18nProvider>);
+
+    expect(screen.getByDisplayValue("Coffee launch")).toBeInTheDocument();
+    expect(screen.queryByText("loading")).not.toBeInTheDocument();
   });
 
   it("uses the private update endpoint and keeps numeric payload values free of suffixes", async () => {

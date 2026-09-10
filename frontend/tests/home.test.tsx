@@ -160,6 +160,18 @@ describe("Home", () => {
     await waitFor(() => expect(screen.queryByText("Promoted blogger")).not.toBeInTheDocument());
   });
 
+  it("keeps loaded Home content visible when a background refresh fails", async () => {
+    api.getMarketplaceHome.mockResolvedValueOnce(response).mockRejectedValueOnce(new Error("offline"));
+    renderHome("Business");
+    await waitForData();
+
+    act(() => profileRefresh?.());
+
+    expect(await screen.findByRole("status")).toHaveTextContent(translate("common.connectionRetry", undefined, "ru"));
+    expect(screen.getByText("Promoted blogger")).toBeInTheDocument();
+    expect(screen.queryByTestId("skeleton")).not.toBeInTheDocument();
+  });
+
   it("keeps category links encoded and marks each rail as an accessible region", async () => {
     api.getMarketplaceHome.mockResolvedValue({ ...response, categories: ["beauty"] });
     renderHome("Business");

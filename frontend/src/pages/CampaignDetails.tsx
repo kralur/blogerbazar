@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { applyToCampaign, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getPublicContact, normalizeMarketplaceRole, type CampaignDetails, type ContactDetails } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 
 export function CampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
-  const [campaign, setCampaign] = useState<CampaignDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [campaign, setCampaign] = useState<CampaignDetails | null>(() => getCachedPublicDetail<CampaignDetails>("campaign", id));
+  const [loading, setLoading] = useState(() => !getCachedPublicDetail<CampaignDetails>("campaign", id));
   const [failed, setFailed] = useState(false);
   const [contact, setContact] = useState<ContactDetails | null>(null);
   const [applicationOpen, setApplicationOpen] = useState(false);
@@ -19,13 +20,31 @@ export function CampaignDetails({ id }: { id: string }) {
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
 
-  const loadCampaign = () => {
-    setLoading(true);
+  const requestIdRef = useRef(0);
+  const loadCampaign = useCallback(() => {
+    const cached = getCachedPublicDetail<CampaignDetails>("campaign", id);
+    const requestId = ++requestIdRef.current;
+    if (cached) setCampaign(cached);
+    else setCampaign(null);
+    setLoading(!cached);
     setFailed(false);
-    getCampaign(id).then(setCampaign).catch(() => { setCampaign(null); setFailed(true); }).finally(() => setLoading(false));
-  };
+    getCampaign(id).then((response) => {
+      if (requestId !== requestIdRef.current) return;
+      setCachedPublicDetail("campaign", id, response);
+      setCampaign(response);
+    }).catch(() => {
+      if (requestId !== requestIdRef.current) return;
+      setFailed(true);
+      if (!cached) setCampaign(null);
+    }).finally(() => {
+      if (requestId === requestIdRef.current) setLoading(false);
+    });
+  }, [id]);
 
-  useEffect(loadCampaign, [id]);
+  useEffect(() => {
+    loadCampaign();
+    return () => { requestIdRef.current += 1; };
+  }, [loadCampaign]);
 
   useEffect(() => {
     const businessId = campaign?.businessId;
@@ -73,7 +92,7 @@ export function CampaignDetails({ id }: { id: string }) {
 
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("campaign.loading")} /><BottomNav /></div>;
-  if (failed || !campaign) return <div className="screen screen--with-nav"><ErrorState onRetry={loadCampaign} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!campaign) return <div className="screen screen--with-nav"><ErrorState onRetry={loadCampaign} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
 
   const contacts = [
     contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
@@ -99,6 +118,7 @@ export function CampaignDetails({ id }: { id: string }) {
         </div>
         <div className="p-5"><p className="text-sm leading-6 text-brand-muted">{campaign.description}</p>{(budget || campaign.city) && <div className="mt-5 grid grid-cols-2 gap-2">{budget && <div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-brand-muted">{t("common.budget")}</p><p className="mt-1 text-sm font-extrabold">{budget}</p></div>}{campaign.city && <div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-brand-muted">{t("campaign.location")}</p><p className="mt-1 text-sm font-extrabold">{cityLabel(campaign.city, language)}</p></div>}</div>}</div>
       </Card>
+      {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.suitable")}</h2><div className="flex flex-wrap gap-2">{campaign.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div></section>
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("common.requirements")}</h2><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></section>
       {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.businessContact")}</h2><ContactList items={contacts} /></section>}
