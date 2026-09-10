@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../src/hooks/useUnsavedChanges";
 import { requestGuardedNavigation } from "../src/navigation/guardedNavigation";
-import { replaceWithHistoryOrigin } from "../src/navigation/hashNavigation";
+import { navigateWithHistoryOrigin } from "../src/navigation/hashNavigation";
 import { TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
 
 const initialValues = { title: "Initial", description: "Description", category: "Food", requirements: "Reels", budget: "100000", deadline: "2026-12-31" };
@@ -57,7 +57,7 @@ function setupCampaignEditHistory() {
   window.history.replaceState(null, "", "#/campaigns");
   window.location.hash = "/my-campaigns";
   window.location.hash = "/my-campaign/campaign-a";
-  replaceWithHistoryOrigin("#/my-campaign/campaign-a", "#/my-campaign-edit/campaign-a");
+  navigateWithHistoryOrigin("#/my-campaign/campaign-a", "#/my-campaign-edit/campaign-a");
 }
 
 describe("native edit unsaved navigation", () => {
@@ -203,7 +203,7 @@ describe("native edit unsaved navigation", () => {
     fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
     fireEvent.click(screen.getByRole("button", { name: "saved" }));
 
-    await waitFor(() => expect(historyGo).toHaveBeenCalledWith(-2));
+    await waitFor(() => expect(historyGo).toHaveBeenCalledWith(-3));
     await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
     await act(async () => { window.history.back(); });
     await waitFor(() => expect(window.location.hash).toBe("#/my-campaigns"));
@@ -225,6 +225,78 @@ describe("native edit unsaved navigation", () => {
     await act(async () => { window.history.forward(); });
     await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps Owner details in history after a clean exit and a second edit session", async () => {
+    setupCampaignEditHistory();
+    const onClick = vi.fn();
+    renderHarness(onClick, "origin");
+
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+
+    navigateWithHistoryOrigin("#/my-campaign/campaign-a", "#/my-campaign-edit/campaign-a");
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign-edit/campaign-a"));
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaigns"));
+  });
+
+  it("does not expose My Campaigns through hashchange while compacting a discarded edit", async () => {
+    setupCampaignEditHistory();
+    const observedHashes: string[] = [];
+    const observeHash = () => observedHashes.push(window.location.hash);
+    window.addEventListener("hashchange", observeHash);
+    const onClick = vi.fn();
+    renderHarness(onClick, "origin");
+    fireEvent.change(screen.getByLabelText("title"), { target: { value: "Changed" } });
+
+    await act(async () => { window.history.back(); });
+    await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+    fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.discard", undefined, "ru") }));
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+
+    window.removeEventListener("hashchange", observeHash);
+    expect(observedHashes).not.toContain("#/my-campaigns");
+  });
+
+  it("keeps one Owner entry after three consecutive discard cycles", async () => {
+    setupCampaignEditHistory();
+
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      const onClick = vi.fn();
+      const view = renderHarness(onClick, "origin");
+      fireEvent.change(screen.getByLabelText("title"), { target: { value: `Changed ${cycle}` } });
+      await act(async () => { window.history.back(); });
+      await screen.findByText(translate("myCampaignEdit.unsavedTitle", undefined, "ru"));
+      fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.discard", undefined, "ru") }));
+      await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+      view.unmount();
+
+      if (cycle < 2) navigateWithHistoryOrigin("#/my-campaign/campaign-a", "#/my-campaign-edit/campaign-a");
+    }
+
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaigns"));
+  });
+
+  it("keeps one Owner entry after three consecutive save cycles", async () => {
+    setupCampaignEditHistory();
+
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      const onClick = vi.fn();
+      const view = renderHarness(onClick, "origin");
+      fireEvent.change(screen.getByLabelText("title"), { target: { value: `Saved ${cycle}` } });
+      fireEvent.click(screen.getByRole("button", { name: "saved" }));
+      await waitFor(() => expect(window.location.hash).toBe("#/my-campaign/campaign-a"));
+      view.unmount();
+
+      if (cycle < 2) navigateWithHistoryOrigin("#/my-campaign/campaign-a", "#/my-campaign-edit/campaign-a");
+    }
+
+    await act(async () => { window.history.back(); });
+    await waitFor(() => expect(window.location.hash).toBe("#/my-campaigns"));
   });
 
   it("keeps one sentinel through three host Back and Cancel cycles", async () => {

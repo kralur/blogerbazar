@@ -7,8 +7,8 @@ type HistoryOriginState = Record<string, unknown> & {
   };
 };
 
-export function replaceWithHistoryOrigin(from: string, to: string) {
-  window.history.replaceState({
+export function navigateWithHistoryOrigin(from: string, to: string) {
+  window.history.pushState({
     ...(window.history.state ?? {}),
     [historyOriginKey]: { from, to },
   }, "", to);

@@ -93,7 +93,7 @@ export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptio
     if (pendingHistoryBackRef.current) {
       if (canCompactHistory.current) {
         historyCleanupPhase.current = "compact-from-edit";
-        window.history.back();
+        window.history.go(-2);
         return true;
       }
       fallbackToHistoryExit();
@@ -104,7 +104,7 @@ export function useUnsavedChanges(isDirty: boolean, options: UnsavedChangesOptio
       deactivateHistoryGuard();
       if (canCompactHistory.current) {
         historyCleanupPhase.current = "compact-from-sentinel";
-        window.history.go(-2);
+        window.history.go(-3);
         return true;
       }
       historyCleanupPhase.current = "replace-edit-with-exit";
