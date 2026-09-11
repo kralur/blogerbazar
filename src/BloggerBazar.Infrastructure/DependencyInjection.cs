@@ -45,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<IMarketplaceCatalogReadModel, MarketplaceCatalogReadModel>();
         services.AddScoped<ICampaignCatalogReadModel, CampaignCatalogReadModel>();
         services.AddScoped<ICampaignManagementReadModel, CampaignManagementReadModel>();
+        services.AddScoped<ICampaignApplicationReadModel, CampaignApplicationReadModel>();
         services.AddScoped<IBrandFaceCatalogReadModel, BrandFaceCatalogReadModel>();
         services.AddScoped<IFavoritesReadModel, FavoritesReadModel>();
         services.AddScoped<IBrandFaceFavoritesReadModel, BrandFaceFavoritesReadModel>();

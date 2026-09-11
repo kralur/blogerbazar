@@ -8,11 +8,27 @@ using BloggerBazar.Application.Features.Deals;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using BloggerBazar.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace BloggerBazar.Application.Tests.Features.Campaigns;
 
 public sealed class CampaignSafetyFoundationTests
 {
+    [Fact]
+    public void Deal_mapping_enforces_one_deal_per_campaign_application_at_the_database_level()
+    {
+        var options = new DbContextOptionsBuilder<BloggerBazarDbContext>()
+            .UseNpgsql("Host=localhost;Database=bloggerbazar_test;Username=test;Password=test")
+            .Options;
+        using var dbContext = new BloggerBazarDbContext(options);
+
+        var index = dbContext.Model.FindEntityType(typeof(Deal))!.GetIndexes()
+            .Single(candidate => candidate.IsUnique && candidate.Properties.Single().Name == nameof(Deal.CampaignApplicationId));
+
+        Assert.True(index.IsUnique);
+        Assert.Equal("\"CampaignApplicationId\" IS NOT NULL", index.GetFilter());
+    }
+
     [Fact]
     public void Public_campaign_visibility_requires_published_campaign_and_available_approved_business_owner()
     {
@@ -132,15 +148,38 @@ public sealed class CampaignSafetyFoundationTests
     }
 
     [Fact]
+    public async Task Patch_status_does_not_allow_rejecting_an_accepted_application()
+    {
+        var business = ApprovedBusiness(14, "Business");
+        var campaign = PublishedCampaign(business);
+        AttachBusiness(campaign, business);
+        var blogger = BloggerProfile.Create(15, "Blogger", "tashkent", ["beauty"]);
+        var application = CampaignApplication.Create(campaign.Id, blogger.Id, null);
+        AttachCampaign(application, campaign);
+        application.Accept();
+        var handler = new UpdateCampaignApplicationStatusHandler(
+            new InMemoryApplicationRepository(application),
+            new InMemoryBusinessRepository(business),
+            new UnitOfWork(),
+            new InMemoryBloggerRepository(blogger));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(
+            new UpdateCampaignApplicationStatusCommand(application.Id, business.TelegramUserId, CampaignApplicationStatus.Rejected),
+            CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Repeated_sequential_apply_does_not_create_a_second_application()
     {
         var business = ApprovedBusiness(31, "Business");
         var campaign = PublishedCampaign(business);
+        AttachBusiness(campaign, business);
         var blogger = BloggerProfile.Create(32, "Blogger", "tashkent", ["beauty"]);
         blogger.Approve();
         var applications = new StatefulApplicationRepository();
         var handler = new ApplyToCampaignHandler(
             new InMemoryCampaignRepository(campaign),
+            new InMemoryPlatformUserRepository(BloggerUser(blogger.TelegramUserId), User(business.TelegramUserId)),
             new InMemoryBloggerRepository(blogger),
             new InMemoryBusinessRepository(),
             applications,
@@ -196,6 +235,15 @@ public sealed class CampaignSafetyFoundationTests
         user.SelectMarketplaceRole(MarketplaceRole.Business);
         return user;
     }
+
+    private static PlatformUser BloggerUser(long telegramUserId)
+    {
+        var user = User(telegramUserId);
+        user.SelectMarketplaceRole(MarketplaceRole.Blogger);
+        return user;
+    }
+
+    private static PlatformUser User(long telegramUserId) => PlatformUser.Create(telegramUserId, "User", null);
 
     private static Campaign PublishedCampaign(BusinessProfile business)
     {

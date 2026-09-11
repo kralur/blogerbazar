@@ -96,6 +96,38 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
         return Ok(await sender.Send(new CloseCampaignCommand(campaignId, actor.Id), cancellationToken));
     }
 
+    [HttpGet("mine/{campaignId:guid}/applications")]
+    [ProducesResponseType<CampaignApplicationInboxResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CampaignApplicationInboxResult>> GetApplications(
+        Guid campaignId,
+        [FromQuery] int? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetCampaignApplicationInboxQuery(actor.Id, campaignId, status, page, pageSize), cancellationToken));
+    }
+
+    [HttpPost("mine/{campaignId:guid}/applications/{applicationId:guid}/accept")]
+    [ProducesResponseType<CampaignApplicationDecisionDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CampaignApplicationDecisionDto>> AcceptApplication(Guid campaignId, Guid applicationId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new DecideCampaignApplicationCommand(actor.Id, campaignId, applicationId, Domain.Enums.CampaignApplicationStatus.Accepted), cancellationToken));
+    }
+
+    [HttpPost("mine/{campaignId:guid}/applications/{applicationId:guid}/reject")]
+    [ProducesResponseType<CampaignApplicationDecisionDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CampaignApplicationDecisionDto>> RejectApplication(Guid campaignId, Guid applicationId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new DecideCampaignApplicationCommand(actor.Id, campaignId, applicationId, Domain.Enums.CampaignApplicationStatus.Rejected), cancellationToken));
+    }
+
     [HttpPost("{campaignId:guid}/applications")]
     [ProducesResponseType<CampaignApplicationDto>(StatusCodes.Status201Created)]
     public async Task<ActionResult<CampaignApplicationDto>> Apply(Guid campaignId, ApplyToCampaignRequest request, CancellationToken cancellationToken)

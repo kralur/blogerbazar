@@ -9,6 +9,9 @@ internal sealed class DealRepository(BloggerBazarDbContext dbContext) : IDealRep
     public Task<Deal?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         dbContext.Deals.SingleOrDefaultAsync(deal => deal.Id == id, cancellationToken);
 
+    public Task<Deal?> GetByCampaignApplicationIdAsync(Guid campaignApplicationId, CancellationToken cancellationToken) =>
+        dbContext.Deals.SingleOrDefaultAsync(deal => deal.CampaignApplicationId == campaignApplicationId, cancellationToken);
+
     public Task<bool> ExistsForApplicationAsync(Guid campaignApplicationId, CancellationToken cancellationToken) =>
         dbContext.Deals.AnyAsync(deal => deal.CampaignApplicationId == campaignApplicationId, cancellationToken);
 

@@ -1,6 +1,8 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Domain.Entities;
+using BloggerBazar.Domain.Enums;
+using System.Reflection;
 
 namespace BloggerBazar.Application.Tests.Features.Campaigns;
 
@@ -9,12 +11,12 @@ public sealed class ApplyToCampaignHandlerTests
     [Fact]
     public async Task Creates_application_for_approved_blogger_and_published_campaign()
     {
-        var campaign = Campaign.Create(Guid.NewGuid(), "Campaign", "Description", ["Lifestyle"], null, null, null, null, null);
-        campaign.Publish();
+        var business = ApprovedBusiness(99, "Business");
+        var campaign = PublishedCampaign(business);
         var blogger = BloggerProfile.Create(12, "Madina", "Ташкент", ["Lifestyle"]);
         blogger.Approve();
         var applications = new InMemoryApplicationRepository();
-        var handler = new ApplyToCampaignHandler(new InMemoryCampaignRepository(campaign), new InMemoryBloggerRepository(blogger), new InMemoryBusinessRepository(), applications, new SpyUnitOfWork());
+        var handler = new ApplyToCampaignHandler(new InMemoryCampaignRepository(campaign), new InMemoryPlatformUserRepository(BloggerUser(12), User(99)), new InMemoryBloggerRepository(blogger), new InMemoryBusinessRepository(), applications, new SpyUnitOfWork());
 
         var result = await handler.Handle(new ApplyToCampaignCommand(campaign.Id, 12, "Готова к интеграции"), CancellationToken.None);
 
@@ -26,12 +28,12 @@ public sealed class ApplyToCampaignHandlerTests
     [Fact]
     public async Task Rejects_duplicate_campaign_application()
     {
-        var campaign = Campaign.Create(Guid.NewGuid(), "Campaign", "Description", ["Lifestyle"], null, null, null, null, null);
-        campaign.Publish();
+        var business = ApprovedBusiness(99, "Business");
+        var campaign = PublishedCampaign(business);
         var blogger = BloggerProfile.Create(12, "Madina", "Ташкент", ["Lifestyle"]);
         blogger.Approve();
         var applications = new InMemoryApplicationRepository { Existing = true };
-        var handler = new ApplyToCampaignHandler(new InMemoryCampaignRepository(campaign), new InMemoryBloggerRepository(blogger), new InMemoryBusinessRepository(), applications, new SpyUnitOfWork());
+        var handler = new ApplyToCampaignHandler(new InMemoryCampaignRepository(campaign), new InMemoryPlatformUserRepository(BloggerUser(12), User(99)), new InMemoryBloggerRepository(blogger), new InMemoryBusinessRepository(), applications, new SpyUnitOfWork());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new ApplyToCampaignCommand(campaign.Id, 12, null), CancellationToken.None));
 
@@ -41,13 +43,13 @@ public sealed class ApplyToCampaignHandlerTests
     [Fact]
     public async Task Rejects_application_to_a_campaign_owned_by_the_same_user()
     {
-        var business = BusinessProfile.Create(12, "Own business", null);
-        var campaign = Campaign.Create(business.Id, "Campaign", "Description", ["Lifestyle"], null, null, null, null, null);
-        campaign.Publish();
+        var business = ApprovedBusiness(12, "Own business");
+        var campaign = PublishedCampaign(business);
         var blogger = BloggerProfile.Create(12, "Madina", "Tashkent", ["Lifestyle"]);
         blogger.Approve();
         var handler = new ApplyToCampaignHandler(
             new InMemoryCampaignRepository(campaign),
+            new InMemoryPlatformUserRepository(BloggerUser(12)),
             new InMemoryBloggerRepository(blogger),
             new InMemoryBusinessRepository(business),
             new InMemoryApplicationRepository(),
@@ -101,5 +103,37 @@ public sealed class ApplyToCampaignHandlerTests
     private sealed class SpyUnitOfWork : IUnitOfWork
     {
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+    }
+
+    private static BusinessProfile ApprovedBusiness(long telegramUserId, string name)
+    {
+        var business = BusinessProfile.Create(telegramUserId, name, "tashkent");
+        business.Approve();
+        return business;
+    }
+
+    private static Campaign PublishedCampaign(BusinessProfile business)
+    {
+        var campaign = Campaign.Create(business.Id, "Campaign", "Description", ["Lifestyle"], null, null, null, null, null);
+        campaign.Publish();
+        typeof(Campaign).GetProperty(nameof(Campaign.Business), BindingFlags.Instance | BindingFlags.Public)!.SetValue(campaign, business);
+        return campaign;
+    }
+
+    private static PlatformUser BloggerUser(long telegramUserId)
+    {
+        var user = User(telegramUserId);
+        user.SelectMarketplaceRole(MarketplaceRole.Blogger);
+        return user;
+    }
+
+    private static PlatformUser User(long telegramUserId) => PlatformUser.Create(telegramUserId, "User", null);
+
+    private sealed class InMemoryPlatformUserRepository(params PlatformUser[] users) : IPlatformUserRepository
+    {
+        public Task AddAsync(PlatformUser user, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<int> CountActiveAsync(CancellationToken cancellationToken) => Task.FromResult(users.Count(user => !user.IsDeleted));
+        public Task<IReadOnlyList<PlatformUser>> GetActiveAsync(int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<PlatformUser>>(users.Where(user => !user.IsDeleted).Take(take).ToArray());
+        public Task<PlatformUser?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult(users.SingleOrDefault(user => user.TelegramUserId == telegramUserId));
     }
 }

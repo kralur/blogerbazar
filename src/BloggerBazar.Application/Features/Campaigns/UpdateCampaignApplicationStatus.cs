@@ -45,11 +45,22 @@ public sealed class UpdateCampaignApplicationStatusHandler(
 
         if (command.Status == CampaignApplicationStatus.Viewed)
         {
+            if (!CampaignApplicationLifecycle.IsPending(application.Status))
+            {
+                throw new InvalidOperationException("Campaign application status conflicts with its current status.");
+            }
             application.MarkViewed();
         }
         else
         {
-            application.Reject();
+            if (application.Status != CampaignApplicationStatus.Rejected)
+            {
+                if (!CampaignApplicationLifecycle.IsPending(application.Status))
+                {
+                    throw new InvalidOperationException("Campaign application status conflicts with its current status.");
+                }
+                application.Reject();
+            }
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
