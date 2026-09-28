@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
@@ -69,12 +69,12 @@ export function Button({
   return (
     <button
       className={cn(
-        "tap-target inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl px-5 text-[15px] font-bold transition active:scale-[0.98]",
-        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none",
-        variant === "primary" && "bg-brand-gradient text-white shadow-glow",
-        variant === "secondary" && "border border-brand-line bg-white text-brand-ink shadow-card",
-        variant === "ghost" && "bg-transparent text-brand-blue",
-        variant === "danger" && "bg-brand-danger text-white shadow-card",
+        "ds-button tap-target inline-flex items-center justify-center gap-2 px-5 transition active:scale-[0.98]",
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:shadow-none",
+        variant === "primary" && "ds-button--primary",
+        variant === "secondary" && "ds-button--secondary",
+        variant === "ghost" && "ds-button--ghost",
+        variant === "danger" && "ds-button--danger",
         className
       )}
       {...props}
@@ -97,7 +97,7 @@ export function SectionHeader({ title, action, href }: { title: string; action?:
 }
 
 export function Divider({ className }: { className?: string }) {
-  return <div className={cn("h-px bg-brand-line", className)} />;
+  return <div className={cn("h-px bg-[color:var(--bb-border)]", className)} />;
 }
 
 export function Input({ label, error, suffix, className, onInvalid, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string; suffix?: ReactNode }) {
@@ -106,14 +106,14 @@ export function Input({ label, error, suffix, className, onInvalid, ...props }: 
   const describedBy = [props["aria-describedby"], error ? errorId : undefined].filter(Boolean).join(" ") || undefined;
   return (
     <label className="grid gap-2">
-      {label && <span className="text-[13px] font-bold text-brand-muted">{label}{props.required && <span aria-hidden="true" className="ml-1 text-brand-danger">*</span>}</span>}
+      {label && <span className="ds-field-label">{label}{props.required && <span aria-hidden="true" className="ml-1 text-brand-danger">*</span>}</span>}
       <span className="input-control">
         <input
           {...props}
           className={cn(
-            "h-[52px] rounded-2xl border border-brand-line bg-white px-4 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
+            "ds-field w-full px-4 outline-none",
             Boolean(suffix) && "input-control__input--with-suffix",
-            error && "border-brand-danger focus:border-brand-danger focus:ring-red-100",
+            error && "border-brand-danger",
             className
           )}
           aria-describedby={describedBy}
@@ -125,7 +125,7 @@ export function Input({ label, error, suffix, className, onInvalid, ...props }: 
         />
         {suffix && <span aria-hidden="true" className="input-control__suffix">{suffix}</span>}
       </span>
-      {error && <span className="text-xs font-semibold text-brand-danger" id={errorId}>{error}</span>}
+      {error && <span className="ds-field-error" id={errorId}>{error}</span>}
     </label>
   );
 }
@@ -135,11 +135,11 @@ export function Textarea({ label, error, className, onInvalid, ...props }: Texta
   const length = typeof props.value === "string" ? props.value.length : 0;
   return (
     <label className="grid gap-2">
-      {label && <span className="flex items-center justify-between gap-3 text-[13px] font-bold text-brand-muted"><span>{label}{props.required && <span aria-hidden="true" className="ml-1 text-brand-danger">*</span>}</span>{props.maxLength && <span className="font-medium text-slate-400">{length} / {props.maxLength}</span>}</span>}
+      {label && <span className="ds-field-label flex items-center justify-between gap-3"><span>{label}{props.required && <span aria-hidden="true" className="ml-1 text-brand-danger">*</span>}</span>{props.maxLength && <span className="font-medium text-brand-muted">{length} / {props.maxLength}</span>}</span>}
       <textarea
         className={cn(
-          "min-h-28 resize-none rounded-2xl border border-brand-line bg-white px-4 py-3 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-blue-100",
-          error && "border-brand-danger focus:border-brand-danger focus:ring-red-100",
+          "ds-field min-h-28 w-full resize-none px-4 py-3 outline-none",
+          error && "border-brand-danger",
           className
         )}
         aria-invalid={error ? true : undefined}
@@ -150,7 +150,7 @@ export function Textarea({ label, error, className, onInvalid, ...props }: Texta
         }}
         {...props}
       />
-      {error && <span className="text-xs font-semibold text-brand-danger" id={`${props.id ?? props.name ?? label}-error`}>{error}</span>}
+      {error && <span className="ds-field-error" id={`${props.id ?? props.name ?? label}-error`}>{error}</span>}
     </label>
   );
 }
@@ -158,9 +158,9 @@ export function Textarea({ label, error, className, onInvalid, ...props }: Texta
 export function SearchBar({ placeholder, value, onChange, onClear, clearAriaLabel, className }: { placeholder?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; onClear?: () => void; clearAriaLabel?: string; className?: string }) {
   const { t } = useI18n();
   return (
-    <div className={cn("flex h-[52px] items-center gap-3 rounded-2xl bg-white px-4 shadow-card ring-1 ring-brand-line/80", className)}>
+    <div className={cn("ds-field flex items-center gap-3 px-4", className)}>
       <Icon className="text-brand-muted" name="search" />
-      <input aria-label={placeholder ?? t("search.placeholder")} className="w-full bg-transparent text-[15px] outline-none placeholder:text-slate-400" onChange={onChange} placeholder={placeholder ?? t("search.placeholder")} value={value} />
+      <input aria-label={placeholder ?? t("search.placeholder")} className="min-w-0 w-full bg-transparent text-[15px] text-brand-ink outline-none placeholder:text-brand-muted" onChange={onChange} placeholder={placeholder ?? t("search.placeholder")} value={value} />
       {value && onClear && <button aria-label={clearAriaLabel ?? t("ui.close")} className="search-bar__clear" onClick={onClear} type="button"><Icon className="h-4 w-4" name="close" /></button>}
     </div>
   );
@@ -183,14 +183,13 @@ export function Badge({ children, tone = "blue" }: { children: ReactNode; tone?:
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold",
-        tone === "blue" && "bg-blue-50 text-brand-blue",
-        tone === "purple" && "bg-purple-50 text-brand-premium",
-        tone === "gold" && "bg-amber-50 text-amber-600",
-        tone === "green" && "bg-green-50 text-brand-success",
-        tone === "gray" && "bg-slate-100 text-brand-muted",
-        tone === "orange" && "bg-orange-50 text-orange-600",
-        tone === "red" && "bg-red-50 text-brand-danger"
+        "ds-badge inline-flex items-center gap-1 px-2.5 py-1",
+        tone === "blue" && "ds-badge--info",
+        tone === "purple" && "ds-badge--premium",
+        (tone === "gold" || tone === "orange") && "ds-badge--warning",
+        tone === "green" && "ds-badge--success",
+        tone === "gray" && "ds-badge--neutral",
+        tone === "red" && "ds-badge--danger"
       )}
     >
       {children}
@@ -238,7 +237,7 @@ export function Rating({ value, count }: { value?: number | null; count?: number
 
 export function StatsCard({ icon, value, label }: { icon?: string; value: string; label: string }) {
   return (
-    <div className="rounded-3xl border border-brand-line bg-white/90 p-4 text-center shadow-card">
+    <div className="glass-card p-4 text-center">
       {icon && <Icon className="mx-auto mb-2 text-brand-blue" name={icon} />}
       <div className="text-xl font-extrabold tracking-tight">{value}</div>
       <div className="mt-1 text-xs text-brand-muted">{label}</div>
@@ -273,17 +272,17 @@ export function PromotionCard({ title, subtitle, audience }: { title: string; su
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("shimmer rounded-3xl", className)} />;
+  return <div className={cn("shimmer rounded-[var(--bb-radius-card)]", className)} />;
 }
 
 export function EmptyState({ title, subtitle, icon = "search" }: { title: string; subtitle: string; icon?: string }) {
   return (
-    <Card className="py-8 text-center" role="status">
-      <div aria-hidden="true" className="mx-auto grid h-14 w-14 place-items-center rounded-3xl bg-blue-50 text-brand-blue">
+    <Card className="ds-state" role="status">
+      <div aria-hidden="true" className="ds-state__icon mx-auto grid h-14 w-14 place-items-center">
         <Icon name={icon} />
       </div>
-      <h3 className="mt-4 text-lg font-extrabold">{title}</h3>
-      <p className="mt-2 text-sm text-brand-muted">{subtitle}</p>
+      <h3 className="ds-state__title mt-4">{title}</h3>
+      <p className="ds-state__subtitle mt-2">{subtitle}</p>
     </Card>
   );
 }
@@ -338,9 +337,10 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
       aria-live={isError ? "assertive" : "polite"}
       role={isError ? "alert" : "status"}
       className={cn(
-        "toast-enter fixed inset-x-4 bottom-24 z-50 mx-auto max-w-[390px] rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-glow",
-        isError ? "bg-brand-danger" : isWarning ? "bg-amber-500" : tone === "info" ? "bg-brand-blue" : "bg-brand-success"
+        "toast-enter fixed inset-x-4 z-50 mx-auto max-w-[390px] rounded-[var(--bb-radius-control)] px-4 py-3 text-sm font-bold text-white shadow-soft",
+        isError ? "bg-brand-danger" : isWarning ? "bg-brand-warning" : tone === "info" ? "bg-brand-blue" : "bg-brand-success"
       )}
+      style={{ bottom: "max(6rem, calc(5rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom))))" }}
     >
       {message}
     </div>,
@@ -351,6 +351,8 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
 export function Modal({ open, title, children, onClose, id, variant = "default" }: { open: boolean; title: string; children: ReactNode; onClose: () => void; id?: string; variant?: "default" | "neutral" }) {
   const { t } = useI18n();
   const { registerBackButtonHandler } = useTelegram();
+  const generatedTitleId = useId();
+  const titleId = id ? `${id}-title` : generatedTitleId;
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -394,13 +396,13 @@ export function Modal({ open, title, children, onClose, id, variant = "default" 
   if (!open) return null;
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div aria-modal="true" className={cn("bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end bg-slate-950/30 px-3 backdrop-blur-sm", variant === "neutral" && "bottom-sheet-backdrop--neutral")} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
-      <div aria-labelledby="bottom-sheet-title" className={cn("bottom-sheet w-full max-w-[430px] rounded-t-[32px] bg-white p-5 shadow-soft", variant === "neutral" && "bottom-sheet--neutral")} data-keyboard-scroll-container id={id} ref={dialogRef} tabIndex={-1}>
-        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-200" />
+    <div aria-modal="true" className={cn("bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end px-3 backdrop-blur-sm", variant === "neutral" && "bottom-sheet-backdrop--neutral")} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
+      <div aria-labelledby={titleId} className={cn("bottom-sheet w-full max-w-[430px] rounded-t-[var(--bb-radius-overlay)] p-5", variant === "neutral" && "bottom-sheet--neutral")} data-keyboard-scroll-container id={id} ref={dialogRef} tabIndex={-1}>
+        <div className="ds-dialog__handle mx-auto mb-4 h-1 w-10 rounded-full" />
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-xl font-extrabold" id="bottom-sheet-title">{title}</h3>
-          <button aria-label={t("ui.close")} className="grid h-10 w-10 place-items-center rounded-full bg-slate-100" onClick={close} type="button">
-            ×
+          <h3 className="text-xl font-extrabold" id={titleId}>{title}</h3>
+          <button aria-label={t("ui.close")} className="ds-icon-button grid h-10 w-10 place-items-center rounded-full" onClick={close} type="button">
+            <Icon className="h-4 w-4" name="close" />
           </button>
         </div>
         {children}

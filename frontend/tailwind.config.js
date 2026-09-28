@@ -5,34 +5,34 @@ export default {
     extend: {
       colors: {
         brand: {
-          blue: "#2563EB",
-          cyan: "#06B6D4",
-          premium: "#7C3AED",
-          ink: "#111827",
-          muted: "#6B7280",
-          bg: "#F8FAFC",
-          line: "#E5E7EB",
-          success: "#22C55E",
-          warning: "#F59E0B",
-          danger: "#EF4444"
+          blue: "var(--bb-action)",
+          cyan: "var(--bb-accent)",
+          premium: "var(--bb-premium)",
+          ink: "var(--bb-text)",
+          muted: "var(--bb-text-secondary)",
+          bg: "var(--bb-background)",
+          line: "var(--bb-border)",
+          success: "var(--bb-success)",
+          warning: "var(--bb-warning)",
+          danger: "var(--bb-error)"
         }
       },
       fontFamily: {
         sans: ["Inter", "SF Pro Display", "ui-sans-serif", "system-ui", "sans-serif"]
       },
       boxShadow: {
-        soft: "0 20px 60px rgba(15, 23, 42, 0.08)",
-        card: "0 14px 35px rgba(17, 24, 39, 0.07)",
-        glow: "0 18px 50px rgba(37, 99, 235, 0.24)"
+        soft: "var(--bb-shadow-overlay)",
+        card: "var(--bb-shadow-card)",
+        glow: "var(--bb-shadow-action)"
       },
       borderRadius: {
         "4xl": "2rem",
         "5xl": "2.5rem"
       },
       backgroundImage: {
-        "brand-gradient": "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
-        "premium-gradient": "linear-gradient(135deg, #7C3AED 0%, #2563EB 55%, #06B6D4 100%)",
-        "soft-radial": "radial-gradient(circle at 20% 10%, rgba(37,99,235,.16), transparent 34%), radial-gradient(circle at 85% 0%, rgba(6,182,212,.14), transparent 28%)"
+        "brand-gradient": "var(--bb-gradient-action)",
+        "premium-gradient": "var(--bb-gradient-premium)",
+        "soft-radial": "none"
       },
       keyframes: {
         "screen-in": {
