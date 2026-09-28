@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import ru from "./ru.json";
 import uz from "./uz.json";
 
@@ -49,6 +49,9 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(currentLanguage);
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
   const value = useMemo<I18nContextValue>(() => ({
     language,
     setLanguage: (nextLanguage) => {
