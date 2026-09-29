@@ -26,6 +26,7 @@
     --bb-warning: #E6A700;
     --bb-warning-subtle: rgba(230, 167, 0, 0.13);
     --bb-error: #D64545;
+    --bb-error-text: #FFFFFF;
     --bb-error-subtle: rgba(214, 69, 69, 0.10);
     --bb-info: #315CF5;
     --bb-info-subtle: rgba(49, 92, 245, 0.10);
@@ -52,12 +53,13 @@
 
   html[data-telegram-theme="dark"] {
     --bb-background: #090909;
-    --bb-surface: #111111;
-    --bb-surface-secondary: #181818;
+    --bb-surface: var(--telegram-secondary-bg, #111111);
+    --bb-surface-secondary: var(--telegram-secondary-bg, #181818);
     --bb-surface-elevated: #1D1D1B;
-    --bb-text: #F5F5F0;
-    --bb-text-secondary: #9A9A92;
-    --bb-border: #2A2A28;
+    --bb-text: var(--telegram-text, #F5F5F0);
+    --bb-text-secondary: var(--telegram-hint, #9A9A92);
+    --bb-border: var(--telegram-separator, #2A2A28);
+    --bb-error-text: #FFFFFF;
     --bb-action: #7795FF;
     --bb-action-pressed: #94AAFF;
     --bb-action-subtle: rgba(119, 149, 255, .16);
@@ -99,12 +101,8 @@
     min-height: var(--tg-viewport-height, 100dvh);
   }
 
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible,
-  select:focus-visible {
-    outline: 3px solid var(--bb-accent);
+  :where(button, a, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--bb-focus);
     outline-offset: 2px;
   }
 
@@ -737,7 +735,7 @@
   .ds-button--secondary { border-color: var(--bb-border); background: var(--bb-surface); color: var(--bb-text); box-shadow: none; }
   .ds-button--secondary:not(:disabled):hover { background: var(--bb-surface-secondary); }
   .ds-button--ghost { background: transparent; color: var(--bb-action); }
-  .ds-button--danger { border-color: var(--bb-error); background: var(--bb-error); color: #fff; }
+  .ds-button--danger { border-color: var(--bb-error); background: var(--bb-error); color: var(--bb-error-text); }
   .ds-button:disabled { border-color: var(--bb-border); background: var(--bb-surface-secondary); color: var(--bb-text-secondary); opacity: 1; }
 
   .ds-field-label { color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 750; line-height: 1.3; }
@@ -751,7 +749,8 @@
     transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
   }
   .ds-field::placeholder { color: var(--bb-text-secondary); opacity: .72; }
-  .ds-field:focus { border-color: var(--bb-focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bb-focus) 18%, transparent); }
+  .ds-field:focus,
+  .ds-field:focus-within { border-color: var(--bb-focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bb-focus) 18%, transparent); }
   .ds-field[aria-invalid="true"] { border-color: var(--bb-error); box-shadow: 0 0 0 3px var(--bb-error-subtle); }
   .ds-field-error { color: var(--bb-error); font-size: .75rem; font-weight: 700; }
 
@@ -770,11 +769,6 @@
 
   .ds-dialog__handle { background: var(--bb-border); }
   .ds-icon-button { border: 1px solid var(--bb-border); background: var(--bb-surface-secondary); color: var(--bb-text); }
-
-  :where(button, a, input, textarea, select, [tabindex]):focus-visible {
-    outline: 2px solid var(--bb-focus);
-    outline-offset: 2px;
-  }
 
   .no-scrollbar::-webkit-scrollbar {
     display: none;
@@ -1042,26 +1036,6 @@
 
 }
 
-html[data-telegram-theme] .text-brand-ink {
-  color: var(--telegram-text) !important;
-}
-
-html[data-telegram-theme] .text-brand-muted {
-  color: var(--telegram-hint) !important;
-}
-
-html[data-telegram-theme] .border-brand-line {
-  border-color: var(--telegram-separator) !important;
-}
-
-html[data-telegram-theme="dark"] .bg-white,
-html[data-telegram-theme="dark"] input,
-html[data-telegram-theme="dark"] textarea,
-html[data-telegram-theme="dark"] select {
-  background-color: var(--telegram-secondary-bg) !important;
-  color: var(--telegram-text) !important;
-}
-
 html[data-telegram-theme="dark"] .bottom-sheet,
 html[data-telegram-theme="dark"] .glass-card {
   background-color: var(--bb-surface-elevated) !important;
@@ -1080,6 +1054,12 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
   border-color: var(--bb-border) !important;
   background-color: var(--bb-surface-secondary) !important;
   color: var(--bb-text-secondary) !important;
+}
+
+.ds-legacy-field {
+  border-color: var(--bb-border);
+  background: var(--bb-surface);
+  color: var(--bb-text);
 }
 
 /* Phase 2B: scoped catalog styling. Other screens retain their existing visual contracts. */

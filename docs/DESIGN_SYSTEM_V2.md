@@ -99,4 +99,3 @@ When redesigning a screen:
 5. Verify RU and UZ with long labels and empty/error/loading states.
 6. Verify keyboard, Telegram BackButton, bottom navigation, and safe-area clearance.
 7. Run frontend tests, production build, and i18n audit.
-

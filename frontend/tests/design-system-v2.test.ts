@@ -17,6 +17,7 @@ describe("Design System v2 contract", () => {
       "--bb-success-subtle",
       "--bb-warning-subtle",
       "--bb-error-subtle",
+      "--bb-error-text",
       "--bb-focus",
       "--bb-radius-control",
       "--bb-shadow-overlay"
@@ -51,6 +52,14 @@ describe("Design System v2 contract", () => {
     expect(ui).toContain("--tg-content-safe-bottom");
     expect(styles).toContain("--tg-content-safe-top");
     expect(styles).toContain("--tg-viewport-height");
+  });
+
+  it("uses semantic focus styling without a global Telegram dark input override", () => {
+    expect(styles).toContain("outline: 2px solid var(--bb-focus)");
+    expect(styles).toContain(".ds-field:focus-within");
+    expect(styles).not.toContain('html[data-telegram-theme="dark"] input');
+    expect(styles).not.toContain('html[data-telegram-theme="dark"] textarea');
+    expect(styles).not.toContain('html[data-telegram-theme="dark"] select');
   });
 
   it("allows long localized navigation labels and exposes the active document language", () => {
