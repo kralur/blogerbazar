@@ -12,6 +12,7 @@ internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbConte
     {
         var query = ApplyStatus(dbContext.CampaignApplications.AsNoTracking()
             .Where(application => application.BloggerId == bloggerId
+                && (!search.CampaignId.HasValue || application.CampaignId == search.CampaignId.Value)
                 && !application.Campaign.Business.IsDeleted
                 && application.Campaign.Business.ModerationStatus == BloggerStatus.Approved
                 && !dbContext.PlatformUsers.Any(user => user.TelegramUserId == application.Campaign.Business.TelegramUserId && (user.IsBlocked || user.IsDeleted))), search.Status);

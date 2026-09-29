@@ -15,12 +15,13 @@ public sealed class CampaignApplicationsController(ISender sender, ITelegramWebA
     [ProducesResponseType<MyCampaignApplicationsResult>(StatusCodes.Status200OK)]
     public async Task<ActionResult<MyCampaignApplicationsResult>> GetMyPage(
         [FromQuery] int? status,
+        [FromQuery] Guid? campaignId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
         var actor = GetTelegramUser();
-        return Ok(await sender.Send(new GetMyCampaignApplicationsPageQuery(actor.Id, status, page, pageSize), cancellationToken));
+        return Ok(await sender.Send(new GetMyCampaignApplicationsPageQuery(actor.Id, status, page, pageSize, campaignId), cancellationToken));
     }
 
     [HttpGet("mine/{applicationId:guid}")]

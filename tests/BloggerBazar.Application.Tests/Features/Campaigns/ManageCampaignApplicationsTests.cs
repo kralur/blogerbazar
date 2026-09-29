@@ -58,6 +58,40 @@ public sealed class ManageCampaignApplicationsTests
     }
 
     [Fact]
+    public async Task Mine_list_passes_optional_campaign_filter_to_the_server_side_read_model()
+    {
+        var blogger = ApprovedBlogger(111);
+        var campaignId = Guid.NewGuid();
+        var readModel = new CapturingReadModel();
+        var handler = new GetMyCampaignApplicationsPageHandler(new Users(User(111, MarketplaceRole.Blogger)), new Bloggers(blogger), readModel);
+
+        await handler.Handle(new GetMyCampaignApplicationsPageQuery(111, (int)CampaignApplicationStatus.Sent, 1, 20, campaignId), CancellationToken.None);
+
+        Assert.Equal(blogger.Id, readModel.BloggerId);
+        Assert.Equal(campaignId, readModel.Search?.CampaignId);
+        Assert.Equal((int)CampaignApplicationStatus.Sent, readModel.Search?.Status);
+    }
+
+    [Fact]
+    public void Mine_list_campaign_filter_is_optional_for_backward_compatible_queries()
+    {
+        var query = new GetMyCampaignApplicationsPageQuery(111, null, 1, 20);
+        var validation = new GetMyCampaignApplicationsPageValidator().Validate(query);
+
+        Assert.True(validation.IsValid);
+        Assert.Null(query.CampaignId);
+    }
+
+    [Fact]
+    public void Mine_list_rejects_an_empty_campaign_filter()
+    {
+        var validation = new GetMyCampaignApplicationsPageValidator().Validate(
+            new GetMyCampaignApplicationsPageQuery(111, null, 1, 20, Guid.Empty));
+
+        Assert.False(validation.IsValid);
+    }
+
+    [Fact]
     public async Task Mine_details_are_scoped_to_the_server_side_blogger_profile()
     {
         var blogger = ApprovedBlogger(15);

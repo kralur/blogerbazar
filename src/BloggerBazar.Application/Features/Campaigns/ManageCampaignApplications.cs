@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BloggerBazar.Application.Features.Campaigns;
 
-public sealed record CampaignApplicationSearch(int? Status, int Page, int PageSize);
+public sealed record CampaignApplicationSearch(int? Status, int Page, int PageSize, Guid? CampaignId = null);
 
 public sealed record MyCampaignApplicationsResult(
     IReadOnlyList<MyCampaignApplicationItemDto> Items,
@@ -70,7 +70,7 @@ public sealed record CampaignApplicationInboxItemDto(
 
 public sealed record CampaignApplicationDecisionDto(Guid Id, int Status, Guid? DealId);
 
-public sealed record GetMyCampaignApplicationsPageQuery(long TelegramUserId, int? Status, int Page, int PageSize)
+public sealed record GetMyCampaignApplicationsPageQuery(long TelegramUserId, int? Status, int Page, int PageSize, Guid? CampaignId = null)
     : IRequest<MyCampaignApplicationsResult>;
 
 public sealed record GetMyCampaignApplicationDetailsQuery(long TelegramUserId, Guid ApplicationId)
@@ -92,6 +92,9 @@ public sealed class CampaignApplicationSearchValidator : AbstractValidator<Campa
         RuleFor(search => search.Status)
             .Must(status => !status.HasValue || Enum.IsDefined((CampaignApplicationStatus)status.Value))
             .WithMessage("The campaign application status is invalid.");
+        RuleFor(search => search.CampaignId)
+            .Must(campaignId => !campaignId.HasValue || campaignId.Value != Guid.Empty)
+            .WithMessage("The campaign identifier is invalid.");
         RuleFor(search => search.Page).InclusiveBetween(1, 100_000);
         RuleFor(search => search.PageSize).InclusiveBetween(1, 50);
     }
@@ -102,7 +105,7 @@ public sealed class GetMyCampaignApplicationsPageValidator : AbstractValidator<G
     public GetMyCampaignApplicationsPageValidator()
     {
         RuleFor(query => query.TelegramUserId).GreaterThan(0);
-        RuleFor(query => new CampaignApplicationSearch(query.Status, query.Page, query.PageSize)).SetValidator(new CampaignApplicationSearchValidator());
+        RuleFor(query => new CampaignApplicationSearch(query.Status, query.Page, query.PageSize, query.CampaignId)).SetValidator(new CampaignApplicationSearchValidator());
     }
 }
 
@@ -121,7 +124,7 @@ public sealed class GetCampaignApplicationInboxValidator : AbstractValidator<Get
     {
         RuleFor(query => query.TelegramUserId).GreaterThan(0);
         RuleFor(query => query.CampaignId).NotEmpty();
-        RuleFor(query => new CampaignApplicationSearch(query.Status, query.Page, query.PageSize)).SetValidator(new CampaignApplicationSearchValidator());
+        RuleFor(query => new CampaignApplicationSearch(query.Status, query.Page, query.PageSize, null)).SetValidator(new CampaignApplicationSearchValidator());
     }
 }
 
@@ -154,7 +157,7 @@ public sealed class GetMyCampaignApplicationsPageHandler(
     public async Task<MyCampaignApplicationsResult> Handle(GetMyCampaignApplicationsPageQuery query, CancellationToken cancellationToken)
     {
         var blogger = await CampaignApplicationAccess.RequireBloggerAsync(users, bloggers, query.TelegramUserId, cancellationToken);
-        return await applications.SearchForBloggerAsync(blogger.Id, new CampaignApplicationSearch(query.Status, query.Page, query.PageSize), cancellationToken);
+        return await applications.SearchForBloggerAsync(blogger.Id, new CampaignApplicationSearch(query.Status, query.Page, query.PageSize, query.CampaignId), cancellationToken);
     }
 }
 
