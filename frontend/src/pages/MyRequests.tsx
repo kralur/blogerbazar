@@ -5,6 +5,7 @@ import {
   createDealReview,
   getMyCampaignApplications,
   getMyDeals,
+  type MarketplaceRole,
   type MyCampaignApplication,
   type MyDeal
 } from "../api/marketplace";
@@ -14,11 +15,12 @@ import { useI18n } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { CampaignApplicationStatus, campaignApplicationStatusTone, canAcceptCampaignApplication } from "../lib/campaignApplicationStatus";
+import { BloggerApplications } from "./BloggerApplications";
 
 const dealStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : "gray";
 const formatDate = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
 
-export function MyRequests() {
+export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
   useScrollRestoration("requests");
   const applicationStatusLabels: Record<CampaignApplicationStatus, string> = {
@@ -37,8 +39,10 @@ export function MyRequests() {
   const [selectedDeal, setSelectedDeal] = useState<MyDeal | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
+  const [requestsLoading, setRequestsLoading] = useState(activeMarketplaceRole !== "Blogger");
+  const [requestsFailed, setRequestsFailed] = useState(false);
+  const [dealsLoading, setDealsLoading] = useState(true);
+  const [dealsFailed, setDealsFailed] = useState(false);
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
@@ -46,19 +50,36 @@ export function MyRequests() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setFailed(false);
-    Promise.all([getMyCampaignApplications(), getMyDeals()])
-      .then(([nextRequests, nextDeals]) => {
-        setRequests(nextRequests);
-        setDeals(nextDeals);
-      })
-      .catch((error) => { setFailed(true); setToastTone("error"); setToast(error instanceof Error ? error.message : t("requests.loadFailed")); })
-      .finally(() => setLoading(false));
+  const loadDeals = useCallback(() => {
+    setDealsLoading(true);
+    setDealsFailed(false);
+    void getMyDeals()
+      .then(setDeals)
+      .catch((error) => { setDealsFailed(true); setToastTone("error"); setToast(error instanceof Error ? error.message : t("requests.loadFailed")); })
+      .finally(() => setDealsLoading(false));
   }, [t]);
 
-  useEffect(load, []);
+  const loadRequests = useCallback(() => {
+    if (activeMarketplaceRole === "Blogger") {
+      setRequests([]);
+      setRequestsFailed(false);
+      setRequestsLoading(false);
+      return;
+    }
+    setRequestsLoading(true);
+    setRequestsFailed(false);
+    void getMyCampaignApplications()
+      .then(setRequests)
+      .catch((error) => { setRequestsFailed(true); setToastTone("error"); setToast(error instanceof Error ? error.message : t("requests.loadFailed")); })
+      .finally(() => setRequestsLoading(false));
+  }, [activeMarketplaceRole, t]);
+
+  const load = useCallback(() => {
+    loadDeals();
+    loadRequests();
+  }, [loadDeals, loadRequests]);
+
+  useEffect(() => { load(); }, [load]);
   useProfileDataRefresh(load);
 
   const withinRange = (value: string) => {
@@ -121,7 +142,7 @@ export function MyRequests() {
           <p className="text-sm font-semibold text-brand-muted">{t("requests.eyebrow")}</p>
           <h1 className="text-3xl font-extrabold tracking-tight">{t("requests.title")}</h1>
         </div>
-        <div className="flex shrink-0 items-center gap-2"><LanguageSwitcher /><button aria-label={t("requests.dateFilter")} className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-brand-blue" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button></div>
+        <div className="flex shrink-0 items-center gap-2"><LanguageSwitcher />{view === "deals" && <button aria-label={t("requests.dateFilter")} className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-brand-blue" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button>}</div>
       </header>
 
       <div className="mt-5 grid grid-cols-2 rounded-2xl bg-slate-100 p-1">
@@ -129,7 +150,8 @@ export function MyRequests() {
         <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "deals" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("deals")} type="button">{t("requests.deals")}</button>
       </div>
 
-      {loading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : failed ? <div className="mt-5"><ErrorState onRetry={load} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> : view === "applications" ? (
+      {view === "applications" && activeMarketplaceRole === "Blogger" ? <BloggerApplications activeMarketplaceRole={activeMarketplaceRole} /> : view === "applications" ? (
+        requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> :
         !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="mt-5 grid gap-3">
             {visibleRequests.map((request) => (
@@ -140,7 +162,7 @@ export function MyRequests() {
           </div>
         )
       ) : (
-        !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
+        dealsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
           <div className="mt-5 grid gap-3">
             {visibleDeals.map((deal) => (
               <button className="text-left" key={deal.id} onClick={() => setSelectedDeal(deal)} type="button">

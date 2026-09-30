@@ -1309,6 +1309,12 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .my-campaign-details__edit { display: inline-flex; min-height: 3.25rem; align-items: center; justify-content: center; padding: 0 1rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); font-size: .9375rem; font-weight: 800; text-decoration: none; }
 .my-campaign-details__edit:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .my-campaign-details__closed-hint { margin: 1rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.5; }
+.application-card { display: block; color: inherit; text-decoration: none; }
+.application-card + .application-card { margin-top: .75rem; }
+.application-card:focus-visible { outline: 2px solid var(--bb-focus); outline-offset: 2px; border-radius: var(--bb-radius-card); }
+.application-card .glass-card { min-width: 0; }
+.application-inbox-card { min-width: 0; overflow-wrap: anywhere; }
+.application-inbox-card .ds-button { min-width: 0; }
 .my-campaign-edit__header { display: flex; align-items: center; justify-content: space-between; }
 .my-campaign-edit__heading { margin-top: .75rem; }
 .my-campaign-edit__heading p { margin: 0; color: var(--bb-text-secondary); font-size: .75rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }

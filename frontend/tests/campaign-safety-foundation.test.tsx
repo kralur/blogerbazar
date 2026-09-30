@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 import { CampaignApplicationStatus, canAcceptCampaignApplication, campaignApplicationStatusTone } from "../src/lib/campaignApplicationStatus";
@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   getCampaign: vi.fn(),
   getCurrentPlatformUser: vi.fn(),
   getMyBloggerProfile: vi.fn(),
+  getMyCampaignApplicationsPage: vi.fn(),
   getMyBusinessProfile: vi.fn(),
   getPublicContact: vi.fn()
 }));
@@ -18,6 +19,7 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getCampaign: api.getCampaign,
   getCurrentPlatformUser: api.getCurrentPlatformUser,
   getMyBloggerProfile: api.getMyBloggerProfile,
+  getMyCampaignApplicationsPage: api.getMyCampaignApplicationsPage,
   getMyBusinessProfile: api.getMyBusinessProfile,
   getPublicContact: api.getPublicContact
 }));
@@ -68,6 +70,7 @@ describe("Campaign safety foundation", () => {
     api.getMyBusinessProfile.mockRejectedValue(new Error("no business profile"));
     api.getMyBloggerProfile.mockResolvedValue({ id: "blogger-a", status: 1 });
     api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "Blogger" });
+    api.getMyCampaignApplicationsPage.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 1, hasMore: false });
   });
 
   afterEach(() => cleanup());
@@ -119,5 +122,45 @@ describe("Campaign safety foundation", () => {
     await screen.findByText("Campaign");
     expect(screen.queryByText(/0\s*сум/)).not.toBeInTheDocument();
     expect(screen.queryByText(translate("taxonomy.city.uzbekistan", undefined, "ru"))).not.toBeInTheDocument();
+  });
+
+  it.each([CampaignApplicationStatus.Rejected, CampaignApplicationStatus.Withdrawn])("never restores Apply when an existing final application has status %s", async (status) => {
+    api.getMyCampaignApplicationsPage.mockResolvedValueOnce({ items: [{ id: "application-a", status }], total: 1, page: 1, pageSize: 1, hasMore: false });
+    renderDetails();
+
+    await screen.findByText("Campaign");
+    await waitFor(() => expect(screen.getByRole("link", { name: translate("applications.applyState", undefined, "ru") })).toHaveAttribute("href", "#/my-application/application-a"));
+    expect(screen.queryByRole("button", { name: translate("campaign.apply", undefined, "ru") })).not.toBeInTheDocument();
+  });
+
+  it("ignores a stale lookup from campaign A after navigation to campaign B", async () => {
+    let resolveCampaignALookup!: (value: { items: Array<{ id: string; status: CampaignApplicationStatus }>; total: number; page: number; pageSize: number; hasMore: boolean }) => void;
+    api.getCampaign.mockImplementation((campaignId: string) => Promise.resolve({ ...campaign, id: campaignId, title: campaignId === "campaign-b" ? "Campaign B" : "Campaign A" }));
+    api.getMyCampaignApplicationsPage.mockImplementation(({ campaignId }: { campaignId: string }) => campaignId === "campaign-a"
+      ? new Promise((resolve) => { resolveCampaignALookup = resolve; })
+      : Promise.resolve({ items: [], total: 0, page: 1, pageSize: 1, hasMore: false }));
+    const view = render(<I18nProvider><CampaignDetails id="campaign-a" /></I18nProvider>);
+    await screen.findByText("Campaign A");
+    view.rerender(<I18nProvider><CampaignDetails id="campaign-b" /></I18nProvider>);
+    await screen.findByText("Campaign B");
+    resolveCampaignALookup({ items: [{ id: "application-a", status: CampaignApplicationStatus.Sent }], total: 1, page: 1, pageSize: 1, hasMore: false });
+    await waitFor(() => expect(screen.queryByRole("link", { name: translate("applications.applyState", undefined, "ru") })).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: translate("campaign.apply", undefined, "ru") })).toBeInTheDocument();
+  });
+
+  it("does not apply a stale campaign A mutation after navigation to campaign B", async () => {
+    let resolveApply!: (value: { id: string; status: CampaignApplicationStatus }) => void;
+    api.getCampaign.mockImplementation((campaignId: string) => Promise.resolve({ ...campaign, id: campaignId, title: campaignId === "campaign-b" ? "Campaign B" : "Campaign A" }));
+    api.applyToCampaign.mockImplementationOnce(() => new Promise((resolve) => { resolveApply = resolve; }));
+    const view = render(<I18nProvider><CampaignDetails id="campaign-a" /></I18nProvider>);
+    await screen.findByText("Campaign A");
+    await screen.findByRole("button", { name: translate("campaign.apply", undefined, "ru") });
+    fireEvent.click(screen.getByRole("button", { name: translate("campaign.apply", undefined, "ru") }));
+    fireEvent.click(screen.getByRole("button", { name: translate("campaign.submitApplication", undefined, "ru") }));
+    view.rerender(<I18nProvider><CampaignDetails id="campaign-b" /></I18nProvider>);
+    await screen.findByText("Campaign B");
+    resolveApply({ id: "application-a", status: CampaignApplicationStatus.Sent });
+    await waitFor(() => expect(screen.queryByRole("link", { name: translate("applications.applyState", undefined, "ru") })).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: translate("campaign.apply", undefined, "ru") })).toBeInTheDocument();
   });
 });

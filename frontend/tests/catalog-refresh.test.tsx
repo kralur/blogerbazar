@@ -12,8 +12,10 @@ function CatalogHarness({ fetchPage }: { fetchPage: (page: number, signal: Abort
     {catalog.loading && !catalog.loadedInitialResult && <span>initial-loading</span>}
     {catalog.items.map((item) => <p key={item.id}>{item.name}</p>)}
     {catalog.loadedInitialResult && catalog.failure && <span>stale-error</span>}
+    <span data-testid="pagination-metadata">{`${catalog.total}/${catalog.page}/${catalog.hasMore}`}</span>
     <button onClick={() => void catalog.load(1, false, true)} type="button">refresh</button>
     <button onClick={catalog.cancel} type="button">cancel</button>
+    <button onClick={() => catalog.updateItem("one", (item) => ({ ...item, name: "Updated locally" }))} type="button">update</button>
   </div>;
 }
 
@@ -61,5 +63,15 @@ describe("usePaginatedCatalog refresh states", () => {
 
     resolveRequest({ items: [{ id: "one", name: "First" }], total: 1, page: 1, hasMore: false });
     await waitFor(() => expect(screen.queryByText("First")).not.toBeInTheDocument());
+  });
+
+  it("updates an item without changing pagination metadata", async () => {
+    const fetchPage = vi.fn().mockResolvedValue({ items: [{ id: "one", name: "First" }], total: 3, page: 1, hasMore: true });
+    render(<CatalogHarness fetchPage={fetchPage} />);
+    await screen.findByText("First");
+    fireEvent.click(screen.getByRole("button", { name: "update" }));
+    expect(await screen.findByText("Updated locally")).toBeInTheDocument();
+    expect(screen.getByTestId("pagination-metadata")).toHaveTextContent("3/1/true");
+    expect(fetchPage).toHaveBeenCalledTimes(1);
   });
 });

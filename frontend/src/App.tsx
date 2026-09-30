@@ -10,6 +10,7 @@ import { requestGuardedNavigation } from "./navigation/guardedNavigation";
 import { replaceHistoryRoute } from "./navigation/hashNavigation";
 import { clearMyCampaignCache } from "./data/myCampaignCache";
 import { clearPublicDetailCache } from "./data/publicDetailCache";
+import { clearCampaignApplicationCache } from "./data/campaignApplicationCache";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
@@ -29,6 +30,8 @@ const MyCampaignEdit = lazy(async () => ({ default: (await import("./pages/MyCam
 const MyCampaigns = lazy(async () => ({ default: (await import("./pages/MyCampaigns")).MyCampaigns }));
 const Home = lazy(async () => ({ default: (await import("./pages/Home")).Home }));
 const MyRequests = lazy(async () => ({ default: (await import("./pages/MyRequests")).MyRequests }));
+const MyApplicationDetails = lazy(async () => ({ default: (await import("./pages/MyApplicationDetails")).MyApplicationDetails }));
+const MyCampaignApplications = lazy(async () => ({ default: (await import("./pages/MyCampaignApplications")).MyCampaignApplications }));
 const Onboarding = lazy(async () => ({ default: (await import("./pages/Onboarding")).Onboarding }));
 const OnboardingSuccess = lazy(async () => ({ default: (await import("./pages/OnboardingSuccess")).OnboardingSuccess }));
 const ProfileDashboard = lazy(async () => ({ default: (await import("./pages/ProfileDashboard")).ProfileDashboard }));
@@ -172,6 +175,7 @@ export function App() {
     setAuthorizationFailed(false);
     setVisitedRootRoutes(new Set(["/"]));
     clearMyCampaignCache();
+    clearCampaignApplicationCache();
     clearPublicDetailCache();
     setSessionEpoch((current) => current + 1);
     setOnboardingStep("welcome");
@@ -180,6 +184,7 @@ export function App() {
 
   const handleMarketplaceRoleSelected = useCallback((role: MarketplaceRole) => {
     clearMyCampaignCache();
+    clearCampaignApplicationCache();
     setSelectedRole(role);
   }, []);
 
@@ -195,12 +200,12 @@ export function App() {
   useTelegramBackHandler(goBackFromNestedRoute, onboardingStep === "complete" && !rootRoutes.includes(route.path));
 
   useEffect(() => {
-    if (["/blogger", "/brand-face-detail", "/campaign", "/my-campaign", "/my-campaign-edit"].includes(route.path)) {
+    if (["/blogger", "/brand-face-detail", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications"].includes(route.path)) {
       window.scrollTo(0, 0);
     }
   }, [route.id, route.path]);
 
-  const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/requests", "/admin"];
+  const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
@@ -229,7 +234,9 @@ export function App() {
       {(visitedMyCampaigns || route.path === "/my-campaigns") && <RootScreenVisibility active={route.path === "/my-campaigns"}><CachedMyCampaigns key={selectedRole ?? "none"} /></RootScreenVisibility>}
       {route.path === "/my-campaign" && route.id && <MyCampaignDetails id={route.id} />}
       {route.path === "/my-campaign-edit" && route.id && <MyCampaignEdit id={route.id} />}
-      {(visitedRootRoutes.has("/requests") || route.path === "/requests") && <RootScreenVisibility active={route.path === "/requests"}><CachedRequests /></RootScreenVisibility>}
+      {route.path === "/my-campaign-applications" && route.id && <MyCampaignApplications campaignId={route.id} />}
+      {(visitedRootRoutes.has("/requests") || route.path === "/requests") && <RootScreenVisibility active={route.path === "/requests"}><CachedRequests activeMarketplaceRole={selectedRole} key={`${selectedRole ?? "none"}-${sessionEpoch}`} /></RootScreenVisibility>}
+      {route.path === "/my-application" && route.id && <MyApplicationDetails id={route.id} />}
       {route.path === "/admin" && <Admin />}
       {!knownRoutes.includes(route.path) && <Home />}
     </>}

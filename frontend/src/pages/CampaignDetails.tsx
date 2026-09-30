@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { applyToCampaign, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getPublicContact, normalizeMarketplaceRole, type CampaignDetails, type ContactDetails } from "../api/marketplace";
+import { ApiError } from "../api/client";
+import { applyToCampaign, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type CampaignDetails, type ContactDetails } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
+import { getCachedCampaignApplication, setCachedCampaignApplication } from "../data/campaignApplicationCache";
+import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
 
 export function CampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
@@ -17,10 +20,17 @@ export function CampaignDetails({ id }: { id: string }) {
   const [applicationMessage, setApplicationMessage] = useState("");
   const [applying, setApplying] = useState(false);
   const [canApply, setCanApply] = useState(false);
+  const [application, setApplication] = useState(() => getCachedCampaignApplication(id));
+  const [applicationLookupFailed, setApplicationLookupFailed] = useState(false);
   const [toast, setToast] = useState("");
-  const [toastTone, setToastTone] = useState<"success" | "error">("success");
+  const [toastTone, setToastTone] = useState<"success" | "error" | "info">("success");
 
   const requestIdRef = useRef(0);
+  const applicationRequestRef = useRef(0);
+  const applicationMutationRef = useRef(0);
+  const applyingRef = useRef(false);
+  const currentCampaignIdRef = useRef(id);
+  currentCampaignIdRef.current = id;
   const loadCampaign = useCallback(() => {
     const cached = getCachedPublicDetail<CampaignDetails>("campaign", id);
     const requestId = ++requestIdRef.current;
@@ -56,37 +66,101 @@ export function CampaignDetails({ id }: { id: string }) {
   }, [campaign?.businessId, id]);
 
   useEffect(() => {
-    if (!campaign) {
+    if (!campaign || campaign.id !== id) {
+      applicationRequestRef.current += 1;
+      applicationMutationRef.current += 1;
       setCanApply(false);
+      setApplication(null);
+      setApplicationLookupFailed(false);
       return;
     }
 
+    const campaignId = id;
+    const requestId = ++applicationRequestRef.current;
+    const lookupController = new AbortController();
     let cancelled = false;
     Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBusinessProfile()]).then(([userResult, bloggerResult, businessResult]) => {
-      if (cancelled) return;
+      if (cancelled || requestId !== applicationRequestRef.current || currentCampaignIdRef.current !== campaignId) return;
       const activeRole = userResult.status === "fulfilled" ? normalizeMarketplaceRole(userResult.value.selectedMarketplaceRole) : undefined;
       const bloggerIsApproved = bloggerResult.status === "fulfilled" && bloggerResult.value.status === 1;
       const isOwnCampaign = businessResult.status === "fulfilled" && businessResult.value.id === campaign.businessId;
-      setCanApply(activeRole === "Blogger" && bloggerIsApproved && campaign.status === 1 && !isOwnCampaign);
+      const eligible = activeRole === "Blogger" && bloggerIsApproved && campaign.status === 1 && !isOwnCampaign;
+      setCanApply(eligible);
+      setApplicationLookupFailed(false);
+      if (!eligible) { setApplication(null); return; }
+      const cachedApplication = getCachedCampaignApplication(campaignId);
+      if (cachedApplication) setApplication(cachedApplication);
+      else setApplication(null);
+      getMyCampaignApplicationsPage({ campaignId, page: 1, pageSize: 1 }, lookupController.signal).then((page) => {
+        if (cancelled || requestId !== applicationRequestRef.current || currentCampaignIdRef.current !== campaignId) return;
+        const existing = page.items[0] ? { id: page.items[0].id, status: page.items[0].status } : null;
+        if (existing) setCachedCampaignApplication(campaignId, existing);
+        setApplication(existing);
+      }).catch(() => {
+        if (!cancelled && !lookupController.signal.aborted && requestId === applicationRequestRef.current && currentCampaignIdRef.current === campaignId) {
+          setApplication(null);
+          setApplicationLookupFailed(true);
+        }
+      });
     });
 
-    return () => { cancelled = true; };
-  }, [campaign]);
+    return () => {
+      cancelled = true;
+      lookupController.abort();
+      applicationRequestRef.current += 1;
+      applicationMutationRef.current += 1;
+      applyingRef.current = false;
+    };
+  }, [campaign, id]);
+
+  const reconcileApplication = useCallback(async (campaignId: string, mutationId: number, signal: AbortSignal) => {
+    const page = await getMyCampaignApplicationsPage({ campaignId, page: 1, pageSize: 1 }, signal);
+    if (mutationId !== applicationMutationRef.current || currentCampaignIdRef.current !== campaignId) return null;
+    const existing = page.items[0] ? { id: page.items[0].id, status: page.items[0].status } : null;
+    if (existing) setCachedCampaignApplication(campaignId, existing);
+    setApplication(existing);
+    return existing;
+  }, []);
 
   const apply = async () => {
+    if (applyingRef.current) return;
+    applyingRef.current = true;
+    const campaignId = id;
+    const mutationId = ++applicationMutationRef.current;
+    const controller = new AbortController();
     try {
       setApplying(true);
-      await applyToCampaign(id, applicationMessage.trim() || t("campaign.defaultApplicationMessage"));
+      const result = await applyToCampaign(campaignId, applicationMessage.trim() || t("campaign.defaultApplicationMessage"), controller.signal);
+      if (mutationId !== applicationMutationRef.current || currentCampaignIdRef.current !== campaignId) return;
+      const existing = { id: result.id, status: result.status };
+      setCachedCampaignApplication(campaignId, existing);
+      setApplication(existing);
       setApplicationOpen(false);
       setApplicationMessage("");
       setCanApply(false);
       setToastTone("success");
       setToast(t("campaign.applicationSent"));
-    } catch {
+    } catch (error) {
+      if (mutationId !== applicationMutationRef.current || currentCampaignIdRef.current !== campaignId || controller.signal.aborted) return;
+      if (error instanceof ApiError && error.status === 409) {
+        try {
+          const existing = await reconcileApplication(campaignId, mutationId, controller.signal);
+          if (mutationId !== applicationMutationRef.current || currentCampaignIdRef.current !== campaignId) return;
+          if (existing) {
+            setApplicationOpen(false);
+            setToastTone("info");
+            setToast(t("applications.applyConflict"));
+            return;
+          }
+        } catch {}
+      }
       setToastTone("error");
       setToast(t("campaign.applicationFailed"));
     } finally {
-      setApplying(false);
+      if (mutationId === applicationMutationRef.current && currentCampaignIdRef.current === campaignId) {
+        applyingRef.current = false;
+        setApplying(false);
+      }
     }
   };
 
@@ -122,7 +196,8 @@ export function CampaignDetails({ id }: { id: string }) {
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.suitable")}</h2><div className="flex flex-wrap gap-2">{campaign.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div></section>
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("common.requirements")}</h2><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></section>
       {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.businessContact")}</h2><ContactList items={contacts} /></section>}
-      {canApply && <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar>}
+      {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
+      {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary w-full" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : null}
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
       <Toast message={toast} tone={toastTone} /><BottomNav />
     </div>

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, getApiErrorMessage } from "../src/api/client";
 import { translate } from "../src/i18n";
-import { closeMyCampaign, getBrandFaceCatalog, getBrandFaceFavorites, getCampaignCatalog, getCampaigns, getMyCampaign, getMyCampaigns, removeBrandFaceFavorite, saveBrandFaceFavorite, updateMyCampaign } from "../src/api/marketplace";
+import { acceptMyCampaignApplication, applyToCampaign, closeMyCampaign, getBrandFaceCatalog, getBrandFaceFavorites, getCampaignApplicationInbox, getCampaignCatalog, getCampaigns, getMyCampaign, getMyCampaignApplication, getMyCampaignApplicationsPage, getMyCampaigns, rejectMyCampaignApplication, removeBrandFaceFavorite, saveBrandFaceFavorite, updateMyCampaign, withdrawMyCampaignApplication } from "../src/api/marketplace";
 
 describe("API client", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -118,5 +118,29 @@ describe("API client", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0][1].body))).toEqual({ title: "Coffee", description: "Launch", city: null, categories: ["food"], requirements: [], budgetFrom: 0, budgetTo: 500_000, deadline: null });
     expect(fetchMock.mock.calls[1][0]).toBe("/api/campaigns/mine/campaign-a/close");
     expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "POST" });
+  });
+
+  it("uses only private Blogger and Business application endpoints with server pagination", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, hasMore: false }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await applyToCampaign("campaign-a", "Ready");
+    await getMyCampaignApplicationsPage({ campaignId: "campaign-a", status: 1, page: 2, pageSize: 10 });
+    await getMyCampaignApplication("application-a");
+    await withdrawMyCampaignApplication("application-a");
+    await getCampaignApplicationInbox("campaign-a", { status: 0 });
+    await acceptMyCampaignApplication("campaign-a", "application-a");
+    await rejectMyCampaignApplication("campaign-a", "application-a");
+
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      "/api/campaigns/campaign-a/applications",
+      "/api/campaign-applications/mine?campaignId=campaign-a&status=1&page=2&pageSize=10",
+      "/api/campaign-applications/mine/application-a",
+      "/api/campaign-applications/mine/application-a/withdraw",
+      "/api/campaigns/mine/campaign-a/applications?status=0&page=1&pageSize=20",
+      "/api/campaigns/mine/campaign-a/applications/application-a/accept",
+      "/api/campaigns/mine/campaign-a/applications/application-a/reject"
+    ]);
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "POST" });
+    expect(fetchMock.mock.calls[0][0]).not.toContain("businessId");
   });
 });

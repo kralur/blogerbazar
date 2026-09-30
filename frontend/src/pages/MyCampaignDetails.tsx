@@ -105,6 +105,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
     <Card className="my-campaign-details__section"><h2>{t("common.categories")}</h2>{campaign.categories.length ? <div className="my-campaign-card__categories">{campaign.categories.map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div> : <p>{t("common.notSpecified")}</p>}</Card>
     <Card className="my-campaign-details__section"><h2>{t("common.requirements")}</h2>{campaign.requirements.length ? <ul>{campaign.requirements.map((requirement) => <li key={requirement}><Icon aria-hidden="true" name="check" />{requirement}</li>)}</ul> : <p>{t("common.notSpecified")}</p>}</Card>
     {canManage && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}>
+      <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-applications/${id}`}>{t("applications.openInbox")}</a>
       <a aria-label={t("myCampaignDetails.editAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-edit/${id}`} onClick={(event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();

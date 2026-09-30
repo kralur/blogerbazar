@@ -95,7 +95,7 @@ function useInitialFavoriteLoad(active: boolean, startedRef: MutableRef<boolean>
   }, [active, cancel, load, startedRef]);
 }
 
-function FavoriteListFooter({ catalog, onRetry, sentinelRef }: { catalog: ReturnType<typeof usePaginatedCatalog>; onRetry: () => void; sentinelRef: MutableRef<HTMLDivElement | null> }) {
+function FavoriteListFooter({ catalog, onRetry, sentinelRef }: { catalog: Omit<ReturnType<typeof usePaginatedCatalog>, "updateItem">; onRetry: () => void; sentinelRef: MutableRef<HTMLDivElement | null> }) {
   const { t } = useI18n();
   if (catalog.loading || catalog.failure || catalog.items.length === 0) return null;
   return <>{catalog.hasMore && <div aria-hidden="true" ref={sentinelRef} />}{catalog.loadingMore && <SearchSkeleton compact count={2} />}{catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={onRetry} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} />}{catalog.loadedInitialResult && !catalog.hasMore && !catalog.loadingMore && !catalog.loadMoreFailed && <p className="catalog-search__end">{t("search.endOfList")}</p>}</>;

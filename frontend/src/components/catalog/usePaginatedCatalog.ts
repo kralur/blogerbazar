@@ -77,7 +77,11 @@ export function usePaginatedCatalog<TItem>({ active, fetchPage, getItemId = defa
     }
   }, [active, fetchPage]);
 
-  return { items, total, loading, loadingMore, loadMoreFailed, failure, page, hasMore, loadedInitialResult, load, cancel };
+  const updateItem = useCallback((id: string, update: (item: TItem) => TItem) => {
+    setItems((current) => current.map((item) => getItemId(item) === id ? update(item) : item));
+  }, [getItemId]);
+
+  return { items, total, loading, loadingMore, loadMoreFailed, failure, page, hasMore, loadedInitialResult, load, cancel, updateItem };
 }
 
 function defaultItemId(item: unknown) {

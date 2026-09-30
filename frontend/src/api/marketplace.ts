@@ -505,8 +505,49 @@ export async function closeMyCampaign(id: string, signal?: AbortSignal): Promise
   return api<CampaignMutationResponse>(`/api/campaigns/mine/${id}/close`, { method: "POST", signal });
 }
 
-export async function applyToCampaign(id: string, message: string) {
-  return api(`/api/campaigns/${id}/applications`, { method: "POST", body: JSON.stringify({ message }) });
+export type CampaignApplicationCreateResult = { id: string; campaignId: string; bloggerId: string; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string };
+export type MyCampaignApplicationItem = { id: string; campaignId: string; campaignTitle: string; businessName: string; businessAvatarUrl?: string | null; city?: string | null; categories: string[]; minBudget?: number | null; maxBudget?: number | null; deadline?: string | null; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string };
+export type MyCampaignApplicationDetails = MyCampaignApplicationItem & { campaignDescription: string; requirements: string[] };
+export type MyCampaignApplicationsQuery = { campaignId?: string; status?: CampaignApplicationStatus; page?: number; pageSize?: number };
+export type MyCampaignApplicationsPage = { items: MyCampaignApplicationItem[]; total: number; page: number; pageSize: number; hasMore: boolean };
+export type CampaignApplicationInboxItem = { id: string; bloggerId: string; bloggerName: string; bloggerAvatarUrl?: string | null; city: string; categories: string[]; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string };
+export type CampaignApplicationInboxPage = { items: CampaignApplicationInboxItem[]; total: number; page: number; pageSize: number; hasMore: boolean };
+export type CampaignApplicationDecision = { id: string; status: CampaignApplicationStatus; dealId?: string | null };
+
+function applicationParams(query: { campaignId?: string; status?: CampaignApplicationStatus; page?: number; pageSize?: number }) {
+  const params = new URLSearchParams();
+  Object.entries({ ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 20 }).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  return params;
+}
+
+export async function applyToCampaign(id: string, message: string, signal?: AbortSignal) {
+  return api<CampaignApplicationCreateResult>(`/api/campaigns/${id}/applications`, { method: "POST", body: JSON.stringify({ message }), signal });
+}
+
+export async function getMyCampaignApplicationsPage(query: MyCampaignApplicationsQuery = {}, signal?: AbortSignal) {
+  return api<MyCampaignApplicationsPage>(`/api/campaign-applications/mine?${applicationParams(query).toString()}`, { signal });
+}
+
+export async function getMyCampaignApplication(id: string, signal?: AbortSignal) {
+  return api<MyCampaignApplicationDetails>(`/api/campaign-applications/mine/${id}`, { signal });
+}
+
+export async function withdrawMyCampaignApplication(id: string, signal?: AbortSignal) {
+  return api<CampaignApplicationDecision>(`/api/campaign-applications/mine/${id}/withdraw`, { method: "POST", signal });
+}
+
+export async function getCampaignApplicationInbox(campaignId: string, query: Pick<MyCampaignApplicationsQuery, "status" | "page" | "pageSize"> = {}, signal?: AbortSignal) {
+  return api<CampaignApplicationInboxPage>(`/api/campaigns/mine/${campaignId}/applications?${applicationParams(query).toString()}`, { signal });
+}
+
+export async function acceptMyCampaignApplication(campaignId: string, applicationId: string, signal?: AbortSignal) {
+  return api<CampaignApplicationDecision>(`/api/campaigns/mine/${campaignId}/applications/${applicationId}/accept`, { method: "POST", signal });
+}
+
+export async function rejectMyCampaignApplication(campaignId: string, applicationId: string, signal?: AbortSignal) {
+  return api<CampaignApplicationDecision>(`/api/campaigns/mine/${campaignId}/applications/${applicationId}/reject`, { method: "POST", signal });
 }
 
 export type MyCampaignApplication = {
