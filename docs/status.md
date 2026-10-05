@@ -3,25 +3,34 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-05, публикация Phase 3F-C._
+_Последнее обновление: 2026-10-05, публикация Phase 4A + 4B._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | Phase 3F-C (см. `git log`; предыдущие checkpoints `a17819b` 3F-B, `313d26f` 3F-A) |
+| Published `main` / `origin/main` | Phase 4A + 4B (см. `git log`; предыдущие checkpoints `b26abeb` 3F-C, `a17819b` 3F-B, `313d26f` 3F-A) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
-| CI PR для gates | 3F-B: https://github.com/kralur/blogerbazar/pull/1 · 3F-C: https://github.com/kralur/blogerbazar/pull/2 |
+| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 |
 
 ## Текущая фаза
 
 - **Phase 3F-B — Private Deal API, Security & Lifecycle**: опубликована (`a17819b`).
 - **Phase 3F-C — frontend Deal bridge**: опубликована (`579d6c3`).
-- **Phase 4A — Contacts privacy** (D31): закоммичена (`75aa8e3`, fix `b3d4dcd`, tests `fb9ac1c`), CI зелёный (265 passed), придержана до 4B.
-- **Phase 4B — Offers**: реализована, не закоммичена, ожидает review владельца. Миграция `AddCollaborationOfferTerms` одобрена владельцем.
-- Далее: 4B (предложения) → 4C (отзывы 2.0) → FEATURE FREEZE → Full UI Redesign.
+- **Phase 4A — Contacts privacy** (D31): опубликована (`75aa8e3`, fix `b3d4dcd`, tests `fb9ac1c`).
+- **Phase 4B — Offers**: опубликована (`29516c3`). Миграция `AddCollaborationOfferTerms` (одобрена владельцем)
+  применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
+- Далее: 4C (отзывы 2.0 + напоминания) → FEATURE FREEZE → Full UI Redesign.
 
 ## Последние результаты gates
+
+### Phase 4A + 4B (GitHub Actions, run 37302835374, коммит `29516c3`)
+
+```text
+dotnet build: passed
+dotnet test (RUN_INTEGRATION_TESTS=true, migrations applied on Postgres): 286 passed / 0 failed / 0 skipped
+Frontend build and tests: passed; Production Docker build validation: passed
+```
 
 ### Phase 4B (локально, до review)
 
