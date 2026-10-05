@@ -94,8 +94,11 @@ internal sealed class FakeDeals(params Deal[] deals) : IDealRepository
         return Task.FromResult(true);
     }
 
+    public List<Deal> Added { get; } = [];
     public Task<bool> ExistsForApplicationAsync(Guid campaignApplicationId, CancellationToken cancellationToken) => Task.FromResult(false);
-    public Task AddAsync(Deal deal, CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task<Deal?> GetByCollaborationRequestIdAsync(Guid collaborationRequestId, CancellationToken cancellationToken) =>
+        Task.FromResult(Added.SingleOrDefault(deal => deal.CollaborationRequestId == collaborationRequestId));
+    public Task AddAsync(Deal deal, CancellationToken cancellationToken) { Added.Add(deal); return Task.CompletedTask; }
 }
 
 internal sealed class FakeDealReadModel(params DealReadRow[] rows) : IDealReadModel

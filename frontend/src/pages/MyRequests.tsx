@@ -3,9 +3,11 @@ import {
   acceptCampaignApplication,
   getMyCampaignApplications,
   getMyDeals,
+  getMyOffers,
   type MarketplaceRole,
   type MyCampaignApplication,
-  type MyDeal
+  type MyDeal,
+  type Offer
 } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Toast } from "../components/ui";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
@@ -16,6 +18,7 @@ import { CampaignApplicationStatus, campaignApplicationStatusTone, canAcceptCamp
 import { BloggerApplications } from "./BloggerApplications";
 import { subscribeDealCache } from "../data/dealCache";
 import { dealRoute, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
+import { offerFormatLabelKey, offerRoute, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
 
 const formatDate = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
 
@@ -30,7 +33,10 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     [CampaignApplicationStatus.Withdrawn]: t("requests.applicationWithdrawn")
   };
   const locale = language === "uz" ? "uz-UZ" : "ru-RU";
-  const [view, setView] = useState<"applications" | "deals">("applications");
+  const [view, setView] = useState<"applications" | "offers" | "deals">("applications");
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(true);
+  const [offersFailed, setOffersFailed] = useState(false);
   const [requests, setRequests] = useState<MyCampaignApplication[]>([]);
   const [deals, setDeals] = useState<MyDeal[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<MyCampaignApplication | null>(null);
@@ -69,10 +75,20 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       .finally(() => setRequestsLoading(false));
   }, [activeMarketplaceRole, t]);
 
+  const loadOffers = useCallback(() => {
+    setOffersLoading(true);
+    setOffersFailed(false);
+    void getMyOffers()
+      .then(setOffers)
+      .catch(() => setOffersFailed(true))
+      .finally(() => setOffersLoading(false));
+  }, []);
+
   const load = useCallback(() => {
     loadDeals();
     loadRequests();
-  }, [loadDeals, loadRequests]);
+    loadOffers();
+  }, [loadDeals, loadOffers, loadRequests]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => subscribeDealCache((details) => {
@@ -115,12 +131,23 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
         <div className="flex shrink-0 items-center gap-2"><LanguageSwitcher />{view === "deals" && <button aria-label={t("requests.dateFilter")} className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-brand-blue" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button>}</div>
       </header>
 
-      <div className="mt-5 grid grid-cols-2 rounded-2xl bg-slate-100 p-1">
+      <div className="mt-5 grid grid-cols-3 rounded-2xl bg-slate-100 p-1">
         <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "applications" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("applications")} type="button">{t("requests.applications")}</button>
+        <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "offers" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("offers")} type="button">{t("offers.tab")}</button>
         <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "deals" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("deals")} type="button">{t("requests.deals")}</button>
       </div>
 
-      {view === "applications" && activeMarketplaceRole === "Blogger" ? <BloggerApplications activeMarketplaceRole={activeMarketplaceRole} /> : view === "applications" ? (
+      {view === "offers" ? (
+        offersLoading ? <div className="mt-5"><LoadingState title={t("offers.loading")} /></div> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(activeMarketplaceRole === "Blogger" ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
+          <div className="mt-5 grid gap-3">
+            {offers.map((offer) => (
+              <a className="block text-left" href={`#${offerRoute(offer.id)}`} key={offer.id}>
+                <Card><div className="flex gap-3"><Avatar name={offer.counterpartyName} size="sm" src={offer.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{offer.counterpartyName}</h2><Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{t(offerFormatLabelKey(offer.format))}</p><p className="mt-2 text-xs text-brand-muted">{formatDate(offer.createdAtUtc, locale)}</p></div></div></Card>
+              </a>
+            ))}
+          </div>
+        )
+      ) : view === "applications" && activeMarketplaceRole === "Blogger" ? <BloggerApplications activeMarketplaceRole={activeMarketplaceRole} /> : view === "applications" ? (
         requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> :
         !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="mt-5 grid gap-3">

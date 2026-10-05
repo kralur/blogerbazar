@@ -31,6 +31,7 @@ const MyCampaignEdit = lazy(async () => ({ default: (await import("./pages/MyCam
 const MyCampaigns = lazy(async () => ({ default: (await import("./pages/MyCampaigns")).MyCampaigns }));
 const Home = lazy(async () => ({ default: (await import("./pages/Home")).Home }));
 const MyRequests = lazy(async () => ({ default: (await import("./pages/MyRequests")).MyRequests }));
+const OfferDetails = lazy(async () => ({ default: (await import("./pages/OfferDetails")).OfferDetails }));
 const DealDetails = lazy(async () => ({ default: (await import("./pages/DealDetails")).DealDetails }));
 const MyApplicationDetails = lazy(async () => ({ default: (await import("./pages/MyApplicationDetails")).MyApplicationDetails }));
 const MyCampaignApplications = lazy(async () => ({ default: (await import("./pages/MyCampaignApplications")).MyCampaignApplications }));
@@ -60,6 +61,15 @@ function useRoute() {
   const [path, id] = pathname.split("/").filter(Boolean);
   return { path: path ? `/${path}` : "/", id };
 }
+
+// Bot notifications open the Mini App with ?bb_route=/deal/{id} or /offer/{id}; keep that route after sign-in.
+const deepLinkPattern = /^\/(deal|offer)\/[0-9a-f-]{36}$/i;
+function readInitialDeepLink() {
+  if (typeof window === "undefined") return null;
+  const route = new URLSearchParams(window.location.search).get("bb_route");
+  return route && deepLinkPattern.test(route) ? route : null;
+}
+const initialDeepLink = readInitialDeepLink();
 
 function initialOnboardingStep(): OnboardingStep {
   if (localStorage.getItem(onboardingCompletedKey) === "true") return "complete";
@@ -127,7 +137,7 @@ export function App() {
         setSelectedRole(marketplaceRole);
         localStorage.setItem(onboardingCompletedKey, "true");
         setOnboardingStep("complete");
-        window.location.hash = "/";
+        window.location.hash = initialDeepLink ?? "/";
         return;
       }
 
@@ -204,12 +214,12 @@ export function App() {
   useTelegramBackHandler(goBackFromNestedRoute, onboardingStep === "complete" && !rootRoutes.includes(route.path));
 
   useEffect(() => {
-    if (["/blogger", "/brand-face-detail", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications", "/deal"].includes(route.path)) {
+    if (["/blogger", "/brand-face-detail", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications", "/deal", "/offer"].includes(route.path)) {
       window.scrollTo(0, 0);
     }
   }, [route.id, route.path]);
 
-  const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/requests", "/admin"];
+  const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
@@ -242,6 +252,7 @@ export function App() {
       {(visitedRootRoutes.has("/requests") || route.path === "/requests") && <RootScreenVisibility active={route.path === "/requests"}><CachedRequests activeMarketplaceRole={selectedRole} key={`${selectedRole ?? "none"}-${sessionEpoch}`} /></RootScreenVisibility>}
       {route.path === "/my-application" && route.id && <MyApplicationDetails id={route.id} />}
       {route.path === "/deal" && route.id && <DealDetails id={route.id} />}
+      {route.path === "/offer" && route.id && <OfferDetails id={route.id} />}
       {route.path === "/admin" && <Admin />}
       {!knownRoutes.includes(route.path) && <Home />}
     </>}

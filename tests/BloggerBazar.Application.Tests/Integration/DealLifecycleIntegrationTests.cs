@@ -159,6 +159,57 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal(HttpStatusCode.NotFound, foreignDealContact.StatusCode);
     }
 
+    [IntegrationFact]
+    public async Task Offer_flow_creates_a_deal_only_after_the_blogger_accepts()
+    {
+        var (bloggerId, bloggerTelegramUserId, businessTelegramUserId) = await SeedParticipantsAsync(1_100_071, 1_100_072);
+        using var bloggerClient = CreateClient(bloggerTelegramUserId);
+        using var businessClient = CreateClient(businessTelegramUserId);
+        var payload = new { bloggerId, format = "reels", offeredBudget = 1_500_000, message = "One reel about our launch" };
+
+        var created = await businessClient.PostAsJsonAsync("/api/offers", payload);
+        var duplicate = await businessClient.PostAsJsonAsync("/api/offers", payload);
+        var contactBefore = await businessClient.GetAsync($"/api/contacts/Blogger/{bloggerId}");
+        var incoming = await bloggerClient.GetFromJsonAsync<JsonElement>("/api/offers/mine");
+        var offer = Assert.Single(incoming.EnumerateArray());
+        var offerId = offer.GetProperty("id").GetGuid();
+        var acceptedByBusiness = await businessClient.PostAsync($"/api/offers/mine/{offerId}/accept", null);
+        var accepted = await bloggerClient.PostAsync($"/api/offers/mine/{offerId}/accept", null);
+        var decision = await accepted.Content.ReadFromJsonAsync<JsonElement>();
+        var dealId = decision.GetProperty("dealId").GetGuid();
+        var deal = await businessClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{dealId}");
+        var contactAfter = await businessClient.GetAsync($"/api/contacts/Blogger/{bloggerId}");
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, contactBefore.StatusCode);
+        Assert.True(offer.GetProperty("canRespond").GetBoolean());
+        Assert.Equal("pending", offer.GetProperty("state").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, acceptedByBusiness.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        Assert.Equal("accepted", decision.GetProperty("state").GetString());
+        Assert.Equal("collaborationRequest", deal.GetProperty("sourceType").GetString());
+        Assert.Equal("reels", deal.GetProperty("offer").GetProperty("format").GetString());
+        Assert.Equal(HttpStatusCode.OK, contactAfter.StatusCode);
+    }
+
+    private async Task<(Guid BloggerId, long BloggerTelegramUserId, long BusinessTelegramUserId)> SeedParticipantsAsync(long bloggerTelegramUserId, long businessTelegramUserId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        var bloggerUser = PlatformUser.Create(bloggerTelegramUserId, "Blogger", null);
+        bloggerUser.SelectMarketplaceRole(MarketplaceRole.Blogger);
+        var businessUser = PlatformUser.Create(businessTelegramUserId, "Business", null);
+        businessUser.SelectMarketplaceRole(MarketplaceRole.Business);
+        var blogger = BloggerProfile.Create(bloggerTelegramUserId, "Offer blogger", "tashkent", ["beauty"]);
+        blogger.Approve();
+        var business = BusinessProfile.Create(businessTelegramUserId, "Offer business", "tashkent");
+        business.Approve();
+        dbContext.AddRange(bloggerUser, businessUser, blogger, business);
+        await dbContext.SaveChangesAsync();
+        return (blogger.Id, bloggerTelegramUserId, businessTelegramUserId);
+    }
+
     private async Task<SeededDeal> SeedCampaignDealAsync(long bloggerTelegramUserId, long businessTelegramUserId, bool complete = false)
     {
         using var scope = factory.Services.CreateScope();

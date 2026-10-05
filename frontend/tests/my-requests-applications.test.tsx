@@ -2,12 +2,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 
-const api = vi.hoisted(() => ({ getMyCampaignApplications: vi.fn(), getMyDeals: vi.fn() }));
+const api = vi.hoisted(() => ({ getMyCampaignApplications: vi.fn(), getMyDeals: vi.fn(), getMyOffers: vi.fn() }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/api/marketplace")>()),
   getMyCampaignApplications: api.getMyCampaignApplications,
-  getMyDeals: api.getMyDeals
+  getMyDeals: api.getMyDeals,
+  getMyOffers: api.getMyOffers
 }));
 vi.mock("../src/pages/BloggerApplications", () => ({ BloggerApplications: () => <section>blogger-applications</section> }));
 vi.mock("../src/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => null }));
@@ -36,6 +37,7 @@ describe("My Requests role-aware loading", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.getMyCampaignApplications.mockResolvedValue([]);
+    api.getMyOffers.mockResolvedValue([]);
   });
 
   it("keeps Blogger applications available when Deals fails", async () => {
@@ -65,5 +67,15 @@ describe("My Requests role-aware loading", () => {
     expect((await screen.findByText("Coffee")).closest("a")).toHaveAttribute("href", "#/deal/deal-a");
     expect(screen.getByText(translate("deals.source.collaborationRequest", undefined, "ru")).closest("a")).toHaveAttribute("href", "#/deal/deal-b");
     expect(screen.queryByText("Direct collaboration request")).not.toBeInTheDocument();
+  });
+
+  it("lists offers and links them to the offer route", async () => {
+    api.getMyDeals.mockResolvedValueOnce([]);
+    api.getMyOffers.mockResolvedValueOnce([{ id: "offer-a", bloggerId: "blogger-a", counterpartyName: "Lumi", format: "reels", message: "Hi", state: "pending", createdAtUtc: "2026-10-05T00:00:00Z", canRespond: true }]);
+    render(<I18nProvider><MyRequests activeMarketplaceRole="Blogger" /></I18nProvider>);
+    fireEvent.click(screen.getByRole("button", { name: translate("offers.tab", undefined, "ru") }));
+
+    expect((await screen.findByText("Lumi")).closest("a")).toHaveAttribute("href", "#/offer/offer-a");
+    expect(screen.getByText(translate("offers.state.pending", undefined, "ru"))).toBeInTheDocument();
   });
 });

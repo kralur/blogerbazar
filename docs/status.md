@@ -17,10 +17,19 @@ _Последнее обновление: 2026-10-05, публикация Phase
 
 - **Phase 3F-B — Private Deal API, Security & Lifecycle**: опубликована (`a17819b`).
 - **Phase 3F-C — frontend Deal bridge**: опубликована (`579d6c3`).
-- **Phase 4A — Contacts privacy** (D31): реализована, не закоммичена, ожидает review владельца.
+- **Phase 4A — Contacts privacy** (D31): закоммичена (`75aa8e3`, fix `b3d4dcd`, tests `fb9ac1c`), CI зелёный (265 passed), придержана до 4B.
+- **Phase 4B — Offers**: реализована, не закоммичена, ожидает review владельца. Миграция `AddCollaborationOfferTerms` одобрена владельцем.
 - Далее: 4B (предложения) → 4C (отзывы 2.0) → FEATURE FREEZE → Full UI Redesign.
 
 ## Последние результаты gates
+
+### Phase 4B (локально, до review)
+
+```text
+npm test: 41 files, 299 passed / 0 failed; npm run build: passed; i18n:audit: passed (874 keys); tsc: passed
+dotnet build / test / EF pending model changes: NOT RUN локально (нет dotnet) — проверка через CI на PR #3
+git diff --check: passed; secret scan: no matches
+```
 
 ### Phase 4A (локально, до review)
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getBlogger, getBloggerReviews, getPublicContact, type BloggerDetails, type BloggerReview, type ContactDetails } from "../api/marketplace";
+import { getBlogger, getBloggerReviews, getCurrentPlatformUser, getPublicContact, normalizeMarketplaceRole, type BloggerDetails, type BloggerReview, type ContactDetails, type MarketplaceRole } from "../api/marketplace";
+import { OfferForm } from "../components/OfferForm";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Rating, StatsCard, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
@@ -19,6 +20,8 @@ export function BloggerDetails({ id }: { id: string }) {
   const [contact, setContact] = useState<ContactDetails | null>(null);
   const [reviews, setReviews] = useState<BloggerReview[]>([]);
   const [toast, setToast] = useState("");
+  const [role, setRole] = useState<MarketplaceRole>();
+  const [offerOpen, setOfferOpen] = useState(false);
 
   const requestIdRef = useRef(0);
   const loadBlogger = useCallback(() => {
@@ -50,6 +53,12 @@ export function BloggerDetails({ id }: { id: string }) {
   useEffect(() => {
     getBloggerReviews(id).then(setReviews).catch(() => undefined);
   }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    getCurrentPlatformUser().then((user) => { if (active) setRole(normalizeMarketplaceRole(user.selectedMarketplaceRole)); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     getPublicContact("Blogger", id)
@@ -87,7 +96,10 @@ export function BloggerDetails({ id }: { id: string }) {
     <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.reviews")}</h2>{reviews.length ? <div className="grid gap-2">{reviews.map((review) => <Card className="p-3" key={review.id}><div className="flex items-center justify-between"><Rating value={review.rating} /><span className="text-xs text-brand-muted">{new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(review.createdAtUtc))}</span></div>{review.reviewerName && <p className="mt-2 text-sm font-bold">{review.reviewerName}</p>}{review.comment && <p className="mt-1 text-sm leading-5 text-brand-muted">{review.comment}</p>}</Card>)}</div> : <Card><p className="text-sm text-brand-muted">{t("details.noReviews")}</p></Card>}</section>
     <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.adPrices")}</h2><div className="grid grid-cols-2 gap-2">{[[t("card.stories"), blogger.storiesPrice], [t("card.reels"), blogger.reelsPrice], [t("card.post"), blogger.postPrice], [t("card.integration"), blogger.integrationPrice]].map(([label, value]) => <Card className="p-3" key={String(label)}><p className="text-xs text-brand-muted">{label}</p><p className="mt-1 text-sm font-extrabold">{formatCurrency(Number(value))}</p></Card>)}</div></section>
     {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.contacts")}</h2><ContactList items={contacts} /></section>}
-    <FixedActionBar><a href="#/campaigns"><Button className="w-full"><Icon name="send" />{t("details.createCampaign")}</Button></a></FixedActionBar>
+    {role === "Business"
+      ? <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>
+      : <FixedActionBar><a href="#/campaigns"><Button className="w-full"><Icon name="send" />{t("details.createCampaign")}</Button></a></FixedActionBar>}
+    <OfferForm bloggerId={blogger.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} /><BottomNav />
   </div>;
 }

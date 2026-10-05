@@ -210,6 +210,9 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         collaborationRequest.HasOne(entity => entity.Business).WithMany(entity => entity.CollaborationRequests).HasForeignKey(entity => entity.BusinessId).OnDelete(DeleteBehavior.Cascade);
         collaborationRequest.HasIndex(entity => new { entity.BloggerId, entity.Status });
         collaborationRequest.HasIndex(entity => new { entity.BusinessId, entity.Status });
+        collaborationRequest.HasIndex(entity => new { entity.BusinessId, entity.BloggerId })
+            .IsUnique()
+            .HasFilter("\"ExpiresAtUtc\" IS NOT NULL AND \"Status\" IN (0, 1)");
 
         var deal = modelBuilder.Entity<Deal>();
         deal.ToTable("deals");

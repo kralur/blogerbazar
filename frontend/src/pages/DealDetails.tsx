@@ -8,6 +8,7 @@ import { ManagementBackLink } from "../components/ManagementBackLink";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
+import { offerFormatLabelKey } from "../lib/offerStatus";
 
 type LoadState = "loading" | "ready" | "denied" | "not-found" | "error";
 
@@ -127,6 +128,7 @@ export function DealDetails({ id }: { id: string }) {
       </Card>
       {terms.requirements.length > 0 && <Card className="mt-4"><h2 className="font-extrabold">{t("common.requirements")}</h2><ul className="mt-3 grid gap-2 text-sm text-brand-muted">{terms.requirements.map((value) => <li key={value}>{value}</li>)}</ul></Card>}
     </>}
+    {deal.offer && <Card className="mt-4"><h2 className="font-extrabold">{t("deals.offerTerms")}</h2><p className="mt-3 whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p><dl className="my-campaign-details__facts"><div><dt>{t("offers.format")}</dt><dd>{t(offerFormatLabelKey(deal.offer.format))}</dd></div><div><dt>{t("offers.budget")}</dt><dd>{deal.offer.offeredBudget != null ? formatCurrency(deal.offer.offeredBudget) : t("offers.budgetNegotiable")}</dd></div>{deal.offer.deadline && <div><dt>{t("offers.deadline")}</dt><dd>{formatDate(deal.offer.deadline)}</dd></div>}</dl></Card>}
     {contactItems.length > 0 && hasContacts(contactItems) && <section className="mt-4"><h2 className="mb-3 font-extrabold">{t("deals.contacts")}</h2><ContactList items={contactItems} /></section>}
     <Card className="mt-4"><dl className="my-campaign-details__facts"><div><dt>{t("deals.startedAt")}</dt><dd>{formatDate(deal.createdAtUtc)}</dd></div>{deal.completedAtUtc && <div><dt>{t("deals.completedAt")}</dt><dd>{formatDate(deal.completedAtUtc)}</dd></div>}</dl></Card>
     {deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={() => setCompleteOpen(true)} type="button">{t("requests.complete")}</Button>}

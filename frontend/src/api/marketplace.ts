@@ -613,7 +613,49 @@ export type DealDetails = {
   canComplete: boolean;
   canReview: boolean;
   hasReviewed: boolean;
+  offer?: DealOffer | null;
 };
+export type DealOffer = { format?: OfferFormat | null; offeredBudget?: number | null; deadline?: string | null; message: string };
+
+export type OfferFormat = "stories" | "reels" | "post" | "integration";
+export type OfferState = "pending" | "accepted" | "declined" | "expired";
+export type Offer = {
+  id: string;
+  bloggerId: string;
+  counterpartyName: string;
+  counterpartyImageUrl?: string | null;
+  format?: OfferFormat | null;
+  offeredBudget?: number | null;
+  deadline?: string | null;
+  message: string;
+  state: OfferState;
+  createdAtUtc: string;
+  expiresAtUtc?: string | null;
+  dealId?: string | null;
+  canRespond: boolean;
+};
+export type OfferDecision = { id: string; state: OfferState; dealId?: string | null };
+export type CreateOfferInput = { bloggerId: string; format: OfferFormat; offeredBudget?: number | null; deadline?: string | null; message: string };
+
+export async function createOffer(input: CreateOfferInput) {
+  return api<Offer>("/api/offers", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function getMyOffers() {
+  return api<Offer[]>("/api/offers/mine");
+}
+
+export async function getMyOffer(id: string, signal?: AbortSignal) {
+  return api<Offer>(`/api/offers/mine/${id}`, { signal });
+}
+
+export async function acceptOffer(id: string) {
+  return api<OfferDecision>(`/api/offers/mine/${id}/accept`, { method: "POST" });
+}
+
+export async function declineOffer(id: string) {
+  return api<OfferDecision>(`/api/offers/mine/${id}/decline`, { method: "POST" });
+}
 
 export async function getMyDeals() {
   return api<MyDeal[]>("/api/deals/me");

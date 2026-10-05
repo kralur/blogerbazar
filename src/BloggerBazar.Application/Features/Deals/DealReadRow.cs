@@ -54,7 +54,13 @@ public sealed record DealReadRow(
     int? LiveCampaignBudgetTo,
     DateTime? LiveCampaignDeadline,
     bool BloggerHasReviewed,
-    bool BusinessHasReviewed);
+    bool BusinessHasReviewed,
+    CollaborationFormat? OfferFormat = null,
+    int? OfferedBudget = null,
+    DateTime? OfferDeadline = null,
+    string? OfferMessage = null);
+
+public sealed record DealOfferDto(string? Format, int? OfferedBudget, DateTime? Deadline, string Message);
 
 internal sealed record DealView(
     string SourceType,
@@ -64,7 +70,8 @@ internal sealed record DealView(
     string? CounterpartyImageUrl,
     bool CanComplete,
     bool CanReview,
-    bool HasReviewed)
+    bool HasReviewed,
+    DealOfferDto? Offer)
 {
     public static DealView From(DealReadRow row, MarketplaceRole viewerRole)
     {
@@ -80,7 +87,10 @@ internal sealed record DealView(
             viewerIsBlogger ? row.BusinessLogoUrl : row.BloggerAvatarUrl,
             row.Status == DealStatus.Active,
             row.Status == DealStatus.Completed && !hasReviewed,
-            hasReviewed);
+            hasReviewed,
+            row.CollaborationRequestId is not null && row.OfferMessage is not null
+                ? new DealOfferDto(Offers.OfferFormats.ToName(row.OfferFormat), row.OfferedBudget, row.OfferDeadline, row.OfferMessage)
+                : null);
     }
 
     private static (string SourceType, string TermsSource, DealTermsDto? Terms) ResolveTerms(DealReadRow row)

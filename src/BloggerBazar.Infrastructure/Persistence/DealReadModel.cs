@@ -51,5 +51,9 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
             deal.CampaignApplication == null ? null : deal.CampaignApplication.Campaign.BudgetTo,
             deal.CampaignApplication == null ? null : deal.CampaignApplication.Campaign.Deadline,
             deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Business),
-            deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Blogger)));
+            deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Blogger),
+            deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Format,
+            deal.CollaborationRequest == null ? null : deal.CollaborationRequest.OfferedBudget,
+            deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Deadline,
+            deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Message));
 }

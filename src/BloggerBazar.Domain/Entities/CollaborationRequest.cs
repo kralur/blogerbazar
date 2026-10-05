@@ -24,9 +24,39 @@ public sealed class CollaborationRequest
     public string Message { get; private set; } = null!;
     public CollaborationRequestStatus Status { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
+    public CollaborationFormat? Format { get; private set; }
+    public int? OfferedBudget { get; private set; }
+    public DateTime? Deadline { get; private set; }
+    public DateTime? ExpiresAtUtc { get; private set; }
     public Deal? Deal { get; private set; }
 
+    public static readonly TimeSpan OfferLifetime = TimeSpan.FromHours(48);
+
+    public bool IsOffer => ExpiresAtUtc.HasValue;
+    public bool IsPending => Status is CollaborationRequestStatus.Sent or CollaborationRequestStatus.Viewed;
+
     public static CollaborationRequest Create(Guid bloggerId, Guid businessId, string message) => new(bloggerId, businessId, message);
+
+    public static CollaborationRequest CreateOffer(Guid bloggerId, Guid businessId, string message, CollaborationFormat format, int? offeredBudget, DateTime? deadline)
+    {
+        if (offeredBudget < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(offeredBudget), "Offered budget cannot be negative.");
+        }
+
+        var offer = new CollaborationRequest(bloggerId, businessId, message)
+        {
+            Format = format,
+            OfferedBudget = offeredBudget,
+            Deadline = deadline
+        };
+        offer.ExpiresAtUtc = offer.CreatedAtUtc.Add(OfferLifetime);
+        return offer;
+    }
+
+    public bool IsExpiredAt(DateTime utcNow) => IsPending && ExpiresAtUtc <= utcNow;
+
+    public void Expire() => TransitionTo(CollaborationRequestStatus.Expired);
 
     public void MarkViewed() => TransitionTo(CollaborationRequestStatus.Viewed);
 
@@ -36,7 +66,7 @@ public sealed class CollaborationRequest
 
     private void TransitionTo(CollaborationRequestStatus status)
     {
-        if (Status is CollaborationRequestStatus.Accepted or CollaborationRequestStatus.Declined)
+        if (!IsPending)
         {
             throw new InvalidOperationException("A final collaboration request cannot be changed.");
         }

@@ -21,7 +21,8 @@ public sealed record DealDetailsDto(
     DateTime? CompletedAtUtc,
     bool CanComplete,
     bool CanReview,
-    bool HasReviewed)
+    bool HasReviewed,
+    DealOfferDto? Offer = null)
 {
     internal static DealDetailsDto From(DealReadRow row, MarketplaceRole viewerRole)
     {
@@ -40,7 +41,8 @@ public sealed record DealDetailsDto(
             row.CompletedAtUtc,
             view.CanComplete,
             view.CanReview,
-            view.HasReviewed);
+            view.HasReviewed,
+            view.Offer);
     }
 }
 

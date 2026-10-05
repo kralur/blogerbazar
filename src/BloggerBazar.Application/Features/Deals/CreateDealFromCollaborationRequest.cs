@@ -34,6 +34,11 @@ public sealed class CreateDealFromCollaborationRequestHandler(
             return DealDto.From(existingDeal);
         }
 
+        if (request.IsExpiredAt(DateTime.UtcNow))
+        {
+            throw new InvalidOperationException("The offer has expired.");
+        }
+
         if (request.Status != Domain.Enums.CollaborationRequestStatus.Accepted)
         {
             // Only the blogger can accept: a deal opens personal contacts (D31).

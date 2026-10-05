@@ -127,6 +127,26 @@ public sealed class DealReadHandlersTests
     }
 
     [Fact]
+    public async Task Details_of_an_offer_deal_include_the_accepted_offer_terms()
+    {
+        var deadline = new DateTime(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc);
+        var row = Row() with
+        {
+            CampaignApplicationId = null,
+            CollaborationRequestId = Guid.NewGuid(),
+            OfferFormat = CollaborationFormat.Reels,
+            OfferedBudget = 1_500_000,
+            OfferDeadline = deadline,
+            OfferMessage = "One reel"
+        };
+
+        var details = await Details(row, MarketplaceRole.Blogger);
+
+        Assert.Equal(new DealOfferDto("reels", 1_500_000, deadline, "One reel"), details.Offer);
+        Assert.Null(details.Terms);
+    }
+
+    [Fact]
     public async Task Details_of_foreign_or_missing_deal_are_not_found()
     {
         var handler = new GetMyDealHandler(new FakeUsers(User(11, MarketplaceRole.Blogger)), new FakeBloggers(Blogger(11)), new FakeBusinesses(), new FakeDealReadModel());
