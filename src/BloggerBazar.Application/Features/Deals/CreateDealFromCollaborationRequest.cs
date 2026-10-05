@@ -27,7 +27,7 @@ public sealed class CreateDealFromCollaborationRequestHandler(
     {
         var request = await requests.GetByIdAsync(command.RequestId, cancellationToken)
             ?? throw new InvalidOperationException("Collaboration request was not found.");
-        await DealAccess.RequireCollaborationParticipantAsync(users, bloggers, businesses, request, command.TelegramUserId, cancellationToken);
+        var participant = await DealAccess.RequireCollaborationParticipantAsync(users, bloggers, businesses, request, command.TelegramUserId, cancellationToken);
         var existingDeal = await deals.GetByCollaborationRequestIdAsync(request.Id, cancellationToken);
         if (existingDeal is not null)
         {
@@ -36,6 +36,12 @@ public sealed class CreateDealFromCollaborationRequestHandler(
 
         if (request.Status != Domain.Enums.CollaborationRequestStatus.Accepted)
         {
+            // Only the blogger can accept: a deal opens personal contacts (D31).
+            if (participant.Role != Domain.Enums.MarketplaceRole.Blogger)
+            {
+                throw new UnauthorizedAccessException("Only the blogger can accept a collaboration request.");
+            }
+
             request.Accept();
         }
         var deal = Domain.Entities.Deal.CreateFromCollaborationRequest(request.Id, request.BloggerId, request.BusinessId);

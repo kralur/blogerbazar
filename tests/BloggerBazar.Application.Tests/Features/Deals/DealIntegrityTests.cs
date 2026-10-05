@@ -1,5 +1,6 @@
 using System.Reflection;
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Features.CollaborationRequests;
 using BloggerBazar.Application.Features.Deals;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -234,6 +235,46 @@ public sealed class DealIntegrityTests
             new UnitOfWork());
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => handler.Handle(new CreateDealFromCollaborationRequestCommand(request.Id, blogger.TelegramUserId), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Business_cannot_accept_its_own_collaboration_request_by_creating_a_deal()
+    {
+        var blogger = Blogger(60);
+        var business = Business(61);
+        var request = CollaborationRequest.Create(blogger.Id, business.Id, "Let's collaborate");
+        Attach(request, nameof(CollaborationRequest.Blogger), blogger);
+        Attach(request, nameof(CollaborationRequest.Business), business);
+        var deals = new Deals();
+        var handler = new CreateDealFromCollaborationRequestHandler(
+            new Requests(request),
+            deals,
+            new Users(User(business.TelegramUserId, MarketplaceRole.Business)),
+            new Bloggers(blogger),
+            new Businesses(business),
+            new UnitOfWork());
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => handler.Handle(new CreateDealFromCollaborationRequestCommand(request.Id, business.TelegramUserId), CancellationToken.None));
+
+        Assert.Empty(deals.Items);
+        Assert.Equal(CollaborationRequestStatus.Sent, request.Status);
+    }
+
+    [Fact]
+    public async Task Only_the_blogger_can_change_a_collaboration_request_status()
+    {
+        var blogger = Blogger(70);
+        var business = Business(71);
+        var request = CollaborationRequest.Create(blogger.Id, business.Id, "Let's collaborate");
+        Attach(request, nameof(CollaborationRequest.Blogger), blogger);
+        Attach(request, nameof(CollaborationRequest.Business), business);
+        var handler = new UpdateCollaborationRequestStatusHandler(new Requests(request), new UnitOfWork());
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            handler.Handle(new UpdateCollaborationRequestStatusCommand(request.Id, business.TelegramUserId, CollaborationRequestStatus.Accepted), CancellationToken.None));
+        await handler.Handle(new UpdateCollaborationRequestStatusCommand(request.Id, blogger.TelegramUserId, CollaborationRequestStatus.Accepted), CancellationToken.None);
+
+        Assert.Equal(CollaborationRequestStatus.Accepted, request.Status);
     }
 
     private static PlatformUser User(long telegramUserId, MarketplaceRole role)
