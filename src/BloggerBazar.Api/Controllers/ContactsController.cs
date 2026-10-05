@@ -14,6 +14,7 @@ public sealed class ContactsController(ISender sender, ITelegramWebAppValidator 
     [ProducesResponseType<ContactDetailsDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<ContactDetailsDto>> Get(ContactTargetType targetType, Guid targetId, CancellationToken cancellationToken)
     {
-        return Ok(await sender.Send(new GetUnlockedContactQuery(targetType, targetId), cancellationToken));
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetUnlockedContactQuery(targetType, targetId, actor.Id), cancellationToken));
     }
 }

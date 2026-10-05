@@ -1,6 +1,7 @@
 using BloggerBazar.Api.Contracts.Reviews;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Deals;
+using BloggerBazar.Application.Features.Payments;
 using BloggerBazar.Application.Features.Reviews;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,14 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     {
         var actor = GetTelegramUser();
         return Ok(await sender.Send(new GetMyDealQuery(dealId, actor.Id), cancellationToken));
+    }
+
+    [HttpGet("me/{dealId:guid}/contact")]
+    [ProducesResponseType<ContactDetailsDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<ContactDetailsDto>> GetMineContact(Guid dealId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetMyDealContactQuery(dealId, actor.Id), cancellationToken));
     }
 
     [HttpPost("{dealId:guid}/complete")]

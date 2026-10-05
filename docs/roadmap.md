@@ -83,7 +83,16 @@ RU/UZ; BottomNav; native Back; responsive tests.
 
 **НЕ входит:** full visual redesign, chat, payments, escrow, disputes, Brand Face, advanced Deal lifecycle.
 
-## После 3F-C — Full UI Redesign — РЕШЕНО
+## Phase 4 — до feature freeze (решение владельца 2026-10-05)
+
+- **4A — Contacts privacy (ТЕКУЩАЯ):** `/api/contacts/*` отдаёт личные контакты только участнику сделки
+  (или по ранее оплаченной разблокировке); `GET /api/deals/me/{id}/contact`; контакты и «Написать в Telegram»
+  на странице сделки.
+- **4B — Offers:** «Предложить сотрудничество» с профиля блогера, уведомление ботом с кнопкой, срок 48 ч,
+  принятие → Deal (на базе существующего `CollaborationRequest`).
+- **4C — Reviews 2.0:** публичный рейтинг бизнеса, «слепые» отзывы, напоминания (фоновая задача + миграция).
+
+## После Phase 4 — Full UI Redesign — РЕШЕНО
 
 Home, catalogs, Campaigns, cards, details, Campaign creation, Applications, Requests/Deals, Profile, forms,
 navigation, empty/loading/error states. Foundation — DS v2.
@@ -153,7 +162,7 @@ Frontend форматировал budget как UZS; backend currency не за�
 ### D-OPEN-1 Строковая сериализация новых semantic enum — РЕШЕНО (D26)
 См. `docs/decisions.md`.
 
-### 9.7 Контакт партнёра внутри сделки — ОБСУЖДАЛОСЬ, НЕ РЕШЕНО
+### 9.7 Контакт партнёра внутри сделки — РЕШЕНО (D31, 2026-10-05): контакты только участникам сделки
 Как участники связываются после Accept. Предложение Claude: кнопка «Написать в Telegram» на странице сделки
 (без своего чата). Конфликт с платным открытием контактов (Click). Варианты: A — бесплатно после Accept;
 B — платно, как сейчас; C — не добавлять. Решение владельца нужно до feature freeze.

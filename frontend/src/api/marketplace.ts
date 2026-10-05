@@ -623,6 +623,10 @@ export async function getMyDeal(id: string, signal?: AbortSignal) {
   return api<DealDetails>(`/api/deals/me/${id}`, { signal });
 }
 
+export async function getDealContact(id: string, signal?: AbortSignal) {
+  return api<ContactDetails>(`/api/deals/me/${id}/contact`, { signal });
+}
+
 export async function completeDeal(id: string) {
   return api(`/api/deals/${id}/complete`, { method: "POST" });
 }

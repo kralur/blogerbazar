@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
-import { completeDeal, createDealReview, getMyDeal, type DealDetails as Deal } from "../api/marketplace";
+import { completeDeal, createDealReview, getDealContact, getMyDeal, type ContactDetails, type DealDetails as Deal } from "../api/marketplace";
+import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { ManagementBackLink } from "../components/ManagementBackLink";
@@ -18,6 +19,7 @@ export function DealDetails({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [contact, setContact] = useState<ContactDetails | null>(null);
   const [toast, setToast] = useState("");
   const [tone, setTone] = useState<"success" | "error">("success");
   const requestRef = useRef(0);
@@ -53,6 +55,15 @@ export function DealDetails({ id }: { id: string }) {
     void load();
     return () => { requestRef.current += 1; actionRef.current += 1; busyRef.current = false; };
   }, [id, load]);
+
+  const ready = state === "ready";
+  useEffect(() => {
+    if (!ready) return;
+    let active = true;
+    setContact(null);
+    getDealContact(id).then((value) => { if (active) setContact(value); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [id, ready]);
 
   const runAction = async (action: () => Promise<unknown>, successKey: string, failureKey: string) => {
     if (busyRef.current) return;
@@ -91,6 +102,12 @@ export function DealDetails({ id }: { id: string }) {
 
   const locale = language === "uz" ? "uz-UZ" : "ru-RU";
   const formatDate = (value: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
+  const contactItems = [
+    contact?.telegram ? { kind: "telegram" as const, value: contact.telegram } : null,
+    contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
+    contact?.email ? { kind: "email" as const, value: contact.email } : null,
+    contact?.websiteUrl ? { kind: "website" as const, value: contact.websiteUrl } : null
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
   const terms = deal.terms;
   const budget = terms && (terms.budgetFrom != null || terms.budgetTo != null)
     ? terms.budgetFrom != null && terms.budgetTo != null ? `${formatCurrency(terms.budgetFrom)}–${formatCurrency(terms.budgetTo)}` : formatCurrency(terms.budgetFrom ?? terms.budgetTo)
@@ -110,6 +127,7 @@ export function DealDetails({ id }: { id: string }) {
       </Card>
       {terms.requirements.length > 0 && <Card className="mt-4"><h2 className="font-extrabold">{t("common.requirements")}</h2><ul className="mt-3 grid gap-2 text-sm text-brand-muted">{terms.requirements.map((value) => <li key={value}>{value}</li>)}</ul></Card>}
     </>}
+    {contactItems.length > 0 && hasContacts(contactItems) && <section className="mt-4"><h2 className="mb-3 font-extrabold">{t("deals.contacts")}</h2><ContactList items={contactItems} /></section>}
     <Card className="mt-4"><dl className="my-campaign-details__facts"><div><dt>{t("deals.startedAt")}</dt><dd>{formatDate(deal.createdAtUtc)}</dd></div>{deal.completedAtUtc && <div><dt>{t("deals.completedAt")}</dt><dd>{formatDate(deal.completedAtUtc)}</dd></div>}</dl></Card>
     {deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={() => setCompleteOpen(true)} type="button">{t("requests.complete")}</Button>}
     {deal.canReview && <Card className="mt-5"><h2 className="font-extrabold">{t("requests.reviewTitle")}</h2>

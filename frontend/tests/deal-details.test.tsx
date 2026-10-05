@@ -3,15 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../src/api/client";
 import { I18nProvider, translate } from "../src/i18n";
 
-const api = vi.hoisted(() => ({ getMyDeal: vi.fn(), completeDeal: vi.fn(), createDealReview: vi.fn() }));
+const api = vi.hoisted(() => ({ getMyDeal: vi.fn(), getDealContact: vi.fn(), completeDeal: vi.fn(), createDealReview: vi.fn() }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/api/marketplace")>()),
   getMyDeal: api.getMyDeal,
+  getDealContact: api.getDealContact,
   completeDeal: api.completeDeal,
   createDealReview: api.createDealReview
 }));
 vi.mock("../src/components/ManagementBackLink", () => ({ ManagementBackLink: () => null }));
+vi.mock("../src/components/ContactList", () => ({
+  hasContacts: (items: Array<{ value: string }>) => items.some((item) => item.value),
+  ContactList: ({ items }: { items: Array<{ kind: string; value: string }> }) => <ul>{items.map((item) => <li key={item.kind}>{item.value}</li>)}</ul>
+}));
 vi.mock("../src/components/ui", () => ({
   Avatar: ({ name }: { name: string }) => <span>{name}</span>,
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
@@ -42,6 +47,7 @@ describe("Deal details", () => {
     vi.clearAllMocks();
     clearDealCache();
     api.getMyDeal.mockResolvedValue(activeDeal);
+    api.getDealContact.mockResolvedValue({ telegram: "@lumi", phone: null, email: null, websiteUrl: null });
     api.completeDeal.mockResolvedValue({});
     api.createDealReview.mockResolvedValue({});
   });
@@ -116,5 +122,21 @@ describe("Deal details", () => {
     renderDeal();
 
     expect(await screen.findByRole("heading", { name: ru("deals.notFoundTitle") })).toBeInTheDocument();
+  });
+
+  it("shows the counterparty contacts inside the deal", async () => {
+    renderDeal();
+
+    expect(await screen.findByText("@lumi")).toBeInTheDocument();
+    expect(screen.getByText(ru("deals.contacts"))).toBeInTheDocument();
+    expect(api.getDealContact).toHaveBeenCalledWith("deal-a");
+  });
+
+  it("hides the contacts block when the contact is unavailable", async () => {
+    api.getDealContact.mockRejectedValue(new ApiError(404, "not_found"));
+    renderDeal();
+    await screen.findByRole("heading", { name: "Coffee launch" });
+
+    expect(screen.queryByText(ru("deals.contacts"))).not.toBeInTheDocument();
   });
 });

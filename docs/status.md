@@ -17,10 +17,18 @@ _Последнее обновление: 2026-10-05, публикация Phase
 
 - **Phase 3F-B — Private Deal API, Security & Lifecycle**: опубликована (`a17819b`).
 - **Phase 3F-C — frontend Deal bridge**: опубликована (`579d6c3`).
-- Следующая: **FEATURE FREEZE → Full UI Redesign**. Открытый продуктовый вопрос до freeze:
-  контакт партнёра («Написать в Telegram») внутри сделки — см. `docs/roadmap.md` 9.7.
+- **Phase 4A — Contacts privacy** (D31): реализована, не закоммичена, ожидает review владельца.
+- Далее: 4B (предложения) → 4C (отзывы 2.0) → FEATURE FREEZE → Full UI Redesign.
 
 ## Последние результаты gates
+
+### Phase 4A (локально, до review)
+
+```text
+npm test: 40 files, 289 passed / 0 failed; npm run build: passed; i18n:audit: passed (834 keys)
+dotnet build / test: NOT RUN локально (нет dotnet) — проверка через CI на draft PR
+git diff --check: passed; secret scan: no matches; migration: none
+```
 
 ### Phase 3F-C (GitHub Actions, run 37296454851, коммит `579d6c3`)
 

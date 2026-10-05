@@ -139,6 +139,25 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal(seed.DealId, Assert.Single(inbox.GetProperty("items").EnumerateArray()).GetProperty("dealId").GetGuid());
     }
 
+    [IntegrationFact]
+    public async Task Personal_contacts_are_visible_only_to_deal_participants()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_061, 1_100_062);
+        var stranger = await SeedCampaignDealAsync(1_100_063, 1_100_064);
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+        using var strangerClient = CreateClient(stranger.BusinessTelegramUserId);
+
+        var forParticipant = await businessClient.GetAsync($"/api/contacts/Blogger/{seed.BloggerId}");
+        var forStranger = await strangerClient.GetAsync($"/api/contacts/Blogger/{seed.BloggerId}");
+        var dealContact = await businessClient.GetAsync($"/api/deals/me/{seed.DealId}/contact");
+        var foreignDealContact = await strangerClient.GetAsync($"/api/deals/me/{seed.DealId}/contact");
+
+        Assert.Equal(HttpStatusCode.OK, forParticipant.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, forStranger.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, dealContact.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, foreignDealContact.StatusCode);
+    }
+
     private async Task<SeededDeal> SeedCampaignDealAsync(long bloggerTelegramUserId, long businessTelegramUserId, bool complete = false)
     {
         using var scope = factory.Services.CreateScope();
@@ -162,7 +181,7 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
 
         dbContext.AddRange(bloggerUser, businessUser, blogger, business, campaign, application, deal);
         await dbContext.SaveChangesAsync();
-        return new SeededDeal(deal.Id, campaign.Id, application.Id, bloggerTelegramUserId, businessTelegramUserId);
+        return new SeededDeal(deal.Id, campaign.Id, application.Id, blogger.Id, bloggerTelegramUserId, businessTelegramUserId);
     }
 
     private async Task SelectRoleAsync(long telegramUserId, MarketplaceRole role)
@@ -200,5 +219,5 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         return $"auth_date={authDate}&user={Uri.EscapeDataString(user)}&hash={hash}";
     }
 
-    private sealed record SeededDeal(Guid DealId, Guid CampaignId, Guid ApplicationId, long BloggerTelegramUserId, long BusinessTelegramUserId);
+    private sealed record SeededDeal(Guid DealId, Guid CampaignId, Guid ApplicationId, Guid BloggerId, long BloggerTelegramUserId, long BusinessTelegramUserId);
 }
