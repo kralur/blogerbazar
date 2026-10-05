@@ -3,23 +3,32 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-05, Phase 0 (documentation setup)._
+_Последнее обновление: 2026-10-05, публикация Phase 3F-C._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | Phase 3F-B (см. `git log`; предыдущий checkpoint `313d26f`) |
+| Published `main` / `origin/main` | Phase 3F-C (см. `git log`; предыдущие checkpoints `a17819b` 3F-B, `313d26f` 3F-A) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
-| CI PR для gates | https://github.com/kralur/blogerbazar/pull/1 (draft, закрыт после публикации) |
+| CI PR для gates | 3F-B: https://github.com/kralur/blogerbazar/pull/1 · 3F-C: https://github.com/kralur/blogerbazar/pull/2 |
 
 ## Текущая фаза
 
 - **Phase 3F-B — Private Deal API, Security & Lifecycle**: опубликована (`a17819b`).
-- **Phase 3F-C — frontend Deal bridge**: реализована, не закоммичена, ожидает review владельца.
-- Следующая: **FEATURE FREEZE → Full UI Redesign**.
+- **Phase 3F-C — frontend Deal bridge**: опубликована (`579d6c3`).
+- Следующая: **FEATURE FREEZE → Full UI Redesign**. Открытый продуктовый вопрос до freeze:
+  контакт партнёра («Написать в Telegram») внутри сделки — см. `docs/roadmap.md` 9.7.
 
 ## Последние результаты gates
+
+### Phase 3F-C (GitHub Actions, run 37296454851, коммит `579d6c3`)
+
+```text
+dotnet build: passed
+dotnet test (RUN_INTEGRATION_TESTS=true): 255 passed / 0 failed / 0 skipped
+Frontend build and tests: passed; Production Docker build validation: passed
+```
 
 ### Phase 3F-C (локально, до review)
 

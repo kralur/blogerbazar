@@ -74,7 +74,7 @@ payments, escrow, cancellation, disputes, two-party completion, Brand Face Deals
 
 Migration не ожидается. Если понадобится — STOP.
 
-## ТЕКУЩАЯ — Phase 3F-C: frontend bridge — РЕШЕНО, реализовано, на review
+## Завершено — Phase 3F-C: frontend bridge
 
 `#/deal/{id}`, `DealDetails`; Deal cards → route вместо legacy Modal; Business Accept → «Открыть сделку»;
 Blogger Accepted Application → «Открыть сделку»; additive `dealId` в Application DTO при необходимости;
@@ -152,3 +152,13 @@ Frontend форматировал budget как UZS; backend currency не за�
 
 ### D-OPEN-1 Строковая сериализация новых semantic enum — РЕШЕНО (D26)
 См. `docs/decisions.md`.
+
+### 9.7 Контакт партнёра внутри сделки — ОБСУЖДАЛОСЬ, НЕ РЕШЕНО
+Как участники связываются после Accept. Предложение Claude: кнопка «Написать в Telegram» на странице сделки
+(без своего чата). Конфликт с платным открытием контактов (Click). Варианты: A — бесплатно после Accept;
+B — платно, как сейчас; C — не добавлять. Решение владельца нужно до feature freeze.
+
+### 9.8 Оплата / escrow и собственный чат — ОБСУЖДАЛОСЬ (2026-10-05)
+Рекомендация Claude: не до закрытого MVP. Escrow требует лицензированного партнёра, споров и возвратов;
+свой чат избыточен внутри Telegram. Вернуться после MVP по фактическим проблемам пользователей.
+Конкурент: Blogix (blogix.uz) — биржа размещений Telegram/Instagram/YouTube (данные из поиска, сайт не открыт).
