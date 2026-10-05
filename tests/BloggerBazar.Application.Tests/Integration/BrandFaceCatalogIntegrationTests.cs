@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BloggerBazar.Application.Tests.Integration;
 
+[Collection(ApiHostCollection.Name)]
 public sealed class BrandFaceCatalogIntegrationTests(BloggerBazarApiFactory factory) : IClassFixture<BloggerBazarApiFactory>
 {
     [IntegrationFact]

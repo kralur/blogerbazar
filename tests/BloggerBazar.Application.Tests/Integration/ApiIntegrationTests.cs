@@ -6,6 +6,7 @@ using System.Text.Json;
 
 namespace BloggerBazar.Application.Tests.Integration;
 
+[Collection(ApiHostCollection.Name)]
 public sealed class ApiIntegrationTests(BloggerBazarApiFactory factory) : IClassFixture<BloggerBazarApiFactory>
 {
     [IntegrationFact]

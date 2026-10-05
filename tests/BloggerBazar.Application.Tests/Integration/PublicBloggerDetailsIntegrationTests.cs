@@ -5,6 +5,7 @@ using BloggerBazar.Infrastructure.Persistence;
 
 namespace BloggerBazar.Application.Tests.Integration;
 
+[Collection(ApiHostCollection.Name)]
 public sealed class PublicBloggerDetailsIntegrationTests(BloggerBazarApiFactory factory) : IClassFixture<BloggerBazarApiFactory>
 {
     [IntegrationFact]

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace BloggerBazar.Application.Tests.Features.Payments;
 
+[Collection(BloggerBazar.Application.Tests.Integration.ApiHostCollection.Name)]
 public sealed class TelegramWebhookSecurityTests
 {
     [Fact]

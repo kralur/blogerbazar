@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BloggerBazar.Application.Tests.Integration;
 
+[Collection(ApiHostCollection.Name)]
 public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory) : IClassFixture<BloggerBazarApiFactory>
 {
     [IntegrationFact]
