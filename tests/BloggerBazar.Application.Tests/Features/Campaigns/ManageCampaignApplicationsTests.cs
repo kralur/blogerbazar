@@ -223,22 +223,106 @@ public sealed class ManageCampaignApplicationsTests
     }
 
     [Fact]
+    public async Task Owner_accept_captures_campaign_terms_that_remain_immutable_after_campaign_edits()
+    {
+        var business = ApprovedBusiness(22);
+        var deadlineA = DateTime.UtcNow.AddDays(7);
+        var deadlineB = DateTime.UtcNow.AddDays(14);
+        var campaign = Campaign.Create(business.Id, "Launch A", "Description A", ["beauty", "fashion"], ["Reel"], 500_000, 1_500_000, "tashkent", deadlineA);
+        campaign.Publish();
+        Attach(campaign, nameof(Campaign.Business), business);
+        var blogger = ApprovedBlogger(23);
+        var application = ApplicationFor(blogger, campaign);
+        var deals = new Deals();
+        var handler = DecisionHandler(22, business, campaign, application, blogger, deals, new CountingUnitOfWork());
+
+        var firstAccept = await handler.Handle(
+            new DecideCampaignApplicationCommand(22, campaign.Id, application.Id, CampaignApplicationStatus.Accepted),
+            CancellationToken.None);
+        var storedDeal = Assert.Single(deals.Values);
+        Assert.Equal(storedDeal.Id, firstAccept.DealId);
+        AssertSnapshotA(storedDeal);
+        var reloadedDeal = ReloadPersistedDeal(storedDeal);
+        Assert.NotSame(storedDeal, reloadedDeal);
+        var reloadedDeals = new Deals();
+        await reloadedDeals.AddAsync(reloadedDeal, CancellationToken.None);
+        campaign.Update("Launch B", "Description B", ["food"], ["Story"], 100_000, 200_000, "samarkand", deadlineB);
+
+        var repeatedHandler = DecisionHandler(22, business, campaign, application, blogger, reloadedDeals, new CountingUnitOfWork());
+        var repeatedAccept = await repeatedHandler.Handle(
+            new DecideCampaignApplicationCommand(22, campaign.Id, application.Id, CampaignApplicationStatus.Accepted),
+            CancellationToken.None);
+
+        var deal = Assert.Single(reloadedDeals.Values);
+        Assert.Equal(firstAccept.DealId, repeatedAccept.DealId);
+        Assert.Equal(deal.Id, repeatedAccept.DealId);
+        AssertSnapshotA(deal);
+
+        void AssertSnapshotA(Deal actual)
+        {
+            Assert.Equal(CampaignTermsSnapshot.Version, actual.CampaignTermsSnapshotVersion);
+            Assert.Equal("Launch A", actual.CampaignTitleSnapshot);
+            Assert.Equal("Description A", actual.CampaignDescriptionSnapshot);
+            Assert.Equal("tashkent", actual.CampaignCitySnapshot);
+            Assert.Equal(["beauty", "fashion"], actual.CampaignCategoriesSnapshot);
+            Assert.Equal(["Reel"], actual.CampaignRequirementsSnapshot);
+            Assert.Equal(500_000, actual.CampaignBudgetFromSnapshot);
+            Assert.Equal(1_500_000, actual.CampaignBudgetToSnapshot);
+            Assert.Equal(deadlineA, actual.CampaignDeadlineSnapshot);
+        }
+    }
+
+    [Fact]
     public async Task Concurrent_accept_unique_conflict_returns_the_single_persisted_deal()
     {
         var business = ApprovedBusiness(25);
-        var campaign = PublishedCampaign(business);
+        var deadlineA = DateTime.UtcNow.AddDays(8);
+        var deadlineB = DateTime.UtcNow.AddDays(15);
+        var campaign = Campaign.Create(
+            business.Id,
+            "Race A",
+            "Race description A",
+            ["beauty", "fashion"],
+            ["Reel A"],
+            600_000,
+            1_600_000,
+            "tashkent",
+            deadlineA);
+        campaign.Publish();
+        Attach(campaign, nameof(Campaign.Business), business);
+        var winnerSnapshot = CampaignTermsSnapshot.FromCampaign(campaign);
         var blogger = ApprovedBlogger(26);
         var application = ApplicationFor(blogger, campaign);
         var deals = new ConcurrentRaceDeals();
-        var unitOfWork = new UniqueConflictUnitOfWork(() => deals.PersistCompetingDeal(application.Id, blogger.Id, business.Id));
+        var unitOfWork = new UniqueConflictUnitOfWork(
+            () => deals.PersistCompetingDeal(application.Id, blogger.Id, business.Id, winnerSnapshot));
         var handler = DecisionHandler(25, business, campaign, application, blogger, deals, unitOfWork);
+
+        campaign.Update(
+            "Race B",
+            "Race description B",
+            ["food"],
+            ["Story B"],
+            200_000,
+            300_000,
+            "samarkand",
+            deadlineB);
 
         var result = await handler.Handle(new DecideCampaignApplicationCommand(25, campaign.Id, application.Id, CampaignApplicationStatus.Accepted), CancellationToken.None);
 
         Assert.Equal((int)CampaignApplicationStatus.Accepted, result.Status);
         Assert.NotNull(result.DealId);
-        Assert.Single(deals.Persisted);
-        Assert.Equal(deals.Persisted[0].Id, result.DealId);
+        var persistedWinner = Assert.Single(deals.Persisted);
+        Assert.Equal(persistedWinner.Id, result.DealId);
+        Assert.Equal(CampaignTermsSnapshot.Version, persistedWinner.CampaignTermsSnapshotVersion);
+        Assert.Equal("Race A", persistedWinner.CampaignTitleSnapshot);
+        Assert.Equal("Race description A", persistedWinner.CampaignDescriptionSnapshot);
+        Assert.Equal("tashkent", persistedWinner.CampaignCitySnapshot);
+        Assert.Equal(["beauty", "fashion"], persistedWinner.CampaignCategoriesSnapshot);
+        Assert.Equal(["Reel A"], persistedWinner.CampaignRequirementsSnapshot);
+        Assert.Equal(600_000, persistedWinner.CampaignBudgetFromSnapshot);
+        Assert.Equal(1_600_000, persistedWinner.CampaignBudgetToSnapshot);
+        Assert.Equal(deadlineA, persistedWinner.CampaignDeadlineSnapshot);
     }
 
     [Fact]
@@ -330,6 +414,18 @@ public sealed class ManageCampaignApplicationsTests
 
     private static void Attach<T>(object target, string propertyName, T value) =>
         target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!.SetValue(target, value);
+
+    private static Deal ReloadPersistedDeal(Deal storedDeal)
+    {
+        var reloadedDeal = (Deal)Activator.CreateInstance(typeof(Deal), nonPublic: true)!;
+        foreach (var property in typeof(Deal).GetProperties().Where(property => property.CanWrite))
+        {
+            property.SetValue(reloadedDeal, property.GetValue(storedDeal));
+        }
+        Attach(reloadedDeal, nameof(Deal.CampaignCategoriesSnapshot), storedDeal.CampaignCategoriesSnapshot!.ToArray());
+        Attach(reloadedDeal, nameof(Deal.CampaignRequirementsSnapshot), storedDeal.CampaignRequirementsSnapshot!.ToArray());
+        return reloadedDeal;
+    }
 
     private sealed class Users(params PlatformUser[] values) : IPlatformUserRepository
     {
@@ -438,6 +534,11 @@ public sealed class ManageCampaignApplicationsTests
         public Task<bool> ExistsForApplicationAsync(Guid campaignApplicationId, CancellationToken cancellationToken) => Task.FromResult(Persisted.Any(deal => deal.CampaignApplicationId == campaignApplicationId));
         public Task<Deal?> GetByCampaignApplicationIdAsync(Guid campaignApplicationId, CancellationToken cancellationToken) => Task.FromResult(Persisted.SingleOrDefault(deal => deal.CampaignApplicationId == campaignApplicationId));
         public Task<Deal?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(Persisted.SingleOrDefault(deal => deal.Id == id));
-        public void PersistCompetingDeal(Guid applicationId, Guid bloggerId, Guid businessId) => Persisted.Add(Deal.Create(applicationId, bloggerId, businessId));
+        public void PersistCompetingDeal(
+            Guid applicationId,
+            Guid bloggerId,
+            Guid businessId,
+            CampaignTermsSnapshot campaignTermsSnapshot) =>
+            Persisted.Add(Deal.Create(applicationId, bloggerId, businessId, campaignTermsSnapshot));
     }
 }

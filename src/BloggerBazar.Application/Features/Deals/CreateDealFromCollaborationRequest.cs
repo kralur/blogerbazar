@@ -18,19 +18,20 @@ public sealed class CreateDealFromCollaborationRequestValidator : AbstractValida
 public sealed class CreateDealFromCollaborationRequestHandler(
     ICollaborationRequestRepository requests,
     IDealRepository deals,
+    IPlatformUserRepository users,
+    IBloggerProfileRepository bloggers,
+    IBusinessProfileRepository businesses,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateDealFromCollaborationRequestCommand, DealDto>
 {
     public async Task<DealDto> Handle(CreateDealFromCollaborationRequestCommand command, CancellationToken cancellationToken)
     {
         var request = await requests.GetByIdAsync(command.RequestId, cancellationToken)
             ?? throw new InvalidOperationException("Collaboration request was not found.");
-        if (request.Blogger.TelegramUserId != command.TelegramUserId && request.Business.TelegramUserId != command.TelegramUserId)
+        await DealAccess.RequireCollaborationParticipantAsync(users, bloggers, businesses, request, command.TelegramUserId, cancellationToken);
+        var existingDeal = await deals.GetByCollaborationRequestIdAsync(request.Id, cancellationToken);
+        if (existingDeal is not null)
         {
-            throw new UnauthorizedAccessException("You are not a participant in this request.");
-        }
-        if (await requests.ExistsDealAsync(request.Id, cancellationToken))
-        {
-            throw new InvalidOperationException("A deal already exists for this request.");
+            return DealDto.From(existingDeal);
         }
 
         if (request.Status != Domain.Enums.CollaborationRequestStatus.Accepted)
@@ -39,7 +40,16 @@ public sealed class CreateDealFromCollaborationRequestHandler(
         }
         var deal = Domain.Entities.Deal.CreateFromCollaborationRequest(request.Id, request.BloggerId, request.BusinessId);
         await deals.AddAsync(deal, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
+        {
+            var persistedDeal = await deals.GetByCollaborationRequestIdAsync(request.Id, cancellationToken);
+            if (persistedDeal is not null)
+            {
+                return DealDto.From(persistedDeal);
+            }
+
+            throw new InvalidOperationException("Collaboration request deal creation conflicts with an existing deal.");
+        }
         return DealDto.From(deal);
     }
 }

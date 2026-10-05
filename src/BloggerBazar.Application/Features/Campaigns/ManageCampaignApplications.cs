@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Features.Deals;
 using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -232,7 +233,7 @@ public sealed class DecideCampaignApplicationHandler(
 {
     public async Task<CampaignApplicationDecisionDto> Handle(DecideCampaignApplicationCommand command, CancellationToken cancellationToken)
     {
-        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
+        var business = await DealAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
         var campaign = await campaigns.GetByIdForBusinessAsync(command.CampaignId, business.Id, cancellationToken)
             ?? throw new InvalidOperationException("Campaign was not found.");
         var application = await applications.GetByIdAsync(command.ApplicationId, cancellationToken);
@@ -270,7 +271,7 @@ public sealed class DecideCampaignApplicationHandler(
         }
 
         application.Accept();
-        var deal = Deal.Create(application.Id, application.BloggerId, business.Id);
+        var deal = Deal.Create(application.Id, application.BloggerId, business.Id, CampaignTermsSnapshot.FromCampaign(application.Campaign));
         await deals.AddAsync(deal, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
         {

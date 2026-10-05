@@ -373,7 +373,11 @@ public static class DevelopmentDataSeeder
         for (var index = 0; index < DealTarget; index++)
         {
             var campaign = campaigns[index % campaigns.Count];
-            var deal = Deal.Create(applications[index].Id, applications[index].BloggerId, campaign.BusinessId);
+            var deal = Deal.Create(
+                applications[index].Id,
+                applications[index].BloggerId,
+                campaign.BusinessId,
+                CampaignTermsSnapshot.FromCampaign(campaign));
             deal.Complete();
             deals.Add(deal);
         }

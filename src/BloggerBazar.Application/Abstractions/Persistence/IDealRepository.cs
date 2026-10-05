@@ -6,6 +6,7 @@ public interface IDealRepository
 {
     Task<Deal?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<Deal?> GetByCampaignApplicationIdAsync(Guid campaignApplicationId, CancellationToken cancellationToken) => Task.FromResult<Deal?>(null);
+    Task<Deal?> GetByCollaborationRequestIdAsync(Guid collaborationRequestId, CancellationToken cancellationToken) => Task.FromResult<Deal?>(null);
     Task<bool> ExistsForApplicationAsync(Guid campaignApplicationId, CancellationToken cancellationToken);
     Task AddAsync(Deal deal, CancellationToken cancellationToken);
 }

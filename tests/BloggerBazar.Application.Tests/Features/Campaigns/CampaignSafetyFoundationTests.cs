@@ -18,7 +18,7 @@ public sealed class CampaignSafetyFoundationTests
     public void Deal_mapping_enforces_one_deal_per_campaign_application_at_the_database_level()
     {
         var options = new DbContextOptionsBuilder<BloggerBazarDbContext>()
-            .UseNpgsql("Host=localhost;Database=bloggerbazar_test;Username=test;Password=test")
+            .UseNpgsql("Host=localhost;Database=bloggerbazar_test;Username=test")
             .Options;
         using var dbContext = new BloggerBazarDbContext(options);
 
@@ -208,17 +208,18 @@ public sealed class CampaignSafetyFoundationTests
         var deals = new InMemoryDealRepository();
         var handler = new AcceptCampaignApplicationHandler(
             new InMemoryApplicationRepository(application),
+            new InMemoryPlatformUserRepository(BusinessUser(business.TelegramUserId)),
             new InMemoryBusinessRepository(business),
             deals,
             new UnitOfWork(),
             new InMemoryBloggerRepository(blogger));
 
-        await handler.Handle(new AcceptCampaignApplicationCommand(application.Id, business.TelegramUserId), CancellationToken.None);
+        var first = await handler.Handle(new AcceptCampaignApplicationCommand(application.Id, business.TelegramUserId), CancellationToken.None);
 
         Assert.Single(deals.Deals);
         Assert.Equal(CampaignApplicationStatus.Accepted, application.Status);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(
-            new AcceptCampaignApplicationCommand(application.Id, business.TelegramUserId), CancellationToken.None));
+        var second = await handler.Handle(new AcceptCampaignApplicationCommand(application.Id, business.TelegramUserId), CancellationToken.None);
+        Assert.Equal(first.Id, second.Id);
         Assert.Single(deals.Deals);
     }
 
@@ -316,6 +317,7 @@ public sealed class CampaignSafetyFoundationTests
         public Task<bool> ExistsForApplicationAsync(Guid campaignApplicationId, CancellationToken cancellationToken) => Task.FromResult(Deals.Any(deal => deal.CampaignApplicationId == campaignApplicationId));
         public Task<bool> ExistsForCollaborationRequestAsync(Guid collaborationRequestId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<Deal?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(Deals.SingleOrDefault(deal => deal.Id == id));
+        public Task<Deal?> GetByCampaignApplicationIdAsync(Guid campaignApplicationId, CancellationToken cancellationToken) => Task.FromResult(Deals.SingleOrDefault(deal => deal.CampaignApplicationId == campaignApplicationId));
     }
 
     private sealed class UnitOfWork : IUnitOfWork

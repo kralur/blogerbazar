@@ -22,6 +22,7 @@ public sealed class AcceptCampaignApplicationValidator : AbstractValidator<Accep
 
 public sealed class AcceptCampaignApplicationHandler(
     ICampaignApplicationRepository applications,
+    IPlatformUserRepository users,
     IBusinessProfileRepository businesses,
     IDealRepository deals,
     IUnitOfWork unitOfWork,
@@ -33,27 +34,43 @@ public sealed class AcceptCampaignApplicationHandler(
     {
         var application = await applications.GetByIdAsync(command.CampaignApplicationId, cancellationToken)
             ?? throw new InvalidOperationException("Campaign application was not found.");
-        if (application.Status is not (CampaignApplicationStatus.Sent or CampaignApplicationStatus.Viewed))
-        {
-            throw new InvalidOperationException("Only pending applications can be accepted.");
-        }
-
-        var business = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
-            ?? throw new UnauthorizedAccessException("Business profile is required.");
+        var business = await DealAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
         if (application.Campaign.BusinessId != business.Id)
         {
             throw new UnauthorizedAccessException("You cannot accept an application for another business.");
         }
 
-        if (await deals.ExistsForApplicationAsync(application.Id, cancellationToken))
+        var existingDeal = await deals.GetByCampaignApplicationIdAsync(application.Id, cancellationToken);
+        if (application.Status == CampaignApplicationStatus.Accepted)
+        {
+            return existingDeal is not null
+                ? DealDto.From(existingDeal)
+                : throw new InvalidOperationException("Accepted campaign application has no deal.");
+        }
+
+        if (application.Status is not (CampaignApplicationStatus.Sent or CampaignApplicationStatus.Viewed))
+        {
+            throw new InvalidOperationException("Only pending applications can be accepted.");
+        }
+
+        if (existingDeal is not null)
         {
             throw new InvalidOperationException("A deal already exists for this application.");
         }
 
         application.Accept();
-        var deal = Deal.Create(application.Id, application.BloggerId, business.Id);
+        var deal = Deal.Create(application.Id, application.BloggerId, business.Id, CampaignTermsSnapshot.FromCampaign(application.Campaign));
         await deals.AddAsync(deal, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
+        {
+            var persistedDeal = await deals.GetByCampaignApplicationIdAsync(application.Id, cancellationToken);
+            if (persistedDeal is not null)
+            {
+                return DealDto.From(persistedDeal);
+            }
+
+            throw new InvalidOperationException("Campaign application decision conflicts with an existing deal.");
+        }
         var blogger = bloggers is null ? null : await bloggers.GetByIdAsync(application.BloggerId, cancellationToken);
         if (blogger is not null) await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, $"BloggerBazar: ваша заявка на кампанию «{application.Campaign.Title}» принята.", cancellationToken);
         return DealDto.From(deal);

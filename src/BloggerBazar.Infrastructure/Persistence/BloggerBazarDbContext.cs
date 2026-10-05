@@ -214,6 +214,13 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         var deal = modelBuilder.Entity<Deal>();
         deal.ToTable("deals");
         deal.HasKey(entity => entity.Id);
+        deal.Property(entity => entity.CampaignTermsSnapshotVersion).HasColumnType("smallint");
+        deal.Property(entity => entity.CampaignTitleSnapshot).HasMaxLength(160);
+        deal.Property(entity => entity.CampaignDescriptionSnapshot).HasMaxLength(3000);
+        deal.Property(entity => entity.CampaignCitySnapshot).HasMaxLength(80);
+        deal.Property(entity => entity.CampaignCategoriesSnapshot).HasColumnType("text[]");
+        deal.Property(entity => entity.CampaignRequirementsSnapshot).HasColumnType("text[]");
+        deal.Property(entity => entity.CampaignDeadlineSnapshot);
         deal.HasOne(entity => entity.CampaignApplication).WithOne(entity => entity.Deal).HasForeignKey<Deal>(entity => entity.CampaignApplicationId).OnDelete(DeleteBehavior.Cascade);
         deal.HasOne(entity => entity.CollaborationRequest).WithOne(entity => entity.Deal).HasForeignKey<Deal>(entity => entity.CollaborationRequestId).OnDelete(DeleteBehavior.Cascade);
         deal.HasIndex(entity => entity.CampaignApplicationId).IsUnique().HasFilter("\"CampaignApplicationId\" IS NOT NULL");
