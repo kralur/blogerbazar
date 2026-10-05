@@ -2,7 +2,6 @@ using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 
 namespace BloggerBazar.Application.Tests.Features.Payments;
 
@@ -120,7 +119,8 @@ public sealed class TelegramWebhookSecurityTests
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
-            builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            // UseSetting values are visible to Program before builder.Build(), unlike ConfigureAppConfiguration.
+            foreach (var (key, value) in new Dictionary<string, string?>
             {
                 ["ConnectionStrings:Postgres"] = "Host=localhost;Port=5432;Database=bloggerbazar_test;Username=postgres;Password=test",
                 ["Telegram:WebhookSecret"] = "test-webhook-secret",
@@ -131,7 +131,10 @@ public sealed class TelegramWebhookSecurityTests
                 ["RateLimiting:TelegramWebhook:WindowSeconds"] = "60",
                 ["Database:ApplyMigrationsOnStartup"] = "false",
                 ["DevelopmentData:Seed"] = "false"
-            }));
+            })
+            {
+                builder.UseSetting(key, value);
+            }
         }
     }
 }

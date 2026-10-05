@@ -2,7 +2,6 @@ using BloggerBazar.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 
@@ -36,14 +35,13 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            ["ConnectionStrings:Postgres"] = postgres.GetConnectionString(),
-            ["ConnectionStrings:Redis"] = string.Empty,
-            ["Database:ApplyMigrationsOnStartup"] = "false",
-            ["DevelopmentData:Seed"] = "false",
-            ["Telegram:BotToken"] = BotToken,
-            ["Telegram:WebhookSecret"] = "integration-webhook-secret"
-        }));
+        // UseSetting values reach Program as host arguments, so they are visible before builder.Build();
+        // ConfigureAppConfiguration would only apply them during Build, after AddInfrastructure read them.
+        builder.UseSetting("ConnectionStrings:Postgres", postgres.GetConnectionString());
+        builder.UseSetting("ConnectionStrings:Redis", string.Empty);
+        builder.UseSetting("Database:ApplyMigrationsOnStartup", "false");
+        builder.UseSetting("DevelopmentData:Seed", "false");
+        builder.UseSetting("Telegram:BotToken", BotToken);
+        builder.UseSetting("Telegram:WebhookSecret", "integration-webhook-secret");
     }
 }
