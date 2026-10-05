@@ -58,7 +58,7 @@ active-role creation hardening; concurrency/idempotency preservation; dev seed �
 
 ---
 
-## ТЕКУЩАЯ — Phase 3F-B: Private Deal API, Security & Lifecycle (backend only)
+## ТЕКУЩАЯ — Phase 3F-B: Private Deal API, Security & Lifecycle (backend only) — реализовано, на review
 
 **Входит:**
 - active-role-scoped `GET /api/deals/me`;

@@ -19,6 +19,14 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
         return Ok(await sender.Send(new GetMyDealsQuery(actor.Id), cancellationToken));
     }
 
+    [HttpGet("me/{dealId:guid}")]
+    [ProducesResponseType<DealDetailsDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<DealDetailsDto>> GetMineById(Guid dealId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetMyDealQuery(dealId, actor.Id), cancellationToken));
+    }
+
     [HttpPost("{dealId:guid}/complete")]
     [ProducesResponseType<DealDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<DealDto>> Complete(Guid dealId, CancellationToken cancellationToken)

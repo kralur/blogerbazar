@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Features.Deals;
 using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -39,6 +40,7 @@ public sealed class CreateReviewValidator : AbstractValidator<CreateReviewComman
 
 public sealed class CreateReviewHandler(
     IDealRepository deals,
+    IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
     IReviewRepository reviews,
@@ -48,7 +50,10 @@ public sealed class CreateReviewHandler(
 {
     public async Task<ReviewDto> Handle(CreateReviewCommand command, CancellationToken cancellationToken)
     {
-        var deal = await deals.GetByIdAsync(command.DealId, cancellationToken) ?? throw new InvalidOperationException("Deal was not found.");
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken)
+            ?? throw DealAccess.DealNotFound();
+        var deal = await deals.GetForParticipantAsync(command.DealId, participant.Role, participant.ProfileId, cancellationToken)
+            ?? throw DealAccess.DealNotFound();
         if (deal.Status != DealStatus.Completed)
         {
             throw new InvalidOperationException("Reviews are available only after a deal is completed.");
@@ -56,30 +61,25 @@ public sealed class CreateReviewHandler(
 
         if (await reviews.ExistsAsync(deal.Id, command.TelegramUserId, cancellationToken))
         {
-            throw new InvalidOperationException("You have already reviewed this deal.");
+            throw AlreadyReviewed();
         }
 
-        var reviewerBlogger = await bloggers.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken);
-        var reviewerBusiness = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken);
-        Review review;
-
-        if (reviewerBlogger?.Id == deal.BloggerId)
-        {
-            review = Review.ForBusiness(deal.Id, command.TelegramUserId, deal.BusinessId, command.Rating, command.Comment?.Trim());
-        }
-        else if (reviewerBusiness?.Id == deal.BusinessId)
-        {
-            review = Review.ForBlogger(deal.Id, command.TelegramUserId, deal.BloggerId, command.Rating, command.Comment?.Trim());
-        }
-        else
-        {
-            throw new UnauthorizedAccessException("You are not a participant in this deal.");
-        }
+        var reviewerIsBlogger = participant.Role == MarketplaceRole.Blogger;
+        var comment = command.Comment?.Trim();
+        var review = reviewerIsBlogger
+            ? Review.ForBusiness(deal.Id, command.TelegramUserId, deal.BusinessId, command.Rating, comment)
+            : Review.ForBlogger(deal.Id, command.TelegramUserId, deal.BloggerId, command.Rating, comment);
 
         await reviews.AddAsync(review, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        var targetChatId = review.TargetType == ReviewTargetType.Blogger ? (await bloggers.GetByIdAsync(deal.BloggerId, cancellationToken))?.TelegramUserId : (await businesses.GetByIdAsync(deal.BusinessId, cancellationToken))?.TelegramUserId;
-        if (targetChatId.HasValue) await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId.Value, "BloggerBazar: вы получили новый отзыв о сотрудничестве.", cancellationToken);
-        return ReviewDto.From(review);
+        if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
+        {
+            throw AlreadyReviewed();
+        }
+
+        var targetChatId = reviewerIsBlogger ? deal.Business.TelegramUserId : deal.Blogger.TelegramUserId;
+        await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, "BloggerBazar: вы получили новый отзыв о сотрудничестве.", cancellationToken);
+        return ReviewDto.From(review) with { ReviewerName = reviewerIsBlogger ? deal.Blogger.Name : deal.Business.Name };
     }
+
+    private static InvalidOperationException AlreadyReviewed() => new("You have already reviewed this deal.");
 }

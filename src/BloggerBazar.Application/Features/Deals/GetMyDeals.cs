@@ -1,5 +1,4 @@
 using BloggerBazar.Application.Abstractions.Persistence;
-using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using MediatR;
 
@@ -18,38 +17,48 @@ public sealed record MyDealDto(
     DateTime CreatedAtUtc,
     DateTime? CompletedAtUtc,
     bool CanComplete,
-    bool CanReview)
+    bool CanReview,
+    string SourceType,
+    string TermsSource)
 {
-    public static MyDealDto From(Deal deal, long telegramUserId)
-    {
-        var viewerIsBlogger = deal.Blogger.TelegramUserId == telegramUserId;
-        var counterpartyName = viewerIsBlogger ? deal.Business.Name : deal.Blogger.Name;
-        var hasReviewed = deal.Reviews.Any(review => review.ReviewerTelegramUserId == telegramUserId);
+    // Kept for backward compatibility of the legacy list; clients should use SourceType.
+    internal const string LegacyCollaborationTitle = "Direct collaboration request";
 
+    internal static MyDealDto From(DealReadRow row, MarketplaceRole viewerRole)
+    {
+        var view = DealView.From(row, viewerRole);
         return new(
-            deal.Id,
-            deal.CampaignApplicationId,
-            deal.CollaborationRequestId,
-            deal.CampaignApplication?.Campaign.Title ?? "Direct collaboration request",
-            counterpartyName,
-            viewerIsBlogger ? deal.Business.LogoUrl : deal.Blogger.AvatarUrl,
-            (int)deal.Status,
-            deal.CreatedAtUtc,
-            deal.CompletedAtUtc,
-            deal.Status == DealStatus.Active,
-            deal.Status == DealStatus.Completed && !hasReviewed);
+            row.Id,
+            row.CampaignApplicationId,
+            row.CollaborationRequestId,
+            view.Terms?.Title ?? LegacyCollaborationTitle,
+            view.CounterpartyName,
+            view.CounterpartyImageUrl,
+            (int)row.Status,
+            row.CreatedAtUtc,
+            row.CompletedAtUtc,
+            view.CanComplete,
+            view.CanReview,
+            view.SourceType,
+            view.TermsSource);
     }
 }
 
 public sealed class GetMyDealsHandler(
+    IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
-    IMarketplaceCatalogReadModel catalog) : IRequestHandler<GetMyDealsQuery, IReadOnlyList<MyDealDto>>
+    IDealReadModel deals) : IRequestHandler<GetMyDealsQuery, IReadOnlyList<MyDealDto>>
 {
     public async Task<IReadOnlyList<MyDealDto>> Handle(GetMyDealsQuery query, CancellationToken cancellationToken)
     {
-        var blogger = await bloggers.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
-        var business = await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
-        return await catalog.GetDealsAsync(blogger?.Id, business?.Id, query.TelegramUserId, cancellationToken);
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken);
+        if (participant is null)
+        {
+            return [];
+        }
+
+        var rows = await deals.ListForParticipantAsync(participant.Role, participant.ProfileId, cancellationToken);
+        return rows.Select(row => MyDealDto.From(row, participant.Role)).ToArray();
     }
 }

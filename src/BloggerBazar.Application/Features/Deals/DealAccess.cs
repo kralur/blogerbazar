@@ -41,6 +41,34 @@ internal static class DealAccess
         };
     }
 
+    // Null means the account has no deal side for its selected role; callers answer [] or 404.
+    internal static async Task<DealParticipantContext?> FindDealParticipantAsync(
+        IPlatformUserRepository users,
+        IBloggerProfileRepository bloggers,
+        IBusinessProfileRepository businesses,
+        long telegramUserId,
+        CancellationToken cancellationToken)
+    {
+        var user = await users.GetByTelegramUserIdAsync(telegramUserId, cancellationToken);
+        if (user is null || user.IsBlocked || user.IsDeleted)
+        {
+            return null;
+        }
+
+        return user.SelectedMarketplaceRole switch
+        {
+            MarketplaceRole.Blogger => await bloggers.GetByTelegramUserIdAsync(telegramUserId, cancellationToken) is { } blogger
+                ? new DealParticipantContext(MarketplaceRole.Blogger, blogger.Id)
+                : null,
+            MarketplaceRole.Business => await businesses.GetByTelegramUserIdAsync(telegramUserId, cancellationToken) is { } business
+                ? new DealParticipantContext(MarketplaceRole.Business, business.Id)
+                : null,
+            _ => null
+        };
+    }
+
+    internal static InvalidOperationException DealNotFound() => new("Deal was not found.");
+
     private static async Task<PlatformUser> RequireActiveUserAsync(
         IPlatformUserRepository users,
         long telegramUserId,

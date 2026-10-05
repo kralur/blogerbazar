@@ -15,8 +15,9 @@ _Последнее обновление: 2026-10-05, Phase 0 (documentation set
 
 ## Текущая фаза
 
-- **Phase 0 — Documentation setup**: завершена; решения по вопросам E1–E6 приняты владельцем (D26–D30), документация закоммичена в feature-ветку.
-- Следующая implementation phase: **Phase 3F-B — Private Deal API, Security & Lifecycle** (backend only). Код 3F-B не менялся.
+- **Phase 0 — Documentation setup**: завершена (`8d07acd`, feature-ветка).
+- **Phase 3F-B — Private Deal API, Security & Lifecycle**: реализация готова, не закоммичена, ожидает review владельца.
+  Далее: commit → draft PR (CI gates) → fast-forward `main`.
 
 ## Последние результаты gates
 
@@ -54,6 +55,16 @@ dotnet build: NOT RUN (dotnet отсутствует в среде)
 dotnet test:  NOT RUN (dotnet отсутствует в среде)
 npm test / build / i18n:audit: NOT RUN (код не менялся; node_modules не установлены)
 git diff --check: passed (только docs)
+```
+
+### Phase 3F-B (реализация, до review)
+
+```text
+dotnet build: NOT RUN (dotnet отсутствует в среде) — проверка будет через CI на draft PR
+dotnet test:  NOT RUN (dotnet отсутствует в среде) — проверка будет через CI на draft PR
+EF pending model changes: NOT RUN (модель не менялась, migration нет)
+npm test / build / i18n:audit: NOT RUN (frontend не менялся)
+git diff --check: passed
 ```
 
 ## Среда Claude Code (cloud)

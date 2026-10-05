@@ -121,6 +121,10 @@ F. Build · G. Diff check · H. Secret scan · I. Scope confirmation · J. Risks
 Review findings: `BLOCKER / HIGH / MEDIUM / LOW` — файл, место, достижимый сценарий,
 минимальное исправление. Без теоретических проблем без сценария.
 
+Строка **«Второе мнение (GPT)»** в каждом отчёте: «нужно» только при спорном моменте
+(несколько равноценных архитектурных вариантов, компромисс по безопасности, продуктовое решение),
+с конкретным вопросом для GPT; иначе «не нужно» и короткая причина.
+
 Вердикт: `READY FOR <PHASE> REVIEW` или `BLOCKED`.
 Publication report: commit SHA и message, old main → new main, feature branch SHA,
 подтверждение fast-forward, gates, финальный clean state.

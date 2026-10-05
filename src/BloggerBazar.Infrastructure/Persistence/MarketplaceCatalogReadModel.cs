@@ -2,7 +2,6 @@ using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Bloggers;
 using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Application.Features.CollaborationRequests;
-using BloggerBazar.Application.Features.Deals;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -162,24 +161,6 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
                 .ToArrayAsync(cancellationToken));
         }
         return response.OrderByDescending(request => request.CreatedAtUtc).ToArray();
-    }
-
-    public async Task<IReadOnlyList<MyDealDto>> GetDealsAsync(Guid? bloggerId, Guid? businessId, long telegramUserId, CancellationToken cancellationToken)
-    {
-        if (bloggerId is null && businessId is null) return [];
-        var query = dbContext.Deals.AsNoTracking().Where(deal => !deal.Blogger.IsDeleted && !deal.Business.IsDeleted);
-        if (bloggerId is not null && businessId is not null) query = query.Where(deal => deal.BloggerId == bloggerId || deal.BusinessId == businessId);
-        else if (bloggerId is not null) query = query.Where(deal => deal.BloggerId == bloggerId);
-        else query = query.Where(deal => deal.BusinessId == businessId);
-
-        return await query.OrderByDescending(deal => deal.CreatedAtUtc)
-            .Select(deal => new MyDealDto(deal.Id, deal.CampaignApplicationId, deal.CollaborationRequestId,
-                deal.CampaignApplication == null ? "Direct collaboration request" : deal.CampaignApplication.Campaign.Title,
-                deal.Blogger.TelegramUserId == telegramUserId ? deal.Business.Name : deal.Blogger.Name,
-                deal.Blogger.TelegramUserId == telegramUserId ? deal.Business.LogoUrl : deal.Blogger.AvatarUrl,
-                (int)deal.Status, deal.CreatedAtUtc, deal.CompletedAtUtc, deal.Status == DealStatus.Active,
-                deal.Status == DealStatus.Completed && !deal.Reviews.Any(review => review.ReviewerTelegramUserId == telegramUserId)))
-            .ToArrayAsync(cancellationToken);
     }
 
     private IQueryable<CampaignDto> ProjectCampaigns(IQueryable<Campaign> query) =>
