@@ -32,7 +32,8 @@ public sealed record MyCampaignApplicationItemDto(
     DateTime? Deadline,
     string? Message,
     int Status,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    Guid? DealId);
 
 public sealed record MyCampaignApplicationDetailsDto(
     Guid Id,
@@ -49,7 +50,8 @@ public sealed record MyCampaignApplicationDetailsDto(
     DateTime? Deadline,
     string? Message,
     int Status,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    Guid? DealId);
 
 public sealed record CampaignApplicationInboxResult(
     IReadOnlyList<CampaignApplicationInboxItemDto> Items,
@@ -67,7 +69,8 @@ public sealed record CampaignApplicationInboxItemDto(
     IReadOnlyCollection<string> Categories,
     string? Message,
     int Status,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    Guid? DealId);
 
 public sealed record CampaignApplicationDecisionDto(Guid Id, int Status, Guid? DealId);
 

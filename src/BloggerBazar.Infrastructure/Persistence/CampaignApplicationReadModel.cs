@@ -33,7 +33,8 @@ internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbConte
                 application.Campaign.Deadline,
                 application.Message,
                 (int)application.Status,
-                application.CreatedAtUtc))
+                application.CreatedAtUtc,
+                application.Deal == null ? null : application.Deal.Id))
             .ToArrayAsync(cancellationToken);
 
         return new MyCampaignApplicationsResult(items, total, search.Page, search.PageSize, CampaignCatalogPagination.HasMore(total, search.Page, search.PageSize));
@@ -61,7 +62,8 @@ internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbConte
                 application.Campaign.Deadline,
                 application.Message,
                 (int)application.Status,
-                application.CreatedAtUtc))
+                application.CreatedAtUtc,
+                application.Deal == null ? null : application.Deal.Id))
             .SingleOrDefaultAsync(cancellationToken);
 
     public async Task<CampaignApplicationInboxResult> SearchForBusinessAsync(Guid businessId, Guid campaignId, CampaignApplicationSearch search, CancellationToken cancellationToken)
@@ -85,7 +87,8 @@ internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbConte
                 application.Blogger.Categories,
                 application.Message,
                 (int)application.Status,
-                application.CreatedAtUtc))
+                application.CreatedAtUtc,
+                application.Deal == null ? null : application.Deal.Id))
             .ToArrayAsync(cancellationToken);
 
         return new CampaignApplicationInboxResult(items, total, search.Page, search.PageSize, CampaignCatalogPagination.HasMore(total, search.Page, search.PageSize));

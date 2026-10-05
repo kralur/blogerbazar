@@ -36,6 +36,7 @@ describe("BottomNav", () => {
     ["#/my-campaign-applications/123", "nav.campaigns"],
     ["#/requests", "nav.requests"],
     ["#/my-application/123", "nav.requests"],
+    ["#/deal/123", "nav.requests"],
     ["#/favorites", "nav.profile"],
     ["#/brand-face-detail/123", "nav.search"],
     ["#/brand-face", "nav.profile"],

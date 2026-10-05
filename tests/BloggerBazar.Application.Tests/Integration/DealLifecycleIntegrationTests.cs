@@ -123,6 +123,22 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal("Original title", listed.GetProperty("title").GetString());
     }
 
+    [IntegrationFact]
+    public async Task Accepted_applications_expose_their_deal_to_both_participants()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_051, 1_100_052);
+        using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+
+        var details = await bloggerClient.GetFromJsonAsync<JsonElement>($"/api/campaign-applications/mine/{seed.ApplicationId}");
+        var mine = await bloggerClient.GetFromJsonAsync<JsonElement>("/api/campaign-applications/mine");
+        var inbox = await businessClient.GetFromJsonAsync<JsonElement>($"/api/campaigns/mine/{seed.CampaignId}/applications");
+
+        Assert.Equal(seed.DealId, details.GetProperty("dealId").GetGuid());
+        Assert.Equal(seed.DealId, Assert.Single(mine.GetProperty("items").EnumerateArray()).GetProperty("dealId").GetGuid());
+        Assert.Equal(seed.DealId, Assert.Single(inbox.GetProperty("items").EnumerateArray()).GetProperty("dealId").GetGuid());
+    }
+
     private async Task<SeededDeal> SeedCampaignDealAsync(long bloggerTelegramUserId, long businessTelegramUserId, bool complete = false)
     {
         using var scope = factory.Services.CreateScope();
@@ -146,7 +162,7 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
 
         dbContext.AddRange(bloggerUser, businessUser, blogger, business, campaign, application, deal);
         await dbContext.SaveChangesAsync();
-        return new SeededDeal(deal.Id, campaign.Id, bloggerTelegramUserId, businessTelegramUserId);
+        return new SeededDeal(deal.Id, campaign.Id, application.Id, bloggerTelegramUserId, businessTelegramUserId);
     }
 
     private async Task SelectRoleAsync(long telegramUserId, MarketplaceRole role)
@@ -184,5 +200,5 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         return $"auth_date={authDate}&user={Uri.EscapeDataString(user)}&hash={hash}";
     }
 
-    private sealed record SeededDeal(Guid DealId, Guid CampaignId, long BloggerTelegramUserId, long BusinessTelegramUserId);
+    private sealed record SeededDeal(Guid DealId, Guid CampaignId, Guid ApplicationId, long BloggerTelegramUserId, long BusinessTelegramUserId);
 }

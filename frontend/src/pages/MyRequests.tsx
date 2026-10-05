@@ -1,23 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   acceptCampaignApplication,
-  completeDeal,
-  createDealReview,
   getMyCampaignApplications,
   getMyDeals,
   type MarketplaceRole,
   type MyCampaignApplication,
   type MyDeal
 } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Toast } from "../components/ui";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { CampaignApplicationStatus, campaignApplicationStatusTone, canAcceptCampaignApplication } from "../lib/campaignApplicationStatus";
 import { BloggerApplications } from "./BloggerApplications";
+import { subscribeDealCache } from "../data/dealCache";
+import { dealRoute, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 
-const dealStatusTone = (status: number) => status === 0 ? "blue" : status === 1 ? "green" : "gray";
 const formatDate = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
 
 export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: MarketplaceRole }) {
@@ -30,15 +29,11 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     [CampaignApplicationStatus.Rejected]: t("requests.applicationRejected"),
     [CampaignApplicationStatus.Withdrawn]: t("requests.applicationWithdrawn")
   };
-  const dealStatusLabels: Record<number, string> = { 0: t("requests.dealActive"), 1: t("requests.dealCompleted"), 2: t("requests.dealCancelled") };
   const locale = language === "uz" ? "uz-UZ" : "ru-RU";
   const [view, setView] = useState<"applications" | "deals">("applications");
   const [requests, setRequests] = useState<MyCampaignApplication[]>([]);
   const [deals, setDeals] = useState<MyDeal[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<MyCampaignApplication | null>(null);
-  const [selectedDeal, setSelectedDeal] = useState<MyDeal | null>(null);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
   const [requestsLoading, setRequestsLoading] = useState(activeMarketplaceRole !== "Blogger");
   const [requestsFailed, setRequestsFailed] = useState(false);
   const [dealsLoading, setDealsLoading] = useState(true);
@@ -80,6 +75,10 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
   }, [loadDeals, loadRequests]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => subscribeDealCache((details) => {
+    if (!details) return;
+    setDeals((current) => current.map((deal) => deal.id === details.id ? { ...deal, status: details.status, completedAtUtc: details.completedAtUtc, canComplete: details.canComplete, canReview: details.canReview } : deal));
+  }), []);
   useProfileDataRefresh(load);
 
   const withinRange = (value: string) => {
@@ -103,35 +102,6 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     } catch (error) {
       setToastTone("error");
       setToast(error instanceof Error ? error.message : t("requests.acceptFailed"));
-    }
-  };
-
-  const finishDeal = async (id: string) => {
-    try {
-      await completeDeal(id);
-      setDeals((current) => current.map((deal) => deal.id === id ? { ...deal, status: 1, canComplete: false, canReview: true, completedAtUtc: new Date().toISOString() } : deal));
-      setSelectedDeal((current) => current?.id === id ? { ...current, status: 1, canComplete: false, canReview: true, completedAtUtc: new Date().toISOString() } : current);
-      setToastTone("success");
-      setToast(t("requests.completedToast"));
-    } catch (error) {
-      setToastTone("error");
-      setToast(error instanceof Error ? error.message : t("requests.completeFailed"));
-    }
-  };
-
-  const submitReview = async () => {
-    if (!selectedDeal) return;
-
-    try {
-      await createDealReview(selectedDeal.id, rating, comment);
-      setDeals((current) => current.map((deal) => deal.id === selectedDeal.id ? { ...deal, canReview: false } : deal));
-      setSelectedDeal((current) => current ? { ...current, canReview: false } : null);
-      setComment("");
-      setToastTone("success");
-      setToast(t("requests.reviewPublished"));
-    } catch (error) {
-      setToastTone("error");
-      setToast(error instanceof Error ? error.message : t("requests.reviewFailed"));
     }
   };
 
@@ -165,9 +135,9 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
         dealsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
           <div className="mt-5 grid gap-3">
             {visibleDeals.map((deal) => (
-              <button className="text-left" key={deal.id} onClick={() => setSelectedDeal(deal)} type="button">
-                <Card><div className="flex gap-3"><Avatar name={deal.counterpartyName} size="sm" src={deal.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{deal.counterpartyName}</h2><Badge tone={dealStatusTone(deal.status)}>{dealStatusLabels[deal.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{deal.title}</p><p className="mt-2 text-xs text-brand-muted">{deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, locale)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, locale)}`}</p></div></div></Card>
-              </button>
+              <a className="block text-left" href={`#${dealRoute(deal.id)}`} key={deal.id}>
+                <Card><div className="flex gap-3"><Avatar name={deal.counterpartyName} size="sm" src={deal.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{deal.counterpartyName}</h2><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title}</p><p className="mt-2 text-xs text-brand-muted">{deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, locale)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, locale)}`}</p></div></div></Card>
+              </a>
             ))}
           </div>
         )
@@ -175,10 +145,6 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
 
       <Modal onClose={() => setSelectedRequest(null)} open={Boolean(selectedRequest)} title={selectedRequest?.campaignTitle ?? t("requests.title")}>
         {selectedRequest && <><p className="text-sm font-bold">{selectedRequest.counterpartyName}</p><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status) ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}</>}
-      </Modal>
-
-      <Modal onClose={() => setSelectedDeal(null)} open={Boolean(selectedDeal)} title={selectedDeal?.title ?? t("requests.deals")}>
-        {selectedDeal && <><p className="text-sm font-bold">{selectedDeal.counterpartyName}</p><p className="mt-2 text-sm text-brand-muted">{t("requests.status")}: {dealStatusLabels[selectedDeal.status]}</p>{selectedDeal.canComplete && <Button className="mt-4 w-full" onClick={() => finishDeal(selectedDeal.id)}>{t("requests.complete")}</Button>}{selectedDeal.canReview && <div className="mt-5 border-t border-brand-line pt-5"><p className="text-sm font-extrabold">{t("requests.reviewTitle")}</p><div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${t("requests.rating")} ${value}`} className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${value <= rating ? "bg-amber-50 text-amber-500" : "bg-slate-100 text-slate-300"}`} key={value} onClick={() => setRating(value)} type="button">★</button>)}</div><Textarea className="mt-3" maxLength={1000} onChange={(event) => setComment(event.target.value)} placeholder={t("requests.reviewPlaceholder")} value={comment} /><Button className="mt-3 w-full" onClick={submitReview}>{t("requests.publishReview")}</Button></div>}</>}
       </Modal>
 
       <BottomSheet onClose={() => setDateFilterOpen(false)} open={dateFilterOpen} title={t("requests.dateFilter")}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">{(["today", "week", "month", "custom"] as const).map((range) => <button className={`rounded-2xl border px-3 py-3 text-sm font-bold ${dateRange === range ? "border-brand-blue bg-blue-50 text-brand-blue" : "border-brand-line bg-white"}`} key={range} onClick={() => setDateRange(range)} type="button">{t(`requests.range.${range}`)}</button>)}</div>{dateRange === "custom" && <div className="grid grid-cols-2 gap-3"><Input label={t("requests.fromDate")} onChange={(event) => setFromDate(event.target.value)} type="date" value={fromDate} /><Input label={t("requests.toDate")} onChange={(event) => setToDate(event.target.value)} type="date" value={toDate} /></div>}<Button className="w-full" onClick={() => setDateFilterOpen(false)} type="button">{t("common.apply")}</Button><Button className="w-full" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setDateFilterOpen(false); }} type="button" variant="secondary">{t("common.reset")}</Button></div></BottomSheet>

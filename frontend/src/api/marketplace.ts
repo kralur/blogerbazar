@@ -506,11 +506,11 @@ export async function closeMyCampaign(id: string, signal?: AbortSignal): Promise
 }
 
 export type CampaignApplicationCreateResult = { id: string; campaignId: string; bloggerId: string; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string };
-export type MyCampaignApplicationItem = { id: string; campaignId: string; campaignTitle: string; businessName: string; businessAvatarUrl?: string | null; city?: string | null; categories: string[]; minBudget?: number | null; maxBudget?: number | null; deadline?: string | null; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string };
+export type MyCampaignApplicationItem = { id: string; campaignId: string; campaignTitle: string; businessName: string; businessAvatarUrl?: string | null; city?: string | null; categories: string[]; minBudget?: number | null; maxBudget?: number | null; deadline?: string | null; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string; dealId?: string | null };
 export type MyCampaignApplicationDetails = MyCampaignApplicationItem & { campaignDescription: string; requirements: string[] };
 export type MyCampaignApplicationsQuery = { campaignId?: string; status?: CampaignApplicationStatus; page?: number; pageSize?: number };
 export type MyCampaignApplicationsPage = { items: MyCampaignApplicationItem[]; total: number; page: number; pageSize: number; hasMore: boolean };
-export type CampaignApplicationInboxItem = { id: string; bloggerId: string; bloggerName: string; bloggerAvatarUrl?: string | null; city: string; categories: string[]; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string };
+export type CampaignApplicationInboxItem = { id: string; bloggerId: string; bloggerName: string; bloggerAvatarUrl?: string | null; city: string; categories: string[]; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string; dealId?: string | null };
 export type CampaignApplicationInboxPage = { items: CampaignApplicationInboxItem[]; total: number; page: number; pageSize: number; hasMore: boolean };
 export type CampaignApplicationDecision = { id: string; status: CampaignApplicationStatus; dealId?: string | null };
 
@@ -582,10 +582,45 @@ export type MyDeal = {
   completedAtUtc?: string | null;
   canComplete: boolean;
   canReview: boolean;
+  sourceType?: DealSourceType;
+  termsSource?: DealTermsSource;
+};
+
+export type DealSourceType = "campaignApplication" | "collaborationRequest";
+export type DealTermsSource = "snapshot" | "liveCampaignFallback" | "collaboration";
+export type DealTerms = {
+  title: string;
+  description: string;
+  city?: string | null;
+  categories: string[];
+  requirements: string[];
+  budgetFrom?: number | null;
+  budgetTo?: number | null;
+  deadline?: string | null;
+};
+export type DealDetails = {
+  id: string;
+  status: number;
+  sourceType: DealSourceType;
+  termsSource: DealTermsSource;
+  terms?: DealTerms | null;
+  counterpartyName: string;
+  counterpartyImageUrl?: string | null;
+  campaignApplicationId?: string | null;
+  collaborationRequestId?: string | null;
+  createdAtUtc: string;
+  completedAtUtc?: string | null;
+  canComplete: boolean;
+  canReview: boolean;
+  hasReviewed: boolean;
 };
 
 export async function getMyDeals() {
   return api<MyDeal[]>("/api/deals/me");
+}
+
+export async function getMyDeal(id: string, signal?: AbortSignal) {
+  return api<DealDetails>(`/api/deals/me/${id}`, { signal });
 }
 
 export async function completeDeal(id: string) {

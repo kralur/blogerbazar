@@ -53,4 +53,17 @@ describe("My Requests role-aware loading", () => {
     fireEvent.click(screen.getByRole("button", { name: translate("requests.deals", undefined, "ru") }));
     expect(await screen.findByText("Coffee")).toBeInTheDocument();
   });
+
+  it("links Deal cards to the deal route and translates collaboration deals", async () => {
+    api.getMyDeals.mockResolvedValueOnce([
+      { id: "deal-a", title: "Coffee", counterpartyName: "Lumi", status: 0, createdAtUtc: "2026-09-01T00:00:00Z", canComplete: true, canReview: false, sourceType: "campaignApplication", termsSource: "snapshot" },
+      { id: "deal-b", title: "Direct collaboration request", counterpartyName: "Ali", status: 1, createdAtUtc: "2026-09-02T00:00:00Z", canComplete: false, canReview: true, sourceType: "collaborationRequest", termsSource: "collaboration" }
+    ]);
+    render(<I18nProvider><MyRequests activeMarketplaceRole="Business" /></I18nProvider>);
+    fireEvent.click(screen.getByRole("button", { name: translate("requests.deals", undefined, "ru") }));
+
+    expect((await screen.findByText("Coffee")).closest("a")).toHaveAttribute("href", "#/deal/deal-a");
+    expect(screen.getByText(translate("deals.source.collaborationRequest", undefined, "ru")).closest("a")).toHaveAttribute("href", "#/deal/deal-b");
+    expect(screen.queryByText("Direct collaboration request")).not.toBeInTheDocument();
+  });
 });

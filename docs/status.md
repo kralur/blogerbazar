@@ -15,10 +15,22 @@ _Последнее обновление: 2026-10-05, Phase 0 (documentation set
 
 ## Текущая фаза
 
-- **Phase 3F-B — Private Deal API, Security & Lifecycle**: опубликована.
-- Следующая: **Phase 3F-C — frontend Deal bridge**.
+- **Phase 3F-B — Private Deal API, Security & Lifecycle**: опубликована (`a17819b`).
+- **Phase 3F-C — frontend Deal bridge**: реализована, не закоммичена, ожидает review владельца.
+- Следующая: **FEATURE FREEZE → Full UI Redesign**.
 
 ## Последние результаты gates
+
+### Phase 3F-C (локально, до review)
+
+```text
+npm test: 40 files, 287 passed / 0 failed (baseline 275)
+npm run build: passed
+npm run i18n:audit: passed (833 keys)
+tsc --noEmit: passed
+dotnet build / test: NOT RUN локально (нет dotnet) — проверка через CI на draft PR
+git diff --check: passed; secret scan: no matches
+```
 
 ### Phase 3F-B + CI fix (GitHub Actions, run 37293136432, коммит `7722609`)
 

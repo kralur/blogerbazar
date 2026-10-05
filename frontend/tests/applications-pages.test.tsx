@@ -172,4 +172,32 @@ describe("application mutation screens", () => {
     view.rerender(<I18nProvider><RootScreenVisibility active><BloggerApplications activeMarketplaceRole="Blogger" /></RootScreenVisibility></I18nProvider>);
     await waitFor(() => expect(api.getMyCampaignApplicationsPage).toHaveBeenCalledTimes(1));
   });
+
+  it("opens the deal created by an inbox accept", async () => {
+    render(<I18nProvider><MyCampaignApplications campaignId="campaign-a" /></I18nProvider>);
+    await screen.findByRole("heading", { name: "Ali" });
+    fireEvent.click(screen.getByRole("button", { name: translate("applications.accept", undefined, "ru") }));
+    fireEvent.click(within(screen.getByLabelText(translate("applications.acceptTitle", undefined, "ru"))).getByRole("button", { name: translate("applications.accept", undefined, "ru") }));
+
+    fireEvent.click(await screen.findByRole("button", { name: translate("deals.open", undefined, "ru") }));
+
+    expect(window.location.hash).toBe("#/deal/deal-a");
+  });
+
+  it("lets a blogger open the deal of an accepted application", async () => {
+    api.getMyCampaignApplication.mockResolvedValue({ ...application, status: 2, dealId: "deal-b" });
+    render(<I18nProvider><MyApplicationDetails id="application-a" /></I18nProvider>);
+
+    fireEvent.click(await screen.findByRole("button", { name: translate("deals.open", undefined, "ru") }));
+
+    expect(window.location.hash).toBe("#/deal/deal-b");
+    expect(screen.queryByRole("button", { name: translate("applications.withdraw", undefined, "ru") })).not.toBeInTheDocument();
+  });
+
+  it("does not offer a deal for an application without one", async () => {
+    render(<I18nProvider><MyApplicationDetails id="application-a" /></I18nProvider>);
+    await screen.findByText("Coffee launch");
+
+    expect(screen.queryByRole("button", { name: translate("deals.open", undefined, "ru") })).not.toBeInTheDocument();
+  });
 });

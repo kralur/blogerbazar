@@ -74,7 +74,7 @@ payments, escrow, cancellation, disputes, two-party completion, Brand Face Deals
 
 Migration не ожидается. Если понадобится — STOP.
 
-## ТЕКУЩАЯ — Phase 3F-C: frontend bridge — РЕШЕНО
+## ТЕКУЩАЯ — Phase 3F-C: frontend bridge — РЕШЕНО, реализовано, на review
 
 `#/deal/{id}`, `DealDetails`; Deal cards → route вместо legacy Modal; Business Accept → «Открыть сделку»;
 Blogger Accepted Application → «Открыть сделку»; additive `dealId` в Application DTO при необходимости;
