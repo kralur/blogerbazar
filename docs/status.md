@@ -9,17 +9,34 @@ _Последнее обновление: 2026-10-05, Phase 0 (documentation set
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | `313d26f8188a27f1e983e48c6914163a2a93e51a` — `feat(deals): add immutable campaign terms snapshot` |
-| `origin/codex/phase-3f-a-deal-integrity` | `313d26f` |
-| Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (`313d26f` + docs-коммит Phase 0, не в `main`) |
+| Published `main` / `origin/main` | Phase 3F-B (см. `git log`; предыдущий checkpoint `313d26f`) |
+| Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
+| CI PR для gates | https://github.com/kralur/blogerbazar/pull/1 (draft, закрыт после публикации) |
 
 ## Текущая фаза
 
-- **Phase 0 — Documentation setup**: завершена (`8d07acd`, feature-ветка).
-- **Phase 3F-B — Private Deal API, Security & Lifecycle**: реализация готова, не закоммичена, ожидает review владельца.
-  Далее: commit → draft PR (CI gates) → fast-forward `main`.
+- **Phase 3F-B — Private Deal API, Security & Lifecycle**: опубликована.
+- Следующая: **Phase 3F-C — frontend Deal bridge**.
 
 ## Последние результаты gates
+
+### Phase 3F-B + CI fix (GitHub Actions, run 37293136432, коммит `7722609`)
+
+```text
+dotnet build: passed (0 warnings, 0 errors)
+dotnet test (RUN_INTEGRATION_TESTS=true, Testcontainers): 254 passed / 0 failed / 0 skipped
+Frontend build and tests (npm test, i18n audit, build): passed
+Production Docker build validation: passed
+git diff --check: passed; secret scan: no matches; migration: none
+```
+
+Важно: до коммита `7722609` CI на `main` **никогда не был зелёным** (все runs #2–#60): тесты с
+`WebApplicationFactory` падали, потому что тестовые настройки передавались через `ConfigureAppConfiguration`
+и не были видны `Program` до `builder.Build()`. Исправлено через `UseSetting` (только тесты).
+Прежние результаты «210 passed / 13 skipped» были локальными прогонами без integration-тестов.
+
+Деплой: Railway автоматически деплоит при push в `main` (подтверждено владельцем). Дополнительно
+`deploy-railway.yml` деплоит после зелёного CI на `main` — до этого он не срабатывал, т.к. CI был красный.
 
 ### Phase 3F-A (перед публикацией `313d26f`, выполнял Codex — историческое)
 
@@ -57,7 +74,7 @@ npm test / build / i18n:audit: NOT RUN (код не менялся; node_modules
 git diff --check: passed (только docs)
 ```
 
-### Phase 3F-B (реализация, до review)
+### Phase 3F-B (локально, до CI — историческое)
 
 ```text
 dotnet build: NOT RUN (dotnet отсутствует в среде) — проверка будет через CI на draft PR

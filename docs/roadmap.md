@@ -58,7 +58,7 @@ active-role creation hardening; concurrency/idempotency preservation; dev seed �
 
 ---
 
-## ТЕКУЩАЯ — Phase 3F-B: Private Deal API, Security & Lifecycle (backend only) — реализовано, на review
+## Завершено — Phase 3F-B: Private Deal API, Security & Lifecycle (backend only)
 
 **Входит:**
 - active-role-scoped `GET /api/deals/me`;
@@ -74,7 +74,7 @@ payments, escrow, cancellation, disputes, two-party completion, Brand Face Deals
 
 Migration не ожидается. Если понадобится — STOP.
 
-## Следующая — Phase 3F-C: frontend bridge — РЕШЕНО
+## ТЕКУЩАЯ — Phase 3F-C: frontend bridge — РЕШЕНО
 
 `#/deal/{id}`, `DealDetails`; Deal cards → route вместо legacy Modal; Business Accept → «Открыть сделку»;
 Blogger Accepted Application → «Открыть сделку»; additive `dealId` в Application DTO при необходимости;
@@ -111,7 +111,7 @@ navigation, empty/loading/error states. Foundation — DS v2.
 | 8.15 | Full Review redesign (hardening — в 3F-B) | СОЗНАТЕЛЬНО ОТЛОЖЕНО | — |
 | 8.16 | Brand Face applications/deals | СОЗНАТЕЛЬНО ОТЛОЖЕНО | — |
 | 8.17 | Campaign edit last-write-wins, нет concurrency token | ИЗВЕСТНО, не blocker MVP, не в 3F | — |
-| 8.18 | 13 integration tests skipped | ИЗВЕСТНО | 13 × `[IntegrationFact]`, skip без `RUN_INTEGRATION_TESTS=true`. ⚠ Уточнение: skip только в локальных прогонах; CI (`ci.yml`) запускает их с Testcontainers |
+| 8.18 | 13 integration tests skipped | ИСПРАВЛЕНО (`7722609`): CI запускает все integration-тесты | 13 × `[IntegrationFact]`, skip без `RUN_INTEGRATION_TESTS=true`. ⚠ Уточнение: skip только в локальных прогонах; CI (`ci.yml`) запускает их с Testcontainers |
 | 8.19 | Применена ли snapshot migration в production | ОБСУЖДАЛОСЬ, НЕ ПОДТВЕРЖДЕНО | `appsettings.json`: `ApplyMigrationsOnStartup=false`; Development: `true`; Railway env не проверялся |
 
 Дополнительно найдено в Phase 0 (классификация утверждена, см. `docs/decisions.md`):
