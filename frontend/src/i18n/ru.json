@@ -571,4 +571,9 @@
   ,"offers.fromCampaign": "Заполнить из кампании"
   ,"offers.fromCampaignNone": "Не выбрано — заполню вручную"
   ,"offers.campaignFillFailed": "Не удалось загрузить кампанию. Заполните поля вручную."
+  ,"settings.theme": "Тема"
+  ,"settings.themeTelegram": "Как в Telegram"
+  ,"settings.themeLight": "Светлая"
+  ,"settings.themeDark": "Тёмная"
+  ,"profile.settingsDetail": "Язык, тема и аккаунт"
 }

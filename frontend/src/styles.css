@@ -324,6 +324,8 @@
   }
 
   .language-switcher__option[aria-pressed="true"] { background: var(--bb-accent); color: var(--bb-accent-text); }
+  .language-switcher--three { display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .language-switcher--three .language-switcher__option { min-width: 0; padding: .375rem .5rem; font-size: .8125rem; line-height: 1.15; white-space: normal; }
   .language-switcher__option:not([aria-pressed="true"]):hover { background: var(--bb-surface-secondary); }
   .language-switcher__option:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--bb-accent); outline-offset: -2px; }
 
@@ -1283,6 +1285,7 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .settings-row__text span { color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.35; }
 .settings-row__chevron { flex: 0 0 auto; width: 1.125rem; height: 1.125rem; color: var(--bb-text-secondary); transform: rotate(180deg); }
 .profile-delete-link { min-height: 2.75rem; border: 0; background: transparent; color: var(--bb-error); font: inherit; font-size: .875rem; font-weight: 700; }
+.settings-row--stacked { flex-direction: column; align-items: stretch; gap: .75rem; }
 .page-header { display: flex; min-width: 0; min-height: 2.75rem; flex-wrap: wrap; align-items: center; gap: .75rem; }
 /* 12rem basis: on narrow screens trailing actions wrap below the title instead of squeezing it. */
 .page-header__text { flex: 1 1 12rem; min-width: 0; }

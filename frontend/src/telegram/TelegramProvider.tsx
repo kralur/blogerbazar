@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { LaunchScreen } from "../components/LaunchScreen";
 import { resolveTelegramContentTop, TelegramLaunch } from "./telegramTheme";
+import { getThemePreference, resolveColorScheme, themePreferenceChangedEvent } from "../lib/themePreference";
 
 type TelegramUser = { id: number; username?: string; first_name?: string; photo_url?: string; language_code?: string };
 type TelegramBackButton = { show?: () => void; hide?: () => void; onClick?: (handler: () => void) => void; offClick?: (handler: () => void) => void };
@@ -134,7 +135,10 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
 
   useLayoutEffect(() => {
     const applyEnvironment = () => {
-      const theme = app?.themeParams;
+      // A theme chosen in Settings overrides Telegram; Telegram's own palette only applies when we follow it.
+      const preference = getThemePreference();
+      const colorScheme = resolveColorScheme(preference, app?.colorScheme);
+      const theme = preference === "telegram" ? app?.themeParams : undefined;
       const contentInsets = app?.contentSafeAreaInset;
       const safeInsets = app?.safeAreaInset;
       const root = document.documentElement;
@@ -143,10 +147,10 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         safeTop: safeInsets?.top,
         isEmbedded: Boolean(app)
       });
-      const isDark = app?.colorScheme === "dark";
+      const isDark = colorScheme === "dark";
       const background = isDark ? TelegramLaunch.splashBackgroundDark : TelegramLaunch.splashBackground;
       const secondaryBackground = theme?.secondary_bg_color ?? background;
-      root.dataset.telegramTheme = app?.colorScheme ?? "light";
+      root.dataset.telegramTheme = colorScheme;
       root.dataset.telegramEmbedded = app ? "true" : "false";
       root.style.setProperty("--telegram-bg", background);
       root.style.setProperty("--telegram-secondary-bg", secondaryBackground);
@@ -168,7 +172,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         app?.setBottomBarColor?.(background);
       } catch {}
       setEnvironment({
-        colorScheme: app?.colorScheme ?? "light",
+        colorScheme,
         viewportHeight: app?.viewportStableHeight ?? app?.viewportHeight,
         theme: theme ?? {}
       });
@@ -198,6 +202,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     app?.MainButton?.hide?.();
     app?.SettingsButton?.hide?.();
     window.addEventListener("resize", onBrowserViewportChange, { passive: true });
+    window.addEventListener(themePreferenceChangedEvent, applyEnvironment);
     window.addEventListener("orientationchange", onBrowserViewportChange, { passive: true });
     document.addEventListener("visibilitychange", onBrowserViewportChange);
     setBooting(false);
@@ -206,6 +211,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       events.forEach((event) => app?.offEvent?.(event, applyEnvironment));
       app?.offEvent?.("fullscreenFailed", onFullscreenFailed);
       window.removeEventListener("resize", onBrowserViewportChange);
+      window.removeEventListener(themePreferenceChangedEvent, applyEnvironment);
       window.removeEventListener("orientationchange", onBrowserViewportChange);
       document.removeEventListener("visibilitychange", onBrowserViewportChange);
     };

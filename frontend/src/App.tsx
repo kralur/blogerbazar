@@ -38,6 +38,7 @@ const MyCampaignApplications = lazy(async () => ({ default: (await import("./pag
 const Onboarding = lazy(async () => ({ default: (await import("./pages/Onboarding")).Onboarding }));
 const OnboardingSuccess = lazy(async () => ({ default: (await import("./pages/OnboardingSuccess")).OnboardingSuccess }));
 const ProfileDashboard = lazy(async () => ({ default: (await import("./pages/ProfileDashboard")).ProfileDashboard }));
+const Settings = lazy(async () => ({ default: (await import("./pages/Settings")).Settings }));
 const TelegramAuthorization = lazy(async () => ({ default: (await import("./pages/TelegramAuthorization")).TelegramAuthorization }));
 const Welcome = lazy(async () => ({ default: (await import("./pages/Welcome")).Welcome }));
 const Favorites = lazy(async () => ({ default: (await import("./pages/Favorites")).Favorites }));
@@ -219,7 +220,7 @@ export function App() {
     }
   }, [route.id, route.path]);
 
-  const knownRoutes = ["/", "/profile", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
+  const knownRoutes = ["/", "/profile", "/settings", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
@@ -235,7 +236,8 @@ export function App() {
   return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome key={selectedRole ?? "none"} role={selectedRole} /></RootScreenVisibility>}
-      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={handleMarketplaceRoleSelected} onSessionReset={resetToWelcome} /></RootScreenVisibility>}
+      {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={handleMarketplaceRoleSelected} /></RootScreenVisibility>}
+      {route.path === "/settings" && <Settings onSessionReset={resetToWelcome} />}
       {(visitedFavorites || route.path === "/favorites") && <RootScreenVisibility active={route.path === "/favorites"}><CachedFavorites /></RootScreenVisibility>}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
       {route.path === "/business" && <BusinessProfileForm />}

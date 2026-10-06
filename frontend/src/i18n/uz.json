@@ -570,4 +570,9 @@
   ,"offers.fromCampaign": "Kampaniyadan to‘ldirish"
   ,"offers.fromCampaignNone": "Tanlanmagan — qo‘lda to‘ldiraman"
   ,"offers.campaignFillFailed": "Kampaniyani yuklab bo‘lmadi. Maydonlarni qo‘lda to‘ldiring."
+  ,"settings.theme": "Mavzu"
+  ,"settings.themeTelegram": "Telegram kabi"
+  ,"settings.themeLight": "Yorug‘"
+  ,"settings.themeDark": "Qorong‘i"
+  ,"profile.settingsDetail": "Til, mavzu va akkaunt"
 }

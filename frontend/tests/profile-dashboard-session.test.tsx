@@ -30,9 +30,16 @@ vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => telegram
 vi.mock("../src/features/favorites/FavoritesProvider", () => ({ useFavorites: () => ({ refreshFavorites: vi.fn() }) }));
 
 import { ProfileDashboard } from "../src/pages/ProfileDashboard";
+import { Settings } from "../src/pages/Settings";
 
-function renderDashboard(onSessionReset = vi.fn()) {
-  render(<I18nProvider><ProfileDashboard onSessionReset={onSessionReset} /></I18nProvider>);
+function renderDashboard() {
+  render(<I18nProvider><ProfileDashboard /></I18nProvider>);
+}
+
+// Logout and account deletion live in Settings (D38).
+async function renderSettings(onSessionReset = vi.fn()) {
+  render(<I18nProvider><Settings onSessionReset={onSessionReset} /></I18nProvider>);
+  await screen.findByRole("button", { name: translate("profile.logout", undefined, "ru") });
   return onSessionReset;
 }
 
@@ -60,7 +67,7 @@ describe("Profile dashboard account flows", () => {
     sessionStorage.clear();
   });
 
-  it("groups shortcuts and settings, with the language switcher only in settings", async () => {
+  it("groups shortcuts and links to settings instead of holding the language switcher", async () => {
     api.getMyCampaignApplications.mockResolvedValue([{ id: "a1" }]);
     api.getMyDeals.mockResolvedValue([{ id: "d1" }, { id: "d2" }]);
     renderDashboard();
@@ -70,13 +77,14 @@ describe("Profile dashboard account flows", () => {
     await waitFor(() => expect(shortcuts.querySelector('a[href="#/requests"]')).toHaveTextContent(translate("profile.requestsSummary", { applications: 1, deals: 2 }, "ru")));
     expect(shortcuts.querySelector('a[href="#/my-campaigns"]')).not.toBeNull();
     expect(shortcuts.querySelector('a[href="#/favorites"]')).not.toBeNull();
-    expect(screen.getAllByRole("group", { name: translate("language.interface", undefined, "ru") })).toHaveLength(1);
+    expect(screen.queryByRole("group", { name: translate("language.interface", undefined, "ru") })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: translate("profile.logout", undefined, "ru") })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: translate("profile.settings", undefined, "ru") }).querySelector('a[href="#/settings"]')).not.toBeNull();
   });
 
   it("clears local BloggerBazar state and returns to the App reset callback after logout", async () => {
     const user = userEvent.setup();
-    const onSessionReset = renderDashboard();
-    await screen.findByText("Lumi Beauty");
+    const onSessionReset = await renderSettings();
     localStorage.setItem("bloggerbazar.selectedRole", "business");
     sessionStorage.setItem("bloggerbazar.onboarding.media-warning", "warning");
 
@@ -90,8 +98,7 @@ describe("Profile dashboard account flows", () => {
 
   it("deletes the current account once, then clears local state and resets the app", async () => {
     const user = userEvent.setup();
-    const onSessionReset = renderDashboard();
-    await screen.findByText("Lumi Beauty");
+    const onSessionReset = await renderSettings();
     localStorage.setItem("bloggerbazar.cache", "cached");
 
     await openDeleteDialog(user);
@@ -106,8 +113,7 @@ describe("Profile dashboard account flows", () => {
   it("keeps the dialog open and explains a failed deletion without resetting the app", async () => {
     const user = userEvent.setup();
     api.deleteCurrentAccount.mockRejectedValue(new Error("offline"));
-    const onSessionReset = renderDashboard();
-    await screen.findByText("Lumi Beauty");
+    const onSessionReset = await renderSettings();
 
     await openDeleteDialog(user);
     await user.click(screen.getAllByRole("button", { name: translate("profile.deleteAccount", undefined, "ru") }).at(-1)!);

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { deleteCurrentAccount, deleteProfileImage, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplications, getMyDeals, normalizeMarketplaceRole, selectMarketplaceRole, uploadProfileImage, type MarketplaceRole, type MyBloggerProfile, type MyBrandFaceProfile, type MyBusinessProfile, type ProfileMediaTarget } from "../api/marketplace";
+import { deleteProfileImage, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplications, getMyDeals, normalizeMarketplaceRole, selectMarketplaceRole, uploadProfileImage, type MarketplaceRole, type MyBloggerProfile, type MyBrandFaceProfile, type MyBusinessProfile, type ProfileMediaTarget } from "../api/marketplace";
 import { ApiError, getApiErrorMessage } from "../api/client";
-import { Badge, BottomNav, Button, Card, EmptyState, ErrorState, Icon, Modal, Skeleton, Toast } from "../components/ui";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { Badge, BottomNav, Button, Card, EmptyState, ErrorState, Icon, Skeleton, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
@@ -21,7 +20,7 @@ function bloggerStatus(status: number | undefined, t: (key: string) => string) {
   return { label: t("profile.pending"), tone: "gold" as const };
 }
 
-export function ProfileDashboard({ onSessionReset, onMarketplaceRoleSelected }: { onSessionReset?: () => void; onMarketplaceRoleSelected?: (role: MarketplaceRole) => void }) {
+export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceRoleSelected?: (role: MarketplaceRole) => void }) {
   const { haptic, user: telegramUser } = useTelegram();
   useScrollRestoration("profile");
   const [blogger, setBlogger] = useState<MyBloggerProfile | null>(null);
@@ -29,9 +28,6 @@ export function ProfileDashboard({ onSessionReset, onMarketplaceRoleSelected }: 
   const [business, setBusiness] = useState<MyBusinessProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [logoutOpen, setLogoutOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error">("error");
   const [accountImagePending, setAccountImagePending] = useState<PendingProfileImage>();
@@ -43,7 +39,7 @@ export function ProfileDashboard({ onSessionReset, onMarketplaceRoleSelected }: 
     const savedRole = localStorage.getItem(selectedRoleKey);
     return savedRole === "business" || savedRole === "brandFace" ? savedRole : "blogger";
   });
-  const { language, setLanguage, t: translate } = useI18n();
+  const { language, t: translate } = useI18n();
   const t = (key: string, values?: Record<string, string | number>) => translate(
     key === "profile.requestsAndDeals" ? "requests.title" : key === "profile.requestsAndDealsSubtitle" ? "requests.emptyApplicationsSubtitle" : key,
     values
@@ -139,43 +135,6 @@ export function ProfileDashboard({ onSessionReset, onMarketplaceRoleSelected }: 
     }
   };
 
-  const clearLocalAccountState = () => {
-    [localStorage, sessionStorage].forEach((storage) => {
-      for (let index = storage.length - 1; index >= 0; index -= 1) {
-        const key = storage.key(index);
-        if (key?.startsWith("bloggerbazar.")) storage.removeItem(key);
-      }
-    });
-    setLanguage("ru");
-  };
-
-  const resetLocalSession = () => {
-    clearLocalAccountState();
-    setLogoutOpen(false);
-    setDeleteOpen(false);
-    onSessionReset?.();
-  };
-
-  const logout = () => {
-    resetLocalSession();
-  };
-
-  const requestAccountDeletion = async () => {
-    if (deleting) return;
-    setDeleting(true);
-    try {
-      await deleteCurrentAccount();
-      haptic.success();
-      resetLocalSession();
-    } catch (error) {
-      haptic.error();
-      setToastTone("error");
-      setToast(getApiErrorMessage(error, t("profile.deleteFailed")));
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   return (
     <div className="screen screen--with-nav space-y-5 px-4 pt-5">
       <PageHeader eyebrow={t("profile.eyebrow")} title={t("profile.title")} />
@@ -188,11 +147,8 @@ export function ProfileDashboard({ onSessionReset, onMarketplaceRoleSelected }: 
         </div></section>
         {activeProfile ? <><Card><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-brand-muted">{role === "blogger" ? t("profile.bloggerProfile") : role === "brandFace" ? t("profile.brandFaceProfile") : t("profile.businessProfile")}</p><h2 className="mt-1 text-xl font-extrabold">{activeProfile.name}</h2><p className="mt-2 text-sm text-brand-muted">{role === "blogger" ? (blogger?.categories.map((category) => categoryLabel(category, language)).join(" · ") || t("profile.categoryMissing")) : role === "brandFace" ? (brandFace?.categories.map((category) => categoryLabel(category, language)).join(" · ") || t("profile.categoryMissing")) : (business?.city ? cityLabel(business.city, language) : t("profile.cityMissing"))}</p></div><Badge tone={status.tone}>{status.label}</Badge></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-brand-line"><div className="h-full rounded-full bg-brand-accent" style={{ width: `${completion}%` }} /></div><p className="mt-2 text-xs text-brand-muted">{t("profile.completion", { percent: completion })}</p><Button className="mt-4 w-full" onClick={() => { window.location.hash = profileHash; }} type="button">{t("profile.edit")}</Button></Card><nav aria-label={t("profile.shortcuts")} className="settings-list"><SettingsLink detail={applicationsCount == null || dealsCount == null ? t("requests.eyebrow") : t("profile.requestsSummary", { applications: applicationsCount, deals: dealsCount })} href="#/requests" title={t("profile.requestsAndDeals")} />{role === "business" && <SettingsLink detail={t("profile.myCampaignsDetail")} href="#/my-campaigns" title={t("myCampaigns.title")} />}{role !== "blogger" && <SettingsLink detail={t("favorites.profileSubtitle")} href="#/favorites" title={t("favorites.profileTitle")} />}</nav></> : <><EmptyState icon={role === "blogger" ? "user" : role === "brandFace" ? "star" : "building"} subtitle={t("profile.missingSubtitle")} title={role === "blogger" ? t("profile.missingBlogger") : role === "brandFace" ? t("profile.missingBrandFace") : t("profile.missingBusiness")} /><Button className="w-full" onClick={() => { window.location.hash = profileHash; }} type="button">{t("profile.create")}</Button></>}
       </>}
-      <section aria-label={t("profile.settings")}><h2 className="mb-3 text-lg font-extrabold">{t("profile.settings")}</h2><div className="settings-list"><div className="settings-row"><span className="settings-row__text"><strong>{t("language.interface")}</strong></span><LanguageSwitcher /></div></div></section>
-      <div className="grid gap-2"><Button className="w-full" onClick={() => { haptic.warning(); setLogoutOpen(true); }} type="button" variant="secondary">{t("profile.logout")}</Button><button className="profile-delete-link" onClick={() => { haptic.warning(); setDeleteOpen(true); }} type="button">{t("profile.deleteAccount")}</button></div>
-      <p className="text-center text-xs text-brand-muted">BloggerBazar · {t("common.version", { version: "1.0.0" })}</p>
-      <Modal onClose={() => setLogoutOpen(false)} open={logoutOpen} title={t("profile.logoutTitle")}><p className="text-sm leading-6 text-brand-muted">{t("profile.logoutDescription")}</p><div className="mt-5 grid grid-cols-2 gap-3"><Button onClick={() => setLogoutOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button onClick={logout} type="button" variant="danger">{t("profile.logout")}</Button></div></Modal>
-      <Modal onClose={() => { if (!deleting) setDeleteOpen(false); }} open={deleteOpen} title={t("profile.deleteAccountTitle")}><p className="text-sm leading-6 text-brand-muted">{t("profile.deleteAccountDescription")}</p><div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={deleting} onClick={() => setDeleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={deleting} disabled={deleting} onClick={() => void requestAccountDeletion()} type="button" variant="danger">{deleting ? t("profile.deleting") : t("profile.deleteAccount")}</Button></div></Modal>
+      {/* Settings stay reachable even without an active profile: logout and account deletion live there. */}
+      <nav aria-label={t("profile.settings")} className="settings-list"><SettingsLink detail={t("profile.settingsDetail")} href="#/settings" title={t("profile.settings")} /></nav>
       <Toast message={toast} tone={toastTone} />
       <BottomNav />
     </div>
