@@ -3,15 +3,15 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-06, Redesign R5 на review._
+_Последнее обновление: 2026-10-06, публикация Redesign R5._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | Redesign R4 (см. `git log`; предыдущие checkpoints `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Published `main` / `origin/main` | Redesign R5 (см. `git log`; предыдущие checkpoints `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
-| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 · R2b: https://github.com/kralur/blogerbazar/pull/7 · R3: https://github.com/kralur/blogerbazar/pull/8 · R4: https://github.com/kralur/blogerbazar/pull/9 |
+| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 · R2b: https://github.com/kralur/blogerbazar/pull/7 · R3: https://github.com/kralur/blogerbazar/pull/8 · R4: https://github.com/kralur/blogerbazar/pull/9 · R5: https://github.com/kralur/blogerbazar/pull/10 |
 
 ## Текущая фаза
 
@@ -22,9 +22,15 @@ _Последнее обновление: 2026-10-06, Redesign R5 на review._
   применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
 - **Phase 4C — Reviews 2.0 + напоминания** (D33): опубликована (`fd2054d`). Миграция
   `AddReviewPublicationAndDealReminders` одобрена владельцем; в Railway тоже нужен `ApplyMigrationsOnStartup` (8.19).
-- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). **R2a — главная**: опубликована (`6d965bd`). **R2b — каталоги и карточки**: опубликованы (`7c0c6a9`). **R3 — детальные страницы**: опубликованы (`ba3bfa8`). **R4 — заявки и сделки**: опубликованы (`8764b6e`). **R5 — кабинет бизнеса**: на review. Далее R2b — каталоги и карточки.
+- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). **R2a — главная**: опубликована (`6d965bd`). **R2b — каталоги и карточки**: опубликованы (`7c0c6a9`). **R3 — детальные страницы**: опубликованы (`ba3bfa8`). **R4 — заявки и сделки**: опубликованы (`8764b6e`). **R5 — кабинет бизнеса**: опубликован (`a4385ef`). Далее R6 — профиль, анкеты и формы. Далее R2b — каталоги и карточки.
 
 ## Последние результаты gates
+
+### Redesign R5 (GitHub Actions, run 37434347086, коммит `a4385ef`)
+
+```text
+Backend build and tests: passed; Frontend build and tests: passed; Production Docker build validation: passed
+```
 
 ### Redesign R5 (локально, до review)
 
