@@ -115,6 +115,12 @@
   }
 }
 
+@layer base {
+  /* iOS WebKit gives date inputs an intrinsic width and centred text, so they overflow narrow grids and sheets. */
+  input[type="date"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; text-align: left; }
+  input[type="date"]::-webkit-date-and-time-value { min-height: 1.5em; text-align: left; }
+}
+
 @layer components {
   .app-shell {
     min-height: var(--tg-viewport-height, 100dvh);
@@ -459,6 +465,8 @@
     color: var(--bb-text);
   }
 
+  /* In Telegram fullscreen the status bar and the Close/menu buttons float over the page; keep scrolled content from showing through. */
+  .app-top-scrim { position: fixed; top: 0; right: 0; left: 0; z-index: 30; height: var(--tg-content-safe-top, 0px); background: var(--bb-background); pointer-events: none; }
   .wizard-screen__top-scrim { position: fixed; top: 0; right: 0; left: 0; z-index: 30; width: min(100%, 430px); height: var(--tg-content-safe-top, 0px); margin: 0 auto; background: var(--bb-background); pointer-events: none; }
   .wizard-screen__content { width: 100%; max-width: 26rem; margin: 0 auto; }
   .wizard-header { position: relative; display: grid; gap: .75rem; width: 100%; min-width: 0; margin-bottom: 1.5rem; }
@@ -703,7 +711,7 @@
     animation: fade-in 180ms ease-out both;
     background: var(--bb-overlay);
     padding-top: var(--tg-content-safe-top, env(safe-area-inset-top));
-    padding-bottom: var(--tg-content-safe-bottom, env(safe-area-inset-bottom));
+    /* The sheet sits on the bottom edge and pads the home indicator itself; padding here too pushed its actions off-screen. */
   }
 
   .bottom-sheet {

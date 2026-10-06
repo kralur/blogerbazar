@@ -183,7 +183,7 @@ export function Badge({ children, tone = "blue" }: { children: ReactNode; tone?:
   return (
     <span
       className={cn(
-        "ds-badge inline-flex items-center gap-1 px-2.5 py-1",
+        "ds-badge inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-1",
         tone === "blue" && "ds-badge--info",
         tone === "purple" && "ds-badge--premium",
         (tone === "gold" || tone === "orange") && "ds-badge--warning",

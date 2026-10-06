@@ -72,6 +72,12 @@ describe("Blogger details", () => {
     expect(screen.queryByText("instagram")).not.toBeInTheDocument();
   });
 
+  it("calls a profile without reviews or deals new instead of showing an empty rating", async () => {
+    renderDetails();
+
+    expect(await screen.findByText(ru("details.newProfile"))).toBeInTheDocument();
+  });
+
   it("offers collaboration only to the Business role", async () => {
     const { unmount } = renderDetails();
     expect(await screen.findByRole("button", { name: ru("offers.propose") })).toBeInTheDocument();
