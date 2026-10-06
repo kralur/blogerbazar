@@ -3,15 +3,15 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-06, Redesign R2a на review._
+_Последнее обновление: 2026-10-06, публикация Redesign R2a._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | Redesign R1 (см. `git log`; предыдущие checkpoints `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Published `main` / `origin/main` | Redesign R2a (см. `git log`; предыдущие checkpoints `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
-| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 |
+| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 |
 
 ## Текущая фаза
 
@@ -22,9 +22,15 @@ _Последнее обновление: 2026-10-06, Redesign R2a на review._
   применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
 - **Phase 4C — Reviews 2.0 + напоминания** (D33): опубликована (`fd2054d`). Миграция
   `AddReviewPublicationAndDealReminders` одобрена владельцем; в Railway тоже нужен `ApplyMigrationsOnStartup` (8.19).
-- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). **R2a — главная**: реализована, на review. Далее R2b — каталоги и карточки.
+- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). **R2a — главная**: опубликована (`6d965bd`). Далее R2b — каталоги и карточки.
 
 ## Последние результаты gates
+
+### Redesign R2a (GitHub Actions, run 37428451689, коммит `6d965bd`)
+
+```text
+Backend build and tests: passed; Frontend build and tests: passed; Production Docker build validation: passed
+```
 
 ### Redesign R2a (локально, до review)
 
