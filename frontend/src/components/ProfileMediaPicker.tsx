@@ -59,7 +59,7 @@ export function ProfileMediaPicker({
   if (compact) return <div aria-label={t("profileMedia.sectionAria")} className="relative shrink-0">
     {fileInput}
     <Avatar name={name} size="md" src={displayedUrl} />
-    <button aria-label={hasImage ? t("profileMedia.replace") : t("profileMedia.upload")} className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-brand-gradient text-white shadow-card disabled:opacity-50" disabled={disabled} onClick={() => inputRef.current?.click()} type="button"><Icon className="h-4 w-4" name="plus" /></button>
+    <button aria-label={hasImage ? t("profileMedia.replace") : t("profileMedia.upload")} className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-white avatar-verified shadow-card disabled:opacity-50" disabled={disabled} onClick={() => inputRef.current?.click()} type="button"><Icon className="h-4 w-4" name="plus" /></button>
     {canDelete && <button aria-label={t("profileMedia.delete")} className="absolute -left-1 -top-1 grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-slate-700 text-white shadow-card disabled:opacity-50" disabled={disabled} onClick={() => { setError(""); onChange(null); }} type="button"><Icon className="h-3.5 w-3.5" name="close" /></button>}
     {error && <p className="absolute left-0 top-full z-10 mt-2 w-56 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-brand-danger shadow-card" role="alert">{error}</p>}
   </div>;
@@ -74,7 +74,7 @@ export function ProfileMediaPicker({
       <Button disabled={disabled} onClick={() => inputRef.current?.click()} type="button" variant="secondary">{hasImage ? t("profileMedia.replace") : t("profileMedia.upload")}</Button>
       {canDelete ? <Button disabled={disabled} onClick={() => { setError(""); onChange(null); }} type="button" variant="ghost">{t("profileMedia.delete")}</Button> : <div />}
     </div>
-    {pending instanceof File && <p className="mt-3 text-xs font-semibold text-brand-blue">{t("profileMedia.readyToSave")}</p>}
+    {pending instanceof File && <p className="mt-3 text-xs font-semibold text-brand-ink">{t("profileMedia.readyToSave")}</p>}
     {error && <p className="mt-3 text-xs font-semibold text-brand-danger" role="alert">{error}</p>}
   </section>;
 }

@@ -92,12 +92,22 @@ RU/UZ; BottomNav; native Back; responsive tests.
   принятие → Deal (на базе существующего `CollaborationRequest`).
 - **4C — Reviews 2.0 (ОПУБЛИКОВАНО):** публичный рейтинг бизнеса, «слепые» отзывы, окно 14 дней, напоминания
   (фоновая задача + миграция `AddReviewPublicationAndDealReminders`). Детали — D33.
-- **Далее: FEATURE FREEZE** → Full UI Redesign.
+- **FEATURE FREEZE** (D35) → Full UI Redesign R1–R7.
 
-## После Phase 4 — Full UI Redesign — РЕШЕНО
+## После Phase 4 — FEATURE FREEZE + Full UI Redesign — РЕШЕНО (D35)
 
-Home, catalogs, Campaigns, cards, details, Campaign creation, Applications, Requests/Deals, Profile, forms,
-navigation, empty/loading/error states. Foundation — DS v2.
+Feature freeze с 2026-10-06: только редизайн, баги, QA. Редизайн — frontend-only, foundation — DS v2.
+
+- **R1 — Основа (НА REVIEW):** общий `PageHeader` на всех экранах, переключатель языка только в Профиле,
+  убраны градиенты и декоративный синий, единый формат бюджета `formatBudgetRange`, перевод города/категорий в Профиле.
+- **R2 — Главная и каталоги:** главная «сначала полезное», поиск блогеров/бренд-фейсов, каталог кампаний, единые фильтры, карточки.
+- **R3 — Детальные страницы:** блогер, бренд-фейс, кампания.
+- **R4 — Заявки/сделки/предложения:** вкладки, карточки, страницы сделки/предложения/отклика.
+- **R5 — Кабинет бизнеса:** мои кампании, создание/редактирование, входящие отклики.
+- **R6 — Профиль и онбординг:** профиль, анкеты (Wizard), первый запуск.
+- **R7 — QA:** 320–430px, тёмная тема, длинные UZ-строки, empty/loading/error, клавиатура.
+
+Проверка каждого этапа: скриншоты «до/после» (Playwright + mock API, light/dark, Business/Blogger).
 
 ---
 

@@ -3,7 +3,7 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-06, публикация Phase 4C._
+_Последнее обновление: 2026-10-06, Redesign R1 на review._
 
 ## Checkpoint
 
@@ -22,9 +22,16 @@ _Последнее обновление: 2026-10-06, публикация Phase
   применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
 - **Phase 4C — Reviews 2.0 + напоминания** (D33): опубликована (`fd2054d`). Миграция
   `AddReviewPublicationAndDealReminders` одобрена владельцем; в Railway тоже нужен `ApplyMigrationsOnStartup` (8.19).
-- Далее: FEATURE FREEZE → Full UI Redesign.
+- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: реализован, на review (не закоммичен). Далее R2–R7.
 
 ## Последние результаты gates
+
+### Redesign R1 (локально, до review)
+
+```text
+npm test: 41 files, 304 passed / 0 failed; npm run build: passed; i18n:audit: passed (879 keys); tsc: passed
+dotnet: не затронут (frontend-only)
+```
 
 ### Phase 4C (GitHub Actions, run 37422835227, коммит `fd2054d`)
 

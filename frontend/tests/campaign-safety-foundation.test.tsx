@@ -25,7 +25,7 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getPublicContact: api.getPublicContact,
   getBusinessReviews: api.getBusinessReviews
 }));
-vi.mock("../src/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => <span>language</span> }));
+vi.mock("../src/components/ManagementBackLink", () => ({ ManagementBackLink: () => null }));
 vi.mock("../src/components/ContactList", () => ({ ContactList: () => null, hasContacts: () => false }));
 vi.mock("../src/components/ui", () => ({
   Avatar: ({ name }: { name: string }) => <span>{name}</span>,

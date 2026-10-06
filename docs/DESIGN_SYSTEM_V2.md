@@ -60,6 +60,19 @@ All product screens should prefer exports from `frontend/src/components/ui.tsx`.
 
 Raw colors, custom shadows, and new one-off modal implementations are not allowed when a shared primitive can represent the behavior.
 
+## Redesign rules (D35)
+
+- Visual direction: premium creator marketplace × modern fintech × Telegram-native. About 80% neutral surfaces,
+  15% dark (text, selected states), 5% lime.
+- `--bb-accent` (lime): primary CTA, active/selected state (`.choice-selected`, selected segments), verified marks.
+- Blue (`--bb-action`/`--bb-info`): informational statuses and focus only — never decoration.
+- No gradients, glassmorphism or glows. `--bb-gradient-*` remain only as solid aliases for legacy utilities.
+- Every screen starts with `PageHeader` (`components/PageHeader.tsx`): optional back link (hidden inside Telegram,
+  which shows its native BackButton), eyebrow, title (24px), trailing actions that wrap below on narrow screens.
+- The language switcher lives in Profile and first-run screens only.
+- Budgets are formatted only with `formatBudgetRange` (`lib/currency.ts`).
+- Tailwind aliases for tokens: `brand-surface`, `brand-soft` (surface-secondary), `brand-accent`, `brand-ink`, `brand-muted`.
+
 ## Typography and spacing
 
 - Screen title: `30px` maximum in compact product views.

@@ -10,6 +10,7 @@ let observerCallback: ((entries: Array<{ isIntersecting: boolean }>) => void) | 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({ ...(await importOriginal<typeof import("../src/api/marketplace")>()), getFavorites: api.getFavorites, getBrandFaceFavorites: api.getBrandFaceFavorites }));
 vi.mock("../src/features/favorites/FavoritesProvider", () => ({ useFavorites: () => ({ canManageFavorite: favorites.canManageFavorite, ready: true }) }));
 vi.mock("../src/hooks/useScrollRestoration", () => ({ useScrollRestoration: vi.fn() }));
+vi.mock("../src/components/ManagementBackLink", () => ({ ManagementBackLink: () => null }));
 vi.mock("../src/hooks/useProfileDataRefresh", () => ({ useProfileDataRefresh: vi.fn() }));
 vi.mock("../src/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => <span>language</span> }));
 vi.mock("../src/components/FavoriteButton", () => ({ FavoriteButton: () => null }));

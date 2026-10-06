@@ -4,14 +4,14 @@ import { BrandFaceCard } from "../components/BrandFaceCard";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { CatalogState, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
-import { Avatar, BottomNav, Card, Icon } from "../components/ui";
+import { Avatar, BottomNav, Card } from "../components/ui";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatNumber } from "../lib/currency";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
+import { PageHeader } from "../components/PageHeader";
 
 type FavoriteTab = "blogger" | "brandFace";
 type MutableRef<T> = { current: T };
@@ -29,7 +29,7 @@ export function Favorites() {
   }, [canManageBrandFaceFavorites, ready]);
 
   return <div className="screen screen--with-nav">
-    <header className="flex items-center gap-3"><a aria-label={t("favorites.backAria")} className="grid h-11 w-11 place-items-center rounded-2xl bg-white shadow-card" href="#/profile"><Icon name="back" /></a><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-brand-muted">{t("profile.eyebrow")}</p><h1 className="mt-1 text-3xl font-extrabold tracking-tight">{activeTab === "brandFace" ? t("favorites.brandFacesTitle") : t("favorites.title")}</h1></div><LanguageSwitcher /></header>
+    <PageHeader back={{ href: "#/profile", label: t("favorites.backAria") }} eyebrow={t("profile.eyebrow")} title={activeTab === "brandFace" ? t("favorites.brandFacesTitle") : t("favorites.title")} />
     {canManageBrandFaceFavorites && <div aria-label={t("favorites.creatorType")} className="catalog-search__segments mt-5" role="group">
       <FavoriteTabButton label={t("favorites.typeBloggers")} onClick={() => setActiveTab("blogger")} selected={activeTab === "blogger"} />
       <FavoriteTabButton label={t("favorites.typeBrandFaces")} onClick={() => setActiveTab("brandFace")} selected={activeTab === "brandFace"} />

@@ -91,7 +91,7 @@ describe("My Campaigns management", () => {
 
     await screen.findByText("Coffee launch");
     expect(document.querySelector(".campaign-management-screen")).toBeInTheDocument();
-    expect(document.querySelector(".my-campaigns__header")).toBeInTheDocument();
+    expect(document.querySelector(".page-header")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: translate("myCampaigns.backAria", undefined, "ru") })).not.toBeInTheDocument();
     expect(api.getMyCampaigns).toHaveBeenCalledWith({ page: 1, pageSize: 20, query: undefined, sort: "newest", status: undefined }, expect.any(AbortSignal));
     expect(screen.getByRole("link", { name: translate("myCampaigns.openAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign/campaign-a");

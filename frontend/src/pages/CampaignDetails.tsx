@@ -3,12 +3,12 @@ import { ApiError } from "../api/client";
 import { applyToCampaign, getBusinessReviews, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type BusinessReviews, type CampaignDetails, type ContactDetails } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Rating, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatCurrency } from "../lib/currency";
+import { formatBudgetRange } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { getCachedCampaignApplication, setCachedCampaignApplication } from "../data/campaignApplicationCache";
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
+import { PageHeader } from "../components/PageHeader";
 
 export function CampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
@@ -187,23 +187,17 @@ export function CampaignDetails({ id }: { id: string }) {
     contact?.websiteUrl ? { kind: "website" as const, value: contact.websiteUrl } : null,
     contact?.email ? { kind: "email" as const, value: contact.email } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
-  const budget = campaign.budgetFrom != null && campaign.budgetTo != null
-    ? `${formatCurrency(campaign.budgetFrom)}–${formatCurrency(campaign.budgetTo)}`
-    : campaign.budgetFrom != null ? formatCurrency(campaign.budgetFrom)
-      : campaign.budgetTo != null ? formatCurrency(campaign.budgetTo)
-        : null;
+  const budget = formatBudgetRange(campaign.budgetFrom, campaign.budgetTo);
   const companyInitials = campaign.company.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return (
     <div className="screen screen--with-nav">
-      <header className="flex items-center justify-between">
-        <a className="grid h-11 w-11 place-items-center rounded-2xl bg-white shadow-card" href="#/campaigns"><Icon name="back" /></a>
-        <div className="flex items-center gap-2"><Badge tone={campaign.isPromoted ? "gold" : "blue"}>{campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge><LanguageSwitcher /></div>
-      </header>
-      <Card className="mt-5 overflow-hidden p-0">
-        <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 p-5 text-white">
-          <div className="flex items-center gap-3"><Avatar name={companyInitials} size="sm" variant="neutral" /><div><p className="text-sm text-white/75">{campaign.company}</p><h1 className="mt-1 text-2xl font-extrabold leading-7">{campaign.title}</h1></div></div>
+      <PageHeader actions={<Badge tone={campaign.isPromoted ? "gold" : "blue"}>{campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>} back={{ href: "#/campaigns", label: t("nav.campaigns") }} />
+      <Card className="mt-4 overflow-hidden p-0">
+        <div className="campaign-hero">
+          <div className="flex items-center gap-3"><Avatar name={companyInitials} size="sm" variant="neutral" /><p className="min-w-0 truncate text-sm font-semibold text-brand-muted">{campaign.company}</p></div>
+          <h1 className="campaign-hero__title">{campaign.title}</h1>
         </div>
-        <div className="p-5"><p className="text-sm leading-6 text-brand-muted">{campaign.description}</p>{(budget || campaign.city) && <div className="mt-5 grid grid-cols-2 gap-2">{budget && <div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-brand-muted">{t("common.budget")}</p><p className="mt-1 text-sm font-extrabold">{budget}</p></div>}{campaign.city && <div className="rounded-2xl bg-slate-50 p-3"><p className="text-xs text-brand-muted">{t("campaign.location")}</p><p className="mt-1 text-sm font-extrabold">{cityLabel(campaign.city, language)}</p></div>}</div>}</div>
+        <div className="p-5"><p className="text-sm leading-6 text-brand-muted">{campaign.description}</p>{(budget || campaign.city) && <div className="mt-5 grid grid-cols-2 gap-2">{budget && <div className="col-span-2 rounded-2xl bg-brand-soft p-3"><p className="text-xs text-brand-muted">{t("common.budget")}</p><p className="mt-1 text-sm font-extrabold">{budget}</p></div>}{campaign.city && <div className="rounded-2xl bg-brand-soft p-3"><p className="text-xs text-brand-muted">{t("campaign.location")}</p><p className="mt-1 text-sm font-extrabold">{cityLabel(campaign.city, language)}</p></div>}</div>}</div>
       </Card>
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.suitable")}</h2><div className="flex flex-wrap gap-2">{campaign.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div></section>

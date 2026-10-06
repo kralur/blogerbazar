@@ -5,6 +5,14 @@ function locale() {
 export const formatNumber = (value?: number | null) => value == null ? "—" : new Intl.NumberFormat(locale()).format(value);
 export const formatCompactNumber = (value?: number | null) => value == null ? "—" : new Intl.NumberFormat(locale(), { notation: "compact", maximumFractionDigits: 1 }).format(value);
 export const formatCurrency = (value?: number | null) => value == null ? translate("card.onRequest") : new Intl.NumberFormat(currentLanguage() === "uz" ? "uz-UZ" : "ru-RU").format(value) + " " + translate("currency.uzs");
+// One budget format for every screen: a localized range, "from …" or "up to …"; null when the budget is open.
+export const formatBudgetRange = (min?: number | null, max?: number | null) => {
+  const format = (value: number) => new Intl.NumberFormat(currentLanguage() === "uz" ? "uz-UZ" : "ru-RU").format(value);
+  if (min != null && max != null) return min === max ? formatCurrency(min) : translate("campaigns.budgetRange", { min: format(min), max: format(max) });
+  if (min != null) return translate("campaigns.budgetFromValue", { min: format(min) });
+  if (max != null) return translate("campaigns.budgetToValue", { max: format(max) });
+  return null;
+};
 export const formatDate = (value?: string | Date | null) => value ? new Intl.DateTimeFormat(locale(), { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)) : "—";
 export const normalizeNumericInput = (value: string) => Number(value.replace(/[^\d]/g, "")) || 0;
 export const formatNumericInput = (value: string) => value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");

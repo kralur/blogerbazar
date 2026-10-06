@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { acceptOffer, declineOffer, getMyOffer, type Offer } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Toast } from "../components/ui";
-import { ManagementBackLink } from "../components/ManagementBackLink";
 import { useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { dealRoute } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
+import { PageHeader } from "../components/PageHeader";
 
 type LoadState = "loading" | "ready" | "not-found" | "error";
 
@@ -78,9 +78,9 @@ export function OfferDetails({ id }: { id: string }) {
   const formatDate = (value: string, withTime = false) => new Intl.DateTimeFormat(locale, withTime ? { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
 
   return <div className="screen screen--with-nav offer-details">
-    <header className="flex items-center justify-between"><ManagementBackLink ariaLabel={t("nav.requests")} href="#/requests" /><Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge></header>
+    <PageHeader actions={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t("offers.title")}</p>
-    <h1 className="mt-1 text-3xl font-extrabold tracking-tight">{t(offerFormatLabelKey(offer.format))}</h1>
+    <h1 className="mt-1 text-2xl font-extrabold leading-tight">{t(offerFormatLabelKey(offer.format))}</h1>
     <Card className="mt-5"><div className="flex items-center gap-3"><Avatar name={offer.counterpartyName} size="sm" src={offer.counterpartyImageUrl} /><div className="min-w-0"><p className="text-xs font-semibold text-brand-muted">{t("deals.counterparty")}</p><p className="truncate font-extrabold">{offer.counterpartyName}</p></div></div></Card>
     <Card className="mt-4"><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{offer.message}</p>
       <dl className="my-campaign-details__facts"><div><dt>{t("offers.budget")}</dt><dd>{offer.offeredBudget != null ? formatCurrency(offer.offeredBudget) : t("offers.budgetNegotiable")}</dd></div>{offer.deadline && <div><dt>{t("offers.deadline")}</dt><dd>{formatDate(offer.deadline)}</dd></div>}{offer.state === "pending" && offer.expiresAtUtc && <div><dt>{t("offers.expiresAt")}</dt><dd>{formatDate(offer.expiresAtUtc, true)}</dd></div>}</dl>

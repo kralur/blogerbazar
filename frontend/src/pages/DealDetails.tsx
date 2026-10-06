@@ -4,11 +4,11 @@ import { completeDeal, createDealReview, getDealContact, getMyDeal, type Contact
 import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Modal, Textarea, Toast } from "../components/ui";
-import { ManagementBackLink } from "../components/ManagementBackLink";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatCurrency } from "../lib/currency";
+import { formatBudgetRange, formatCurrency } from "../lib/currency";
 import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey } from "../lib/offerStatus";
+import { PageHeader } from "../components/PageHeader";
 
 type LoadState = "loading" | "ready" | "denied" | "not-found" | "error";
 
@@ -110,14 +110,12 @@ export function DealDetails({ id }: { id: string }) {
     contact?.websiteUrl ? { kind: "website" as const, value: contact.websiteUrl } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   const terms = deal.terms;
-  const budget = terms && (terms.budgetFrom != null || terms.budgetTo != null)
-    ? terms.budgetFrom != null && terms.budgetTo != null ? `${formatCurrency(terms.budgetFrom)}–${formatCurrency(terms.budgetTo)}` : formatCurrency(terms.budgetFrom ?? terms.budgetTo)
-    : null;
+  const budget = terms ? formatBudgetRange(terms.budgetFrom, terms.budgetTo) : null;
 
   return <div className="screen screen--with-nav deal-details">
-    <header className="flex items-center justify-between"><ManagementBackLink ariaLabel={t("nav.requests")} href="#/requests" /><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge></header>
+    <PageHeader actions={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t(dealSourceLabelKey(deal.sourceType))}</p>
-    <h1 className="mt-1 text-3xl font-extrabold tracking-tight">{terms?.title ?? t("deals.source.collaborationRequest")}</h1>
+    <h1 className="mt-1 text-2xl font-extrabold leading-tight">{terms?.title ?? t("deals.source.collaborationRequest")}</h1>
     <Card className="mt-5"><div className="flex items-center gap-3"><Avatar name={deal.counterpartyName} size="sm" src={deal.counterpartyImageUrl} /><div className="min-w-0"><p className="text-xs font-semibold text-brand-muted">{t("deals.counterparty")}</p><p className="truncate font-extrabold">{deal.counterpartyName}</p></div></div></Card>
     {deal.termsSource === "liveCampaignFallback" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.termsFallbackNote")}</p>}
     {deal.termsSource === "collaboration" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.collaborationNote")}</p>}
@@ -133,7 +131,7 @@ export function DealDetails({ id }: { id: string }) {
     <Card className="mt-4"><dl className="my-campaign-details__facts"><div><dt>{t("deals.startedAt")}</dt><dd>{formatDate(deal.createdAtUtc)}</dd></div>{deal.completedAtUtc && <div><dt>{t("deals.completedAt")}</dt><dd>{formatDate(deal.completedAtUtc)}</dd></div>}</dl></Card>
     {deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={() => setCompleteOpen(true)} type="button">{t("requests.complete")}</Button>}
     {deal.canReview && <Card className="mt-5"><h2 className="font-extrabold">{t("requests.reviewTitle")}</h2>
-      <div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${t("requests.rating")} ${value}`} aria-pressed={value === rating} className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${value <= rating ? "bg-amber-50 text-amber-500" : "bg-slate-100 text-slate-300"}`} key={value} onClick={() => setRating(value)} type="button">★</button>)}</div>
+      <div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${t("requests.rating")} ${value}`} aria-pressed={value === rating} className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${value <= rating ? "bg-brand-soft text-brand-warning" : "bg-brand-soft text-brand-muted opacity-50"}`} key={value} onClick={() => setRating(value)} type="button">★</button>)}</div>
       <Textarea className="mt-3" maxLength={1000} onChange={(event) => setComment(event.target.value)} placeholder={t("requests.reviewPlaceholder")} value={comment} />
       <p className="mt-3 text-xs leading-5 text-brand-muted">{t("deals.reviewBlindHint")}</p>
       {deal.reviewDeadlineUtc && <p className="mt-1 text-xs font-semibold text-brand-muted">{t("deals.reviewDeadline", { date: formatDate(deal.reviewDeadlineUtc) })}</p>}

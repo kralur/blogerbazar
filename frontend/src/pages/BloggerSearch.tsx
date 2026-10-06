@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getBloggers, getCategories, type BloggerSearchFilters } from "../api/marketplace";
 import { BloggerCard, type BloggerCardData } from "../components/BloggerCard";
 import { BrandFaceCatalog } from "../components/catalog/BrandFaceCatalog";
-import { CatalogHeader, CatalogState, FilterSelect, SearchSkeleton, ActiveFilterChips } from "../components/catalog/CatalogShared";
+import { CatalogState, FilterSelect, SearchSkeleton, ActiveFilterChips } from "../components/catalog/CatalogShared";
 import { CatalogTypeSegmentedControl, type CatalogType } from "../components/catalog/CatalogTypeSegmentedControl";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { BottomNav, BottomSheet, Icon, SearchBar } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
@@ -14,6 +13,7 @@ import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency, formatNumber, formatPercentage } from "../lib/currency";
 import { uzbekistanRegions } from "../lib/taxonomy";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { PageHeader } from "../components/PageHeader";
 
 const pageSize = 20;
 const defaultFilters: BloggerSearchFilters = { sort: "popular", pageSize };
@@ -185,10 +185,7 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
   const activeChips = useMemo(() => buildActiveChips(appliedFilters, t), [appliedFilters, t]);
 
   return <div aria-hidden={!active} className="catalog-search screen screen--with-nav" hidden={!active}>
-    <CatalogHeader>
-      <div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("search.eyebrow")}</p><h1>{t("search.title")}</h1></div>
-      <LanguageSwitcher />
-    </CatalogHeader>
+    <PageHeader eyebrow={t("search.eyebrow")} title={t("search.title")} />
     <CatalogTypeSegmentedControl onChange={onSelectType} value="blogger" />
     <div className="catalog-search__searchbar"><SearchBar className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} placeholder={t("search.placeholder")} value={query} /></div>
     <div className="catalog-search__controls">

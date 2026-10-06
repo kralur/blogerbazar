@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getBrandFaceCatalog, getCategories, type BrandFaceCatalogFilters, type BrandFaceCatalogSort, type BrandFaceCatalogItem } from "../../api/marketplace";
 import { BrandFaceCard } from "../BrandFaceCard";
-import { LanguageSwitcher } from "../LanguageSwitcher";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useProfileDataRefresh } from "../../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../../hooks/useScrollRestoration";
@@ -10,9 +9,10 @@ import { formatCurrency } from "../../lib/currency";
 import { uzbekistanRegions } from "../../lib/taxonomy";
 import { useTelegram } from "../../telegram/TelegramProvider";
 import { BottomSheet, Icon, SearchBar } from "../ui";
-import { CatalogHeader, CatalogState, FilterSelect, SearchSkeleton, ActiveFilterChips } from "./CatalogShared";
+import { CatalogState, FilterSelect, SearchSkeleton, ActiveFilterChips } from "./CatalogShared";
 import { CatalogTypeSegmentedControl } from "./CatalogTypeSegmentedControl";
 import { usePaginatedCatalog } from "./usePaginatedCatalog";
+import { PageHeader } from "../PageHeader";
 
 const pageSize = 20;
 const filterSheetId = "brand-face-search-filters";
@@ -148,10 +148,7 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
   const activeChips = useMemo(() => buildActiveChips(appliedFilters, t), [appliedFilters, t]);
 
   return <div aria-hidden={!active} className="catalog-search screen screen--with-nav" hidden={!active}>
-    <CatalogHeader>
-      <div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("search.eyebrow")}</p><h1>{t("search.title")}</h1></div>
-      <LanguageSwitcher />
-    </CatalogHeader>
+    <PageHeader eyebrow={t("search.eyebrow")} title={t("search.title")} />
     <CatalogTypeSegmentedControl onChange={onSelectType} value="brand-face" />
     <div className="catalog-search__searchbar"><SearchBar className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} placeholder={t("search.brandFacePlaceholder")} value={query} /></div>
     <div className="catalog-search__controls"><button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("search.filters")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button></div>

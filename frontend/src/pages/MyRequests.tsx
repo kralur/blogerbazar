@@ -10,7 +10,6 @@ import {
   type Offer
 } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Toast } from "../components/ui";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
@@ -19,6 +18,7 @@ import { BloggerApplications } from "./BloggerApplications";
 import { subscribeDealCache } from "../data/dealCache";
 import { dealRoute, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerRoute, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
+import { PageHeader } from "../components/PageHeader";
 
 const formatDate = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
 
@@ -123,15 +123,9 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
 
   return (
     <div className="screen screen--with-nav">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold text-brand-muted">{t("requests.eyebrow")}</p>
-          <h1 className="text-3xl font-extrabold tracking-tight">{t("requests.title")}</h1>
-        </div>
-        <div className="flex shrink-0 items-center gap-2"><LanguageSwitcher />{view === "deals" && <button aria-label={t("requests.dateFilter")} className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-brand-blue" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button>}</div>
-      </header>
+      <PageHeader actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
 
-      <div className="mt-5 grid grid-cols-3 rounded-2xl bg-slate-100 p-1">
+      <div className="mt-5 grid grid-cols-3 rounded-2xl bg-brand-soft p-1">
         <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "applications" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("applications")} type="button">{t("requests.applications")}</button>
         <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "offers" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("offers")} type="button">{t("offers.tab")}</button>
         <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "deals" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("deals")} type="button">{t("requests.deals")}</button>
@@ -174,7 +168,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
         {selectedRequest && <><p className="text-sm font-bold">{selectedRequest.counterpartyName}</p><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status) ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}</>}
       </Modal>
 
-      <BottomSheet onClose={() => setDateFilterOpen(false)} open={dateFilterOpen} title={t("requests.dateFilter")}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">{(["today", "week", "month", "custom"] as const).map((range) => <button className={`rounded-2xl border px-3 py-3 text-sm font-bold ${dateRange === range ? "border-brand-blue bg-blue-50 text-brand-blue" : "border-brand-line bg-white"}`} key={range} onClick={() => setDateRange(range)} type="button">{t(`requests.range.${range}`)}</button>)}</div>{dateRange === "custom" && <div className="grid grid-cols-2 gap-3"><Input label={t("requests.fromDate")} onChange={(event) => setFromDate(event.target.value)} type="date" value={fromDate} /><Input label={t("requests.toDate")} onChange={(event) => setToDate(event.target.value)} type="date" value={toDate} /></div>}<Button className="w-full" onClick={() => setDateFilterOpen(false)} type="button">{t("common.apply")}</Button><Button className="w-full" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setDateFilterOpen(false); }} type="button" variant="secondary">{t("common.reset")}</Button></div></BottomSheet>
+      <BottomSheet onClose={() => setDateFilterOpen(false)} open={dateFilterOpen} title={t("requests.dateFilter")}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">{(["today", "week", "month", "custom"] as const).map((range) => <button className={`rounded-2xl border px-3 py-3 text-sm font-bold ${dateRange === range ? "choice-selected" : "border-brand-line bg-brand-surface"}`} key={range} onClick={() => setDateRange(range)} type="button">{t(`requests.range.${range}`)}</button>)}</div>{dateRange === "custom" && <div className="grid grid-cols-2 gap-3"><Input label={t("requests.fromDate")} onChange={(event) => setFromDate(event.target.value)} type="date" value={fromDate} /><Input label={t("requests.toDate")} onChange={(event) => setToDate(event.target.value)} type="date" value={toDate} /></div>}<Button className="w-full" onClick={() => setDateFilterOpen(false)} type="button">{t("common.apply")}</Button><Button className="w-full" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setDateFilterOpen(false); }} type="button" variant="secondary">{t("common.reset")}</Button></div></BottomSheet>
 
       <Toast message={toast} tone={toastTone} />
       <BottomNav />

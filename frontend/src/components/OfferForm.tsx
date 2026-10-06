@@ -52,7 +52,7 @@ export function OfferForm({ bloggerId, open, onClose, onSent }: { bloggerId: str
     <form className="grid gap-3" onSubmit={submit}>
       <div>
         <p className="mb-2 text-sm font-bold">{t("offers.format")}</p>
-        <div className="grid grid-cols-2 gap-2">{offerFormats.map((value) => <button aria-pressed={format === value} className={`rounded-2xl border px-3 py-2.5 text-sm font-bold ${format === value ? "border-brand-blue bg-blue-50 text-brand-blue" : "border-brand-line"}`} key={value} onClick={() => setFormat(value)} type="button">{t(offerFormatLabelKey(value))}</button>)}</div>
+        <div className="grid grid-cols-2 gap-2">{offerFormats.map((value) => <button aria-pressed={format === value} className={`rounded-2xl border px-3 py-2.5 text-sm font-bold ${format === value ? "choice-selected" : "border-brand-line"}`} key={value} onClick={() => setFormat(value)} type="button">{t(offerFormatLabelKey(value))}</button>)}</div>
       </div>
       <Input inputMode="numeric" label={t("offers.budget")} min={0} onChange={(event) => setBudget(event.target.value.replace(/[^\d]/g, ""))} placeholder={t("offers.budgetPlaceholder")} value={budget} />
       <Input label={t("offers.deadline")} onChange={(event) => setDeadline(event.target.value)} type="date" value={deadline} />

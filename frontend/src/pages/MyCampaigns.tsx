@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentPlatformUser, getMyCampaigns, normalizeMarketplaceRole, type MyCampaign, type MyCampaignQuery, type MyCampaignSort, type MyCampaignStatus } from "../api/marketplace";
 import { MyCampaignCard } from "../components/MyCampaignCard";
-import { ManagementBackLink } from "../components/ManagementBackLink";
-import { CatalogHeader, CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
+import { CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { BottomNav, SearchBar } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
@@ -12,6 +10,7 @@ import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useI18n } from "../i18n";
 import { campaignStatusLabel } from "../lib/campaignStatus";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
+import { PageHeader } from "../components/PageHeader";
 
 const pageSize = 20;
 const defaultQuery: MyCampaignQuery = { sort: "newest", pageSize };
@@ -96,10 +95,7 @@ export function MyCampaigns() {
   useCampaignDataRefresh(refreshCampaigns, active && access === "allowed");
 
   return <div aria-hidden={!active} className="campaign-management-screen my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
-    <CatalogHeader className="my-campaigns__header">
-      <div className="my-campaigns__heading-row"><ManagementBackLink ariaLabel={t("myCampaigns.backAria")} href="#/profile" /><div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("myCampaigns.eyebrow")}</p><h1>{t("myCampaigns.title")}</h1></div></div>
-      <div className="my-campaigns__header-actions">{access === "allowed" && <a className="my-campaigns__create" href="#/campaigns">{t("myCampaigns.create")}</a>}<LanguageSwitcher /></div>
-    </CatalogHeader>
+    <PageHeader actions={access === "allowed" ? <a className="my-campaigns__create" href="#/campaigns">{t("myCampaigns.create")}</a> : undefined} back={{ href: "#/profile", label: t("myCampaigns.backAria") }} eyebrow={t("myCampaigns.eyebrow")} title={t("myCampaigns.title")} />
     {access === "checking" ? <SearchSkeleton count={3} /> : access === "denied" ? <CatalogState icon="lock" subtitle={t("myCampaigns.deniedSubtitle")} title={t("myCampaigns.deniedTitle")} /> : access === "failed" ? <CatalogState icon="refresh" onRetry={refreshAccess} subtitle={t("myCampaigns.accessErrorSubtitle")} title={t("myCampaigns.accessErrorTitle")} /> : <>
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("myCampaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("myCampaigns.searchPlaceholder")} value={query} /></div>
     <div className="my-campaigns__controls">

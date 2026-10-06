@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } f
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { createCampaign, getCampaignCatalog, getCategories, getCurrentPlatformUser, getMyBusinessProfile, normalizeMarketplaceRole, type CampaignCatalogItem, type CampaignCatalogQuery, type CampaignCatalogSort } from "../api/marketplace";
 import { CampaignCard, type CampaignCardData } from "../components/CampaignCard";
-import { ActiveFilterChips, CatalogHeader, CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
+import { ActiveFilterChips, CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
 import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { RegionSelect } from "../components/RegionSelect";
 import { BottomNav, BottomSheet, Button, FloatingActionButton, Icon, Input, Modal, SearchBar, Textarea, Toast } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -17,6 +16,7 @@ import { formatNumericInput, normalizeNumericInput } from "../lib/currency";
 import { isOtherCategory, uzbekistanRegions } from "../lib/taxonomy";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { PageHeader } from "../components/PageHeader";
 
 const pageSize = 20;
 const filterSheetId = "campaign-catalog-filters";
@@ -218,10 +218,7 @@ export function Campaigns() {
   };
 
   return <div aria-hidden={!active} className="campaign-catalog catalog-search screen screen--with-nav" hidden={!active}>
-    <CatalogHeader>
-      <div className="catalog-search__heading"><p className="catalog-search__eyebrow">{t("campaigns.eyebrow")}</p><h1>{t("campaigns.title")}</h1></div>
-      <div className="campaign-catalog__header-actions">{canCreate && <a className="my-campaigns__create" href="#/my-campaigns">{t("myCampaigns.open")}</a>}<LanguageSwitcher /></div>
-    </CatalogHeader>
+    <PageHeader actions={canCreate ? <a className="my-campaigns__create" href="#/my-campaigns">{t("myCampaigns.open")}</a> : undefined} eyebrow={t("campaigns.eyebrow")} title={t("campaigns.title")} />
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("campaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("campaigns.search")} value={query} /></div>
     <div className="catalog-search__controls">
       <button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("campaigns.filtersAria")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button>

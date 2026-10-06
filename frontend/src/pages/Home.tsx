@@ -2,12 +2,12 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { getMarketplaceHome, type MarketplaceRole } from "../api/marketplace";
 import { BloggerCard } from "../components/BloggerCard";
 import { CampaignCard } from "../components/CampaignCard";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { Avatar, BottomNav, Icon, Skeleton } from "../components/ui";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency, formatNumber } from "../lib/currency";
+import { PageHeader } from "../components/PageHeader";
 
 type HomeData = Awaited<ReturnType<typeof getMarketplaceHome>>;
 type HomeRole = MarketplaceRole;
@@ -157,7 +157,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   const hasCampaigns = Boolean(data?.promotedCampaigns.length);
 
   return <div className="home screen screen--with-nav">
-    <header className="home-header"><div><h1>{t("common.appName")}</h1><p>{t("home.marketplaceSubtitle")}</p></div><LanguageSwitcher /></header>
+    <PageHeader eyebrow={t("home.marketplaceSubtitle")} title={t("common.appName")} />
     <HomeHero role={resolvedRole} />
     {failed && !data ? <HomeError offline={offline} onRetry={load} /> : !data ? <HomeSkeleton role={resolvedRole} /> : <div className="home-content">
       {failed && <p className="text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}

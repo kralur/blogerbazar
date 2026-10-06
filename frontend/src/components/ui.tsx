@@ -212,11 +212,11 @@ export function Avatar({ src, name, size = "md", verified = false, variant = "de
   const sizes = { sm: "h-12 w-12", md: "h-16 w-16", lg: "h-24 w-24", xl: "h-32 w-32" };
   return (
     <div className={cn("relative shrink-0", variant === "home" && "home-avatar", variant === "catalog" && "catalog-avatar")}>
-      <div className={cn("overflow-hidden rounded-full", variant === "neutral" ? "border border-[color:var(--bb-border)] bg-[color:var(--bb-surface-secondary)] text-[color:var(--bb-text)]" : "bg-gradient-to-br from-blue-100 to-cyan-100 ring-4 ring-white", variant === "home" && "home-avatar__image", variant === "catalog" && "catalog-avatar__image", sizes[size])}>
+      <div className={cn("overflow-hidden rounded-full", variant === "neutral" ? "border border-[color:var(--bb-border)] bg-[color:var(--bb-surface-secondary)] text-[color:var(--bb-text)]" : "avatar-surface", variant === "home" && "home-avatar__image", variant === "catalog" && "catalog-avatar__image", sizes[size])}>
         {src && !imageFailed ? <img alt={name} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" onError={() => setImageFailed(true)} src={src} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
       </div>
       {verified && (
-        <span className={cn("absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white shadow-glow ring-4 ring-white", variant === "home" && "home-avatar__verified", variant === "catalog" && "catalog-avatar__verified")}>
+        <span className={cn("avatar-verified absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full", variant === "home" && "home-avatar__verified", variant === "catalog" && "catalog-avatar__verified")}>
           <Icon className="h-4 w-4" name="check" />
         </span>
       )}
@@ -238,7 +238,7 @@ export function Rating({ value, count }: { value?: number | null; count?: number
 export function StatsCard({ icon, value, label }: { icon?: string; value: string; label: string }) {
   return (
     <div className="glass-card p-4 text-center">
-      {icon && <Icon className="mx-auto mb-2 text-brand-blue" name={icon} />}
+      {icon && <Icon className="mx-auto mb-2 text-brand-muted" name={icon} />}
       <div className="text-xl font-extrabold tracking-tight">{value}</div>
       <div className="mt-1 text-xs text-brand-muted">{label}</div>
     </div>
@@ -250,8 +250,7 @@ export function PaywallCard({ title, subtitle, price, cta, onClick }: { title: s
   return (
     <Card className="overflow-hidden p-0">
       <div className="relative p-5 text-center">
-        <div className="pointer-events-none absolute inset-x-4 top-3 h-16 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-cyan-200 blur-2xl" />
-        <div className="relative mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-premium-gradient text-white shadow-glow">
+        <div className="paywall-icon relative mx-auto grid h-16 w-16 place-items-center rounded-2xl">
           <Icon name="lock" />
         </div>
         <h3 className="relative mt-4 text-xl font-extrabold leading-tight">{title}</h3>
@@ -268,7 +267,7 @@ export function PaywallCard({ title, subtitle, price, cta, onClick }: { title: s
 
 export function PromotionCard({ title, subtitle, audience }: { title: string; subtitle: string; audience: string }) {
   const { t } = useI18n();
-  return <Card className="overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50"><Badge tone="gray">{t("ui.soon")}</Badge><h3 className="mt-3 text-lg font-extrabold">{title}</h3><p className="mt-2 text-sm leading-5 text-brand-muted">{subtitle}</p><p className="mt-3 text-xs font-bold text-brand-blue">{t("ui.forAudience", { audience })}</p><Button className="mt-4 w-full" disabled title={t("ui.promotionUnavailable")} type="button">{t("ui.soon")}</Button></Card>;
+  return <Card className="overflow-hidden"><Badge tone="gray">{t("ui.soon")}</Badge><h3 className="mt-3 text-lg font-extrabold">{title}</h3><p className="mt-2 text-sm leading-5 text-brand-muted">{subtitle}</p><p className="mt-3 text-xs font-bold text-brand-muted">{t("ui.forAudience", { audience })}</p><Button className="mt-4 w-full" disabled title={t("ui.promotionUnavailable")} type="button">{t("ui.soon")}</Button></Card>;
 }
 
 export function Skeleton({ className }: { className?: string }) {
@@ -424,7 +423,7 @@ export function FixedActionBar({ children }: { children: ReactNode }) {
 export function FloatingActionButton({ children, ariaLabel, onClick }: { children: ReactNode; ariaLabel: string; onClick: () => void }) {
   const rootScreenVisible = useRootScreenVisibility();
   if (!rootScreenVisible || typeof document === "undefined") return null;
-  return createPortal(<button aria-label={ariaLabel} className="floating-action fixed right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient text-white shadow-glow transition active:scale-95" onClick={onClick} type="button">{children}</button>, document.body);
+  return createPortal(<button aria-label={ariaLabel} className="floating-action fixed right-5 z-40 grid h-14 w-14 place-items-center rounded-full transition active:scale-95" onClick={onClick} type="button">{children}</button>, document.body);
 }
 
 export function BottomNav() {

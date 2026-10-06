@@ -37,10 +37,11 @@
     --bb-radius-overlay: 1.25rem;
     --bb-control-height: 3rem;
     --bb-shadow-card: 0 1px 2px rgba(10, 10, 10, .05), 0 8px 24px rgba(10, 10, 10, .05);
-    --bb-shadow-action: 0 8px 20px rgba(49, 92, 245, .18);
+    --bb-shadow-action: 0 6px 16px rgba(10, 10, 10, .12);
     --bb-shadow-overlay: 0 24px 64px rgba(10, 10, 10, .18);
-    --bb-gradient-action: linear-gradient(135deg, var(--bb-action), #5278FF);
-    --bb-gradient-premium: linear-gradient(135deg, var(--bb-premium), var(--bb-action));
+    /* Gradients are retired (DS v2, R1): kept as solid aliases so any remaining utility stays on-brand. */
+    --bb-gradient-action: linear-gradient(var(--bb-accent), var(--bb-accent));
+    --bb-gradient-premium: linear-gradient(var(--bb-surface-secondary), var(--bb-surface-secondary));
     --bb-bottom-nav-height: 4.75rem;
     color: var(--bb-text);
     background: var(--bb-background);
@@ -795,14 +796,6 @@
 
   .home { background: var(--bb-background); }
 
-  .home-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .home-header h1,
   .home-section__heading h2,
   .home-statistics h2,
   .home-categories h2 {
@@ -812,8 +805,6 @@
     letter-spacing: -.035em;
   }
 
-  .home-header h1 { font-size: 1.625rem; line-height: 1.15; }
-  .home-header p { max-width: 15rem; margin: .375rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.45; }
 
   .home-hero {
     margin-top: 1.25rem;
@@ -1068,7 +1059,6 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
   color: var(--bb-text);
 }
 
-.catalog-search__header,
 .catalog-search__controls,
 .catalog-search__sheet-actions,
 .catalog-blogger-card__identity,
@@ -1079,14 +1069,6 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
   align-items: center;
 }
 
-.catalog-search__header {
-  justify-content: space-between;
-  gap: .75rem;
-}
-
-.catalog-search__heading { min-width: 0; }
-.catalog-search__eyebrow { margin: 0; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 650; }
-.catalog-search__heading h1 { margin: .25rem 0 0; color: var(--bb-text); font-size: clamp(1.75rem, 8vw, 2.125rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.1; }
 .catalog-search__segments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem; margin-top: 1rem; padding: .25rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface-secondary); }
 .catalog-search__segment { display: inline-flex; min-width: 0; min-height: 2.75rem; align-items: center; justify-content: center; gap: .375rem; border: 1px solid transparent; border-radius: .5rem; background: transparent; color: var(--bb-text-secondary); font: inherit; font-size: .8125rem; font-weight: 750; line-height: 1.2; }
 .catalog-search__segment--selected { border-color: var(--bb-accent); background: var(--bb-accent-subtle); color: var(--bb-text); }
@@ -1258,15 +1240,30 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .bottom-sheet-backdrop--neutral { background: color-mix(in srgb, var(--bb-text) 26%, transparent); backdrop-filter: none; }
 .bottom-sheet--neutral { border: 1px solid var(--bb-border); border-bottom: 0; background: var(--bb-surface); box-shadow: none; color: var(--bb-text); }
 
-.campaign-catalog__header-actions,
-.my-campaigns__header-actions { display: inline-flex; min-width: 0; align-items: center; justify-content: flex-end; gap: .5rem; }
 .campaign-management-screen { scroll-padding-top: var(--app-content-top); }
 html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: calc(var(--app-content-top) + var(--app-page-gutter)) !important; scroll-padding-top: calc(var(--app-content-top) + var(--app-page-gutter)); }
-.my-campaigns__header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
-.my-campaigns__heading-row { display: flex; min-width: 0; align-items: flex-start; gap: .75rem; }
 .management-back-link { display: grid; flex: 0 0 auto; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
 .management-back-link:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .management-back-link:active { border-color: var(--bb-text-secondary); background: var(--bb-surface-secondary); }
+.avatar-surface { border: 1px solid var(--bb-border); background: var(--bb-surface-secondary); color: var(--bb-text); }
+.avatar-verified { border: 3px solid var(--bb-surface); background: var(--bb-accent); color: var(--bb-accent-text); }
+.paywall-icon { background: var(--bb-surface-secondary); color: var(--bb-text); }
+.floating-action { background: var(--bb-accent); color: var(--bb-accent-text); box-shadow: var(--bb-shadow-action); }
+.floating-action:active { background: var(--bb-accent-pressed); }
+.profile-cover { height: 7rem; margin: .75rem -1rem 0; overflow: hidden; border-block: 1px solid var(--bb-border); background: var(--bb-surface-secondary); }
+.campaign-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--bb-border); }
+.campaign-hero__title { margin: .75rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: 1.375rem; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; }
+.profile-role-card { border-color: var(--bb-border); background: var(--bb-surface); }
+.profile-role-card--selected { border-color: var(--bb-text); background: var(--bb-accent-subtle); box-shadow: inset 0 0 0 1px var(--bb-text); }
+.choice-selected { border-color: var(--bb-text) !important; background: var(--bb-accent-subtle); color: var(--bb-text); box-shadow: inset 0 0 0 1px var(--bb-text); }
+.page-header { display: flex; min-width: 0; min-height: 2.75rem; flex-wrap: wrap; align-items: center; gap: .75rem; }
+/* 12rem basis: on narrow screens trailing actions wrap below the title instead of squeezing it. */
+.page-header__text { flex: 1 1 12rem; min-width: 0; }
+.page-header__eyebrow { margin: 0; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 650; line-height: 1.3; }
+.page-header__title { margin: .125rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: 1.5rem; font-weight: 800; letter-spacing: -.01em; line-height: 1.2; }
+.page-header__actions { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: .5rem; margin-left: auto; }
+.page-header__icon-button { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
+.page-header__icon-button:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .my-campaigns__create:focus-visible,
 .my-campaign-card:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .my-campaigns__create { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; padding: 0 .75rem; border: 1px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-accent); color: var(--bb-accent-text); font-size: .8125rem; font-weight: 800; line-height: 1.15; text-align: center; text-decoration: none; }
@@ -1290,10 +1287,9 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .my-campaign-card__facts dd { display: flex; min-width: 0; align-items: center; gap: .3rem; margin: .25rem 0 0; color: var(--bb-text); font-size: .8125rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
 .my-campaign-card__budget { grid-column: 1 / -1; }
 .my-campaign-card__promoted { display: inline-flex; margin-top: .875rem; padding: .2rem .4rem; border: 1px solid var(--bb-accent); border-radius: .5rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .625rem; font-weight: 800; line-height: 1; }
-.my-campaign-details__header { display: flex; align-items: center; justify-content: space-between; }
 .my-campaign-details__hero { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-top: .75rem; padding: 1.25rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
 .my-campaign-details__hero > div { min-width: 0; }
-.my-campaign-details__hero h1 { margin: .75rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: clamp(1.625rem, 7vw, 2.125rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.12; }
+.my-campaign-details__hero h1 { margin: .75rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: 1.375rem; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; }
 .my-campaign-details__hero p { margin: .75rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; }
 .my-campaign-details__section { margin-top: 1rem; }
 .my-campaign-details__section h2 { margin: 0; font-size: 1rem; font-weight: 800; }
@@ -1315,10 +1311,6 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .application-card .glass-card { min-width: 0; }
 .application-inbox-card { min-width: 0; overflow-wrap: anywhere; }
 .application-inbox-card .ds-button { min-width: 0; }
-.my-campaign-edit__header { display: flex; align-items: center; justify-content: space-between; }
-.my-campaign-edit__heading { margin-top: .75rem; }
-.my-campaign-edit__heading p { margin: 0; color: var(--bb-text-secondary); font-size: .75rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
-.my-campaign-edit__heading h1 { margin: .35rem 0 0; color: var(--bb-text); font-size: clamp(1.625rem, 7vw, 2.125rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.12; }
 .my-campaign-edit__form { display: grid; min-width: 0; gap: 1rem; margin-top: 1.25rem; }
 .my-campaign-edit__budget-grid { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
 .my-campaign-edit__budget-grid > * { min-width: 0; }
@@ -1327,9 +1319,6 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 @media (max-width: 390px) {
   .campaign-catalog__budget-grid,
   .campaign-catalog__date-grid { grid-template-columns: 1fr; }
-  .my-campaigns__header { grid-template-columns: minmax(0, 1fr); }
-  .my-campaigns__header-actions { width: 100%; justify-content: space-between; }
-  .my-campaigns__create { flex: 1 1 auto; }
   .my-campaigns__controls { grid-template-columns: 1fr; }
   .my-campaigns__controls .catalog-search__reset-all { justify-self: start; }
 }

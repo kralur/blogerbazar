@@ -3,14 +3,13 @@ import { ApiError, getApiErrorMessage } from "../api/client";
 import { closeMyCampaign, getMyCampaign, type MyCampaignDetails as MyCampaignDetailsData } from "../api/marketplace";
 import { BottomNav, Badge, Button, Card, ErrorState, Icon, LoadingState, Modal, Toast } from "../components/ui";
 import { notifyCampaignDataChanged, useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
-import { ManagementBackLink } from "../components/ManagementBackLink";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatDate, formatNumber } from "../lib/currency";
+import { formatBudgetRange, formatDate } from "../lib/currency";
 import { campaignApplicationsLabel, campaignStatusLabel, campaignStatusTone } from "../lib/campaignStatus";
 import { navigateWithHistoryOrigin } from "../navigation/hashNavigation";
 import { getCachedMyCampaign, removeCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
 import { removeCachedPublicDetail } from "../data/publicDetailCache";
+import { PageHeader } from "../components/PageHeader";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 
@@ -89,10 +88,10 @@ export function MyCampaignDetails({ id }: { id: string }) {
   if (loading && !campaign) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
   if (!campaign) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
 
-  const budget = formatBudget(campaign.minBudget, campaign.maxBudget, t);
+  const budget = formatBudgetRange(campaign.minBudget, campaign.maxBudget);
   const canManage = campaign.status !== 2;
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
-    <header className="my-campaign-details__header"><ManagementBackLink ariaLabel={t("myCampaignDetails.backAria")} href="#/my-campaigns" /><LanguageSwitcher /></header>
+    <PageHeader back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
     <section className="my-campaign-details__hero"><div className="min-w-0"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge><h1>{campaign.title}</h1><p>{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div>{campaign.isPromoted && <span className="my-campaign-card__promoted">{t("card.promoted")}</span>}</section>
     <Card className="my-campaign-details__section"><h2>{t("myCampaignDetails.description")}</h2><p>{campaign.description}</p></Card>
     <section className="my-campaign-details__facts">
@@ -125,11 +124,4 @@ export function MyCampaignDetails({ id }: { id: string }) {
 
 function DetailFact({ label, value }: { label: string; value: string }) {
   return <div><dt>{label}</dt><dd>{value}</dd></div>;
-}
-
-function formatBudget(min: number | null | undefined, max: number | null | undefined, t: (key: string, values?: Record<string, string | number>) => string) {
-  if (min != null && max != null) return t("campaigns.budgetRange", { min: formatNumber(min), max: formatNumber(max) });
-  if (min != null) return t("campaigns.budgetFromValue", { min: formatNumber(min) });
-  if (max != null) return t("campaigns.budgetToValue", { max: formatNumber(max) });
-  return null;
 }

@@ -1,4 +1,3 @@
-import { type ReactNode } from "react";
 import { useI18n } from "../../i18n";
 import { useTelegram } from "../../telegram/TelegramProvider";
 import { Icon, Skeleton } from "../ui";
@@ -24,8 +23,4 @@ export function SearchSkeleton({ count, compact = false }: { count: number; comp
 export function CatalogState({ title, subtitle, icon, onRetry, actionLabel, compact = false }: { title: string; subtitle: string; icon: string; onRetry?: () => void; actionLabel?: string; compact?: boolean }) {
   const { t } = useI18n();
   return <div className={`catalog-search__state${compact ? " catalog-search__state--compact" : ""}`} role="status"><span aria-hidden="true" className="catalog-search__state-icon"><Icon name={icon} /></span><h2>{title}</h2><p>{subtitle}</p>{onRetry && <button className="catalog-search__primary-button" onClick={onRetry} type="button">{actionLabel ?? t("common.retry")}</button>}</div>;
-}
-
-export function CatalogHeader({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <header className={`catalog-search__header ${className}`.trim()}>{children}</header>;
 }

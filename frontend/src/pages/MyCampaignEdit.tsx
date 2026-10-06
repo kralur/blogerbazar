@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { getMyCampaign, updateMyCampaign, type MyCampaignDetails, type UpdateMyCampaignInput } from "../api/marketplace";
 import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
-import { ManagementBackLink } from "../components/ManagementBackLink";
 import { RegionSelect } from "../components/RegionSelect";
 import { BottomNav, Button, ErrorState, Input, LoadingState, Textarea, Toast } from "../components/ui";
 import { useCampaignDataRefresh, notifyCampaignDataChanged } from "../hooks/useCampaignDataRefresh";
@@ -13,6 +11,7 @@ import { formatNumericInput, normalizeNumericInput } from "../lib/currency";
 import { getHistoryOrigin } from "../navigation/hashNavigation";
 import { getCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
 import { removeCachedPublicDetail } from "../data/publicDetailCache";
+import { PageHeader } from "../components/PageHeader";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 type FormValues = {
@@ -207,8 +206,7 @@ export function MyCampaignEdit({ id }: { id: string }) {
   if (failure) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignEdit.notFoundSubtitle" : failure === "denied" ? "myCampaignEdit.deniedSubtitle" : "myCampaignEdit.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignEdit.notFoundTitle" : failure === "denied" ? "myCampaignEdit.deniedTitle" : "myCampaignEdit.errorTitle")} /><BottomNav /></div>;
 
   return <div className="campaign-management-screen my-campaign-edit screen screen--with-nav">
-    <header className="my-campaign-edit__header"><ManagementBackLink ariaLabel={t("myCampaignEdit.backAria")} href={`#/my-campaign/${id}`} /><LanguageSwitcher /></header>
-    <div className="my-campaign-edit__heading"><p>{t("myCampaignEdit.eyebrow")}</p><h1>{t("myCampaignEdit.title")}</h1></div>
+    <PageHeader back={{ href: `#/my-campaign/${id}`, label: t("myCampaignEdit.backAria") }} eyebrow={t("myCampaignEdit.eyebrow")} title={t("myCampaignEdit.title")} />
     <form className="my-campaign-edit__form" onSubmit={onSubmit} noValidate>
       <Input error={fieldErrors.title} label={t("campaigns.title")} maxLength={160} onChange={(event) => setValue("title", event.target.value)} required value={values.title} />
       <Textarea error={fieldErrors.description} label={t("myCampaignDetails.description")} maxLength={3000} onChange={(event) => setValue("description", event.target.value)} required value={values.description} />

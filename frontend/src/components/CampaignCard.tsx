@@ -1,4 +1,4 @@
-import { formatCurrency } from "../lib/currency";
+import { formatBudgetRange } from "../lib/currency";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { Avatar, Icon } from "./ui";
 
@@ -27,7 +27,7 @@ export function CampaignCard({ campaign, variant = "default" }: { campaign: Camp
   const businessName = campaign.businessName ?? campaign.business?.name ?? t("common.business");
   const businessAvatarUrl = campaign.businessAvatarUrl ?? campaign.business?.avatarUrl;
   const deadline = campaign.deadline ? new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-UZ", { day: "numeric", month: "short" }).format(new Date(campaign.deadline)) : null;
-  const budget = formatBudget(campaign.budgetFrom, campaign.budgetTo, language, t);
+  const budget = formatBudgetRange(campaign.budgetFrom, campaign.budgetTo);
 
   if (variant === "home") {
     return <a aria-label={t("home.openCampaign", { title: campaign.title })} className="home-campaign-card card-enter block overflow-hidden" href={`#/campaign/${campaign.id}`}>
@@ -40,7 +40,7 @@ export function CampaignCard({ campaign, variant = "default" }: { campaign: Camp
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">{campaign.categories.slice(0, 2).map((category) => <span className="home-card__chip" key={category}>{categoryLabel(category)}</span>)}</div>
       <div className="home-campaign-card__metrics mt-4 flex items-center justify-between gap-3">
-        <div><span>{t("common.budget")}</span><strong>{campaign.budgetFrom == null ? t("card.openBudget") : formatCurrency(campaign.budgetFrom)}</strong></div>
+        <div><span>{t("common.budget")}</span><strong>{budget ?? t("card.openBudget")}</strong></div>
         <span className="text-right text-xs font-semibold text-[color:var(--bb-text-secondary)]">{deadline ? t("card.deadline", { date: deadline }) : campaign.city ? cityLabel(campaign.city) : t("card.wholeCountry")}</span>
       </div>
     </a>;
@@ -63,12 +63,4 @@ export function CampaignCard({ campaign, variant = "default" }: { campaign: Camp
       {deadline && <div><dt>{t("campaigns.deadline")}</dt><dd>{deadline}</dd></div>}
     </dl>
   </a>;
-}
-
-function formatBudget(min: number | null | undefined, max: number | null | undefined, language: "ru" | "uz", t: (key: string, values?: Record<string, string | number>) => string) {
-  const format = (value: number) => new Intl.NumberFormat(language === "uz" ? "uz-UZ" : "ru-RU").format(value);
-  if (min != null && max != null) return t("campaigns.budgetRange", { min: format(min), max: format(max) });
-  if (min != null) return t("campaigns.budgetFromValue", { min: format(min) });
-  if (max != null) return t("campaigns.budgetToValue", { max: format(max) });
-  return null;
 }
