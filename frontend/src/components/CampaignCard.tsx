@@ -1,6 +1,6 @@
 import { formatBudgetRange } from "../lib/currency";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { Avatar, Icon } from "./ui";
+import { Avatar } from "./ui";
 
 export type CampaignCardData = {
   id: string;
@@ -29,33 +29,17 @@ export function CampaignCard({ campaign, variant = "default" }: { campaign: Camp
   const deadline = campaign.deadline ? new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-UZ", { day: "numeric", month: "short" }).format(new Date(campaign.deadline)) : null;
   const budget = formatBudgetRange(campaign.budgetFrom, campaign.budgetTo);
 
-  if (variant === "home") {
-    return <a aria-label={t("home.openCampaign", { title: campaign.title })} className="home-campaign-card card-enter block overflow-hidden" href={`#/campaign/${campaign.id}`}>
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">{campaign.isPromoted && <span className="home-card__badge">{t("card.promoted")}</span>}<span className="truncate text-xs font-semibold text-[color:var(--bb-text-secondary)]">{businessName}</span></div>
-          <h3 className="mt-2 line-clamp-2 text-[16px] font-extrabold leading-5 tracking-tight">{campaign.title}</h3>
-        </div>
-        <span aria-hidden="true" className="home-campaign-card__icon"><Icon name="briefcase" /></span>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">{campaign.categories.slice(0, 2).map((category) => <span className="home-card__chip" key={category}>{categoryLabel(category)}</span>)}</div>
-      <div className="home-campaign-card__metrics mt-4 flex items-center justify-between gap-3">
-        <div><span>{t("common.budget")}</span><strong>{budget ?? t("card.openBudget")}</strong></div>
-        <span className="text-right text-xs font-semibold text-[color:var(--bb-text-secondary)]">{deadline ? t("card.deadline", { date: deadline }) : campaign.city ? cityLabel(campaign.city) : t("card.wholeCountry")}</span>
-      </div>
-    </a>;
-  }
-
-  const requirements = campaign.requirements?.filter(Boolean).slice(0, 2) ?? [];
-  return <a aria-label={t("campaigns.openCampaignAria", { title: campaign.title })} className="campaign-catalog-card card-enter" href={`#/campaign/${campaign.id}`}>
+  // One campaign card for Home rails and the catalog; rails hide requirements to keep a fixed height.
+  const requirements = variant === "home" ? [] : campaign.requirements?.filter(Boolean).slice(0, 2) ?? [];
+  return <a aria-label={t("campaigns.openCampaignAria", { title: campaign.title })} className={`campaign-catalog-card card-enter${variant === "home" ? " catalog-card--rail" : ""}`} href={`#/campaign/${campaign.id}`}>
     <div className="campaign-catalog-card__identity">
       <Avatar name={businessName} size="sm" src={businessAvatarUrl} variant="neutral" />
       <div className="campaign-catalog-card__heading">
-        <div className="campaign-catalog-card__name-row"><strong>{businessName}</strong>{campaign.isPromoted && <span className="campaign-catalog-card__promoted">{t("card.promoted")}</span>}</div>
+        <div className="campaign-catalog-card__name-row"><strong>{businessName}</strong></div>
         <h2>{campaign.title}</h2>
       </div>
     </div>
-    {campaign.categories.length > 0 && <div className="campaign-catalog-card__categories">{campaign.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category)}</span>)}</div>}
+    {(campaign.isPromoted || campaign.categories.length > 0) && <div className="campaign-catalog-card__categories">{campaign.isPromoted && <span className="catalog-card__promoted">{t("card.promoted")}</span>}{campaign.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category)}</span>)}</div>}
     {requirements.length > 0 && <p className="campaign-catalog-card__requirements">{requirements.join(" · ")}</p>}
     <dl className="campaign-catalog-card__facts">
       {campaign.city && <div><dt>{t("common.city")}</dt><dd>{cityLabel(campaign.city)}</dd></div>}

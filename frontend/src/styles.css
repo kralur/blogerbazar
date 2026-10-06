@@ -868,50 +868,6 @@
   .home-rail__campaign,
   .home-rail__brand-face { flex: 0 0 min(76vw, 17.75rem); scroll-snap-align: start; scroll-snap-stop: always; }
 
-  .home-blogger-card,
-  .home-campaign-card,
-  .home-brand-face-card {
-    display: block;
-    min-height: 11.75rem;
-    padding: 1rem;
-    border: 1px solid var(--bb-border);
-    border-radius: 1rem;
-    background: var(--bb-surface);
-    color: var(--bb-text);
-    text-decoration: none;
-    transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
-  }
-
-  .home-blogger-card:hover,
-  .home-campaign-card:hover,
-  .home-brand-face-card:hover { border-color: var(--bb-text-secondary); }
-  .home-blogger-card:active,
-  .home-campaign-card:active,
-  .home-brand-face-card:active { transform: scale(.985); }
-  .home-card__badge { display: inline-flex; min-height: 1.375rem; align-items: center; border: 1px solid var(--bb-accent); border-radius: 999px; background: var(--bb-accent-subtle); padding: .125rem .5rem; color: var(--bb-text); font-size: .625rem; font-weight: 800; line-height: 1; white-space: nowrap; }
-  .home-card__chip { display: inline-flex; min-height: 1.5rem; align-items: center; border: 1px solid var(--bb-border); border-radius: 999px; background: var(--bb-surface-secondary); padding: .125rem .5rem; color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; line-height: 1; white-space: nowrap; }
-  .home-blogger-card__metrics { border-top: 1px solid var(--bb-border); padding-top: .75rem; }
-  .home-blogger-card__metrics div,
-  .home-campaign-card__metrics div { display: grid; gap: .25rem; min-width: 0; }
-  .home-blogger-card__metrics span,
-  .home-campaign-card__metrics span,
-  .home-brand-face-card__footer span { color: var(--bb-text-secondary); font-size: .6875rem; line-height: 1.2; }
-  .home-blogger-card__metrics strong,
-  .home-campaign-card__metrics strong,
-  .home-brand-face-card__footer strong { overflow: hidden; color: var(--bb-text); font-size: .8125rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-  .home-campaign-card { min-height: 11rem; }
-  .home-campaign-card__icon { display: grid; flex: none; width: 2.5rem; height: 2.5rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface-secondary); color: var(--bb-text); }
-  .home-campaign-card__metrics { min-height: 2.5rem; align-items: end; border-top: 1px solid var(--bb-border); padding-top: .75rem; }
-  .home-brand-face-card { min-height: 10.75rem; }
-  .home-brand-face-card__footer { display: grid; gap: .25rem; margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--bb-border); }
-
-  .home-avatar__image { border: 1px solid var(--bb-border); background: var(--bb-surface-secondary); color: var(--bb-text); box-shadow: none; }
-  .home-avatar__image .image-fade { background: var(--bb-surface-secondary); }
-  .home-avatar__verified { width: 1.5rem; height: 1.5rem; border: 1px solid var(--bb-accent); background: var(--bb-accent); color: var(--bb-accent-text); box-shadow: none; }
-  .home-avatar__verified svg { width: .875rem; height: .875rem; }
-  .home-favorite-button button { border-color: var(--bb-border); background: var(--bb-surface); color: var(--bb-text-secondary); box-shadow: none; }
-  .home-favorite-button button[aria-pressed="true"] { border-color: var(--bb-accent); background: var(--bb-accent-subtle); color: var(--bb-text); }
-
   .home-category-chip { display: inline-flex; min-height: 2.75rem; align-items: center; border: 1px solid var(--bb-border); border-radius: 999px; background: var(--bb-surface); padding: .5rem .875rem; color: var(--bb-text); font-size: .8125rem; font-weight: 750; line-height: 1.2; text-decoration: none; transition: border-color 160ms ease, background-color 160ms ease; }
   .home-category-chip:hover,
   .home-category-chip:active { border-color: var(--bb-accent); background: var(--bb-accent-subtle); }
@@ -1156,7 +1112,6 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .catalog-blogger-card__identity { align-items: flex-start; gap: .75rem; padding-right: 2.75rem; }
 .catalog-blogger-card__name-row { gap: .5rem; min-width: 0; }
 .catalog-blogger-card__name-row strong { overflow: hidden; font-size: 1rem; font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-blogger-card__promotion { flex: 0 0 auto; padding: .2rem .4rem; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .625rem; font-weight: 800; }
 .catalog-blogger-card__identity p { overflow: hidden; margin: .25rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; text-overflow: ellipsis; white-space: nowrap; }
 .catalog-blogger-card__categories { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .625rem; }
 .catalog-blogger-card__categories span { padding: .25rem .5rem; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; }
@@ -1183,7 +1138,6 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .catalog-brand-face-card__name-row { display: flex; align-items: center; gap: .5rem; min-width: 0; }
 .catalog-brand-face-card__name-row strong { overflow: hidden; min-width: 0; color: var(--bb-text); font-size: 1rem; font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
 .catalog-brand-face-card__heading p { overflow: hidden; margin: .25rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-brand-face-card__promotion { flex: 0 0 auto; padding: .2rem .4rem; border: 1px solid var(--bb-accent); border-radius: .5rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .625rem; font-weight: 800; line-height: 1; }
 .catalog-brand-face-card__chips { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .75rem; }
 .catalog-brand-face-card__chips span { max-width: 100%; overflow: hidden; padding: .25rem .5rem; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .catalog-brand-face-card__price { display: grid; gap: .2rem; margin-top: 1rem; padding-top: .875rem; border-top: 1px solid var(--bb-border); }
@@ -1229,8 +1183,17 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .campaign-catalog-card__heading { min-width: 0; flex: 1; }
 .campaign-catalog-card__name-row { display: flex; align-items: center; gap: .5rem; min-width: 0; }
 .campaign-catalog-card__name-row strong { overflow: hidden; min-width: 0; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
-.campaign-catalog-card__promoted { flex: 0 0 auto; padding: .2rem .4rem; border: 1px solid var(--bb-accent); border-radius: .5rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .625rem; font-weight: 800; line-height: 1; }
 .campaign-catalog-card h2 { display: -webkit-box; overflow: hidden; margin: .35rem 0 0; color: var(--bb-text); font-size: 1rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* Shared card details (R2b): promotion lives in the chip row so it never collides with the favorite button. */
+.catalog-blogger-card__categories .catalog-card__promoted,
+.campaign-catalog-card__categories .catalog-card__promoted,
+.catalog-brand-face-card__chips .catalog-card__promoted,
+.my-campaign-card__categories .catalog-card__promoted { border-color: var(--bb-accent); background: var(--bb-accent-subtle); color: var(--bb-text); font-weight: 800; }
+.catalog-card--rail { height: 100%; }
+.catalog-blogger-card__facts > div:nth-child(2) { flex: .7; }
+.catalog-blogger-card__facts > div:nth-child(3) { flex: 1.5; }
+.catalog-blogger-card.catalog-card--rail .catalog-blogger-card__link,
+.catalog-brand-face-card.catalog-card--rail .catalog-brand-face-card__link { height: 100%; }
 .campaign-catalog-card__categories { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .75rem; }
 .campaign-catalog-card__categories span { max-width: 100%; overflow: hidden; padding: .25rem .5rem; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .campaign-catalog-card__requirements { display: -webkit-box; overflow: hidden; margin: .75rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -1273,9 +1236,12 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .my-campaign-card:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .my-campaigns__create { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; padding: 0 .75rem; border: 1px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-accent); color: var(--bb-accent-text); font-size: .8125rem; font-weight: 800; line-height: 1.15; text-align: center; text-decoration: none; }
 .my-campaigns__create:active { border-color: var(--bb-accent-pressed); background: var(--bb-accent-pressed); }
-.my-campaigns__controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: .5rem; margin-top: .75rem; align-items: end; }
-.my-campaigns__controls .catalog-search__filter-select { min-width: 0; }
-.my-campaigns__controls .catalog-search__filter-select select { width: 100%; }
+/* On-page list filters (R2b) look like the catalog sort pill: "label · value" in one compact row. */
+.my-campaigns__controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; align-items: center; }
+.my-campaigns__controls .catalog-search__filter-select { display: flex; flex: 1 1 12rem; min-width: 0; min-height: 2.75rem; align-items: center; gap: 0; padding-left: .75rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); }
+.my-campaigns__controls .catalog-search__filter-select > span { flex: 0 0 auto; font-size: .75rem; font-weight: 650; white-space: nowrap; }
+.my-campaigns__controls .catalog-search__filter-select select { width: auto; height: 2.75rem; padding: 0 .5rem; border: 0; background: transparent; text-align: right; box-shadow: none; }
+.my-campaigns__controls .catalog-search__filter-select:focus-within { border-color: var(--bb-accent); box-shadow: 0 0 0 2px var(--bb-accent-subtle); }
 .my-campaigns__controls .catalog-search__reset-all { min-height: 2.75rem; padding: 0 .5rem; white-space: nowrap; }
 .my-campaign-card { position: relative; display: block; min-width: 0; overflow: hidden; padding: 1rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); text-decoration: none; transition: border-color 150ms ease, transform 150ms ease; }
 .my-campaign-card:active { transform: scale(.99); }
@@ -1324,8 +1290,6 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 @media (max-width: 390px) {
   .campaign-catalog__budget-grid,
   .campaign-catalog__date-grid { grid-template-columns: 1fr; }
-  .my-campaigns__controls { grid-template-columns: 1fr; }
-  .my-campaigns__controls .catalog-search__reset-all { justify-self: start; }
 }
 
 @media (max-width: 22.5rem) {

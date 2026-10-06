@@ -206,17 +206,17 @@ export function Price({ value, className }: { value?: number | null; className?:
   return <span className={cn("font-extrabold tracking-tight", className)}>{formatCurrency(value)}</span>;
 }
 
-export function Avatar({ src, name, size = "md", verified = false, variant = "default" }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean; variant?: "default" | "home" | "catalog" | "neutral" }) {
+export function Avatar({ src, name, size = "md", verified = false, variant = "default" }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean; variant?: "default" | "catalog" | "neutral" }) {
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [src]);
   const sizes = { sm: "h-12 w-12", md: "h-16 w-16", lg: "h-24 w-24", xl: "h-32 w-32" };
   return (
-    <div className={cn("relative shrink-0", variant === "home" && "home-avatar", variant === "catalog" && "catalog-avatar")}>
-      <div className={cn("overflow-hidden rounded-full", variant === "neutral" ? "border border-[color:var(--bb-border)] bg-[color:var(--bb-surface-secondary)] text-[color:var(--bb-text)]" : "avatar-surface", variant === "home" && "home-avatar__image", variant === "catalog" && "catalog-avatar__image", sizes[size])}>
+    <div className={cn("relative shrink-0", variant === "catalog" && "catalog-avatar")}>
+      <div className={cn("overflow-hidden rounded-full", variant === "neutral" ? "border border-[color:var(--bb-border)] bg-[color:var(--bb-surface-secondary)] text-[color:var(--bb-text)]" : "avatar-surface", variant === "catalog" && "catalog-avatar__image", sizes[size])}>
         {src && !imageFailed ? <img alt={name} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" onError={() => setImageFailed(true)} src={src} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
       </div>
       {verified && (
-        <span className={cn("avatar-verified absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full", variant === "home" && "home-avatar__verified", variant === "catalog" && "catalog-avatar__verified")}>
+        <span className={cn("avatar-verified absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full", variant === "catalog" && "catalog-avatar__verified")}>
           <Icon className="h-4 w-4" name="check" />
         </span>
       )}

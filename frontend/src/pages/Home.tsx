@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { getMarketplaceHome, getMyCampaigns, getMyDeals, getMyOffers, type MarketplaceRole } from "../api/marketplace";
 import { BloggerCard } from "../components/BloggerCard";
+import { BrandFaceCard } from "../components/BrandFaceCard";
 import { CampaignCard } from "../components/CampaignCard";
-import { Avatar, BottomNav, Icon, Skeleton } from "../components/ui";
+import { BottomNav, Icon, Skeleton } from "../components/ui";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
-import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatCurrency } from "../lib/currency";
+import { categoryLabel, useI18n } from "../i18n";
 import { PageHeader } from "../components/PageHeader";
 
 type HomeData = Awaited<ReturnType<typeof getMarketplaceHome>>;
@@ -21,21 +21,6 @@ function HomeSection({ title, actionHref, children }: { title: string; actionHre
     </div>
     <div className="home-rail no-scrollbar">{children}</div>
   </section>;
-}
-
-function BrandFaceHomeCard({ profile }: { profile: HomeData["newBrandFaces"][number] }) {
-  const { language, t } = useI18n();
-  return <a aria-label={t("home.openBrandFace", { name: profile.name })} className="home-brand-face-card card-enter" href={`#/brand-face-detail/${profile.id}`}>
-    <div className="flex min-w-0 items-start gap-3">
-      <Avatar name={profile.name} size="sm" src={profile.avatarUrl} variant="home" />
-      <div className="min-w-0 flex-1">
-        <strong className="block truncate text-[15px] font-extrabold tracking-tight">{profile.name}</strong>
-        <p className="mt-1 truncate text-xs text-[color:var(--bb-text-secondary)]">{cityLabel(profile.city, language)}</p>
-      </div>
-    </div>
-    <div className="mt-3 flex flex-wrap gap-1.5">{profile.categories.slice(0, 2).map((category) => <span className="home-card__chip" key={category}>{categoryLabel(category, language)}</span>)}</div>
-    <div className="home-brand-face-card__footer"><span>{t("common.price")}</span><strong>{profile.collaborationPrice == null ? t("card.onRequest") : formatCurrency(profile.collaborationPrice)}</strong></div>
-  </a>;
 }
 
 function HomeEmptyAction({ href, title, description }: { href: string; title: string; description: string }) {
@@ -188,7 +173,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   const hasAnyBlogger = Boolean(data?.promotedBloggers.length || data?.topRatedBloggers.length || data?.newBloggers.length);
   const hasCampaigns = Boolean(data?.promotedCampaigns.length);
   const bloggerRail = (title: string, bloggers: HomeData["topRatedBloggers"]) => bloggers.length > 0 && <HomeSection actionHref="#/search" title={title}>{bloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>;
-  const brandFaceRail = data && data.newBrandFaces.length > 0 && <HomeSection actionHref="#/search?type=brand-face" title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceHomeCard profile={profile} /></div>)}</HomeSection>;
+  const brandFaceRail = data && data.newBrandFaces.length > 0 && <HomeSection actionHref="#/search?type=brand-face" title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceCard profile={profile} variant="home" /></div>)}</HomeSection>;
   const campaignRail = data && data.promotedCampaigns.length > 0 && <HomeSection actionHref="#/campaigns" title={t("home.promotedCampaigns")}>{data.promotedCampaigns.map((campaign) => <div className="home-rail__campaign" key={campaign.id}><CampaignCard campaign={campaign} variant="home" /></div>)}</HomeSection>;
 
   return <div className="home screen screen--with-nav">

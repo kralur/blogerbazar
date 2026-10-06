@@ -14,13 +14,12 @@ export function MyCampaignCard({ campaign }: { campaign: MyCampaign }) {
       <div className="min-w-0"><h2>{campaign.title}</h2><p>{t("myCampaigns.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div>
       <Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>
     </div>
-    {campaign.categories.length > 0 && <div className="my-campaign-card__categories">{campaign.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div>}
+    {(campaign.isPromoted || campaign.categories.length > 0) && <div className="my-campaign-card__categories">{campaign.isPromoted && <span className="catalog-card__promoted">{t("card.promoted")}</span>}{campaign.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div>}
     <dl className="my-campaign-card__facts">
       <div><dt>{t("common.city")}</dt><dd>{campaign.city ? cityLabel(campaign.city, language) : t("common.notSpecified")}</dd></div>
       <div><dt>{t("campaigns.deadline")}</dt><dd>{deadline}</dd></div>
       <div className="my-campaign-card__budget"><dt>{t("common.budget")}</dt><dd>{budget ?? t("myCampaigns.budgetNotSpecified")}</dd></div>
       <div><dt>{t("myCampaigns.applications")}</dt><dd><Icon aria-hidden="true" name="briefcase" />{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</dd></div>
     </dl>
-    {campaign.isPromoted && <span className="my-campaign-card__promoted">{t("card.promoted")}</span>}
   </a>;
 }

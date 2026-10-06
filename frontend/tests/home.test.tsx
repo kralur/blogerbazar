@@ -20,6 +20,9 @@ vi.mock("../src/hooks/useProfileDataRefresh", () => ({
 vi.mock("../src/components/BloggerCard", () => ({
   BloggerCard: ({ blogger, variant }: { blogger: { id: string; name: string }; variant?: string }) => <a data-variant={variant} href={`#/blogger/${blogger.id}`}>{blogger.name}</a>
 }));
+vi.mock("../src/components/BrandFaceCard", () => ({
+  BrandFaceCard: ({ profile, variant }: { profile: { id: string; name: string }; variant?: string }) => <a data-variant={variant} href={`#/brand-face-detail/${profile.id}`}>{profile.name}</a>
+}));
 vi.mock("../src/components/CampaignCard", () => ({
   CampaignCard: ({ campaign, variant }: { campaign: { id: string; title: string }; variant?: string }) => <a data-variant={variant} href={`#/campaign/${campaign.id}`}>{campaign.title}</a>
 }));

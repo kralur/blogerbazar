@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBrandFaceFavorites, getFavorites, type FavoriteBlogger, type FavoriteBrandFace } from "../api/marketplace";
+import { BloggerCard } from "../components/BloggerCard";
 import { BrandFaceCard } from "../components/BrandFaceCard";
-import { FavoriteButton } from "../components/FavoriteButton";
 import { CatalogState, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
-import { Avatar, BottomNav, Card } from "../components/ui";
+import { BottomNav } from "../components/ui";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
-import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatNumber } from "../lib/currency";
+import { useI18n } from "../i18n";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { PageHeader } from "../components/PageHeader";
 
@@ -45,7 +44,7 @@ function FavoriteTabButton({ label, onClick, selected }: { label: string; onClic
 }
 
 function BloggerFavorites({ active }: { active: boolean }) {
-  const { language, t } = useI18n();
+  const { t } = useI18n();
   const startedRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   useScrollRestoration("favorites:blogger", active);
@@ -61,7 +60,7 @@ function BloggerFavorites({ active }: { active: boolean }) {
   useInfiniteFavoritesScroll({ active, failure: catalog.failure, hasMore: catalog.hasMore, load: catalog.load, loadMoreFailed: catalog.loadMoreFailed, loading: catalog.loading, loadingMore: catalog.loadingMore, page: catalog.page, sentinelRef });
 
   return <section aria-busy={catalog.loading || catalog.loadingMore} aria-live="polite" className="catalog-search__results">
-    {catalog.loading && !catalog.loadedInitialResult ? <SearchSkeleton count={3} /> : catalog.failure && !catalog.loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} /> : !catalog.failure && catalog.items.length === 0 ? <CatalogState icon="bookmark" subtitle={t("favorites.emptySubtitle")} title={t("favorites.emptyTitle")} /> : catalog.items.map((blogger) => <Card className="relative p-3" key={blogger.bloggerId}><a className="flex min-w-0 items-center gap-3 pr-10" href={`#/blogger/${blogger.bloggerId}`}><Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} /><span className="min-w-0 flex-1"><strong className="block truncate">{blogger.name}</strong><span className="mt-1 block truncate text-sm text-brand-muted">{cityLabel(blogger.city, language)} · {blogger.categories.map((category) => categoryLabel(category, language)).join(", ")}</span><span className="mt-1 block text-xs font-semibold text-brand-muted">{formatNumber(blogger.totalFollowers)} {t("common.followers").toLowerCase()}</span></span></a><FavoriteButton bloggerId={blogger.bloggerId} className="absolute right-3 top-1/2 -translate-y-1/2" /></Card>)}
+    {catalog.loading && !catalog.loadedInitialResult ? <SearchSkeleton count={3} /> : catalog.failure && !catalog.loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} /> : !catalog.failure && catalog.items.length === 0 ? <CatalogState icon="bookmark" subtitle={t("favorites.emptySubtitle")} title={t("favorites.emptyTitle")} /> : catalog.items.map((blogger) => <BloggerCard blogger={{ id: blogger.bloggerId, name: blogger.name, city: blogger.city, categories: blogger.categories, avatarUrl: blogger.avatarUrl, totalFollowers: blogger.totalFollowers, reviewsCount: 0, completedDealsCount: 0 }} key={blogger.bloggerId} />)}
     {catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} />}
     <FavoriteListFooter catalog={catalog} onRetry={() => void catalog.load(catalog.page + 1, true)} sentinelRef={sentinelRef} />
   </section>;
