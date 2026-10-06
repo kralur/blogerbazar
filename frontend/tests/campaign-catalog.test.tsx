@@ -268,7 +268,9 @@ describe("Campaign catalog", () => {
     fireEvent.click(screen.getByRole("button", { name: translate("common.apply", undefined, "ru") }));
     await screen.findByText(translate("campaigns.emptySearchTitle", undefined, "ru"));
     expect(screen.getByRole("button", { name: translate("search.resetAll", undefined, "ru") })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: translate("campaigns.create", undefined, "ru") })).not.toBeInTheDocument();
+    // The filtered empty state offers a reset, not another create action; only the header action remains.
+    expect(screen.getAllByRole("button", { name: translate("campaigns.create", undefined, "ru") })).toHaveLength(1);
+    expect(document.querySelector(".page-header__actions")).toContainElement(screen.getByRole("button", { name: translate("campaigns.create", undefined, "ru") }));
   });
 
   it("keeps catalog failures distinct from an empty response", async () => {

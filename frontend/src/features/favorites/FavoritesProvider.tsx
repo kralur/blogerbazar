@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { getBrandFaceFavorites, getCurrentPlatformUser, getFavorites, normalizeMarketplaceRole, removeBrandFaceFavorite, removeFavorite, saveBrandFaceFavorite, saveFavorite, type FavoriteTarget, type MarketplaceRole } from "../../api/marketplace";
+import { getBrandFaceFavorites, getCurrentPlatformUser, getFavorites, getMyBloggerProfile, getMyBrandFaceProfile, normalizeMarketplaceRole, removeBrandFaceFavorite, removeFavorite, saveBrandFaceFavorite, saveFavorite, type FavoriteTarget, type MarketplaceRole } from "../../api/marketplace";
 
 type FavoritesContextValue = {
   isEligible: boolean;
   ready: boolean;
   canManageFavorite: (target: FavoriteTarget) => boolean;
+  isOwnProfile: (target: FavoriteTarget, id: string) => boolean;
   isFavorite: (target: FavoriteTarget, id: string) => boolean;
   toggleFavorite: (target: FavoriteTarget, id: string) => Promise<boolean>;
   refreshFavorites: () => Promise<void>;
@@ -17,6 +18,7 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
   const [isEligible, setIsEligible] = useState(false);
   const [marketplaceRole, setMarketplaceRole] = useState<MarketplaceRole>();
   const [ready, setReady] = useState(false);
+  const [ownKeys, setOwnKeys] = useState<Set<string>>(() => new Set());
   const stateVersionRef = useRef(0);
   const mutationVersionsRef = useRef(new Map<string, number>());
 
@@ -45,6 +47,15 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
       setReady(true);
       return;
     }
+
+    // One Telegram user can own several marketplace profiles; their own cards get no save button.
+    void Promise.allSettled([Promise.resolve().then(getMyBloggerProfile), Promise.resolve().then(getMyBrandFaceProfile)]).then(([blogger, brandFace]) => {
+      if (refreshVersion !== stateVersionRef.current) return;
+      const keys = new Set<string>();
+      if (blogger.status === "fulfilled" && blogger.value?.id) keys.add(favoriteKey("blogger", blogger.value.id));
+      if (brandFace.status === "fulfilled" && brandFace.value?.id) keys.add(favoriteKey("brandFace", brandFace.value.id));
+      setOwnKeys(keys);
+    });
 
     try {
       const bloggerIds = await loadAllBloggerFavoriteIds();
@@ -104,10 +115,11 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
     isEligible,
     ready,
     canManageFavorite,
+    isOwnProfile: (target, id) => ownKeys.has(favoriteKey(target, id)),
     isFavorite: (target, id) => favoriteKeys.has(favoriteKey(target, id)),
     toggleFavorite,
     refreshFavorites
-  }), [canManageFavorite, favoriteKeys, isEligible, ready, refreshFavorites, toggleFavorite]);
+  }), [canManageFavorite, favoriteKeys, isEligible, ownKeys, ready, refreshFavorites, toggleFavorite]);
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

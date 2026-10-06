@@ -566,4 +566,9 @@
   ,"campaign.expired": "Приём откликов завершён"
   ,"myCampaignEdit.validationDeadlinePast": "Срок не может быть в прошлом."
   ,"myCampaignDetails.expiredNote": "Срок кампании истёк: она скрыта из каталога и не принимает отклики. Продлите срок, чтобы открыть её снова."
+  ,"error.favorite_own_profile": "Свой профиль нельзя добавить в избранное."
+  ,"campaigns.createShort": "Создать"
+  ,"offers.fromCampaign": "Заполнить из кампании"
+  ,"offers.fromCampaignNone": "Не выбрано — заполню вручную"
+  ,"offers.campaignFillFailed": "Не удалось загрузить кампанию. Заполните поля вручную."
 }

@@ -3,16 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../src/api/client";
 import { I18nProvider, translate } from "../src/i18n";
 
-const api = vi.hoisted(() => ({ getMyOffer: vi.fn(), acceptOffer: vi.fn(), declineOffer: vi.fn(), createOffer: vi.fn() }));
+const api = vi.hoisted(() => ({ getMyOffer: vi.fn(), acceptOffer: vi.fn(), declineOffer: vi.fn(), createOffer: vi.fn(), getMyCampaigns: vi.fn(), getMyCampaign: vi.fn() }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/api/marketplace")>()),
   getMyOffer: api.getMyOffer,
   acceptOffer: api.acceptOffer,
   declineOffer: api.declineOffer,
-  createOffer: api.createOffer
+  createOffer: api.createOffer,
+  getMyCampaigns: api.getMyCampaigns,
+  getMyCampaign: api.getMyCampaign
 }));
 vi.mock("../src/components/ManagementBackLink", () => ({ ManagementBackLink: () => null }));
+vi.mock("../src/telegram/TelegramProvider", async (importOriginal) => ({ ...(await importOriginal<typeof import("../src/telegram/TelegramProvider")>()), useTelegram: () => ({ haptic: { selection: vi.fn(), success: vi.fn(), error: vi.fn(), warning: vi.fn() }, openLink: vi.fn(), registerBackButtonHandler: vi.fn(() => vi.fn()) }) }));
 vi.mock("../src/components/ui", () => ({
   Avatar: () => null,
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
@@ -95,7 +98,10 @@ describe("Offer details", () => {
 });
 
 describe("Offer form", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    api.getMyCampaigns.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20, hasMore: false });
+  });
 
   const renderForm = (onSent = vi.fn()) => {
     render(<I18nProvider><OfferForm bloggerId="blogger-a" onClose={vi.fn()} onSent={onSent} open /></I18nProvider>);
@@ -112,6 +118,30 @@ describe("Offer form", () => {
 
     await waitFor(() => expect(onSent).toHaveBeenCalledWith(pending));
     expect(api.createOffer).toHaveBeenCalledWith({ bloggerId: "blogger-a", format: "post", offeredBudget: 1_500_000, deadline: new Date(`${localDay(7)}T00:00:00Z`).toISOString(), message: "Post about us" });
+  });
+
+  it("fills budget, deadline and message from an open campaign but keeps them editable", async () => {
+    const future = "2030-05-20T00:00:00Z";
+    api.getMyCampaigns.mockResolvedValue({ items: [
+      { id: "open", title: "Coffee launch", categories: [], minBudget: 500_000, maxBudget: 900_000, deadline: future, status: 1, isPromoted: false, createdAtUtc: "", updatedAtUtc: "", applicationsCount: 0 },
+      { id: "old", title: "Old", categories: [], deadline: "2020-01-01T00:00:00Z", status: 1, isPromoted: false, createdAtUtc: "", updatedAtUtc: "", applicationsCount: 0 }
+    ], total: 2, page: 1, pageSize: 20, hasMore: false });
+    api.getMyCampaign.mockResolvedValue({ id: "open", title: "Coffee launch", description: "Reels about our new coffee", requirements: [], categories: [], minBudget: 500_000, maxBudget: 900_000, deadline: future, status: 1, isPromoted: false, createdAtUtc: "", updatedAtUtc: "", applicationsCount: 0 });
+    renderForm();
+
+    const select = await screen.findByLabelText(ru("offers.fromCampaign"));
+    expect(screen.queryByRole("option", { name: "Old" })).not.toBeInTheDocument();
+    fireEvent.change(select, { target: { value: "open" } });
+
+    await waitFor(() => expect(screen.getByLabelText(ru("offers.message"))).toHaveValue("Coffee launch\n\nReels about our new coffee"));
+    expect(screen.getByLabelText(ru("offers.budget"))).toHaveValue("900000");
+    expect(screen.getByLabelText(ru("offers.deadline"))).toHaveValue("2030-05-20");
+  });
+
+  it("does not offer campaign prefill when the business has no open campaigns", async () => {
+    renderForm();
+    await waitFor(() => expect(api.getMyCampaigns).toHaveBeenCalled());
+    expect(screen.queryByLabelText(ru("offers.fromCampaign"))).not.toBeInTheDocument();
   });
 
   it("requires a message before sending", async () => {

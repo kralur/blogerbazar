@@ -208,7 +208,6 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
       <FilterSelect label={t("search.followers")} onChange={(value) => setDraft("minFollowers", Number(value) || undefined)} options={followersOptions(t)} value={String(draftFilters.minFollowers ?? "")} />
       <FilterSelect label={t("search.er")} onChange={(value) => setDraft("minEr", Number(value) || undefined)} options={erOptions(t)} value={String(draftFilters.minEr ?? "")} />
       <FilterSelect label={t("search.maxPrice")} onChange={(value) => setDraft("maxPrice", Number(value) || undefined)} options={priceOptions(t)} value={String(draftFilters.maxPrice ?? "")} />
-      <FilterSelect label={t("search.sort")} onChange={(value) => setDraft("sort", value as NonNullable<BloggerSearchFilters["sort"]>)} options={sortOptions(t)} value={draftFilters.sort ?? "popular"} />
       <div className="catalog-search__sheet-actions"><button className="catalog-search__secondary-button" onClick={resetFilters} type="button">{t("common.reset")}</button><button className="catalog-search__primary-button" onClick={applyFilters} type="button">{t("common.apply")}</button></div>
     </div></BottomSheet>
     {!(failure && !loadedInitialResult) && <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("search.loading") : t("search.found", { count: total })}</p>}

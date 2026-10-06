@@ -565,4 +565,9 @@
   ,"campaign.expired": "Javoblar qabuli yakunlandi"
   ,"myCampaignEdit.validationDeadlinePast": "Muddat o‘tgan sana bo‘lishi mumkin emas."
   ,"myCampaignDetails.expiredNote": "Kampaniya muddati tugagan: u katalogda ko‘rinmaydi va javob qabul qilmaydi. Qayta ochish uchun muddatni uzaytiring."
+  ,"error.favorite_own_profile": "O‘z profilingizni saralanganlarga qo‘shib bo‘lmaydi."
+  ,"campaigns.createShort": "Yaratish"
+  ,"offers.fromCampaign": "Kampaniyadan to‘ldirish"
+  ,"offers.fromCampaignNone": "Tanlanmagan — qo‘lda to‘ldiraman"
+  ,"offers.campaignFillFailed": "Kampaniyani yuklab bo‘lmadi. Maydonlarni qo‘lda to‘ldiring."
 }

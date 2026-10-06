@@ -122,6 +122,15 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
     setFiltersOpen(true);
   };
 
+  // Sorting is a view choice, not a filter: it applies at once, like on the other catalogs.
+  const changeSort = (sort: BrandFaceCatalogSort) => {
+    haptic.selection();
+    setAppliedFilters((current) => normalizedFilters({ ...current, sort }));
+    const nextDraft = normalizedFilters({ ...draftFiltersRef.current, sort });
+    draftFiltersRef.current = nextDraft;
+    setDraftFilters(nextDraft);
+  };
+
   const applyFilters = () => {
     haptic.selection();
     setAppliedFilters(normalizedFilters(draftFiltersRef.current));
@@ -151,7 +160,7 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
     <PageHeader eyebrow={t("search.eyebrow")} title={t("search.title")} />
     <CatalogTypeSegmentedControl onChange={onSelectType} value="brand-face" />
     <div className="catalog-search__searchbar"><SearchBar className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} placeholder={t("search.brandFacePlaceholder")} value={query} /></div>
-    <div className="catalog-search__controls"><button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("search.filters")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button></div>
+    <div className="catalog-search__controls"><button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("search.filters")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button><label className="catalog-search__sort"><span>{t("search.sort")}</span><select aria-label={t("search.sort")} onChange={(event) => changeSort(event.target.value as BrandFaceCatalogSort)} value={appliedFilters.sort ?? "promoted"}>{sortOptions(t).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetFilters} />
     <BottomSheet id={filterSheetId} onClose={() => setFiltersOpen(false)} open={filtersOpen} title={t("search.filters")}><div className="catalog-search__sheet-content">
       <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, safeCategoryLabel(category, t)])]} value={draftFilters.category ?? ""} />
@@ -159,7 +168,6 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
       <label className="catalog-search__filter-select"><span>{t("search.language")}</span><input aria-label={t("search.language")} onChange={(event) => setDraft("language", event.target.value)} placeholder={t("search.languagePlaceholder")} type="text" value={draftFilters.language ?? ""} /></label>
       <label className="catalog-search__filter-select"><span>{t("search.minPrice")}</span><input aria-label={t("search.minPrice")} inputMode="numeric" onChange={(event) => setDraft("minPrice", Number(event.target.value) || undefined)} placeholder={t("search.anyPrice")} type="number" value={draftFilters.minPrice ?? ""} /></label>
       <label className="catalog-search__filter-select"><span>{t("search.maxPrice")}</span><input aria-label={t("search.maxPrice")} inputMode="numeric" onChange={(event) => setDraft("maxPrice", Number(event.target.value) || undefined)} placeholder={t("search.anyPrice")} type="number" value={draftFilters.maxPrice ?? ""} /></label>
-      <FilterSelect label={t("search.sort")} onChange={(value) => setDraft("sort", value as BrandFaceCatalogSort)} options={sortOptions(t)} value={draftFilters.sort ?? "promoted"} />
       <div className="catalog-search__sheet-actions"><button className="catalog-search__secondary-button" onClick={resetFilters} type="button">{t("common.reset")}</button><button className="catalog-search__primary-button" onClick={applyFilters} type="button">{t("common.apply")}</button></div>
     </div></BottomSheet>
     {!(failure && !loadedInitialResult) && <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("search.brandFacesLoading") : t("search.found", { count: total })}</p>}

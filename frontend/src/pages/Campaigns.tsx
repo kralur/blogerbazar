@@ -6,7 +6,7 @@ import { ActiveFilterChips, CatalogState, FilterSelect, SearchSkeleton } from ".
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
 import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
 import { RegionSelect } from "../components/RegionSelect";
-import { BottomNav, BottomSheet, Button, FloatingActionButton, Icon, Input, Modal, SearchBar, Textarea, Toast } from "../components/ui";
+import { BottomNav, BottomSheet, Button, Icon, Input, Modal, SearchBar, Textarea, Toast } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
@@ -249,7 +249,7 @@ export function Campaigns() {
   };
 
   return <div aria-hidden={!active} className="campaign-catalog catalog-search screen screen--with-nav" hidden={!active}>
-    <PageHeader actions={canCreate ? <a className="my-campaigns__create" href="#/my-campaigns">{t("myCampaigns.open")}</a> : undefined} eyebrow={t("campaigns.eyebrow")} title={t("campaigns.title")} />
+    <PageHeader actions={canCreate ? <><a className="page-header__secondary" href="#/my-campaigns">{t("myCampaigns.open")}</a>{!isDefaultEmpty && <button aria-label={t("campaigns.createAria")} className="my-campaigns__create" onClick={() => setCreateOpen(true)} type="button"><Icon className="h-4 w-4" name="plus" />{t("campaigns.createShort")}</button>}</> : undefined} eyebrow={t("campaigns.eyebrow")} title={t("campaigns.title")} />
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("campaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("campaigns.search")} value={query} /></div>
     <div className="catalog-search__controls">
       <button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("campaigns.filtersAria")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button>
@@ -268,7 +268,6 @@ export function Campaigns() {
         {loadedInitialResult && !hasMore && !loadingMore && !loadMoreFailed && <p className="catalog-search__end">{t("campaigns.endOfList")}</p>}
       </>}
     </section>
-    {canCreate && !isDefaultEmpty && !(isEmptyResult && hasFilterOrQuery) && <FloatingActionButton ariaLabel={t("campaigns.createAria")} onClick={() => setCreateOpen(true)}><Icon name="plus" /></FloatingActionButton>}
     <CampaignFiltersSheet categories={categories} error={filterError} filters={draftFilters} onApply={applyFilters} onClose={closeFilters} onReset={resetCatalog} onSetFilter={setDraft} open={filtersOpen} />
     <Modal id="campaign-create-sheet" onClose={() => setCreateOpen(false)} open={createOpen} title={t("campaigns.newTitle")}><div className="campaign-create-form grid gap-3"><Input className="campaign-create-form__input" label={t("campaigns.name")} maxLength={150} onChange={updateForm("title")} placeholder={t("campaigns.namePlaceholder")} required value={form.title} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.description")} maxLength={1000} onChange={updateForm("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /><CategoryMultiSelect onChange={(categories) => setForm((current) => ({ ...current, categories }))} required value={form.categories} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.requirements")} maxLength={1000} onChange={updateForm("requirements")} placeholder={t("campaigns.requirementsPlaceholder")} value={form.requirements} /><RegionSelect onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} value={form.city} /><Input className="campaign-create-form__input" label={t("campaigns.deadline")} min={localDay()} onChange={updateForm("deadline")} type="date" value={form.deadline} /><div className="campaign-create-form__budget-grid"><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setForm((current) => ({ ...current, budgetFrom: formatNumericInput(event.target.value) }))} placeholder="200 000" value={form.budgetFrom} /><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setForm((current) => ({ ...current, budgetTo: formatNumericInput(event.target.value) }))} placeholder="1 000 000" value={form.budgetTo} /></div><Button aria-busy={saving} className="campaign-create-form__submit" disabled={saving || !form.title.trim() || !form.description.trim() || !form.categories.length} onClick={create} type="button">{saving ? t("campaigns.publishing") : t("campaigns.publish")}</Button></div></Modal>
     <Toast message={toast} tone={toastTone} />

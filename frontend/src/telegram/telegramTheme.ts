@@ -9,7 +9,7 @@ export const TelegramLaunch = {
 
 export const TelegramSafeArea = {
   minimumChromeTop: 80,
-  contentGap: 16
+  contentGap: 8
 } as const;
 
 export function resolveTelegramContentTop({
@@ -21,7 +21,9 @@ export function resolveTelegramContentTop({
   safeTop?: number;
   isEmbedded?: boolean;
 }) {
-  const reportedTop = Math.max(contentTop, safeTop, 0);
+  // Telegram reports contentSafeAreaInset inside the device safe area (below the status bar),
+  // so the Close/menu buttons end at safeTop + contentTop, not at the larger of the two.
+  const reportedTop = Math.max(safeTop, 0) + Math.max(contentTop, 0);
   const chromeTop = isEmbedded
     ? Math.max(reportedTop, TelegramSafeArea.minimumChromeTop)
     : reportedTop;

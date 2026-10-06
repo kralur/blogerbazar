@@ -6,7 +6,7 @@ import { useTelegram } from "../telegram/TelegramProvider";
 import { Icon, Toast } from "./ui";
 
 export function FavoriteButton({ bloggerId, brandFaceId, className, onChanged }: { bloggerId?: string; brandFaceId?: string; className?: string; onChanged?: (isFavorite: boolean) => void }) {
-  const { canManageFavorite, isFavorite, ready, toggleFavorite } = useFavorites();
+  const { canManageFavorite, isFavorite, isOwnProfile, ready, toggleFavorite } = useFavorites();
   const { t } = useI18n();
   const { haptic } = useTelegram();
   const [pending, setPending] = useState(false);
@@ -15,7 +15,7 @@ export function FavoriteButton({ bloggerId, brandFaceId, className, onChanged }:
   const id = brandFaceId ?? bloggerId;
   const saved = id ? isFavorite(target, id) : false;
 
-  if (!id || !ready || !canManageFavorite(target)) return null;
+  if (!id || !ready || !canManageFavorite(target) || isOwnProfile(target, id)) return null;
 
   const handleClick = async (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();

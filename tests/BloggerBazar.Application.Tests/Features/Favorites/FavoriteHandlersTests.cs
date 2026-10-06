@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Favorites;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -47,7 +48,9 @@ public sealed class FavoriteHandlersTests
         blogger.Approve();
         var handler = new SaveFavoriteCommandHandler(new InMemoryUsers(user), new InMemoryBloggers(blogger), new InMemoryFavorites(), new InMemoryAuditLogs(), new UnitOfWork());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new SaveFavoriteCommand(10, blogger.Id), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(new SaveFavoriteCommand(10, blogger.Id), CancellationToken.None));
+
+        Assert.Equal("favorite_own_profile", exception.Code);
     }
 
     [Fact]

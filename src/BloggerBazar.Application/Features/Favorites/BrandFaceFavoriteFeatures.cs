@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
@@ -72,7 +73,7 @@ public sealed class SaveBrandFaceFavoriteCommandHandler(
 
         if (brandFace.TelegramUserId == command.TelegramUserId)
         {
-            throw new InvalidOperationException("You cannot save your own Brand Face profile.");
+            throw new BusinessRuleConflictException("favorite_own_profile", "You cannot save your own Brand Face profile.");
         }
 
         if (await favorites.GetAsync(user.Id, brandFace.Id, cancellationToken) is not null)
