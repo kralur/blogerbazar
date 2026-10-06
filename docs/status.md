@@ -3,15 +3,15 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-06, Redesign R1 на review._
+_Последнее обновление: 2026-10-06, публикация Redesign R1._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | Phase 4C (см. `git log`; предыдущие checkpoints `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Published `main` / `origin/main` | Redesign R1 (см. `git log`; предыдущие checkpoints `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
-| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 |
+| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 |
 
 ## Текущая фаза
 
@@ -22,9 +22,15 @@ _Последнее обновление: 2026-10-06, Redesign R1 на review._
   применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
 - **Phase 4C — Reviews 2.0 + напоминания** (D33): опубликована (`fd2054d`). Миграция
   `AddReviewPublicationAndDealReminders` одобрена владельцем; в Railway тоже нужен `ApplyMigrationsOnStartup` (8.19).
-- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: реализован, на review (не закоммичен). Далее R2–R7.
+- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). Далее R2 — главная и каталоги.
 
 ## Последние результаты gates
+
+### Redesign R1 (GitHub Actions, run 37427205573, коммит `945c7f6`)
+
+```text
+Backend build and tests: passed; Frontend build and tests: passed; Production Docker build validation: passed
+```
 
 ### Redesign R1 (локально, до review)
 
