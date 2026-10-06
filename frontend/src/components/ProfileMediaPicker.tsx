@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useI18n } from "../i18n";
-import { Avatar, Button, Icon } from "./ui";
+import { Avatar, BottomSheet, Button, Icon } from "./ui";
 
 const maxFileSizeBytes = 5 * 1024 * 1024;
 const allowedTypes = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
@@ -32,6 +32,7 @@ export function ProfileMediaPicker({
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
+  const [actionsOpen, setActionsOpen] = useState(false);
   const previewUrl = useMemo(() => pending instanceof File ? URL.createObjectURL(pending) : undefined, [pending]);
   const displayedUrl = pending === null ? fallbackUrl : previewUrl ?? currentUrl ?? fallbackUrl;
   const hasImage = Boolean(displayedUrl);
@@ -56,11 +57,24 @@ export function ProfileMediaPicker({
 
   const fileInput = <input accept="image/jpeg,image/png,image/webp" aria-label={t("profileMedia.selectAria")} className="sr-only" disabled={disabled} id={inputId} onChange={selectFile} ref={inputRef} type="file" />;
 
+  // One "+" on the avatar: with no removable photo it opens the file picker; otherwise a small menu
+  // offers replace or delete, so there is no separate "x" sitting on the photo.
+  const openPhotoActions = () => {
+    setError("");
+    if (canDelete) setActionsOpen(true);
+    else inputRef.current?.click();
+  };
+
   if (compact) return <div aria-label={t("profileMedia.sectionAria")} className="relative shrink-0">
     {fileInput}
     <Avatar name={name} size="md" src={displayedUrl} />
-    <button aria-label={hasImage ? t("profileMedia.replace") : t("profileMedia.upload")} className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-white avatar-verified shadow-card disabled:opacity-50" disabled={disabled} onClick={() => inputRef.current?.click()} type="button"><Icon className="h-4 w-4" name="plus" /></button>
-    {canDelete && <button aria-label={t("profileMedia.delete")} className="absolute -left-1 -top-1 grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-slate-700 text-white shadow-card disabled:opacity-50" disabled={disabled} onClick={() => { setError(""); onChange(null); }} type="button"><Icon className="h-3.5 w-3.5" name="close" /></button>}
+    <button aria-haspopup={canDelete ? "dialog" : undefined} aria-label={canDelete ? t("profileMedia.manage") : t("profileMedia.upload")} className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-white avatar-verified shadow-card disabled:opacity-50" disabled={disabled} onClick={openPhotoActions} type="button"><Icon className="h-4 w-4" name="plus" /></button>
+    <BottomSheet onClose={() => setActionsOpen(false)} open={actionsOpen} title={t("profileMedia.title")}>
+      <div className="grid gap-2">
+        <Button onClick={() => { setActionsOpen(false); inputRef.current?.click(); }} type="button" variant="secondary">{t("profileMedia.replacePhoto")}</Button>
+        <Button onClick={() => { setActionsOpen(false); onChange(null); }} type="button" variant="danger">{t("profileMedia.deletePhoto")}</Button>
+      </div>
+    </BottomSheet>
     {error && <p className="absolute left-0 top-full z-10 mt-2 w-56 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-brand-danger shadow-card" role="alert">{error}</p>}
   </div>;
 

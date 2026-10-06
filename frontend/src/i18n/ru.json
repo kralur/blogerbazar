@@ -576,4 +576,7 @@
   ,"settings.themeLight": "Светлая"
   ,"settings.themeDark": "Тёмная"
   ,"profile.settingsDetail": "Язык, тема и аккаунт"
+  ,"profileMedia.manage": "Изменить фото"
+  ,"profileMedia.replacePhoto": "Выбрать новое фото"
+  ,"profileMedia.deletePhoto": "Удалить фото"
 }
