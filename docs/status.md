@@ -3,15 +3,15 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-06, Phase 4C на review._
+_Последнее обновление: 2026-10-06, публикация Phase 4C._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | Phase 4A + 4B (см. `git log`; предыдущие checkpoints `b26abeb` 3F-C, `a17819b` 3F-B, `313d26f` 3F-A) |
+| Published `main` / `origin/main` | Phase 4C (см. `git log`; предыдущие checkpoints `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
-| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 |
+| CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 |
 
 ## Текущая фаза
 
@@ -20,11 +20,19 @@ _Последнее обновление: 2026-10-06, Phase 4C на review._
 - **Phase 4A — Contacts privacy** (D31): опубликована (`75aa8e3`, fix `b3d4dcd`, tests `fb9ac1c`).
 - **Phase 4B — Offers**: опубликована (`29516c3`). Миграция `AddCollaborationOfferTerms` (одобрена владельцем)
   применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
-- **Phase 4C — Reviews 2.0 + напоминания** (D33): реализована, на review (не закоммичена). Миграция
+- **Phase 4C — Reviews 2.0 + напоминания** (D33): опубликована (`fd2054d`). Миграция
   `AddReviewPublicationAndDealReminders` одобрена владельцем; в Railway тоже нужен `ApplyMigrationsOnStartup` (8.19).
 - Далее: FEATURE FREEZE → Full UI Redesign.
 
 ## Последние результаты gates
+
+### Phase 4C (GitHub Actions, run 37422835227, коммит `fd2054d`)
+
+```text
+dotnet build: passed (0 warnings)
+dotnet test (RUN_INTEGRATION_TESTS=true, migrations applied on Postgres): 316 passed / 0 failed / 0 skipped
+Frontend build and tests: passed; Production Docker build validation: passed
+```
 
 ### Phase 4C (локально, до review)
 
