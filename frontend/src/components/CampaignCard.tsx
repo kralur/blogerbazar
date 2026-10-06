@@ -1,4 +1,4 @@
-import { formatBudgetRange } from "../lib/currency";
+import { formatShortDate, formatBudgetRange } from "../lib/currency";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { Avatar } from "./ui";
 
@@ -26,7 +26,7 @@ export function CampaignCard({ campaign, variant = "default" }: { campaign: Camp
   const { language, t } = useI18n();
   const businessName = campaign.businessName ?? campaign.business?.name ?? t("common.business");
   const businessAvatarUrl = campaign.businessAvatarUrl ?? campaign.business?.avatarUrl;
-  const deadline = campaign.deadline ? new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-UZ", { day: "numeric", month: "short" }).format(new Date(campaign.deadline)) : null;
+  const deadline = campaign.deadline ? formatShortDate(campaign.deadline, language) : null;
   const budget = formatBudgetRange(campaign.budgetFrom, campaign.budgetTo);
 
   // One campaign card for Home rails and the catalog; rails hide requirements to keep a fixed height.

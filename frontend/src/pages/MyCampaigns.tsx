@@ -103,7 +103,7 @@ export function MyCampaigns() {
       <FilterSelect label={t("search.sort")} onChange={(value) => setSort(value as MyCampaignSort)} options={sortOptions(t)} value={sort} />
       {hasFilters && <button className="catalog-search__reset-all" onClick={reset} type="button">{t("myCampaigns.clearFilters")}</button>}
     </div>
-    <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("myCampaigns.loading") : t("myCampaigns.found", { count: total })}</p>
+    {!(failure && !loadedInitialResult) && <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("myCampaigns.loading") : t("myCampaigns.found", { count: total })}</p>}
     <section aria-busy={loading || loadingMore} aria-live="polite" className="catalog-search__results">
       {loading && !loadedInitialResult && <SearchSkeleton count={3} />}
       {failure && !loadedInitialResult && <CatalogState icon={failure === "offline" ? "refresh" : "filter"} onRetry={retry} subtitle={t(failure === "offline" ? "myCampaigns.offlineSubtitle" : "myCampaigns.errorSubtitle")} title={t(failure === "offline" ? "myCampaigns.offlineTitle" : "myCampaigns.errorTitle")} />}

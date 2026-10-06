@@ -3,7 +3,7 @@ import { ApiError, getApiErrorMessage } from "../api/client";
 import { acceptOffer, declineOffer, getMyOffer, type Offer } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
-import { formatCurrency } from "../lib/currency";
+import { formatShortDate, formatCurrency } from "../lib/currency";
 import { dealRoute } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
 import { PageHeader } from "../components/PageHeader";
@@ -75,8 +75,7 @@ export function OfferDetails({ id }: { id: string }) {
     return <div className="screen screen--with-nav"><ErrorState onRetry={state === "error" ? load : undefined} subtitle={state === "not-found" ? t("offers.notFoundSubtitle") : t("offers.errorSubtitle")} title={state === "not-found" ? t("offers.notFoundTitle") : t("offers.errorTitle")} /><BottomNav /></div>;
   }
 
-  const locale = language === "uz" ? "uz-UZ" : "ru-RU";
-  const formatDate = (value: string, withTime = false) => new Intl.DateTimeFormat(locale, withTime ? { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
+  const formatDate = (value: string, withTime = false) => formatShortDate(value, language, withTime ? { time: true } : { year: true });
 
   return <div className="screen screen--with-nav offer-details">
     <PageHeader actions={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />

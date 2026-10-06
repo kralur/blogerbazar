@@ -1,4 +1,5 @@
 import type { BloggerReview } from "../../api/marketplace";
+import { formatShortDate } from "../../lib/currency";
 import { useI18n } from "../../i18n";
 import { Card, Rating } from "../ui";
 
@@ -28,7 +29,7 @@ export function DetailSection({ title, aside, children }: { title: string; aside
 export function ReviewList({ reviews, emptyText }: { reviews: BloggerReview[]; emptyText: string }) {
   const { language } = useI18n();
   if (reviews.length === 0) return <Card><p className="text-sm text-brand-muted">{emptyText}</p></Card>;
-  const formatDate = (value: string) => new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
+  const formatDate = (value: string) => formatShortDate(value, language, { year: true });
   return <div className="grid gap-2">{reviews.map((review) => <Card className="p-3" key={review.id}>
     <div className="flex items-center justify-between"><Rating value={review.rating} /><span className="text-xs text-brand-muted">{formatDate(review.createdAtUtc)}</span></div>
     {review.reviewerName && <p className="mt-2 text-sm font-bold">{review.reviewerName}</p>}

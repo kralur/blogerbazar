@@ -10,7 +10,7 @@ import {
   type Offer
 } from "../api/marketplace";
 import { Badge, BottomNav, BottomSheet, Button, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Toast } from "../components/ui";
-import { useI18n } from "../i18n";
+import { useI18n, type Language } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { CampaignApplicationStatus, campaignApplicationStatusTone, canAcceptCampaignApplication } from "../lib/campaignApplicationStatus";
@@ -20,9 +20,9 @@ import { dealRoute, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus
 import { offerFormatLabelKey, offerRoute, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
 import { PageHeader } from "../components/PageHeader";
 import { RequestRow } from "../components/RequestRow";
-import { formatCurrency } from "../lib/currency";
+import { formatShortDate, formatCurrency } from "../lib/currency";
 
-const formatDate = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
+const formatDate = (value: string, language: Language) => formatShortDate(value, language);
 
 export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
@@ -34,7 +34,6 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     [CampaignApplicationStatus.Rejected]: t("requests.applicationRejected"),
     [CampaignApplicationStatus.Withdrawn]: t("requests.applicationWithdrawn")
   };
-  const locale = language === "uz" ? "uz-UZ" : "ru-RU";
   const [view, setView] = useState<RequestsView>(() => hashRequestsView() ?? "applications");
   // Home activity links open a specific tab: #/requests?tab=deals|offers|applications
   useEffect(() => {
@@ -64,7 +63,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     setDealsFailed(false);
     void getMyDeals()
       .then(setDeals)
-      .catch((error) => { setDealsFailed(true); setToastTone("error"); setToast(error instanceof Error ? error.message : t("requests.loadFailed")); })
+      .catch(() => setDealsFailed(true))
       .finally(() => setDealsLoading(false));
   }, [t]);
 
@@ -79,7 +78,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     setRequestsFailed(false);
     void getMyCampaignApplications()
       .then(setRequests)
-      .catch((error) => { setRequestsFailed(true); setToastTone("error"); setToast(error instanceof Error ? error.message : t("requests.loadFailed")); })
+      .catch(() => setRequestsFailed(true))
       .finally(() => setRequestsLoading(false));
   }, [activeMarketplaceRole, t]);
 
@@ -141,24 +140,24 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
         offersLoading ? <div className="mt-5"><LoadingState title={t("offers.loading")} /></div> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(activeMarketplaceRole === "Blogger" ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
           <div className="request-list">
             {offers.map((offer) => (
-              <RequestRow href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, locale)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} title={`${t(offerFormatLabelKey(offer.format))}${offer.offeredBudget != null ? ` · ${formatCurrency(offer.offeredBudget)}` : ""}`} />
+              <RequestRow href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, language)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} title={`${t(offerFormatLabelKey(offer.format))}${offer.offeredBudget != null ? ` · ${formatCurrency(offer.offeredBudget)}` : ""}`} />
             ))}
           </div>
         )
       ) : view === "applications" && activeMarketplaceRole === "Blogger" ? <BloggerApplications activeMarketplaceRole={activeMarketplaceRole} /> : view === "applications" ? (
-        requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> :
+        requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} title={t("requests.loadFailed")} /></div> :
         !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="request-list">
             {visibleRequests.map((request) => (
-              <RequestRow imageUrl={request.counterpartyImageUrl} key={request.id} meta={formatDate(request.createdAtUtc, locale)} name={request.counterpartyName} onClick={() => setSelectedRequest(request)} status={<Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge>} title={request.campaignTitle} />
+              <RequestRow imageUrl={request.counterpartyImageUrl} key={request.id} meta={formatDate(request.createdAtUtc, language)} name={request.counterpartyName} onClick={() => setSelectedRequest(request)} status={<Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge>} title={request.campaignTitle} />
             ))}
           </div>
         )
       ) : (
-        dealsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
+        dealsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
           <div className="request-list">
             {visibleDeals.map((deal) => (
-              <RequestRow href={`#${dealRoute(deal.id)}`} imageUrl={deal.counterpartyImageUrl} key={deal.id} meta={deal.canReview ? t("deals.awaitingReview") : deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, locale)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, locale)}`} name={deal.counterpartyName} status={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} title={deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title} />
+              <RequestRow href={`#${dealRoute(deal.id)}`} imageUrl={deal.counterpartyImageUrl} key={deal.id} meta={deal.canReview ? t("deals.awaitingReview") : deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, language)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, language)}`} name={deal.counterpartyName} status={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} title={deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title} />
             ))}
           </div>
         )

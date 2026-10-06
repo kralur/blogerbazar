@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatShortDate } from "../lib/currency";
 import { getMyCampaignApplicationsPage, type MarketplaceRole, type MyCampaignApplicationItem } from "../api/marketplace";
 import { CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
@@ -45,17 +46,16 @@ export function BloggerApplications({ activeMarketplaceRole }: { activeMarketpla
     return () => observer.disconnect();
   }, [catalog.failure, catalog.hasMore, catalog.load, catalog.loadMoreFailed, catalog.loading, catalog.loadingMore, catalog.page]);
 
-  const locale = language === "uz" ? "uz-UZ" : "ru-RU";
   const retry = () => void catalog.load(1, false, catalog.loadedInitialResult);
   if (!allowed) return <CatalogState icon="lock" subtitle={t("applications.deniedSubtitle")} title={t("applications.deniedTitle")} />;
   return <section aria-busy={catalog.loading || catalog.loadingMore} className="catalog-search__results">
     <div className="my-campaigns__controls"><FilterSelect label={t("applications.status")} onChange={(value) => setStatus(value === "" ? undefined : Number(value) as CampaignApplicationStatus)} options={statusOptions(t)} value={status == null ? "" : String(status)} />{status != null && <button className="catalog-search__reset-all" onClick={() => setStatus(undefined)} type="button">{t("common.reset")}</button>}</div>
-    <p aria-live="polite" className="catalog-search__results-count">{catalog.loading && !catalog.loadedInitialResult ? t("applications.loading") : t("search.found", { count: catalog.total })}</p>
+    {!(catalog.failure && !catalog.loadedInitialResult) && <p aria-live="polite" className="catalog-search__results-count">{catalog.loading && !catalog.loadedInitialResult ? t("applications.loading") : t("search.found", { count: catalog.total })}</p>}
     {catalog.loading && !catalog.loadedInitialResult && <SearchSkeleton count={3} compact />}
     {catalog.failure && !catalog.loadedInitialResult && <CatalogState icon="refresh" onRetry={retry} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}
     {catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={retry} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}
     {!catalog.loading && !catalog.failure && catalog.items.length === 0 && <CatalogState icon={status == null ? "briefcase" : "filter"} onRetry={status == null ? undefined : () => setStatus(undefined)} subtitle={t(status == null ? "applications.emptySubtitle" : "applications.filteredEmptySubtitle")} title={t(status == null ? "applications.emptyTitle" : "applications.filteredEmptyTitle")} />}
-    <div className="request-list">{catalog.items.map((item) => <RequestRow ariaLabel={t("applications.openAria", { title: item.campaignTitle })} href={`#/my-application/${item.id}`} imageUrl={item.businessAvatarUrl} key={item.id} meta={t("applications.sentAt", { date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(item.createdAtUtc)) })} name={item.businessName} status={<Badge tone={campaignApplicationStatusTone(item.status)}>{t(campaignApplicationStatusLabelKey(item.status))}</Badge>} title={item.campaignTitle} />)}</div>
+    <div className="request-list">{catalog.items.map((item) => <RequestRow ariaLabel={t("applications.openAria", { title: item.campaignTitle })} href={`#/my-application/${item.id}`} imageUrl={item.businessAvatarUrl} key={item.id} meta={t("applications.sentAt", { date: formatShortDate(item.createdAtUtc, language) })} name={item.businessName} status={<Badge tone={campaignApplicationStatusTone(item.status)}>{t(campaignApplicationStatusLabelKey(item.status))}</Badge>} title={item.campaignTitle} />)}</div>
     {catalog.hasMore && <div aria-hidden="true" ref={sentinelRef} />}
     {catalog.loadingMore && <SearchSkeleton compact count={2} />}
     {catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void catalog.load(catalog.page + 1, true)} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}

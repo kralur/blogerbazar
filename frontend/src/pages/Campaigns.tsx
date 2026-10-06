@@ -12,7 +12,7 @@ import { useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatNumericInput, normalizeNumericInput } from "../lib/currency";
+import { formatShortDate, formatNumericInput, normalizeNumericInput } from "../lib/currency";
 import { isOtherCategory, uzbekistanRegions } from "../lib/taxonomy";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -256,7 +256,7 @@ export function Campaigns() {
       <label className="catalog-search__sort"><span>{t("search.sort")}</span><select aria-label={t("search.sort")} onChange={(event) => changeSort(event.target.value as CampaignCatalogSort)} value={appliedFilters.sort ?? "promoted"}>{sortOptions(t).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     </div>
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetCatalog} showReset={activeChips.length >= 2} />
-    <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("campaigns.loading") : t("campaigns.found", { count: total })}</p>
+    {!(failure && !loadedInitialResult) && <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("campaigns.loading") : t("campaigns.found", { count: total })}</p>}
     <section aria-busy={loading || loadingMore} aria-live="polite" className="catalog-search__results">
       {loading && !loadedInitialResult ? <SearchSkeleton count={3} /> : failure && !loadedInitialResult ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "campaigns.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "campaigns.loadFailedTitle")} /> : !failure && items.length === 0 ? <CatalogState actionLabel={hasFilterOrQuery ? t("search.resetAll") : canCreate ? t("campaigns.create") : needsBusinessProfile ? t("campaigns.createBusinessProfile") : undefined} icon="search" onRetry={hasFilterOrQuery ? resetCatalog : canCreate ? () => setCreateOpen(true) : needsBusinessProfile ? () => { window.location.hash = "/business"; } : undefined} subtitle={hasFilterOrQuery ? t("campaigns.emptySearchSubtitle") : canCreate ? t("campaigns.emptyBusinessSubtitle") : needsBusinessProfile ? t("campaigns.emptyBusinessProfileSubtitle") : t("campaigns.emptySubtitle")} title={hasFilterOrQuery ? t("campaigns.emptySearchTitle") : t("campaigns.emptyTitle")} /> : null}
       {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={refreshCatalog} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "campaigns.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "campaigns.loadFailedTitle")} />}
@@ -339,7 +339,7 @@ function formatBudgetChip(minBudget: number | undefined, maxBudget: number | und
 }
 
 function formatDeadlineChip(deadlineFrom: string | undefined, deadlineTo: string | undefined, language: "ru" | "uz", t: Translate) {
-  const format = (value: string) => new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-UZ", { day: "numeric", month: "short" }).format(new Date(`${value}T00:00:00`));
+  const format = (value: string) => formatShortDate(`${value}T00:00:00`, language);
   if (deadlineFrom && deadlineTo) return t("campaigns.deadlineRange", { from: format(deadlineFrom), to: format(deadlineTo) });
   if (deadlineFrom) return t("campaigns.deadlineFromValue", { from: format(deadlineFrom) });
   return t("campaigns.deadlineToValue", { to: deadlineTo ? format(deadlineTo) : "" });

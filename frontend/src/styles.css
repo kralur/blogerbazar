@@ -819,7 +819,7 @@
   .home-quick-chips .home-category-chip { flex: 0 0 auto; }
 
   .home-activity { margin-top: 1.5rem; }
-  .home-activity__list { display: grid; overflow: hidden; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-card); background: var(--bb-surface); }
+  .home-activity__list { display: grid; grid-template-columns: minmax(0, 1fr); overflow: hidden; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-card); background: var(--bb-surface); }
   .home-activity__item { display: flex; min-height: 3.75rem; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; color: var(--bb-text); text-decoration: none; }
   .home-activity__item + .home-activity__item { border-top: 1px solid var(--bb-border); }
   .home-activity__item:active { background: var(--bb-surface-secondary); }
@@ -861,6 +861,7 @@
   .home-content > :first-child { margin-top: 0; }
   .home-section__heading { display: flex; min-height: 2.75rem; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .75rem; }
   .home-section__heading h2 { font-size: 1.125rem; line-height: 1.25; }
+  .home-section__heading > :not(h2) { flex: 0 0 auto; white-space: nowrap; }
   .home-section__action { display: inline-flex; min-height: 2.75rem; align-items: center; color: var(--bb-text); font-size: .8125rem; font-weight: 800; text-decoration: none; }
   .home-section__action:hover { color: var(--bb-text-secondary); }
 
@@ -1246,9 +1247,10 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .request-row--static:active { background: var(--bb-surface); }
 .request-row:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .request-row__body { display: grid; flex: 1 1 auto; min-width: 0; gap: .25rem; }
-.request-row__top { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: .5rem; }
+.request-row__top { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .5rem; }
+/* On narrow screens the status moves under the name instead of cutting the name down to a few letters. */
 .request-row__top > :not(strong) { flex: 0 0 auto; white-space: nowrap; }
-.request-row__top strong { overflow: hidden; font-size: .9375rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.request-row__top strong { min-width: 0; max-width: 100%; overflow: hidden; font-size: .9375rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .request-row__title { overflow: hidden; color: var(--bb-text); font-size: .875rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .request-row__meta { color: var(--bb-text-secondary); font-size: .75rem; }
 .request-card { padding: .875rem; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-card); background: var(--bb-surface); }

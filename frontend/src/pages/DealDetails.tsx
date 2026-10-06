@@ -5,7 +5,7 @@ import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatBudgetRange, formatCurrency } from "../lib/currency";
+import { formatShortDate, formatBudgetRange, formatCurrency } from "../lib/currency";
 import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey } from "../lib/offerStatus";
 import { PageHeader } from "../components/PageHeader";
@@ -102,8 +102,7 @@ export function DealDetails({ id }: { id: string }) {
     return <div className="screen screen--with-nav"><ErrorState onRetry={state === "error" ? load : undefined} subtitle={subtitle} title={title} /><BottomNav /></div>;
   }
 
-  const locale = language === "uz" ? "uz-UZ" : "ru-RU";
-  const formatDate = (value: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
+  const formatDate = (value: string) => formatShortDate(value, language, { year: true });
   const contactItems = [
     contact?.telegram ? { kind: "telegram" as const, value: contact.telegram } : null,
     contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,

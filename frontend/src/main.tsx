@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { I18nProvider } from "./i18n";
 import { VirtualKeyboardProvider } from "./layout/VirtualKeyboardProvider";
 import { TelegramProvider } from "./telegram/TelegramProvider";
@@ -11,7 +12,7 @@ const previewHome = import.meta.env.DEV && new URLSearchParams(window.location.s
 
 const renderApplication = () => root.render(
   <React.StrictMode>
-    <I18nProvider><TelegramProvider><VirtualKeyboardProvider><App /></VirtualKeyboardProvider></TelegramProvider></I18nProvider>
+    <I18nProvider><TelegramProvider><VirtualKeyboardProvider><AppErrorBoundary><App /></AppErrorBoundary></VirtualKeyboardProvider></TelegramProvider></I18nProvider>
   </React.StrictMode>
 );
 
