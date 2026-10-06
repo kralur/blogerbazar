@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { formatBudgetRange, formatCompactNumber, formatCurrency, formatPercentage, formatShortDate } from "../src/lib/currency";
+import { formatBudgetRange, formatCompactNumber, formatCurrency, formatPercentage, formatShortDate, isPastDay, localDay } from "../src/lib/currency";
 
 const plain = (value: string) => value.replace(/\s/g, " ");
 
@@ -21,5 +21,11 @@ describe("locale formatting", () => {
     expect(plain(formatCompactNumber(52100))).toBe("52,1 ming");
     expect(plain(formatCompactNumber(1200000))).toBe("1,2 mln");
     expect(formatPercentage(8.4)).toBe("8,4%");
+  });
+
+  it("keeps a deadline open through its own day", () => {
+    expect(isPastDay(`${localDay(-1)}T00:00:00Z`)).toBe(true);
+    expect(isPastDay(`${localDay(0)}T00:00:00Z`)).toBe(false);
+    expect(isPastDay(null)).toBe(false);
   });
 });

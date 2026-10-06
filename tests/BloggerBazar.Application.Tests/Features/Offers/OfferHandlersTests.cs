@@ -1,5 +1,6 @@
 using System.Reflection;
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Offers;
 using BloggerBazar.Application.Tests.Features.Deals;
 using BloggerBazar.Domain.Entities;
@@ -67,8 +68,9 @@ public sealed class OfferHandlersTests
         var handler = CreateHandler(offers, blogger, business, User(22, MarketplaceRole.Business));
         await handler.Handle(Command(22, blogger.Id), CancellationToken.None);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(Command(22, blogger.Id), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(Command(22, blogger.Id), CancellationToken.None));
 
+        Assert.Equal("offer_already_active", exception.Code);
         Assert.DoesNotContain("not found", exception.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Single(offers.Items);
     }
@@ -98,8 +100,9 @@ public sealed class OfferHandlersTests
         var offers = new FakeOffers { SentToday = 20 };
         var handler = CreateHandler(offers, blogger, business, User(22, MarketplaceRole.Business));
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(Command(22, blogger.Id), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(Command(22, blogger.Id), CancellationToken.None));
 
+        Assert.Equal("offer_daily_limit", exception.Code);
         Assert.Contains("limit", exception.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(offers.Items);
     }

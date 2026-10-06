@@ -7,7 +7,7 @@ import { BottomNav, Button, ErrorState, Input, LoadingState, Textarea, Toast } f
 import { useCampaignDataRefresh, notifyCampaignDataChanged } from "../hooks/useCampaignDataRefresh";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { useI18n } from "../i18n";
-import { formatNumericInput, normalizeNumericInput } from "../lib/currency";
+import { formatNumericInput, isPastDay, localDay, normalizeNumericInput } from "../lib/currency";
 import { getHistoryOrigin } from "../navigation/hashNavigation";
 import { getCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
 import { removeCachedPublicDetail } from "../data/publicDetailCache";
@@ -61,6 +61,7 @@ function validate(values: FormValues, t: (key: string) => string): FieldErrors {
   if (requirements.length > 10 || requirements.some((item) => item.length > 300)) errors.requirements = t("myCampaignEdit.validationRequirements");
   if ((budgetFrom != null && budgetFrom < 0) || (budgetTo != null && budgetTo < 0) || (budgetFrom != null && budgetTo != null && budgetFrom > budgetTo)) errors.budgetTo = t("myCampaignEdit.validationBudget");
   if (values.deadline && Number.isNaN(Date.parse(`${values.deadline}T00:00:00.000Z`))) errors.deadline = t("myCampaignEdit.validationDeadline");
+  else if (isPastDay(values.deadline)) errors.deadline = t("myCampaignEdit.validationDeadlinePast");
   return errors;
 }
 
@@ -135,7 +136,7 @@ export function MyCampaignEdit({ id }: { id: string }) {
     requirements: t("myCampaignEdit.validationRequirements"),
     budgetfrom: t("myCampaignEdit.validationBudget"),
     budgetto: t("myCampaignEdit.validationBudget"),
-    deadline: t("myCampaignEdit.validationDeadline")
+    deadline: t("myCampaignEdit.validationDeadlinePast")
   }), [t]);
 
   const applyServerFieldErrors = (error: ApiError) => {
@@ -217,7 +218,7 @@ export function MyCampaignEdit({ id }: { id: string }) {
         <Input error={fieldErrors.budgetFrom} inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setValue("budgetFrom", formatNumericInput(event.target.value))} suffix={t("currency.uzs")} value={values.budgetFrom} />
         <Input error={fieldErrors.budgetTo} inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setValue("budgetTo", formatNumericInput(event.target.value))} suffix={t("currency.uzs")} value={values.budgetTo} />
       </div>
-      <Input error={fieldErrors.deadline} label={t("campaigns.deadline")} onChange={(event) => setValue("deadline", event.target.value)} type="date" value={values.deadline} />
+      <Input error={fieldErrors.deadline} label={t("campaigns.deadline")} min={localDay()} onChange={(event) => setValue("deadline", event.target.value)} type="date" value={values.deadline} />
       <Button aria-busy={submitting} className="my-campaign-edit__submit" disabled={submitting || !dirty} type="submit">{submitting ? t("myCampaignEdit.saving") : t("myCampaignEdit.save")}</Button>
     </form>
     <UnsavedChangesDialog guard={unsavedChanges} labels={{ title: t("myCampaignEdit.unsavedTitle"), description: t("myCampaignEdit.unsavedDescription"), continueEditing: t("myCampaignEdit.continueEditing"), discard: t("myCampaignEdit.discard") }} />

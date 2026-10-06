@@ -559,4 +559,10 @@
   ,"format.millions": "mln"
   ,"format.billions": "mlrd"
   ,"details.newProfile": "Yangi profil · hozircha fikrlar yo‘q"
+  ,"error.offer_daily_limit": "Bugun takliflar chegarasiga yetdingiz. Ertaga urinib ko‘ring."
+  ,"error.offer_already_active": "Bu blogerga faol taklifingiz bor. Javobini kuting."
+  ,"error.campaign_expired": "Kampaniya muddati tugagan — javoblar qabul qilinmaydi."
+  ,"campaign.expired": "Javoblar qabuli yakunlandi"
+  ,"myCampaignEdit.validationDeadlinePast": "Muddat o‘tgan sana bo‘lishi mumkin emas."
+  ,"myCampaignDetails.expiredNote": "Kampaniya muddati tugagan: u katalogda ko‘rinmaydi va javob qabul qilmaydi. Qayta ochish uchun muddatni uzaytiring."
 }

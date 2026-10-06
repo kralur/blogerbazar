@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Deals;
 using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
@@ -96,6 +97,8 @@ public sealed record OfferDecisionDto(Guid Id, string State, Guid? DealId);
 internal static class OfferAccess
 {
     internal const int DailyLimit = 20;
+    internal const string DailyLimitCode = "offer_daily_limit";
+    internal const string AlreadyActiveCode = "offer_already_active";
 
     internal static InvalidOperationException NotFound() => new("Offer was not found.");
 
@@ -150,7 +153,7 @@ public sealed class CreateOfferHandler(
         var now = DateTime.UtcNow;
         if (await offers.CountOffersSinceAsync(business.Id, now.AddDays(-1), cancellationToken) >= OfferAccess.DailyLimit)
         {
-            throw new InvalidOperationException("Daily offer limit reached.");
+            throw new BusinessRuleConflictException(OfferAccess.DailyLimitCode, "Daily offer limit reached.");
         }
 
         var pending = await offers.GetPendingOfferAsync(business.Id, blogger.Id, cancellationToken);
@@ -158,7 +161,7 @@ public sealed class CreateOfferHandler(
         {
             if (!pending.IsExpiredAt(now))
             {
-                throw new InvalidOperationException("An active offer to this blogger already exists.");
+                throw new BusinessRuleConflictException(OfferAccess.AlreadyActiveCode, "An active offer to this blogger already exists.");
             }
 
             pending.Expire();
@@ -168,7 +171,7 @@ public sealed class CreateOfferHandler(
         await offers.AddAsync(offer, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
         {
-            throw new InvalidOperationException("An active offer to this blogger already exists.");
+            throw new BusinessRuleConflictException(OfferAccess.AlreadyActiveCode, "An active offer to this blogger already exists.");
         }
 
         await BestEffortTelegramNotification.SendAsync(

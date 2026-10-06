@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -23,6 +24,22 @@ public sealed class ApplyToCampaignHandlerTests
         Assert.Equal(campaign.Id, result.CampaignId);
         Assert.Equal(blogger.Id, result.BloggerId);
         Assert.Single(applications.Applications);
+    }
+
+    [Fact]
+    public async Task Rejects_application_after_the_campaign_deadline()
+    {
+        var business = ApprovedBusiness(99, "Business");
+        var campaign = PublishedCampaign(business, DateTime.UtcNow.Date.AddDays(-1));
+        var blogger = BloggerProfile.Create(12, "Madina", "Ташкент", ["Lifestyle"]);
+        blogger.Approve();
+        var applications = new InMemoryApplicationRepository();
+        var handler = new ApplyToCampaignHandler(new InMemoryCampaignRepository(campaign), new InMemoryPlatformUserRepository(BloggerUser(12), User(99)), new InMemoryBloggerRepository(blogger), new InMemoryBusinessRepository(), applications, new SpyUnitOfWork());
+
+        var exception = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(new ApplyToCampaignCommand(campaign.Id, 12, null), CancellationToken.None));
+
+        Assert.Equal("campaign_expired", exception.Code);
+        Assert.Empty(applications.Applications);
     }
 
     [Fact]
@@ -112,9 +129,9 @@ public sealed class ApplyToCampaignHandlerTests
         return business;
     }
 
-    private static Campaign PublishedCampaign(BusinessProfile business)
+    private static Campaign PublishedCampaign(BusinessProfile business, DateTime? deadline = null)
     {
-        var campaign = Campaign.Create(business.Id, "Campaign", "Description", ["Lifestyle"], null, null, null, null, null);
+        var campaign = Campaign.Create(business.Id, "Campaign", "Description", ["Lifestyle"], null, null, null, null, deadline);
         campaign.Publish();
         typeof(Campaign).GetProperty(nameof(Campaign.Business), BindingFlags.Instance | BindingFlags.Public)!.SetValue(campaign, business);
         return campaign;

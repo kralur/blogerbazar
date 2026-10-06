@@ -4,7 +4,7 @@ import { closeMyCampaign, getMyCampaign, type MyCampaignDetails as MyCampaignDet
 import { BottomNav, Badge, Button, Card, ErrorState, Icon, LoadingState, Modal, Toast } from "../components/ui";
 import { notifyCampaignDataChanged, useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatBudgetRange, formatDate } from "../lib/currency";
+import { formatBudgetRange, formatDate, isPastDay } from "../lib/currency";
 import { campaignApplicationsLabel, campaignStatusLabel, campaignStatusTone } from "../lib/campaignStatus";
 import { navigateWithHistoryOrigin } from "../navigation/hashNavigation";
 import { getCachedMyCampaign, removeCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
@@ -94,6 +94,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
     <PageHeader back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
     <section className="my-campaign-details__hero"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}</div><h1>{campaign.title}</h1><p>{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div></section>
+    {campaign.status === 1 && isPastDay(campaign.deadline) && <p className="campaign-details__expired" role="status">{t("myCampaignDetails.expiredNote")}</p>}
     {canManage && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}
     <FactGrid className="mt-4" facts={[
       { label: t("common.city"), value: campaign.city ? cityLabel(campaign.city, language) : t("common.notSpecified") },

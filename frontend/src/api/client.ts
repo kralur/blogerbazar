@@ -33,12 +33,17 @@ export function getApiErrorMessage(error: unknown, fallback: string, options?: {
     return validationMessage ?? translate("error.validation_failed");
   }
 
+  // A coded business conflict already carries its own precise message; the generic conflict text is only a fallback.
+  if (error.code && businessConflictCodes.has(error.code)) return error.message;
   if (error.status === 409 && options?.conflictMessage) return options.conflictMessage;
   return error.message || fallback;
 }
 
+const businessConflictCodes = new Set(["offer_daily_limit", "offer_already_active", "campaign_expired"]);
+
 function friendlyError(status: number, code?: string) {
   const normalizedCode = code?.toLowerCase();
+  if (normalizedCode && businessConflictCodes.has(normalizedCode)) return translate(`error.${normalizedCode}`);
   if (normalizedCode === "validation_failed") return translate("error.validation_failed");
   if (normalizedCode === "payment_provider_unavailable") return translate("error.payment_provider_unavailable");
   if (normalizedCode === "profile_media_unavailable") return translate("error.profile_media_unavailable");

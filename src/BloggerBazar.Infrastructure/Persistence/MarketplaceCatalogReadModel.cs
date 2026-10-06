@@ -24,6 +24,14 @@ internal static class MarketplaceCatalogVisibility
             && business.ModerationStatus == BloggerStatus.Approved
             && !platformUsers.Any(user => user.TelegramUserId == business.TelegramUserId && (user.IsBlocked || user.IsDeleted))
         select campaign;
+
+    // Listings show only campaigns still taking applications; the details page stays reachable by link.
+    // Same rule as Campaign.IsExpired, written as a translatable predicate.
+    internal static IQueryable<Campaign> OpenForApplications(IQueryable<Campaign> campaigns, DateTime utcNow)
+    {
+        var today = utcNow.Date;
+        return campaigns.Where(campaign => campaign.Deadline == null || campaign.Deadline >= today);
+    }
 }
 
 internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContext) : IMarketplaceCatalogReadModel
@@ -114,6 +122,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             dbContext.Campaigns.AsNoTracking(),
             dbContext.BusinessProfiles.AsNoTracking(),
             dbContext.PlatformUsers.AsNoTracking());
+        query = MarketplaceCatalogVisibility.OpenForApplications(query, DateTime.UtcNow);
         if (!string.IsNullOrWhiteSpace(city)) query = query.Where(campaign => campaign.City == city.Trim());
         if (!string.IsNullOrWhiteSpace(category)) query = query.Where(campaign => campaign.Categories.Contains(category.Trim()));
         return await ProjectCampaigns(query.OrderByDescending(campaign => campaign.IsPromoted).ThenByDescending(campaign => campaign.CreatedAtUtc).Skip(skip).Take(take))

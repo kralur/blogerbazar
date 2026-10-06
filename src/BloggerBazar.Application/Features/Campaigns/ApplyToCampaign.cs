@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
@@ -52,6 +53,11 @@ public sealed class ApplyToCampaignHandler(
             || owner.IsDeleted)
         {
             throw new InvalidOperationException("Campaign was not found.");
+        }
+
+        if (campaign.IsExpired(DateTime.UtcNow))
+        {
+            throw new BusinessRuleConflictException("campaign_expired", "The campaign deadline has passed.");
         }
 
         var business = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken);

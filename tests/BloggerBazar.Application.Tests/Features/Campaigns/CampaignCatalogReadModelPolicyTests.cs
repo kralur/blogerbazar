@@ -34,6 +34,25 @@ public sealed class CampaignCatalogReadModelPolicyTests
     }
 
     [Fact]
+    public void Listings_hide_campaigns_whose_deadline_day_has_passed()
+    {
+        var business = ApprovedBusiness(20, "Business");
+        var now = new DateTime(2026, 10, 6, 15, 0, 0, DateTimeKind.Utc);
+        var expired = PublishedCampaign(business, "Expired", null, null, new DateTime(2026, 10, 5, 0, 0, 0, DateTimeKind.Utc));
+        var endsToday = PublishedCampaign(business, "Today", null, null, new DateTime(2026, 10, 6, 0, 0, 0, DateTimeKind.Utc));
+        var openEnded = PublishedCampaign(business, "Open", null, null, null);
+
+        var result = MarketplaceCatalogVisibility.OpenForApplications(new[] { expired, endsToday, openEnded }.AsQueryable(), now)
+            .Select(campaign => campaign.Id)
+            .ToArray();
+
+        Assert.Equal([endsToday.Id, openEnded.Id], result);
+        Assert.True(expired.IsExpired(now));
+        Assert.False(endsToday.IsExpired(now));
+        Assert.False(openEnded.IsExpired(now));
+    }
+
+    [Fact]
     public void Sorts_are_stable_and_keep_null_deadlines_and_budgets_last()
     {
         var business = ApprovedBusiness(10, "Business");

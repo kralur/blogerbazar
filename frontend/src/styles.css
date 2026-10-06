@@ -1255,6 +1255,7 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .request-row--static:active { background: var(--bb-surface); }
 .request-row:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .request-row__body { display: grid; flex: 1 1 auto; min-width: 0; gap: .25rem; }
+.campaign-details__expired { margin-top: 1rem; padding: .875rem 1rem; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-card); background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .875rem; font-weight: 600; text-align: center; }
 .request-row__top { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .5rem; }
 /* On narrow screens the status moves under the name instead of cutting the name down to a few letters. */
 .request-row__top > :not(strong) { flex: 0 0 auto; white-space: nowrap; }

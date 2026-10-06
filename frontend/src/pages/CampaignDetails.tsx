@@ -3,7 +3,7 @@ import { ApiError } from "../api/client";
 import { applyToCampaign, getBusinessReviews, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type BusinessReviews, type CampaignDetails, type ContactDetails } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Rating, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatBudgetRange, formatDate } from "../lib/currency";
+import { formatBudgetRange, formatDate, isPastDay } from "../lib/currency";
 import { ChipList, DetailSection, FactGrid, ReviewList } from "../components/details/DetailBlocks";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
@@ -169,7 +169,7 @@ export function CampaignDetails({ id }: { id: string }) {
         } catch {}
       }
       setToastTone("error");
-      setToast(t("campaign.applicationFailed"));
+      setToast(error instanceof ApiError && error.code === "campaign_expired" ? error.message : t("campaign.applicationFailed"));
     } finally {
       if (mutationId === applicationMutationRef.current && currentCampaignIdRef.current === campaignId) {
         applyingRef.current = false;
@@ -189,10 +189,11 @@ export function CampaignDetails({ id }: { id: string }) {
     contact?.email ? { kind: "email" as const, value: contact.email } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   const budget = formatBudgetRange(campaign.budgetFrom, campaign.budgetTo);
+  const expired = isPastDay(campaign.deadline);
   const companyInitials = campaign.company.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return (
     <div className="screen screen--with-nav">
-      <PageHeader actions={<Badge tone={campaign.isPromoted ? "gold" : "blue"}>{campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>} back={{ href: "#/campaigns", label: t("nav.campaigns") }} />
+      <PageHeader actions={<Badge tone={expired ? "gray" : campaign.isPromoted ? "gold" : "blue"}>{expired ? t("campaign.expired") : campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>} back={{ href: "#/campaigns", label: t("nav.campaigns") }} />
       <Card className="mt-4 overflow-hidden p-0">
         <div className="campaign-hero">
           <div className="flex items-center gap-3"><Avatar name={companyInitials} size="sm" variant="neutral" /><p className="min-w-0 truncate text-sm font-semibold text-brand-muted">{campaign.company}</p></div>
@@ -210,7 +211,7 @@ export function CampaignDetails({ id }: { id: string }) {
       {businessReviews && <DetailSection aside={businessReviews.reviewsCount > 0 ? <Rating count={businessReviews.reviewsCount} value={businessReviews.rating} /> : undefined} title={t("campaign.businessReviews")}><ReviewList emptyText={t("campaign.noBusinessReviews")} reviews={businessReviews.items} /></DetailSection>}
       {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
-      {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary w-full" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : null}
+      {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary w-full" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : null}
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
       <Toast message={toast} tone={toastTone} /><BottomNav />
     </div>

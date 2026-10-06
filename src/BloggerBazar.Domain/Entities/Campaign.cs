@@ -40,6 +40,9 @@ public sealed class Campaign
     public DateTime UpdatedAtUtc { get; private set; }
     public IReadOnlyCollection<CampaignApplication> Applications { get; private set; } = new List<CampaignApplication>();
 
+    // The deadline day itself is still open; from the next UTC day the campaign stops taking applications.
+    public bool IsExpired(DateTime utcNow) => Deadline.HasValue && Deadline.Value.Date < utcNow.Date;
+
     public static Campaign Create(Guid businessId, string title, string description, IReadOnlyCollection<string> categories, IReadOnlyCollection<string>? requirements, int? budgetFrom, int? budgetTo, string? city, DateTime? deadline) =>
         new(businessId, title, description, categories, requirements, budgetFrom, budgetTo, city, deadline);
 

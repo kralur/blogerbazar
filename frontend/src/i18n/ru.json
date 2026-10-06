@@ -560,4 +560,10 @@
   ,"format.millions": "млн"
   ,"format.billions": "млрд"
   ,"details.newProfile": "Новый профиль · пока без отзывов"
+  ,"error.offer_daily_limit": "Сегодня вы уже отправили максимум предложений. Попробуйте завтра."
+  ,"error.offer_already_active": "У вас уже есть активное предложение этому блогеру. Дождитесь ответа."
+  ,"error.campaign_expired": "Срок кампании истёк — отклики больше не принимаются."
+  ,"campaign.expired": "Приём откликов завершён"
+  ,"myCampaignEdit.validationDeadlinePast": "Срок не может быть в прошлом."
+  ,"myCampaignDetails.expiredNote": "Срок кампании истёк: она скрыта из каталога и не принимает отклики. Продлите срок, чтобы открыть её снова."
 }

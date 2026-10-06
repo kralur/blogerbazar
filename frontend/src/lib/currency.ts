@@ -32,6 +32,14 @@ export const formatShortDate = (value: string | Date, language: Language = curre
   return options.year ? `${day}, ${date.getFullYear()}${time}` : `${day}${time}`;
 };
 export const formatDate = (value?: string | Date | null) => value ? formatShortDate(value, currentLanguage(), { year: true }) : "—";
+// Date inputs speak local calendar days (yyyy-mm-dd).
+export const localDay = (offsetDays = 0) => {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+};
+// A campaign deadline is a calendar day; it stays open through that day (same rule as the backend).
+export const isPastDay = (value?: string | null) => Boolean(value) && value!.slice(0, 10) < localDay();
 export const normalizeNumericInput = (value: string) => Number(value.replace(/[^\d]/g, "")) || 0;
 export const formatNumericInput = (value: string) => value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 export const normalizeDecimalInput = (value: string) => {

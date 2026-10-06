@@ -17,8 +17,8 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
     {
         var approvedBloggers = dbContext.BloggerProfiles.AsNoTracking()
             .Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
-        var publishedCampaigns = dbContext.Campaigns.AsNoTracking()
-            .Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted);
+        var publishedCampaigns = MarketplaceCatalogVisibility.OpenForApplications(dbContext.Campaigns.AsNoTracking()
+            .Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted), DateTime.UtcNow);
         var businesses = dbContext.BusinessProfiles.AsNoTracking().Where(profile => !profile.IsDeleted);
         var brandFaces = dbContext.BrandFaceProfiles.AsNoTracking().Where(profile => !profile.IsDeleted);
 

@@ -23,6 +23,8 @@ public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCo
         RuleFor(command => command.BudgetFrom).GreaterThanOrEqualTo(0).When(command => command.BudgetFrom.HasValue);
         RuleFor(command => command.BudgetTo).GreaterThanOrEqualTo(0).When(command => command.BudgetTo.HasValue);
         RuleFor(command => command.BudgetTo).GreaterThanOrEqualTo(command => command.BudgetFrom!.Value).When(command => command.BudgetFrom.HasValue && command.BudgetTo.HasValue);
+        // A campaign cannot be created already expired; the deadline day itself is allowed (same rule as offers).
+        RuleFor(command => command.Deadline).GreaterThan(_ => DateTime.UtcNow.AddDays(-1)).When(command => command.Deadline.HasValue);
     }
 }
 

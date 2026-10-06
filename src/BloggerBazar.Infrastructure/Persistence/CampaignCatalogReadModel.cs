@@ -14,6 +14,7 @@ internal sealed class CampaignCatalogReadModel(BloggerBazarDbContext dbContext) 
             dbContext.BusinessProfiles.AsNoTracking(),
             dbContext.PlatformUsers.AsNoTracking());
 
+        query = MarketplaceCatalogVisibility.OpenForApplications(query, DateTime.UtcNow);
         query = CampaignCatalogFiltering.Apply(query, search);
 
         var total = await query.CountAsync(cancellationToken);

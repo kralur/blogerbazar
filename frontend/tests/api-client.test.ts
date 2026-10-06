@@ -25,6 +25,18 @@ describe("API client", () => {
     await expect(api("/api/v1/admin")).rejects.toThrow(translate("error.access_denied", undefined, "ru"));
   });
 
+  it("tells coded business conflicts apart instead of using the generic conflict text", async () => {
+    for (const code of ["offer_daily_limit", "offer_already_active", "campaign_expired"]) {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ code }), { status: 409 })));
+      const error = await api("/api/offers").catch((failure: unknown) => failure);
+
+      expect(getApiErrorMessage(error, "fallback", { conflictMessage: "generic" })).toBe(translate(`error.${code}`, undefined, "ru"));
+    }
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: "conflict" }), { status: 409 })));
+    const generic = await api("/api/offers").catch((failure: unknown) => failure);
+    expect(getApiErrorMessage(generic, "fallback", { conflictMessage: "generic" })).toBe("generic");
+  });
+
   it("uses local field feedback for safe validation errors", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: "validation_failed", errors: { Username: ["ignored"] } }), { status: 422 }));
     vi.stubGlobal("fetch", fetchMock);

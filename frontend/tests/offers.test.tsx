@@ -29,6 +29,7 @@ vi.mock("../src/components/ui", () => ({
 
 import { OfferDetails } from "../src/pages/OfferDetails";
 import { OfferForm } from "../src/components/OfferForm";
+import { localDay } from "../src/lib/currency";
 
 const ru = (key: string) => translate(key, undefined, "ru");
 const pending = {
@@ -110,7 +111,7 @@ describe("Offer form", () => {
     fireEvent.click(screen.getByRole("button", { name: ru("offers.send") }));
 
     await waitFor(() => expect(onSent).toHaveBeenCalledWith(pending));
-    expect(api.createOffer).toHaveBeenCalledWith({ bloggerId: "blogger-a", format: "post", offeredBudget: 1_500_000, deadline: null, message: "Post about us" });
+    expect(api.createOffer).toHaveBeenCalledWith({ bloggerId: "blogger-a", format: "post", offeredBudget: 1_500_000, deadline: new Date(`${localDay(7)}T00:00:00Z`).toISOString(), message: "Post about us" });
   });
 
   it("requires a message before sending", async () => {

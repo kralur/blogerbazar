@@ -43,6 +43,11 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
             await ApiProblemWriter.WriteAsync(context, StatusCodes.Status403Forbidden);
             logger.LogWarning("Authorization rejected for {Path}", context.Request.Path);
         }
+        catch (BusinessRuleConflictException exception)
+        {
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status409Conflict, exception.Code);
+            logger.LogInformation("Business request rejected for {Path}; Outcome {Outcome}", context.Request.Path, exception.Code);
+        }
         catch (InvalidOperationException exception)
         {
             var isNotFound = exception.Message.Contains("not found", StringComparison.OrdinalIgnoreCase)

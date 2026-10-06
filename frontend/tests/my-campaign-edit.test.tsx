@@ -29,7 +29,7 @@ import { MyCampaignEdit } from "../src/pages/MyCampaignEdit";
 import { clearMyCampaignCache, setCachedMyCampaign } from "../src/data/myCampaignCache";
 
 const campaign = {
-  id: "campaign-a", title: "Coffee launch", description: "Launch coffee", city: "tashkent", categories: ["food"], requirements: ["Reels"], minBudget: 0, maxBudget: 500_000, deadline: "2026-08-31T00:00:00Z", status: 1 as const, isPromoted: false, createdAtUtc: "2026-08-20T00:00:00Z", updatedAtUtc: "2026-08-21T00:00:00Z", applicationsCount: 0
+  id: "campaign-a", title: "Coffee launch", description: "Launch coffee", city: "tashkent", categories: ["food"], requirements: ["Reels"], minBudget: 0, maxBudget: 500_000, deadline: "2030-08-31T00:00:00Z", status: 1 as const, isPromoted: false, createdAtUtc: "2026-08-20T00:00:00Z", updatedAtUtc: "2026-08-21T00:00:00Z", applicationsCount: 0
 };
 
 describe("My Campaign edit", () => {
@@ -67,7 +67,7 @@ describe("My Campaign edit", () => {
     expect(screen.getByRole("button", { name: translate("myCampaignEdit.save", undefined, "ru") })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: translate("myCampaignEdit.save", undefined, "ru") }));
 
-    await waitFor(() => expect(api.updateMyCampaign).toHaveBeenCalledWith("campaign-a", expect.objectContaining({ title: "New coffee", budgetFrom: 0, budgetTo: 500_000, deadline: "2026-08-31T00:00:00.000Z" })));
+    await waitFor(() => expect(api.updateMyCampaign).toHaveBeenCalledWith("campaign-a", expect.objectContaining({ title: "New coffee", budgetFrom: 0, budgetTo: 500_000, deadline: "2030-08-31T00:00:00.000Z" })));
     expect(window.location.hash).toBe("#/my-campaign/campaign-a");
   });
 

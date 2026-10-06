@@ -107,6 +107,15 @@ describe("Campaign safety foundation", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: translate("campaign.apply", undefined, "ru") })).toBeInTheDocument());
   });
 
+  it("closes applications once the campaign deadline day has passed", async () => {
+    api.getCampaign.mockResolvedValue({ ...campaign, deadline: "2020-01-01T00:00:00Z" });
+    renderDetails();
+
+    expect(await screen.findByRole("status")).toHaveTextContent(translate("error.campaign_expired", undefined, "ru"));
+    expect(screen.getByText(translate("campaign.expired", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: translate("campaign.apply", undefined, "ru") })).not.toBeInTheDocument();
+  });
+
   it.each([
     ["Business", 1],
     ["BrandFace", 1],
