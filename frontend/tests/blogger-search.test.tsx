@@ -122,6 +122,13 @@ describe("BloggerSearch", () => {
     await waitFor(() => expect(api.getBloggers.mock.calls.some(([filters]) => filters.category === "beauty" && filters.page === 1)).toBe(true));
   });
 
+  it("opens pre-filtered from a Home link with query and platform", async () => {
+    window.location.hash = "#/search?q=reels&platform=telegram";
+    renderSearch();
+    await waitFor(() => expect(api.getBloggers.mock.calls.some(([filters]) => filters.platform === "telegram" && filters.query === "reels" && filters.page === 1)).toBe(true));
+    window.location.hash = "#/search";
+  });
+
   it("deduplicates the next page and does not request it twice", async () => {
     api.getBloggers.mockResolvedValueOnce({ ...firstPage, total: 40 }).mockResolvedValueOnce(secondPage);
     renderSearch();

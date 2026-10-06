@@ -3,12 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 
-const api = vi.hoisted(() => ({ getMarketplaceHome: vi.fn() }));
+const api = vi.hoisted(() => ({ getMarketplaceHome: vi.fn(), getMyDeals: vi.fn(), getMyCampaigns: vi.fn(), getMyOffers: vi.fn() }));
 let profileRefresh: (() => void) | undefined;
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/api/marketplace")>()),
-  getMarketplaceHome: api.getMarketplaceHome
+  getMarketplaceHome: api.getMarketplaceHome,
+  getMyDeals: api.getMyDeals,
+  getMyCampaigns: api.getMyCampaigns,
+  getMyOffers: api.getMyOffers
 }));
 vi.mock("../src/hooks/useScrollRestoration", () => ({ useScrollRestoration: vi.fn() }));
 vi.mock("../src/hooks/useProfileDataRefresh", () => ({
@@ -28,6 +31,8 @@ vi.mock("../src/components/ui", () => ({
 }));
 
 import { Home } from "../src/pages/Home";
+
+const ru = (key: string) => translate(key, undefined, "ru");
 
 const response = {
   promotedBloggers: [{ id: "promoted-blogger", name: "Promoted blogger", city: "tashkent", categories: ["beauty"], totalFollowers: 1000, reviewsCount: 2, completedDealsCount: 1, isPromoted: true }],
@@ -55,48 +60,81 @@ describe("Home", () => {
     vi.clearAllMocks();
     profileRefresh = undefined;
     api.getMarketplaceHome.mockResolvedValue(response);
+    api.getMyDeals.mockResolvedValue([]);
+    api.getMyCampaigns.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20, hasMore: false });
+    api.getMyOffers.mockResolvedValue([]);
+    window.location.hash = "#/";
   });
 
-  it("shows the Business hero, real statistics, and the business section order", async () => {
+  it("puts creator search first for Business and drops the hero and marketplace statistics", async () => {
+    const user = userEvent.setup();
     renderHome("Business");
     await waitForData();
 
-    expect(screen.getByRole("heading", { name: translate("home.businessHeroTitle", undefined, "ru") })).toBeInTheDocument();
-    expect(screen.getByText(translate("home.businessEyebrow", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getAllByText(translate("common.appName", undefined, "ru"))).toHaveLength(1);
-    expect(screen.getByRole("link", { name: translate("home.findCreator", undefined, "ru") })).toHaveAttribute("href", "#/search");
-    expect(screen.getByText("12")).toBeInTheDocument();
-    expect(screen.getByText("8")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: ru("home.searchCreatorsTitle") })).toBeInTheDocument();
+    expect(screen.queryByText(ru("home.statistics"))).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: ru("home.businessHeroTitle") })).not.toBeInTheDocument();
     expect(screen.queryByText("Hidden business")).not.toBeInTheDocument();
-    expect(screen.queryByText(translate("home.promotion", undefined, "ru"))).not.toBeInTheDocument();
-    expect(screen.queryByText("5600")).not.toBeInTheDocument();
-    expect(screen.queryByText("740")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: ru("search.platformInstagram") })).toHaveAttribute("href", "#/search?platform=instagram");
 
     const headings = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
-    expect(headings).toEqual(expect.arrayContaining([
-      translate("home.categories", undefined, "ru"),
-      translate("home.promotedBloggers", undefined, "ru"),
-      translate("home.topRated", undefined, "ru"),
-      translate("home.newBrandFaces", undefined, "ru"),
-      translate("home.newBloggers", undefined, "ru"),
-      translate("home.statistics", undefined, "ru")
-    ]));
-    expect(headings.indexOf(translate("home.categories", undefined, "ru"))).toBeLessThan(headings.indexOf(translate("home.promotedBloggers", undefined, "ru")));
+    expect(headings.indexOf(ru("home.searchCreatorsTitle"))).toBe(0);
+    expect(headings).toEqual(expect.arrayContaining([ru("home.promotedBloggers"), ru("home.topRated"), ru("home.newBrandFaces"), ru("home.newBloggers")]));
+
+    await user.type(screen.getByRole("searchbox", { name: ru("home.searchCreatorsTitle") }), "beauty reels");
+    await user.click(screen.getByRole("button", { name: ru("home.searchSubmit") }));
+    expect(window.location.hash).toBe("#/search?q=beauty%20reels");
   });
 
-  it("uses role-appropriate Blogger and Brand Face actions without offering Brand Face applications", async () => {
+  it("lets Blogger and Brand Face search campaigns without a Brand Face application flow", async () => {
+    const user = userEvent.setup();
     const { rerender } = render(<I18nProvider><Home role="Blogger" /></I18nProvider>);
     await screen.findByText("Promoted campaign");
-    expect(screen.getByRole("heading", { name: translate("home.bloggerHeroTitle", undefined, "ru") })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: translate("home.viewCampaigns", undefined, "ru") })).toHaveAttribute("href", "#/campaigns");
-    expect(screen.getAllByRole("link", { name: translate("home.viewAllSection", { section: translate("home.promotedCampaigns", undefined, "ru") }, "ru") })[0]).toHaveAttribute("href", "#/campaigns");
+    expect(screen.getByRole("heading", { name: ru("home.searchCampaignsTitle") })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: ru("search.platformInstagram") })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: ru("home.openCategory").replace("{category}", ru("taxonomy.category.beauty")) })).toHaveAttribute("href", "#/campaigns?category=beauty");
+    expect(screen.getAllByRole("link", { name: translate("home.viewAllSection", { section: ru("home.promotedCampaigns") }, "ru") })[0]).toHaveAttribute("href", "#/campaigns");
+    await user.click(screen.getByRole("button", { name: ru("home.searchSubmit") }));
+    expect(window.location.hash).toBe("#/campaigns");
 
     rerender(<I18nProvider><Home role="BrandFace" /></I18nProvider>);
-    expect(await screen.findByRole("heading", { name: translate("home.brandFaceHeroTitle", undefined, "ru") })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: translate("home.openProfile", undefined, "ru") })).toHaveAttribute("href", "#/profile");
-    expect(screen.getByText(translate("home.brandFaceEyebrow", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getByText(translate("home.brandFaceHeroDescription", undefined, "ru"))).not.toHaveTextContent("без обещаний отклика");
+    expect(await screen.findByRole("heading", { name: ru("home.searchCampaignsTitle") })).toBeInTheDocument();
+    expect(screen.queryByText(ru("home.howTitle"))).not.toBeInTheDocument();
     expect(screen.queryByText(/подать заявку/i)).not.toBeInTheDocument();
+  });
+
+  it("shows Business tasks from real campaign and deal data above the rails", async () => {
+    api.getMyCampaigns.mockResolvedValue({ items: [{ id: "campaign-a", title: "Autumn launch", applicationsCount: 7, status: 1 }, { id: "campaign-b", title: "Quiet campaign", applicationsCount: 0, status: 1 }], total: 2, page: 1, pageSize: 20, hasMore: false });
+    api.getMyDeals.mockResolvedValue([{ id: "deal-a", status: 0, canReview: false }, { id: "deal-b", status: 1, canReview: true }]);
+    renderHome("Business");
+
+    const campaign = await screen.findByRole("link", { name: new RegExp("Autumn launch") });
+    expect(campaign).toHaveAttribute("href", "#/my-campaign-applications/campaign-a");
+    expect(campaign).toHaveTextContent(translate("home.activityApplications", { count: 7 }, "ru"));
+    expect(screen.queryByText("Quiet campaign")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: new RegExp(translate("home.activityActiveDeals", { count: 1 }, "ru")) })).toHaveAttribute("href", "#/requests?tab=deals");
+    expect(screen.getByText(translate("home.activityReviews", { count: 1 }, "ru"))).toBeInTheDocument();
+    expect(screen.queryByText(ru("home.howTitle"))).not.toBeInTheDocument();
+  });
+
+  it("shows a Blogger offer that waits for an answer", async () => {
+    api.getMyOffers.mockResolvedValue([{ id: "offer-a", counterpartyName: "Lumi Beauty", canRespond: true }, { id: "offer-b", counterpartyName: "Old offer", canRespond: false }]);
+    renderHome("Blogger");
+
+    const offer = await screen.findByRole("link", { name: new RegExp(translate("home.activityOfferFrom", { name: "Lumi Beauty" }, "ru")) });
+    expect(offer).toHaveAttribute("href", "#/offer/offer-a");
+    expect(screen.queryByText(translate("home.activityOfferFrom", { name: "Old offer" }, "ru"))).not.toBeInTheDocument();
+  });
+
+  it("explains how it works when there is nothing to do yet and hides tasks when their requests fail", async () => {
+    api.getMyDeals.mockRejectedValue(new Error("offline"));
+    api.getMyCampaigns.mockRejectedValue(new Error("offline"));
+    renderHome("Business");
+    await waitForData();
+
+    expect(await screen.findByRole("region", { name: ru("home.howTitle") })).toBeInTheDocument();
+    expect(screen.getByText(ru("home.howBusiness1Title"))).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: ru("home.activityTitle") })).not.toBeInTheDocument();
   });
 
   it("opens the Brand Face rail in the Brand Face catalog", async () => {
@@ -109,9 +147,8 @@ describe("Home", () => {
   it("keeps useful UI for a successful but fully empty response", async () => {
     api.getMarketplaceHome.mockResolvedValue({ ...response, promotedBloggers: [], promotedCampaigns: [], topRatedBloggers: [], newBloggers: [], newBrandFaces: [], categories: [], statistics: { approvedBloggers: 0, companies: 0, activeCampaigns: 0, completedDeals: 0, averageRating: null } });
     renderHome("Business");
-    expect(await screen.findByRole("heading", { name: translate("home.businessHeroTitle", undefined, "ru") })).toBeInTheDocument();
-    expect(screen.getByText(translate("home.businessNoCreatorsTitle", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getAllByText("0")).toHaveLength(4);
+    expect(await screen.findByText(translate("home.businessNoCreatorsTitle", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: ru("home.searchCreatorsTitle") })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "bottom-nav" })).toBeInTheDocument();
   });
 
@@ -119,19 +156,18 @@ describe("Home", () => {
     renderHome("Blogger");
     await screen.findByText("Promoted campaign");
     expect(screen.getByRole("heading", { name: translate("home.promotedCampaigns", undefined, "ru") })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: translate("home.categories", undefined, "ru") })).toBeInTheDocument();
     expect(screen.queryByText("Рекомендуемые кампании")).not.toBeInTheDocument();
     expect(screen.queryByText("Популярные категории")).not.toBeInTheDocument();
     expect(screen.queryByText(/[🔥📢⭐🆕📊]/)).not.toBeInTheDocument();
   });
 
-  it("keeps new Brand Face and campaign copy localized in Uzbek", () => {
-    expect(translate("home.brandFaceHeroDescription", undefined, "uz")).toContain("mavjud kampaniyalarni");
+  it("keeps new Home copy localized in Uzbek", () => {
     expect(translate("home.promotedCampaigns", undefined, "uz")).toContain("Targ‘ib");
-    expect(translate("home.brandFaceEyebrow", undefined, "uz")).toBe("Brend-yuz uchun");
+    expect(translate("home.searchCreatorsTitle", undefined, "uz")).toBe("Reklama uchun bloger toping");
+    expect(translate("home.activityTitle", undefined, "uz")).not.toBe("home.activityTitle");
   });
 
-  it("shows neutral loading, preserves the header and hero on failure, and retries only the Home request", async () => {
+  it("shows neutral loading, preserves the header and search on failure, and retries only the Home request", async () => {
     let rejectFirst!: () => void;
     api.getMarketplaceHome.mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; })).mockResolvedValueOnce(response);
     const user = userEvent.setup();
@@ -140,7 +176,7 @@ describe("Home", () => {
     await act(async () => rejectFirst());
     expect(await screen.findByText(translate("home.errorTitle", undefined, "ru"))).toBeInTheDocument();
     expect(screen.getAllByText(translate("common.appName", undefined, "ru"))).toHaveLength(1);
-    expect(screen.getByRole("heading", { name: translate("home.businessHeroTitle", undefined, "ru") })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: ru("home.searchCreatorsTitle") })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: translate("common.retry", undefined, "ru") }));
     await waitForData();
     expect(api.getMarketplaceHome).toHaveBeenCalledTimes(2);

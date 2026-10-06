@@ -71,6 +71,25 @@ export function Campaigns() {
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error" | "warning">("success");
   const draftFiltersRef = useRef<CampaignCatalogQuery>(normalizeFilters({}));
+
+  // Home links open the catalog pre-filtered: #/campaigns?q=…&category=…
+  useEffect(() => {
+    const syncHashSearch = () => {
+      if (!active || !window.location.hash.startsWith("#/campaigns")) return;
+      const params = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+      const linkedQuery = params.get("q");
+      const linkedCategory = params.get("category");
+      if (linkedQuery !== null) setQuery(linkedQuery);
+      if (linkedCategory === null) return;
+      setAppliedFilters((current) => normalizeFilters({ ...current, category: linkedCategory || undefined }));
+      const nextDraft = normalizeFilters({ ...draftFiltersRef.current, category: linkedCategory || undefined });
+      draftFiltersRef.current = nextDraft;
+      setDraftFilters(nextDraft);
+    };
+    syncHashSearch();
+    window.addEventListener("hashchange", syncHashSearch);
+    return () => window.removeEventListener("hashchange", syncHashSearch);
+  }, [active]);
   const lastCatalogKeyRef = useRef("");
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const debouncedQuery = useDebouncedValue(query, 350);

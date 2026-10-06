@@ -33,7 +33,13 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     [CampaignApplicationStatus.Withdrawn]: t("requests.applicationWithdrawn")
   };
   const locale = language === "uz" ? "uz-UZ" : "ru-RU";
-  const [view, setView] = useState<"applications" | "offers" | "deals">("applications");
+  const [view, setView] = useState<RequestsView>(() => hashRequestsView() ?? "applications");
+  // Home activity links open a specific tab: #/requests?tab=deals|offers|applications
+  useEffect(() => {
+    const syncTab = () => { const tab = hashRequestsView(); if (tab) setView(tab); };
+    window.addEventListener("hashchange", syncTab);
+    return () => window.removeEventListener("hashchange", syncTab);
+  }, []);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [offersLoading, setOffersLoading] = useState(true);
   const [offersFailed, setOffersFailed] = useState(false);
@@ -174,4 +180,12 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       <BottomNav />
     </div>
   );
+}
+
+type RequestsView = "applications" | "offers" | "deals";
+
+function hashRequestsView(): RequestsView | null {
+  if (typeof window === "undefined" || !window.location.hash.startsWith("#/requests")) return null;
+  const tab = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("tab");
+  return tab === "applications" || tab === "offers" || tab === "deals" ? tab : null;
 }

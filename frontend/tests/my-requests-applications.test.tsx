@@ -56,6 +56,15 @@ describe("My Requests role-aware loading", () => {
     expect(await screen.findByText("Coffee")).toBeInTheDocument();
   });
 
+  it("opens the tab named in a Home link", async () => {
+    api.getMyDeals.mockResolvedValueOnce([{ id: "deal-a", title: "Coffee", counterpartyName: "Lumi", status: 0, createdAtUtc: "2026-09-01T00:00:00Z", canComplete: true, canReview: false }]);
+    window.location.hash = "#/requests?tab=deals";
+    render(<I18nProvider><MyRequests activeMarketplaceRole="Business" /></I18nProvider>);
+
+    expect(await screen.findByText("Coffee")).toBeInTheDocument();
+    window.location.hash = "#/requests";
+  });
+
   it("links Deal cards to the deal route and translates collaboration deals", async () => {
     api.getMyDeals.mockResolvedValueOnce([
       { id: "deal-a", title: "Coffee", counterpartyName: "Lumi", status: 0, createdAtUtc: "2026-09-01T00:00:00Z", canComplete: true, canReview: false, sourceType: "campaignApplication", termsSource: "snapshot" },

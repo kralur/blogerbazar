@@ -22,10 +22,12 @@ const filterSheetId = "blogger-search-filters";
 type FilterKey = "category" | "city" | "platform" | "minFollowers" | "minEr" | "maxPrice" | "sort";
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
-function hashCategory() {
+// Home links open the catalog pre-filtered: #/search?q=…&category=…&platform=…
+function hashSearch() {
   const hash = window.location.hash;
   if (!hash.startsWith("#/search")) return null;
-  return new URLSearchParams(hash.split("?")[1] ?? "").get("category");
+  const params = new URLSearchParams(hash.split("?")[1] ?? "");
+  return { category: params.get("category"), platform: params.get("platform"), query: params.get("q") };
 }
 
 function normalizedFilters(filters: BloggerSearchFilters): BloggerSearchFilters {
@@ -70,13 +72,14 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
   const { t } = useI18n();
   const { haptic } = useTelegram();
   useScrollRestoration("search:blogger", active);
-  const initialCategory = hashCategory() ?? "";
+  const initialHash = hashSearch();
+  const initialFilters = { category: initialHash?.category ?? "", platform: initialHash?.platform ?? "" };
   const [categories, setCategories] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [appliedFilters, setAppliedFilters] = useState<BloggerSearchFilters>(() => normalizedFilters({ category: initialCategory }));
-  const [draftFilters, setDraftFilters] = useState<BloggerSearchFilters>(() => normalizedFilters({ category: initialCategory }));
-  const draftFiltersRef = useRef<BloggerSearchFilters>(normalizedFilters({ category: initialCategory }));
+  const [query, setQuery] = useState(initialHash?.query ?? "");
+  const [appliedFilters, setAppliedFilters] = useState<BloggerSearchFilters>(() => normalizedFilters(initialFilters));
+  const [draftFilters, setDraftFilters] = useState<BloggerSearchFilters>(() => normalizedFilters(initialFilters));
+  const draftFiltersRef = useRef<BloggerSearchFilters>(normalizedFilters(initialFilters));
   const lastCatalogKeyRef = useRef("");
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const debouncedQuery = useDebouncedValue(query, 300);
@@ -111,21 +114,26 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
   useProfileDataRefresh(refresh);
 
   useEffect(() => {
-    const syncHashCategory = () => {
+    const syncHashSearch = () => {
       if (!active) return;
-      const category = hashCategory();
-      if (category === null) return;
+      const fromHash = hashSearch();
+      if (!fromHash) return;
+      if (fromHash.query !== null) setQuery(fromHash.query);
+      const linked: Partial<BloggerSearchFilters> = {};
+      if (fromHash.category !== null) linked.category = fromHash.category || undefined;
+      if (fromHash.platform !== null) linked.platform = fromHash.platform || undefined;
+      if (Object.keys(linked).length === 0) return;
       setAppliedFilters((current) => {
-        const next = normalizedFilters({ ...current, category: category || undefined });
+        const next = normalizedFilters({ ...current, ...linked });
         return filtersEqual(current, next) ? current : next;
       });
-      const nextDraft = normalizedFilters({ ...draftFiltersRef.current, category: category || undefined });
+      const nextDraft = normalizedFilters({ ...draftFiltersRef.current, ...linked });
       draftFiltersRef.current = nextDraft;
       setDraftFilters(nextDraft);
     };
-    syncHashCategory();
-    window.addEventListener("hashchange", syncHashCategory);
-    return () => window.removeEventListener("hashchange", syncHashCategory);
+    syncHashSearch();
+    window.addEventListener("hashchange", syncHashSearch);
+    return () => window.removeEventListener("hashchange", syncHashSearch);
   }, [active]);
 
   useEffect(() => {

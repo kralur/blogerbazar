@@ -89,6 +89,13 @@ describe("Campaign catalog", () => {
     expect(api.getCampaignCatalog.mock.calls[0]?.[0]).toEqual({ page: 1, pageSize: 20, query: undefined, sort: "promoted" });
   });
 
+  it("opens pre-filtered from a Home link with query and category", async () => {
+    window.location.hash = "#/campaigns?q=coffee&category=food";
+    renderCampaigns();
+
+    await waitFor(() => expect(api.getCampaignCatalog).toHaveBeenCalledWith(expect.objectContaining({ category: "food", query: "coffee", page: 1 }), expect.any(AbortSignal)));
+  });
+
   it("keeps draft filters local until Apply and discards them when the sheet closes", async () => {
     renderCampaigns();
     await screen.findByText("Coffee launch");
