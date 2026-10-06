@@ -10,6 +10,7 @@ import { navigateWithHistoryOrigin } from "../navigation/hashNavigation";
 import { getCachedMyCampaign, removeCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
 import { removeCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
+import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 
@@ -92,19 +93,19 @@ export function MyCampaignDetails({ id }: { id: string }) {
   const canManage = campaign.status !== 2;
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
     <PageHeader back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
-    <section className="my-campaign-details__hero"><div className="min-w-0"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge><h1>{campaign.title}</h1><p>{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div>{campaign.isPromoted && <span className="my-campaign-card__promoted">{t("card.promoted")}</span>}</section>
-    <Card className="my-campaign-details__section"><h2>{t("myCampaignDetails.description")}</h2><p>{campaign.description}</p></Card>
-    <section className="my-campaign-details__facts">
-      <DetailFact label={t("common.city")} value={campaign.city ? cityLabel(campaign.city, language) : t("common.notSpecified")} />
-      <DetailFact label={t("common.budget")} value={budget ?? t("myCampaigns.budgetNotSpecified")} />
-      <DetailFact label={t("campaigns.deadline")} value={campaign.deadline ? formatDate(campaign.deadline) : t("myCampaigns.deadlineNotSpecified")} />
-      <DetailFact label={t("myCampaigns.applications")} value={campaignApplicationsLabel(campaign.applicationsCount, language, t)} />
-      <DetailFact label={t("myCampaignDetails.created")} value={formatDate(campaign.createdAtUtc)} />
-    </section>
-    <Card className="my-campaign-details__section"><h2>{t("common.categories")}</h2>{campaign.categories.length ? <div className="my-campaign-card__categories">{campaign.categories.map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div> : <p>{t("common.notSpecified")}</p>}</Card>
-    <Card className="my-campaign-details__section"><h2>{t("common.requirements")}</h2>{campaign.requirements.length ? <ul>{campaign.requirements.map((requirement) => <li key={requirement}><Icon aria-hidden="true" name="check" />{requirement}</li>)}</ul> : <p>{t("common.notSpecified")}</p>}</Card>
+    <section className="my-campaign-details__hero"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}</div><h1>{campaign.title}</h1><p>{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div></section>
+    {canManage && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}
+    <FactGrid className="mt-4" facts={[
+      { label: t("common.city"), value: campaign.city ? cityLabel(campaign.city, language) : t("common.notSpecified") },
+      { label: t("campaigns.deadline"), value: campaign.deadline ? formatDate(campaign.deadline) : t("myCampaigns.deadlineNotSpecified") },
+      { label: t("myCampaignDetails.created"), value: formatDate(campaign.createdAtUtc) },
+      { label: t("myCampaigns.applications"), value: canManage ? null : campaignApplicationsLabel(campaign.applicationsCount, language, t) },
+      { label: t("common.budget"), value: budget ?? t("myCampaigns.budgetNotSpecified"), wide: true }
+    ]} />
+    <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
+    <DetailSection title={t("common.categories")}>{campaign.categories.length ? <ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</DetailSection>
+    <DetailSection title={t("common.requirements")}><Card>{campaign.requirements.length ? <ul className="grid gap-2">{campaign.requirements.map((requirement) => <li className="flex gap-2 text-sm text-brand-muted" key={requirement}><Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-success" name="check" />{requirement}</li>)}</ul> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</Card></DetailSection>
     {canManage && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}>
-      <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-applications/${id}`}>{t("applications.openInbox")}</a>
       <a aria-label={t("myCampaignDetails.editAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-edit/${id}`} onClick={(event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
@@ -120,8 +121,4 @@ export function MyCampaignDetails({ id }: { id: string }) {
     <Toast message={toast} tone="success" />
     <BottomNav />
   </div>;
-}
-
-function DetailFact({ label, value }: { label: string; value: string }) {
-  return <div><dt>{label}</dt><dd>{value}</dd></div>;
 }

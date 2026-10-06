@@ -17,6 +17,7 @@ import { isOtherCategory, uzbekistanRegions } from "../lib/taxonomy";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { PageHeader } from "../components/PageHeader";
+import { replaceHistoryRoute } from "../navigation/hashNavigation";
 
 const pageSize = 20;
 const filterSheetId = "campaign-catalog-filters";
@@ -105,6 +106,17 @@ export function Campaigns() {
   const filterError = getFilterError(draftFilters, t);
   const hasFilterOrQuery = activeChips.length > 0 || Boolean(debouncedQuery.trim());
   const canCreate = createCapability === "ready";
+
+  // "Create campaign" in My campaigns links here with ?create=1: open the form once, then drop the flag from the URL.
+  useEffect(() => {
+    if (!active || !canCreate || !window.location.hash.startsWith("#/campaigns")) return;
+    const params = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+    if (params.get("create") !== "1") return;
+    params.delete("create");
+    const rest = params.toString();
+    replaceHistoryRoute(`#/campaigns${rest ? `?${rest}` : ""}`);
+    setCreateOpen(true);
+  }, [active, canCreate]);
   const needsBusinessProfile = createCapability === "profileMissing";
   const isEmptyResult = !loading && !failure && items.length === 0;
   const isDefaultEmpty = isEmptyResult && !hasFilterOrQuery;

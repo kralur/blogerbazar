@@ -8,7 +8,12 @@ export type Fact = { label: string; value?: string | null; wide?: boolean };
 export function FactGrid({ facts, className }: { facts: Fact[]; className?: string }) {
   const visible = facts.filter((fact) => fact.value != null && fact.value !== "");
   if (visible.length === 0) return null;
-  return <dl className={`fact-grid ${className ?? ""}`.trim()}>{visible.map((fact) => <div className={fact.wide ? "fact-grid__item fact-grid__item--wide" : "fact-grid__item"} key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl>;
+  // Pairs first, wide facts last; an unpaired fact takes the full row so the grid never leaves a hole.
+  const paired = className?.includes("fact-grid--three") ? visible : [
+    ...visible.filter((fact) => !fact.wide).map((fact, index, normal) => normal.length % 2 === 1 && index === normal.length - 1 ? { ...fact, wide: true } : fact),
+    ...visible.filter((fact) => fact.wide)
+  ];
+  return <dl className={`fact-grid ${className ?? ""}`.trim()}>{paired.map((fact) => <div className={fact.wide ? "fact-grid__item fact-grid__item--wide" : "fact-grid__item"} key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl>;
 }
 
 export function ChipList({ items, label }: { items: string[]; label?: string }) {

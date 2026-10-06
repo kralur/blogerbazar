@@ -96,6 +96,14 @@ describe("Campaign catalog", () => {
     await waitFor(() => expect(api.getCampaignCatalog).toHaveBeenCalledWith(expect.objectContaining({ category: "food", query: "coffee", page: 1 }), expect.any(AbortSignal)));
   });
 
+  it("opens the create form from the My campaigns link and drops the flag from the URL", async () => {
+    window.location.hash = "#/campaigns?create=1";
+    renderCampaigns();
+
+    expect(await screen.findByTestId("campaign-modal")).toHaveAttribute("id", "campaign-create-sheet");
+    expect(window.location.hash).toBe("#/campaigns");
+  });
+
   it("keeps draft filters local until Apply and discards them when the sheet closes", async () => {
     renderCampaigns();
     await screen.findByText("Coffee launch");

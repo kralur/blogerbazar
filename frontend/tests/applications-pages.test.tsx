@@ -30,6 +30,7 @@ vi.mock("../src/components/ui", () => ({
   BottomNav: () => null,
   Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
   Card: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
+  Icon: () => null,
   ErrorState: ({ title, onRetry }: { title: string; onRetry?: () => void }) => <section><h1>{title}</h1>{onRetry && <button onClick={onRetry}>retry</button>}</section>,
   LoadingState: ({ title }: { title: string }) => <p>{title}</p>,
   Modal: ({ children, open, title }: { children: React.ReactNode; open: boolean; title: string }) => open ? <section aria-label={title}>{children}</section> : null,
@@ -125,7 +126,7 @@ describe("application mutation screens", () => {
     const title = action === "accept" ? "applications.acceptTitle" : "applications.rejectTitle";
     mutation.mockResolvedValueOnce({ id: "application-a", status: action === "accept" ? 2 : 3 });
     render(<I18nProvider><MyCampaignApplications campaignId="campaign-a" /></I18nProvider>);
-    await screen.findByRole("heading", { name: "Ali" });
+    await screen.findByRole("link", { name: /Ali/ });
     fireEvent.click(screen.getByRole("button", { name: translate(`applications.${action}`, undefined, "ru") }));
     const confirm = within(screen.getByLabelText(translate(title, undefined, "ru"))).getByRole("button", { name: translate(`applications.${action}`, undefined, "ru") });
     fireEvent.click(confirm);
@@ -141,7 +142,7 @@ describe("application mutation screens", () => {
     mutation.mockRejectedValueOnce(new ApiError(409));
     api.getCampaignApplicationInbox.mockResolvedValueOnce(page()).mockResolvedValueOnce(page([{ ...inboxItem, status: action === "accept" ? 2 : 3 }]));
     render(<I18nProvider><MyCampaignApplications campaignId="campaign-a" /></I18nProvider>);
-    await screen.findByRole("heading", { name: "Ali" });
+    await screen.findByRole("link", { name: /Ali/ });
     fireEvent.click(screen.getByRole("button", { name: translate(`applications.${action}`, undefined, "ru") }));
     fireEvent.click(within(screen.getByLabelText(translate(action === "accept" ? "applications.acceptTitle" : "applications.rejectTitle", undefined, "ru"))).getByRole("button", { name: translate(`applications.${action}`, undefined, "ru") }));
     await screen.findByText(translate(action === "accept" ? "applications.status.accepted" : "applications.status.rejected", undefined, "ru"));
@@ -157,7 +158,7 @@ describe("application mutation screens", () => {
     const mutation = action === "accept" ? api.acceptMyCampaignApplication : api.rejectMyCampaignApplication;
     mutation.mockRejectedValueOnce(new ApiError(status));
     render(<I18nProvider><MyCampaignApplications campaignId="campaign-a" /></I18nProvider>);
-    await screen.findByRole("heading", { name: "Ali" });
+    await screen.findByRole("link", { name: /Ali/ });
     fireEvent.click(screen.getByRole("button", { name: translate(`applications.${action}`, undefined, "ru") }));
     fireEvent.click(within(screen.getByLabelText(translate(action === "accept" ? "applications.acceptTitle" : "applications.rejectTitle", undefined, "ru"))).getByRole("button", { name: translate(`applications.${action}`, undefined, "ru") }));
     await screen.findByText(translate(key, undefined, "ru"));
@@ -167,11 +168,11 @@ describe("application mutation screens", () => {
     const mutation = action === "accept" ? api.acceptMyCampaignApplication : api.rejectMyCampaignApplication;
     mutation.mockRejectedValueOnce(new ApiError(422));
     render(<I18nProvider><MyCampaignApplications campaignId="campaign-a" /></I18nProvider>);
-    await screen.findByRole("heading", { name: "Ali" });
+    await screen.findByRole("link", { name: /Ali/ });
     fireEvent.click(screen.getByRole("button", { name: translate(`applications.${action}`, undefined, "ru") }));
     fireEvent.click(within(screen.getByLabelText(translate(action === "accept" ? "applications.acceptTitle" : "applications.rejectTitle", undefined, "ru"))).getByRole("button", { name: translate(`applications.${action}`, undefined, "ru") }));
     await waitFor(() => expect(mutation).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole("heading", { name: "Ali" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ali/ })).toBeInTheDocument();
   });
 
   it("does not fetch Blogger applications while its cached root screen is hidden", async () => {
@@ -183,9 +184,18 @@ describe("application mutation screens", () => {
     await waitFor(() => expect(api.getMyCampaignApplicationsPage).toHaveBeenCalledTimes(1));
   });
 
+  it("links an inbox applicant to the blogger profile with a localized city", async () => {
+    render(<I18nProvider><MyCampaignApplications campaignId="campaign-a" /></I18nProvider>);
+
+    const row = await screen.findByRole("link", { name: /Ali/ });
+    expect(row).toHaveAttribute("href", "#/blogger/blogger-a");
+    expect(row).toHaveTextContent(translate("taxonomy.city.tashkent", undefined, "ru"));
+    expect(row).not.toHaveTextContent("tashkent");
+  });
+
   it("opens the deal created by an inbox accept", async () => {
     render(<I18nProvider><MyCampaignApplications campaignId="campaign-a" /></I18nProvider>);
-    await screen.findByRole("heading", { name: "Ali" });
+    await screen.findByRole("link", { name: /Ali/ });
     fireEvent.click(screen.getByRole("button", { name: translate("applications.accept", undefined, "ru") }));
     fireEvent.click(within(screen.getByLabelText(translate("applications.acceptTitle", undefined, "ru"))).getByRole("button", { name: translate("applications.accept", undefined, "ru") }));
 

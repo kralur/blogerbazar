@@ -95,7 +95,7 @@ export function MyCampaigns() {
   useCampaignDataRefresh(refreshCampaigns, active && access === "allowed");
 
   return <div aria-hidden={!active} className="campaign-management-screen my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
-    <PageHeader actions={access === "allowed" ? <a className="my-campaigns__create" href="#/campaigns">{t("myCampaigns.create")}</a> : undefined} back={{ href: "#/profile", label: t("myCampaigns.backAria") }} eyebrow={t("myCampaigns.eyebrow")} title={t("myCampaigns.title")} />
+    <PageHeader actions={access === "allowed" ? <a className="my-campaigns__create" href="#/campaigns?create=1">{t("myCampaigns.create")}</a> : undefined} back={{ href: "#/profile", label: t("myCampaigns.backAria") }} eyebrow={t("myCampaigns.eyebrow")} title={t("myCampaigns.title")} />
     {access === "checking" ? <SearchSkeleton count={3} /> : access === "denied" ? <CatalogState icon="lock" subtitle={t("myCampaigns.deniedSubtitle")} title={t("myCampaigns.deniedTitle")} /> : access === "failed" ? <CatalogState icon="refresh" onRetry={refreshAccess} subtitle={t("myCampaigns.accessErrorSubtitle")} title={t("myCampaigns.accessErrorTitle")} /> : <>
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("myCampaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("myCampaigns.searchPlaceholder")} value={query} /></div>
     <div className="my-campaigns__controls">
@@ -108,7 +108,7 @@ export function MyCampaigns() {
       {loading && !loadedInitialResult && <SearchSkeleton count={3} />}
       {failure && !loadedInitialResult && <CatalogState icon={failure === "offline" ? "refresh" : "filter"} onRetry={retry} subtitle={t(failure === "offline" ? "myCampaigns.offlineSubtitle" : "myCampaigns.errorSubtitle")} title={t(failure === "offline" ? "myCampaigns.offlineTitle" : "myCampaigns.errorTitle")} />}
       {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={retry} subtitle={t(failure === "offline" ? "myCampaigns.offlineSubtitle" : "myCampaigns.errorSubtitle")} title={t(failure === "offline" ? "myCampaigns.offlineTitle" : "myCampaigns.errorTitle")} />}
-      {!loading && !failure && items.length === 0 && <CatalogState actionLabel={hasFilters ? t("myCampaigns.clearFilters") : t("myCampaigns.create")} icon={hasFilters ? "filter" : "briefcase"} onRetry={hasFilters ? reset : () => { window.location.hash = "/campaigns"; }} subtitle={t(hasFilters ? "myCampaigns.filteredEmptySubtitle" : "myCampaigns.emptySubtitle")} title={t(hasFilters ? "myCampaigns.filteredEmptyTitle" : "myCampaigns.emptyTitle")} />}
+      {!loading && !failure && items.length === 0 && <CatalogState actionLabel={hasFilters ? t("myCampaigns.clearFilters") : t("myCampaigns.create")} icon={hasFilters ? "filter" : "briefcase"} onRetry={hasFilters ? reset : () => { window.location.hash = "/campaigns?create=1"; }} subtitle={t(hasFilters ? "myCampaigns.filteredEmptySubtitle" : "myCampaigns.emptySubtitle")} title={t(hasFilters ? "myCampaigns.filteredEmptyTitle" : "myCampaigns.emptyTitle")} />}
       {loadedInitialResult && items.map((campaign) => <MyCampaignCard campaign={campaign} key={campaign.id} />)}
       {hasMore && <div aria-hidden="true" ref={sentinelRef} />}
       {loadingMore && <SearchSkeleton compact count={2} />}
