@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBlogger, getBloggerReviews, getCurrentPlatformUser, getPublicContact, normalizeMarketplaceRole, type BloggerDetails, type BloggerReview, type ContactDetails, type MarketplaceRole } from "../api/marketplace";
 import { OfferForm } from "../components/OfferForm";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Rating, StatsCard, Toast } from "../components/ui";
+import { Avatar, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Rating, Toast } from "../components/ui";
+import { ChipList, DetailSection, FactGrid, ReviewList, type Fact } from "../components/details/DetailBlocks";
+import { platformLabel } from "../lib/platforms";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatCurrency } from "../lib/currency";
+import { formatCompactNumber, formatCurrency, formatPercentage } from "../lib/currency";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -82,23 +84,36 @@ export function BloggerDetails({ id }: { id: string }) {
     contact?.email ? { kind: "email" as const, value: contact.email } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   const portfolio = blogger.portfolioItems;
+  const prices: Fact[] = [
+    { label: t("card.stories"), value: positiveCurrency(blogger.storiesPrice) },
+    { label: t("card.reels"), value: positiveCurrency(blogger.reelsPrice) },
+    { label: t("card.post"), value: positiveCurrency(blogger.postPrice) },
+    { label: t("card.integration"), value: positiveCurrency(blogger.integrationPrice) }
+  ];
+  const hasPrices = prices.some((price) => price.value);
+  const tags = [blogger.verified ? t("card.verified") : null, blogger.barterEnabled ? t("card.barter") : null].filter((tag): tag is string => tag !== null);
   return <div className="screen screen--with-nav">
     <PageHeader actions={<FavoriteButton bloggerId={blogger.id} />} back={{ href: "#/search", label: t("common.back") }} />
-    <div className="profile-cover">
-      {blogger.coverUrl && <img alt="" className="image-fade h-full w-full object-cover" decoding="async" src={blogger.coverUrl} />}
-    </div>
-    <div className="relative -mt-14 text-center"><div className="mx-auto w-fit"><Avatar name={blogger.name} size="xl" src={blogger.avatarUrl} verified={blogger.verified} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{blogger.name}</h1><p className="mt-1 text-sm text-brand-muted">{blogger.categories.map((category) => categoryLabel(category, language)).join(" · ")} · {cityLabel(blogger.city, language)}</p><div className="mt-2"><Rating count={blogger.reviewsCount} value={blogger.rating} /> <span className="text-sm text-brand-muted">· {t("details.deals", { count: blogger.completedDealsCount })}</span></div></div>
-    <div className="mt-5 grid grid-cols-3 gap-2"><StatsCard label={t("details.followers")} value={`${Math.round(blogger.totalFollowers / 1000)}K`} /><StatsCard label="ER" value={`${blogger.engagementRate}%`} /><StatsCard label={t("details.completedDeals")} value={String(blogger.completedDealsCount)} /></div>
-    <Card className="mt-5"><h2 className="font-extrabold">{t("details.about")}</h2><p className="mt-2 text-sm leading-6 text-brand-muted">{blogger.bio ?? t("details.filling")}</p><div className="mt-3 flex flex-wrap gap-2">{blogger.barterEnabled && <Badge tone="green">{t("card.barter")}</Badge>}{blogger.verified && <Badge tone="blue">{t("card.verified")}</Badge>}</div></Card>
+    {blogger.coverUrl && <div className="profile-cover"><img alt="" className="image-fade h-full w-full object-cover" decoding="async" src={blogger.coverUrl} /></div>}
+    <div className={`relative text-center ${blogger.coverUrl ? "-mt-14" : "mt-2"}`}><div className="mx-auto w-fit"><Avatar name={blogger.name} size="xl" src={blogger.avatarUrl} verified={blogger.verified} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{blogger.name}</h1><p className="mt-1 text-sm text-brand-muted">{blogger.categories.map((category) => categoryLabel(category, language)).join(" · ")} · {cityLabel(blogger.city, language)}</p><div className="mt-2"><Rating count={blogger.reviewsCount} value={blogger.rating} /> <span className="text-sm text-brand-muted">· {t("details.deals", { count: blogger.completedDealsCount })}</span></div></div>
+    <FactGrid className="mt-5" facts={[
+      { label: t("details.followers"), value: formatCompactNumber(blogger.totalFollowers) },
+      { label: t("search.er"), value: blogger.engagementRate ? formatPercentage(blogger.engagementRate) : null },
+      { label: t("details.reach"), value: blogger.averageReach ? formatCompactNumber(blogger.averageReach) : null }
+    ]} />
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
-    {portfolio.length > 0 && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.portfolio")}</h2><div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5">{portfolio.map((item) => <a className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-brand-soft" href={item.url} key={item.id} onClick={(event) => { event.preventDefault(); openLink(item.url); }}><img alt={item.title} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" src={item.url} />{item.type === "VIDEO" && <span aria-label={t("details.video")} className="absolute inset-0 grid place-items-center bg-slate-950/30 text-white">▶</span>}</a>)}</div></section>}
-    <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.reviews")}</h2>{reviews.length ? <div className="grid gap-2">{reviews.map((review) => <Card className="p-3" key={review.id}><div className="flex items-center justify-between"><Rating value={review.rating} /><span className="text-xs text-brand-muted">{new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(review.createdAtUtc))}</span></div>{review.reviewerName && <p className="mt-2 text-sm font-bold">{review.reviewerName}</p>}{review.comment && <p className="mt-1 text-sm leading-5 text-brand-muted">{review.comment}</p>}</Card>)}</div> : <Card><p className="text-sm text-brand-muted">{t("details.noReviews")}</p></Card>}</section>
-    <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.adPrices")}</h2><div className="grid grid-cols-2 gap-2">{[[t("card.stories"), blogger.storiesPrice], [t("card.reels"), blogger.reelsPrice], [t("card.post"), blogger.postPrice], [t("card.integration"), blogger.integrationPrice]].map(([label, value]) => <Card className="p-3" key={String(label)}><p className="text-xs text-brand-muted">{label}</p><p className="mt-1 text-sm font-extrabold">{formatCurrency(Number(value))}</p></Card>)}</div></section>
-    {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.contacts")}</h2><ContactList items={contacts} /></section>}
-    {role === "Business"
-      ? <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>
-      : <FixedActionBar><a href="#/campaigns"><Button className="w-full"><Icon name="send" />{t("details.createCampaign")}</Button></a></FixedActionBar>}
+    <DetailSection title={t("details.adPrices")}>{hasPrices ? <FactGrid className="fact-grid--two" facts={prices} /> : <Card><p className="text-sm text-brand-muted">{t("details.pricesOnRequest")}</p></Card>}</DetailSection>
+    <DetailSection title={t("details.about")}><Card><p className="text-sm leading-6 text-brand-muted">{blogger.bio ?? t("details.filling")}</p>{tags.length > 0 && <div className="mt-3"><ChipList items={tags} /></div>}</Card></DetailSection>
+    {blogger.platforms.length > 0 && <DetailSection title={t("details.platforms")}><FactGrid facts={blogger.platforms.map((platform) => ({ label: platformLabel(platform.type, t), value: platform.followers ? formatCompactNumber(platform.followers) : t("card.onRequest") }))} /></DetailSection>}
+    {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <a className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-brand-soft" href={item.url} key={item.id} onClick={(event) => { event.preventDefault(); openLink(item.url); }}><img alt={item.title} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" src={item.url} />{item.type === "VIDEO" && <span aria-label={t("details.video")} className="absolute inset-0 grid place-items-center bg-slate-950/30 text-white">▶</span>}</a>)}</div></DetailSection>}
+    <DetailSection title={t("details.reviews")}><ReviewList emptyText={t("details.noReviews")} reviews={reviews} /></DetailSection>
+    {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
+    {role === "Business" && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm bloggerId={blogger.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} /><BottomNav />
   </div>;
+}
+
+function positiveCurrency(value?: number | null) {
+  return value != null && value > 0 ? formatCurrency(value) : null;
 }

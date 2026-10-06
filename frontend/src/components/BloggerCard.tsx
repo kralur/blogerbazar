@@ -2,6 +2,7 @@ import { formatCurrency, formatNumber, formatPercentage } from "../lib/currency"
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { Avatar } from "./ui";
 import { FavoriteButton } from "./FavoriteButton";
+import { platformLabel } from "../lib/platforms";
 
 export type BloggerCardData = {
   id: string;
@@ -33,7 +34,7 @@ export function BloggerCard({ blogger, variant = "default" }: { blogger: Blogger
   return <article className={`catalog-blogger-card card-enter relative${variant === "home" ? " catalog-card--rail" : ""}`}><a aria-label={t("home.openBlogger", { name: blogger.name })} className="catalog-blogger-card__link" href={`#/blogger/${blogger.id}`}>
     <div className="catalog-blogger-card__identity">
       <Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} variant="catalog" verified={blogger.verified} />
-      <div className="min-w-0 flex-1"><div className="catalog-blogger-card__name-row"><strong>{blogger.name}</strong></div><p>{cityLabel(blogger.city)}{blogger.platform ? ` · ${blogger.platform}` : ""}</p></div>
+      <div className="min-w-0 flex-1"><div className="catalog-blogger-card__name-row"><strong>{blogger.name}</strong></div><p>{cityLabel(blogger.city)}{blogger.platform ? ` · ${platformLabel(blogger.platform, t)}` : ""}</p></div>
     </div>
     <div className="catalog-blogger-card__categories">{blogger.isPromoted && <span className="catalog-card__promoted">{t("card.promoted")}</span>}{blogger.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category)}</span>)}</div>
     <div className="catalog-blogger-card__facts">

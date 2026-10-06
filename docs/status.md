@@ -3,7 +3,7 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-06, публикация Redesign R2b._
+_Последнее обновление: 2026-10-06, Redesign R3 на review._
 
 ## Checkpoint
 
@@ -22,9 +22,16 @@ _Последнее обновление: 2026-10-06, публикация Redes
   применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
 - **Phase 4C — Reviews 2.0 + напоминания** (D33): опубликована (`fd2054d`). Миграция
   `AddReviewPublicationAndDealReminders` одобрена владельцем; в Railway тоже нужен `ApplyMigrationsOnStartup` (8.19).
-- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). **R2a — главная**: опубликована (`6d965bd`). **R2b — каталоги и карточки**: опубликованы (`7c0c6a9`). Далее R3 — детальные страницы. Далее R2b — каталоги и карточки.
+- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). **R2a — главная**: опубликована (`6d965bd`). **R2b — каталоги и карточки**: опубликованы (`7c0c6a9`). **R3 — детальные страницы**: на review. Далее R2b — каталоги и карточки.
 
 ## Последние результаты gates
+
+### Redesign R3 (локально, до review)
+
+```text
+npm test: 43 files, 317 passed / 0 failed; npm run build: passed; i18n:audit: passed (912 keys); tsc: passed
+dotnet: не затронут (frontend-only)
+```
 
 ### Redesign R2b (GitHub Actions, run 37430885286, коммит `7c0c6a9`)
 

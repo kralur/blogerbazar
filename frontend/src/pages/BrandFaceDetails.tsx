@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBrandFace, type BrandFaceDetails as BrandFaceDetailsModel } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Card, ErrorState, LoadingState, StatsCard } from "../components/ui";
+import { Avatar, BottomNav, Card, ErrorState, LoadingState } from "../components/ui";
+import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
@@ -47,14 +48,17 @@ export function BrandFaceDetails({ id }: { id: string }) {
     profile.instagram ? { kind: "instagram" as const, value: profile.instagram } : null,
     profile.portfolioUrl ? { kind: "website" as const, value: profile.portfolioUrl } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
-  return <div className="screen screen--with-nav pt-5">
+  return <div className="screen screen--with-nav">
     <PageHeader actions={<FavoriteButton brandFaceId={profile.id} />} back={{ href: "#/", label: t("common.back") }} />
-    <Card className="mt-5 overflow-hidden text-center"><div className="mx-auto w-fit"><Avatar name={profile.name} size="xl" src={profile.avatarUrl} /></div><div className="mt-4 flex justify-center gap-2">{profile.isPromoted && <Badge tone="gold">{t("card.promoted")}</Badge>}<Badge tone="blue">{t("onboarding.brandFace")}</Badge></div><h1 className="mt-3 text-2xl font-extrabold">{profile.name}</h1><p className="mt-1 text-sm text-brand-muted">{cityLabel(profile.city, language)}</p></Card>
+    <div className="mt-4 text-center"><div className="mx-auto w-fit"><Avatar name={profile.name} size="xl" src={profile.avatarUrl} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{profile.name}</h1><p className="mt-1 text-sm text-brand-muted">{t("onboarding.brandFace")} · {cityLabel(profile.city, language)}</p>{profile.isPromoted && <div className="mt-3 flex justify-center"><span className="catalog-card__promoted detail-promoted">{t("card.promoted")}</span></div>}</div>
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
-    <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("common.categories")}</h2><div className="flex flex-wrap gap-2">{profile.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div></section>
-    <section className="mt-5 grid grid-cols-2 gap-2"><StatsCard icon="users" label={t("brandFace.languages")} value={profile.languages.join(" · ") || "—"} /><StatsCard icon="star" label={t("common.price")} value={profile.collaborationPrice ? formatCurrency(profile.collaborationPrice) : t("card.onRequest")} /></section>
-    {(profile.description || profile.experience) && <Card className="mt-5"><h2 className="font-extrabold">{t("details.about")}</h2>{profile.description && <p className="mt-2 text-sm leading-6 text-brand-muted">{profile.description}</p>}{profile.experience && <><h3 className="mt-4 text-sm font-extrabold">{t("brandFace.experience")}</h3><p className="mt-1 text-sm leading-6 text-brand-muted">{profile.experience}</p></>}</Card>}
-    {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("details.contacts")}</h2><ContactList items={contacts} /></section>}
+    <FactGrid className="mt-5" facts={[
+      { label: t("common.price"), value: profile.collaborationPrice ? formatCurrency(profile.collaborationPrice) : t("card.onRequest") },
+      { label: t("brandFace.languages"), value: profile.languages.map((code) => code.toUpperCase()).join(" · ") || null }
+    ]} />
+    {profile.categories.length > 0 && <DetailSection title={t("common.categories")}><ChipList items={profile.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
+    {(profile.description || profile.experience) && <DetailSection title={t("brandFace.aboutTitle")}><Card>{profile.description && <p className="text-sm leading-6 text-brand-muted">{profile.description}</p>}{profile.experience && <><h3 className={`${profile.description ? "mt-4 " : ""}text-sm font-extrabold`}>{t("brandFace.experienceTitle")}</h3><p className="mt-1 text-sm leading-6 text-brand-muted">{profile.experience}</p></>}</Card></DetailSection>}
+    {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
     <BottomNav />
   </div>;
 }
