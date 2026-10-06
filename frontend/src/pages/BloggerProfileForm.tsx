@@ -305,7 +305,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
 
   return <form noValidate onSubmit={submit}>
     <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 4 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 4 ? undefined : continueStep} submit={step === 4} />}>
-      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} step={step + 1} stepTitle={stepTitles[step]} totalSteps={5} />
+      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} showLanguage={Boolean(onCompleted)} step={step + 1} stepTitle={stepTitles[step]} totalSteps={5} />
       <WizardErrorSummary message={serverSummary} />
       {step === 0 && <WizardStep stepKey={stepTitles[0]}><div className="wizard-fields">
         <div data-wizard-field="name"><Input className="wizard-input" error={touched.name ? errors.name : undefined} label={t("form.name")} maxLength={100} onBlur={blur("name")} onChange={update("name")} placeholder={t("form.blogger.namePlaceholder")} required value={form.name} /></div>

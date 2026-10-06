@@ -60,6 +60,19 @@ describe("Profile dashboard account flows", () => {
     sessionStorage.clear();
   });
 
+  it("groups shortcuts and settings, with the language switcher only in settings", async () => {
+    api.getMyCampaignApplications.mockResolvedValue([{ id: "a1" }]);
+    api.getMyDeals.mockResolvedValue([{ id: "d1" }, { id: "d2" }]);
+    renderDashboard();
+    await screen.findByText("Lumi Beauty");
+
+    const shortcuts = screen.getByRole("navigation", { name: translate("profile.shortcuts", undefined, "ru") });
+    await waitFor(() => expect(shortcuts.querySelector('a[href="#/requests"]')).toHaveTextContent(translate("profile.requestsSummary", { applications: 1, deals: 2 }, "ru")));
+    expect(shortcuts.querySelector('a[href="#/my-campaigns"]')).not.toBeNull();
+    expect(shortcuts.querySelector('a[href="#/favorites"]')).not.toBeNull();
+    expect(screen.getAllByRole("group", { name: translate("language.interface", undefined, "ru") })).toHaveLength(1);
+  });
+
   it("clears local BloggerBazar state and returns to the App reset callback after logout", async () => {
     const user = userEvent.setup();
     const onSessionReset = renderDashboard();

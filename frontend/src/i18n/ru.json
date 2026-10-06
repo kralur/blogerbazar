@@ -551,4 +551,8 @@
   ,"brandFace.experienceTitle": "Опыт"
   ,"deals.awaitingReview": "Ждёт вашего отзыва"
   ,"applications.yourMessage": "Ваше сообщение"
+  ,"profile.shortcuts": "Разделы профиля"
+  ,"profile.requestsSummary": "Откликов: {applications} · сделок: {deals}"
+  ,"profile.myCampaignsDetail": "Кампании, отклики и статусы"
+  ,"profile.settings": "Настройки"
 }

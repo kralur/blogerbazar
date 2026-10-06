@@ -370,7 +370,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
 
   return <form noValidate onSubmit={submit}>
     <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 3 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 3 ? undefined : continueStep} submit={step === 3} />}>
-      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} step={step + 1} stepTitle={stepTitles[step]} totalSteps={4} />
+      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} showLanguage={Boolean(onCompleted)} step={step + 1} stepTitle={stepTitles[step]} totalSteps={4} />
       <WizardErrorSummary message={serverSummary} />
       {step === 0 && <WizardStep stepKey={stepTitles[0]}>
         <div className="wizard-fields">

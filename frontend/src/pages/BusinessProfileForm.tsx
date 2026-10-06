@@ -232,7 +232,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
 
   return <form noValidate onSubmit={submit}>
     <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 2 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 2 ? undefined : continueStep} submit={step === 2} />}>
-      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} step={step + 1} stepTitle={stepTitles[step]} totalSteps={3} />
+      <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} showLanguage={Boolean(onCompleted)} step={step + 1} stepTitle={stepTitles[step]} totalSteps={3} />
       <WizardErrorSummary message={serverSummary} />
       {step === 0 && <WizardStep stepKey={stepTitles[0]}>
         <div className="wizard-fields">

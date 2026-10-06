@@ -550,4 +550,8 @@
   ,"brandFace.experienceTitle": "Tajriba"
   ,"deals.awaitingReview": "Fikringizni kutmoqda"
   ,"applications.yourMessage": "Sizning xabaringiz"
+  ,"profile.shortcuts": "Profil bo‘limlari"
+  ,"profile.requestsSummary": "Javoblar: {applications} · bitimlar: {deals}"
+  ,"profile.myCampaignsDetail": "Kampaniyalar, javoblar va holatlar"
+  ,"profile.settings": "Sozlamalar"
 }

@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../src/i18n";
 import { WizardHeader } from "../src/components/Wizard";
 
-function renderHeader(showBackButton: boolean) {
-  render(<I18nProvider><WizardHeader backLabel="Back" onBack={vi.fn()} progressLabel="Step 1 of 3" showBackButton={showBackButton} step={1} stepTitle="Company" totalSteps={3} /></I18nProvider>);
+function renderHeader(showBackButton: boolean, showLanguage = false) {
+  render(<I18nProvider><WizardHeader backLabel="Back" onBack={vi.fn()} progressLabel="Step 1 of 3" showBackButton={showBackButton} showLanguage={showLanguage} step={1} stepTitle="Company" totalSteps={3} /></I18nProvider>);
 }
 
 describe("WizardHeader", () => {
@@ -14,6 +14,12 @@ describe("WizardHeader", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Company" }).closest(".wizard-header")).toHaveAttribute("data-content-header");
     expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
     expect(document.querySelector(".wizard-header__back-placeholder")).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Язык интерфейса" })).not.toBeInTheDocument();
+  });
+
+  it("offers the language choice only during first-run onboarding", () => {
+    renderHeader(false, true);
+
     expect(screen.getByRole("group", { name: "Язык интерфейса" })).toBeInTheDocument();
   });
 
