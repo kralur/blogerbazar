@@ -415,7 +415,18 @@ export function BottomSheet({ open, title, children, onClose, id, variant }: { o
   return <Modal id={id} onClose={onClose} open={open} title={title} variant={variant}>{children}</Modal>;
 }
 
+let fixedActionBars = 0;
+
 export function FixedActionBar({ children }: { children: ReactNode }) {
+  // The bar floats over the page; tell the page to reserve room so the last section stays readable.
+  useEffect(() => {
+    fixedActionBars += 1;
+    document.body.dataset.fixedActionBar = "true";
+    return () => {
+      fixedActionBars -= 1;
+      if (fixedActionBars === 0) delete document.body.dataset.fixedActionBar;
+    };
+  }, []);
   if (typeof document === "undefined") return null;
   return createPortal(<div className="fixed-action-bar fixed inset-x-0 z-40 mx-auto max-w-[430px] px-5">{children}</div>, document.body);
 }
