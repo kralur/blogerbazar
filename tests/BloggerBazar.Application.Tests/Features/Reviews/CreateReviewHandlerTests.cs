@@ -133,6 +133,70 @@ public sealed class CreateReviewHandlerTests
         Assert.Empty(bot.NotifiedChats);
     }
 
+    [Fact]
+    public async Task First_review_stays_hidden_and_invites_the_partner()
+    {
+        var blogger = Blogger(101);
+        var business = Business(202);
+        var deal = CompletedDeal(blogger, business);
+        var reviews = new InMemoryReviewRepository();
+        var bot = new SpyBotClient();
+        var handler = Handler(deal, User(101, MarketplaceRole.Blogger), blogger, business, reviews, new SpyUnitOfWork(), bot);
+
+        await handler.Handle(new CreateReviewCommand(deal.Id, 101, 5, null), CancellationToken.None);
+
+        Assert.Null(Assert.Single(reviews.Reviews).PublishedAtUtc);
+        Assert.Equal([deal.Id], reviews.PublishedDeals);
+        Assert.Contains("Оцените и вы", Assert.Single(bot.Texts));
+        Assert.Equal($"/deal/{deal.Id}", Assert.Single(bot.Routes));
+    }
+
+    [Fact]
+    public async Task Second_review_reveals_both_reviews()
+    {
+        var blogger = Blogger(101);
+        var business = Business(202);
+        var deal = CompletedDeal(blogger, business);
+        var bot = new SpyBotClient();
+        var handler = Handler(deal, User(202, MarketplaceRole.Business), blogger, business, new InMemoryReviewRepository { PartnerReviewed = true }, new SpyUnitOfWork(), bot);
+
+        await handler.Handle(new CreateReviewCommand(deal.Id, 202, 4, null), CancellationToken.None);
+
+        Assert.Equal([blogger.TelegramUserId], bot.NotifiedChats);
+        Assert.Contains("опубликованы", Assert.Single(bot.Texts));
+    }
+
+    [Fact]
+    public async Task Review_after_the_window_is_a_conflict()
+    {
+        var blogger = Blogger(101);
+        var business = Business(202);
+        var deal = CompletedDeal(blogger, business);
+        Set(deal, nameof(Deal.CompletedAtUtc), (DateTime?)DateTime.UtcNow.AddDays(-14).AddMinutes(-1));
+        var reviews = new InMemoryReviewRepository();
+        var handler = Handler(deal, User(101, MarketplaceRole.Blogger), blogger, business, reviews);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new CreateReviewCommand(deal.Id, 101, 5, null), CancellationToken.None));
+
+        Assert.Contains("window", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("not found", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(reviews.Reviews);
+    }
+
+    [Fact]
+    public async Task Review_on_the_last_day_of_the_window_is_accepted()
+    {
+        var blogger = Blogger(101);
+        var business = Business(202);
+        var deal = CompletedDeal(blogger, business);
+        Set(deal, nameof(Deal.CompletedAtUtc), (DateTime?)DateTime.UtcNow.AddDays(-13).AddHours(-23));
+        var reviews = new InMemoryReviewRepository();
+
+        await Handler(deal, User(101, MarketplaceRole.Blogger), blogger, business, reviews).Handle(new CreateReviewCommand(deal.Id, 101, 5, null), CancellationToken.None);
+
+        Assert.Single(reviews.Reviews);
+    }
+
     private static Deal CompletedDeal(BloggerProfile blogger, BusinessProfile business)
     {
         var deal = CampaignDeal(blogger, business);
@@ -162,5 +226,15 @@ public sealed class CreateReviewHandlerTests
         }
 
         public Task<bool> ExistsAsync(Guid dealId, long reviewerTelegramUserId, CancellationToken cancellationToken) => Task.FromResult(AlreadyReviewed);
+
+        // Simulates the partner review: when present, publishing reveals both reviews.
+        public bool PartnerReviewed { get; init; }
+        public List<Guid?> PublishedDeals { get; } = [];
+
+        public Task<int> PublishRevealedAsync(Guid? dealId, DateTime nowUtc, CancellationToken cancellationToken)
+        {
+            PublishedDeals.Add(dealId);
+            return Task.FromResult(PartnerReviewed ? 2 : 0);
+        }
     }
 }

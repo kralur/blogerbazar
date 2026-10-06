@@ -131,7 +131,8 @@ public sealed class TelegramWebhookSecurityTests
                 ["RateLimiting:TelegramWebhook:PermitLimit"] = "120",
                 ["RateLimiting:TelegramWebhook:WindowSeconds"] = "60",
                 ["Database:ApplyMigrationsOnStartup"] = "false",
-                ["DevelopmentData:Seed"] = "false"
+                ["DevelopmentData:Seed"] = "false",
+                ["DealReminders:Enabled"] = "false"
             })
             {
                 builder.UseSetting(key, value);

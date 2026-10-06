@@ -467,6 +467,12 @@ export async function getBloggerReviews(id: string): Promise<BloggerReview[]> {
   return api<BloggerReview[]>(`/api/bloggers/${id}/reviews?take=20`);
 }
 
+export type BusinessReviews = { rating?: number | null; reviewsCount: number; items: BloggerReview[] };
+
+export async function getBusinessReviews(id: string, signal?: AbortSignal): Promise<BusinessReviews> {
+  return api<BusinessReviews>(`/api/businesses/${id}/reviews?take=5`, { signal });
+}
+
 export async function getCampaigns(): Promise<CampaignCardData[]> {
   const response = await api<{ campaigns: ApiCampaign[] }>("/api/campaigns?pageSize=20");
   return response.campaigns.map(asCampaignCard);
@@ -614,6 +620,7 @@ export type DealDetails = {
   canReview: boolean;
   hasReviewed: boolean;
   offer?: DealOffer | null;
+  reviewDeadlineUtc?: string | null;
 };
 export type DealOffer = { format?: OfferFormat | null; offeredBudget?: number | null; deadline?: string | null; message: string };
 

@@ -13,6 +13,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
     public DbSet<CampaignApplication> CampaignApplications => Set<CampaignApplication>();
     public DbSet<Deal> Deals => Set<Deal>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<DealReminder> DealReminders => Set<DealReminder>();
     public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
     public DbSet<ContactUnlock> ContactUnlocks => Set<ContactUnlock>();
     public DbSet<PortfolioItem> PortfolioItems => Set<PortfolioItem>();
@@ -243,6 +244,14 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         review.HasIndex(entity => new { entity.DealId, entity.ReviewerTelegramUserId }).IsUnique();
         review.HasIndex(entity => entity.BloggerId);
         review.HasIndex(entity => entity.BusinessId);
+        // Hidden reviews never reach ratings or lists; code that must see them (own "already reviewed" checks) uses IgnoreQueryFilters.
+        review.HasQueryFilter(entity => entity.PublishedAtUtc != null);
+
+        var dealReminder = modelBuilder.Entity<DealReminder>();
+        dealReminder.ToTable("deal_reminders");
+        dealReminder.HasKey(entity => entity.Id);
+        dealReminder.HasOne<Deal>().WithMany().HasForeignKey(entity => entity.DealId).OnDelete(DeleteBehavior.Cascade);
+        dealReminder.HasIndex(entity => new { entity.DealId, entity.Kind, entity.RecipientRole }).IsUnique();
 
         var paymentOrder = modelBuilder.Entity<PaymentOrder>();
         paymentOrder.ToTable("payment_orders");

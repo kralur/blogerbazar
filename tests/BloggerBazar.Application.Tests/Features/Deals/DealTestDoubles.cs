@@ -121,11 +121,19 @@ internal sealed class FakeDealReadModel(params DealReadRow[] rows) : IDealReadMo
 internal sealed class SpyBotClient : ITelegramBotClient
 {
     public List<long> NotifiedChats { get; } = [];
+    public List<string> Texts { get; } = [];
+    public List<string?> Routes { get; } = [];
     public Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken) => Task.CompletedTask;
 
-    public Task SendNotificationAsync(long chatId, string text, CancellationToken cancellationToken)
+    public Task SendNotificationAsync(long chatId, string text, CancellationToken cancellationToken) => Record(chatId, text, null);
+
+    public Task SendNotificationAsync(long chatId, string text, string miniAppRoute, CancellationToken cancellationToken) => Record(chatId, text, miniAppRoute);
+
+    private Task Record(long chatId, string text, string? route)
     {
         NotifiedChats.Add(chatId);
+        Texts.Add(text);
+        Routes.Add(route);
         return Task.CompletedTask;
     }
 }

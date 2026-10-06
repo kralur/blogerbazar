@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<ICampaignApplicationRepository, CampaignApplicationRepository>();
         services.AddScoped<IDealRepository, DealRepository>();
         services.AddScoped<IReviewRepository, ReviewRepository>();
+        services.AddScoped<IDealReminderRepository, DealReminderRepository>();
         services.AddScoped<IPaymentOrderRepository, PaymentOrderRepository>();
         services.AddScoped<IContactUnlockRepository, ContactUnlockRepository>();
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();

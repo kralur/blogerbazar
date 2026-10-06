@@ -41,6 +41,7 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         builder.UseSetting("ConnectionStrings:Redis", string.Empty);
         builder.UseSetting("Database:ApplyMigrationsOnStartup", "false");
         builder.UseSetting("DevelopmentData:Seed", "false");
+        builder.UseSetting("DealReminders:Enabled", "false");
         builder.UseSetting("Telegram:BotToken", BotToken);
         builder.UseSetting("Telegram:WebhookSecret", "integration-webhook-secret");
     }

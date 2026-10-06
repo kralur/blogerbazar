@@ -71,9 +71,12 @@ internal sealed record DealView(
     bool CanComplete,
     bool CanReview,
     bool HasReviewed,
-    DealOfferDto? Offer)
+    DealOfferDto? Offer,
+    DateTime? ReviewDeadlineUtc)
 {
-    public static DealView From(DealReadRow row, MarketplaceRole viewerRole)
+    public static DealView From(DealReadRow row, MarketplaceRole viewerRole) => From(row, viewerRole, DateTime.UtcNow);
+
+    public static DealView From(DealReadRow row, MarketplaceRole viewerRole, DateTime nowUtc)
     {
         var viewerIsBlogger = viewerRole == MarketplaceRole.Blogger;
         var hasReviewed = viewerIsBlogger ? row.BloggerHasReviewed : row.BusinessHasReviewed;
@@ -86,11 +89,12 @@ internal sealed record DealView(
             viewerIsBlogger ? row.BusinessName : row.BloggerName,
             viewerIsBlogger ? row.BusinessLogoUrl : row.BloggerAvatarUrl,
             row.Status == DealStatus.Active,
-            row.Status == DealStatus.Completed && !hasReviewed,
+            row.Status == DealStatus.Completed && !hasReviewed && Reviews.ReviewWindow.IsOpen(row.CompletedAtUtc, nowUtc),
             hasReviewed,
             row.CollaborationRequestId is not null && row.OfferMessage is not null
                 ? new DealOfferDto(Offers.OfferFormats.ToName(row.OfferFormat), row.OfferedBudget, row.OfferDeadline, row.OfferMessage)
-                : null);
+                : null,
+            row.Status == DealStatus.Completed ? Reviews.ReviewWindow.EndsAtUtc(row.CompletedAtUtc) : null);
     }
 
     private static (string SourceType, string TermsSource, DealTermsDto? Terms) ResolveTerms(DealReadRow row)

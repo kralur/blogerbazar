@@ -3,7 +3,7 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-05, публикация Phase 4A + 4B._
+_Последнее обновление: 2026-10-06, Phase 4C на review._
 
 ## Checkpoint
 
@@ -20,9 +20,18 @@ _Последнее обновление: 2026-10-05, публикация Phase
 - **Phase 4A — Contacts privacy** (D31): опубликована (`75aa8e3`, fix `b3d4dcd`, tests `fb9ac1c`).
 - **Phase 4B — Offers**: опубликована (`29516c3`). Миграция `AddCollaborationOfferTerms` (одобрена владельцем)
   применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
-- Далее: 4C (отзывы 2.0 + напоминания) → FEATURE FREEZE → Full UI Redesign.
+- **Phase 4C — Reviews 2.0 + напоминания** (D33): реализована, на review (не закоммичена). Миграция
+  `AddReviewPublicationAndDealReminders` одобрена владельцем; в Railway тоже нужен `ApplyMigrationsOnStartup` (8.19).
+- Далее: FEATURE FREEZE → Full UI Redesign.
 
 ## Последние результаты gates
+
+### Phase 4C (локально, до review)
+
+```text
+npm test: 41 files, 304 passed / 0 failed; npm run build: passed; i18n:audit: passed (879 keys)
+dotnet build / test / EF pending model changes: NOT RUN локально (нет dotnet) — проверка через CI на draft PR
+```
 
 ### Phase 4A + 4B (GitHub Actions, run 37302835374, коммит `29516c3`)
 

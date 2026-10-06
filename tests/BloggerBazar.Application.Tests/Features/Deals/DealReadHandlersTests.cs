@@ -72,7 +72,7 @@ public sealed class DealReadHandlersTests
     [Fact]
     public async Task Review_availability_depends_on_the_viewer_side()
     {
-        var row = Row() with { Status = DealStatus.Completed, BloggerHasReviewed = true };
+        var row = Row() with { Status = DealStatus.Completed, CompletedAtUtc = DateTime.UtcNow, BloggerHasReviewed = true };
 
         var asBlogger = await List(row, MarketplaceRole.Blogger);
         var asBusiness = await List(row, MarketplaceRole.Business);
@@ -80,6 +80,29 @@ public sealed class DealReadHandlersTests
         Assert.False(asBlogger.CanComplete);
         Assert.False(asBlogger.CanReview);
         Assert.True(asBusiness.CanReview);
+    }
+
+    [Fact]
+    public async Task Review_closes_fourteen_days_after_completion()
+    {
+        var completedAt = DateTime.UtcNow.AddDays(-14).AddMinutes(-1);
+        var row = Row() with { Status = DealStatus.Completed, CompletedAtUtc = completedAt };
+
+        var listed = await List(row, MarketplaceRole.Business);
+        var details = await Details(row, MarketplaceRole.Business);
+
+        Assert.False(listed.CanReview);
+        Assert.False(details.CanReview);
+        Assert.False(details.HasReviewed);
+        Assert.Equal(completedAt.AddDays(14), details.ReviewDeadlineUtc);
+    }
+
+    [Fact]
+    public async Task Active_deal_has_no_review_deadline()
+    {
+        var details = await Details(Row(), MarketplaceRole.Blogger);
+
+        Assert.Null(details.ReviewDeadlineUtc);
     }
 
     [Fact]

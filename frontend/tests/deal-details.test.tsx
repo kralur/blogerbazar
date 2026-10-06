@@ -139,4 +139,28 @@ describe("Deal details", () => {
 
     expect(screen.queryByText(ru("deals.contacts"))).not.toBeInTheDocument();
   });
+  it("explains blind reviews and the review deadline", async () => {
+    api.getMyDeal.mockResolvedValue({ ...completedDeal, reviewDeadlineUtc: "2026-09-19T00:00:00Z" });
+    renderDeal();
+
+    expect(await screen.findByText(ru("deals.reviewBlindHint"))).toBeInTheDocument();
+    const date = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date("2026-09-19T00:00:00Z"));
+    expect(screen.getByText(translate("deals.reviewDeadline", { date }, "ru"))).toBeInTheDocument();
+  });
+
+  it("tells the participant when the review window has closed", async () => {
+    api.getMyDeal.mockResolvedValue({ ...completedDeal, canReview: false, reviewDeadlineUtc: "2026-09-19T00:00:00Z" });
+    renderDeal();
+
+    expect(await screen.findByText(ru("deals.reviewClosed"))).toBeInTheDocument();
+    expect(screen.queryByText(ru("requests.publishReview"))).not.toBeInTheDocument();
+  });
+
+  it("does not claim the window closed after the participant reviewed", async () => {
+    api.getMyDeal.mockResolvedValue({ ...completedDeal, canReview: false, hasReviewed: true, reviewDeadlineUtc: "2026-09-19T00:00:00Z" });
+    renderDeal();
+
+    expect(await screen.findByText(ru("deals.reviewSent"))).toBeInTheDocument();
+    expect(screen.queryByText(ru("deals.reviewClosed"))).not.toBeInTheDocument();
+  });
 });

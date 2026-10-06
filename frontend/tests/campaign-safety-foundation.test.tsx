@@ -10,7 +10,8 @@ const api = vi.hoisted(() => ({
   getMyBloggerProfile: vi.fn(),
   getMyCampaignApplicationsPage: vi.fn(),
   getMyBusinessProfile: vi.fn(),
-  getPublicContact: vi.fn()
+  getPublicContact: vi.fn(),
+  getBusinessReviews: vi.fn()
 }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({
@@ -21,7 +22,8 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getMyBloggerProfile: api.getMyBloggerProfile,
   getMyCampaignApplicationsPage: api.getMyCampaignApplicationsPage,
   getMyBusinessProfile: api.getMyBusinessProfile,
-  getPublicContact: api.getPublicContact
+  getPublicContact: api.getPublicContact,
+  getBusinessReviews: api.getBusinessReviews
 }));
 vi.mock("../src/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => <span>language</span> }));
 vi.mock("../src/components/ContactList", () => ({ ContactList: () => null, hasContacts: () => false }));
@@ -36,6 +38,7 @@ vi.mock("../src/components/ui", () => ({
   Icon: () => <svg />,
   LoadingState: () => <div>loading</div>,
   Modal: ({ children, open }: { children: React.ReactNode; open: boolean }) => open ? <div>{children}</div> : null,
+  Rating: ({ value, count }: { value?: number | null; count?: number }) => <span>{`rating ${value ?? "-"}${count === undefined ? "" : ` of ${count}`}`}</span>,
   Textarea: () => <textarea />,
   Toast: () => null
 }));
@@ -67,6 +70,7 @@ describe("Campaign safety foundation", () => {
     vi.clearAllMocks();
     api.getCampaign.mockResolvedValue(campaign);
     api.getPublicContact.mockResolvedValue({});
+    api.getBusinessReviews.mockResolvedValue({ rating: null, reviewsCount: 0, items: [] });
     api.getMyBusinessProfile.mockRejectedValue(new Error("no business profile"));
     api.getMyBloggerProfile.mockResolvedValue({ id: "blogger-a", status: 1 });
     api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "Blogger" });
@@ -162,5 +166,25 @@ describe("Campaign safety foundation", () => {
     resolveApply({ id: "application-a", status: CampaignApplicationStatus.Sent });
     await waitFor(() => expect(screen.queryByRole("link", { name: translate("applications.applyState", undefined, "ru") })).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: translate("campaign.apply", undefined, "ru") })).toBeInTheDocument();
+  });
+  it("shows the business rating and published reviews", async () => {
+    api.getBusinessReviews.mockResolvedValue({
+      rating: 4.5,
+      reviewsCount: 2,
+      items: [{ id: "review-a", rating: 5, comment: "Clear brief, fast payment", reviewerName: "Madina", createdAtUtc: "2026-09-10T00:00:00Z" }]
+    });
+    renderDetails();
+
+    expect(await screen.findByText(translate("campaign.businessReviews", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText("rating 4.5 of 2")).toBeInTheDocument();
+    expect(screen.getByText("Clear brief, fast payment")).toBeInTheDocument();
+    expect(api.getBusinessReviews).toHaveBeenCalledWith("business-a", expect.any(AbortSignal));
+  });
+
+  it("says when the business has no reviews yet", async () => {
+    renderDetails();
+
+    expect(await screen.findByText(translate("campaign.noBusinessReviews", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.queryByText(/^rating/)).not.toBeInTheDocument();
   });
 });

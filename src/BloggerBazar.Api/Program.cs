@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Background;
 using BloggerBazar.Api.Middleware;
 using BloggerBazar.Api.OpenApi;
 using BloggerBazar.Api.Routing;
@@ -129,6 +130,10 @@ try
     });
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
+    if (builder.Configuration.GetValue("DealReminders:Enabled", true))
+    {
+        builder.Services.AddHostedService<DealReminderWorker>();
+    }
     builder.Services.AddCors(options => options.AddPolicy("mini-app", policy =>
     {
         var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];

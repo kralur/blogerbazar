@@ -1,6 +1,7 @@
 using BloggerBazar.Api.Contracts.Businesses;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Businesses;
+using BloggerBazar.Application.Features.Reviews;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +20,11 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
         var profile = await sender.Send(new GetMyBusinessProfileQuery(actor.Id), cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
     }
+
+    [HttpGet("{id:guid}/reviews")]
+    [ProducesResponseType<BusinessReviewsDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, CancellationToken cancellationToken = default) =>
+        Ok(await sender.Send(new GetBusinessReviewsQuery(id, take), cancellationToken));
 
     [HttpPost]
     [ProducesResponseType<BusinessProfileDto>(StatusCodes.Status201Created)]

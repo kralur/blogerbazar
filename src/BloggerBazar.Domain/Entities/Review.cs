@@ -32,9 +32,14 @@ public sealed class Review
     public string? Comment { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
+    // Null while the review is hidden: it becomes public once both sides have reviewed or the review window ends.
+    public DateTime? PublishedAtUtc { get; private set; }
+
     public static Review ForBlogger(Guid dealId, long reviewerTelegramUserId, Guid bloggerId, int rating, string? comment) =>
         new(dealId, reviewerTelegramUserId, ReviewTargetType.Blogger, bloggerId, null, rating, comment);
 
     public static Review ForBusiness(Guid dealId, long reviewerTelegramUserId, Guid businessId, int rating, string? comment) =>
         new(dealId, reviewerTelegramUserId, ReviewTargetType.Business, null, businessId, rating, comment);
+
+    public void Publish(DateTime publishedAtUtc) => PublishedAtUtc ??= publishedAtUtc;
 }

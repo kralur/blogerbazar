@@ -59,6 +59,12 @@ public sealed class CreateReviewHandler(
             throw new InvalidOperationException("Reviews are available only after a deal is completed.");
         }
 
+        var nowUtc = DateTime.UtcNow;
+        if (!ReviewWindow.IsOpen(deal.CompletedAtUtc, nowUtc))
+        {
+            throw new InvalidOperationException("The review window for this deal has closed.");
+        }
+
         if (await reviews.ExistsAsync(deal.Id, command.TelegramUserId, cancellationToken))
         {
             throw AlreadyReviewed();
@@ -76,8 +82,13 @@ public sealed class CreateReviewHandler(
             throw AlreadyReviewed();
         }
 
+        // Blind reviews: this one stays hidden until the partner reviews too or the window ends.
+        var revealed = await reviews.PublishRevealedAsync(deal.Id, nowUtc, cancellationToken) > 0;
         var targetChatId = reviewerIsBlogger ? deal.Business.TelegramUserId : deal.Blogger.TelegramUserId;
-        await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, "BloggerBazar: вы получили новый отзыв о сотрудничестве.", $"/deal/{deal.Id}", cancellationToken);
+        var text = revealed
+            ? "BloggerBazar: партнёр тоже оставил отзыв — оба отзыва опубликованы."
+            : "BloggerBazar: партнёр оставил отзыв о сотрудничестве. Оцените и вы — отзывы откроются, когда оба оценят друг друга.";
+        await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, text, $"/deal/{deal.Id}", cancellationToken);
         return ReviewDto.From(review) with { ReviewerName = reviewerIsBlogger ? deal.Blogger.Name : deal.Business.Name };
     }
 

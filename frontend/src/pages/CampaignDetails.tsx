@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { applyToCampaign, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type CampaignDetails, type ContactDetails } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { applyToCampaign, getBusinessReviews, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type BusinessReviews, type CampaignDetails, type ContactDetails } from "../api/marketplace";
+import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Rating, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
@@ -16,6 +16,7 @@ export function CampaignDetails({ id }: { id: string }) {
   const [loading, setLoading] = useState(() => !getCachedPublicDetail<CampaignDetails>("campaign", id));
   const [failed, setFailed] = useState(false);
   const [contact, setContact] = useState<ContactDetails | null>(null);
+  const [businessReviews, setBusinessReviews] = useState<BusinessReviews | null>(null);
   const [applicationOpen, setApplicationOpen] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState("");
   const [applying, setApplying] = useState(false);
@@ -64,6 +65,18 @@ export function CampaignDetails({ id }: { id: string }) {
       .then(setContact)
       .catch(() => undefined);
   }, [campaign?.businessId, id]);
+
+  useEffect(() => {
+    const businessId = campaign?.businessId;
+    setBusinessReviews(null);
+    if (!businessId) return;
+
+    const controller = new AbortController();
+    getBusinessReviews(businessId, controller.signal)
+      .then(setBusinessReviews)
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [campaign?.businessId]);
 
   useEffect(() => {
     if (!campaign || campaign.id !== id) {
@@ -195,6 +208,7 @@ export function CampaignDetails({ id }: { id: string }) {
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.suitable")}</h2><div className="flex flex-wrap gap-2">{campaign.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div></section>
       <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("common.requirements")}</h2><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></section>
+      {businessReviews && <section className="mt-5"><div className="mb-3 flex items-center justify-between gap-3"><h2 className="font-extrabold">{t("campaign.businessReviews")}</h2>{businessReviews.reviewsCount > 0 && <Rating count={businessReviews.reviewsCount} value={businessReviews.rating} />}</div>{businessReviews.items.length ? <div className="grid gap-2">{businessReviews.items.map((review) => <Card className="p-3" key={review.id}><div className="flex items-center justify-between"><Rating value={review.rating} /><span className="text-xs text-brand-muted">{new Intl.DateTimeFormat(language === "uz" ? "uz-UZ" : "ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(review.createdAtUtc))}</span></div>{review.reviewerName && <p className="mt-2 text-sm font-bold">{review.reviewerName}</p>}{review.comment && <p className="mt-1 text-sm leading-5 text-brand-muted">{review.comment}</p>}</Card>)}</div> : <Card><p className="text-sm text-brand-muted">{t("campaign.noBusinessReviews")}</p></Card>}</section>}
       {hasContacts(contacts) && <section className="mt-5"><h2 className="mb-3 font-extrabold">{t("campaign.businessContact")}</h2><ContactList items={contacts} /></section>}
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
       {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary w-full" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : null}

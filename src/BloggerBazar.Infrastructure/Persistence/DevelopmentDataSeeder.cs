@@ -401,6 +401,8 @@ public static class DevelopmentDataSeeder
             reviews.Add(Review.ForBusiness(deal.Id, blogger.TelegramUserId, business.Id, businessRating, BusinessReviewComments[index % BusinessReviewComments.Length]));
         }
 
+        // Both sides reviewed every seeded deal, so the blind reviews are already revealed.
+        reviews.ForEach(review => review.Publish(review.CreatedAtUtc));
         return reviews;
     }
 

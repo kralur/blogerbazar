@@ -90,7 +90,9 @@ RU/UZ; BottomNav; native Back; responsive tests.
   на странице сделки.
 - **4B — Offers (ОПУБЛИКОВАНО):** «Предложить сотрудничество» с профиля блогера, уведомление ботом с кнопкой, срок 48 ч,
   принятие → Deal (на базе существующего `CollaborationRequest`).
-- **4C — Reviews 2.0 (СЛЕДУЮЩАЯ):** публичный рейтинг бизнеса, «слепые» отзывы, напоминания (фоновая задача + миграция).
+- **4C — Reviews 2.0 (НА REVIEW):** публичный рейтинг бизнеса, «слепые» отзывы, окно 14 дней, напоминания
+  (фоновая задача + миграция `AddReviewPublicationAndDealReminders`). Детали — D33.
+- **Далее: FEATURE FREEZE** → Full UI Redesign.
 
 ## После Phase 4 — Full UI Redesign — РЕШЕНО
 
@@ -122,6 +124,8 @@ navigation, empty/loading/error states. Foundation — DS v2.
 | 8.17 | Campaign edit last-write-wins, нет concurrency token | ИЗВЕСТНО, не blocker MVP, не в 3F | — |
 | 8.18 | 13 integration tests skipped | ИСПРАВЛЕНО (`7722609`): CI запускает все integration-тесты | 13 × `[IntegrationFact]`, skip без `RUN_INTEGRATION_TESTS=true`. ⚠ Уточнение: skip только в локальных прогонах; CI (`ci.yml`) запускает их с Testcontainers |
 | 8.19 | Применена ли snapshot migration в production | ОБСУЖДАЛОСЬ, НЕ ПОДТВЕРЖДЕНО | `appsettings.json`: `ApplyMigrationsOnStartup=false`; Development: `true`; Railway env не проверялся |
+| 8.20 | Публичный список отзывов блогера всегда пуст: фильтр требовал `review.Business` у отзыва о блогере (там `BusinessId = null`) | ИСПРАВЛЕНО в 4C (фильтр через `review.Deal`) | `ReviewReadModel.GetBloggerReviewsAsync` |
+| 8.21 | Напоминание/уведомление ведёт на `/deal/{id}`; если у получателя выбрана другая роль, сделка откроется как 404 | ИЗВЕСТНО, не blocker MVP | selected-role authorization (D-правило 1) |
 
 Дополнительно найдено в Phase 0 (классификация утверждена, см. `docs/decisions.md`):
 - **P0-1.** `CreateReviewHandler` проверяет `Status != Completed` (→ 409) и `ExistsAsync` (→ 409) **до** проверки

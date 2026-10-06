@@ -21,8 +21,9 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
                 .Where(DealParticipantFilter.For(role, profileId)))
             .SingleOrDefaultAsync(cancellationToken);
 
+    // IgnoreQueryFilters: the "has reviewed" flags must count hidden (not yet published) reviews too.
     private static IQueryable<DealReadRow> Project(IQueryable<Deal> query) =>
-        query.Select(deal => new DealReadRow(
+        query.IgnoreQueryFilters().Select(deal => new DealReadRow(
             deal.Id,
             deal.CampaignApplicationId,
             deal.CollaborationRequestId,

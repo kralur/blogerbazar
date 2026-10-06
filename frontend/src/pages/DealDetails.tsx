@@ -7,7 +7,7 @@ import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Modal
 import { ManagementBackLink } from "../components/ManagementBackLink";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
-import { dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
+import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey } from "../lib/offerStatus";
 
 type LoadState = "loading" | "ready" | "denied" | "not-found" | "error";
@@ -135,9 +135,12 @@ export function DealDetails({ id }: { id: string }) {
     {deal.canReview && <Card className="mt-5"><h2 className="font-extrabold">{t("requests.reviewTitle")}</h2>
       <div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${t("requests.rating")} ${value}`} aria-pressed={value === rating} className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${value <= rating ? "bg-amber-50 text-amber-500" : "bg-slate-100 text-slate-300"}`} key={value} onClick={() => setRating(value)} type="button">★</button>)}</div>
       <Textarea className="mt-3" maxLength={1000} onChange={(event) => setComment(event.target.value)} placeholder={t("requests.reviewPlaceholder")} value={comment} />
+      <p className="mt-3 text-xs leading-5 text-brand-muted">{t("deals.reviewBlindHint")}</p>
+      {deal.reviewDeadlineUtc && <p className="mt-1 text-xs font-semibold text-brand-muted">{t("deals.reviewDeadline", { date: formatDate(deal.reviewDeadlineUtc) })}</p>}
       <Button className="mt-3 w-full" disabled={busy} onClick={review} type="button">{t("requests.publishReview")}</Button>
     </Card>}
     {deal.hasReviewed && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewSent")}</p>}
+    {deal.status === DealStatus.Completed && !deal.canReview && !deal.hasReviewed && deal.reviewDeadlineUtc && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewClosed")}</p>}
     <Modal onClose={() => !busy && setCompleteOpen(false)} open={completeOpen} title={t("deals.completeTitle")}><p className="text-sm leading-6 text-brand-muted">{t("deals.completeDescription")}</p><div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => setCompleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={complete} type="button">{busy ? t("deals.completing") : t("requests.complete")}</Button></div></Modal>
     <Toast message={toast} tone={tone} />
     <BottomNav />

@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Features.Deals;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using BloggerBazar.Infrastructure.Persistence;
@@ -71,7 +73,7 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
             response => Assert.Equal(HttpStatusCode.Conflict, response.StatusCode));
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
-        Assert.Equal(1, await dbContext.Reviews.CountAsync(review => review.DealId == seed.DealId));
+        Assert.Equal(1, await dbContext.Reviews.IgnoreQueryFilters().CountAsync(review => review.DealId == seed.DealId));
     }
 
     [IntegrationFact]
@@ -193,6 +195,100 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal(HttpStatusCode.OK, contactAfter.StatusCode);
     }
 
+    [IntegrationFact]
+    public async Task Blind_reviews_stay_hidden_until_both_sides_review()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_081, 1_100_082, complete: true);
+        using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+        using var anonymous = factory.CreateClient();
+
+        var first = await bloggerClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 4, comment = "Clear brief" });
+        var hiddenBusinessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
+        var bloggerDeal = await bloggerClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{seed.DealId}");
+        var second = await businessClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5, comment = "Great reel" });
+        var businessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
+        var bloggerReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews");
+        var bloggerProfile = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}");
+
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        Assert.Equal(0, hiddenBusinessReviews.GetProperty("reviewsCount").GetInt32());
+        Assert.Empty(hiddenBusinessReviews.GetProperty("items").EnumerateArray());
+        Assert.True(bloggerDeal.GetProperty("hasReviewed").GetBoolean());
+        Assert.False(bloggerDeal.GetProperty("canReview").GetBoolean());
+        Assert.NotEqual(JsonValueKind.Null, bloggerDeal.GetProperty("reviewDeadlineUtc").ValueKind);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        Assert.Equal(1, businessReviews.GetProperty("reviewsCount").GetInt32());
+        Assert.Equal(4m, businessReviews.GetProperty("rating").GetDecimal());
+        Assert.Equal("Integration blogger", Assert.Single(businessReviews.GetProperty("items").EnumerateArray()).GetProperty("reviewerName").GetString());
+        var bloggerReview = Assert.Single(bloggerReviews.EnumerateArray());
+        Assert.Equal("Great reel", bloggerReview.GetProperty("comment").GetString());
+        Assert.Equal("Integration business", bloggerReview.GetProperty("reviewerName").GetString());
+        Assert.Equal(1, bloggerProfile.GetProperty("reviewsCount").GetInt32());
+    }
+
+    [IntegrationFact]
+    public async Task Lone_review_is_published_when_the_window_ends_and_reviewing_closes()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_091, 1_100_092, complete: true);
+        using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+        using var anonymous = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await bloggerClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 3 })).StatusCode);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            await dbContext.Deals.Where(deal => deal.Id == seed.DealId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(deal => deal.CompletedAtUtc, (DateTime?)DateTime.UtcNow.AddDays(-15)));
+            var published = await scope.ServiceProvider.GetRequiredService<IReviewRepository>().PublishRevealedAsync(null, DateTime.UtcNow, CancellationToken.None);
+            Assert.True(published >= 1);
+        }
+
+        var businessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
+        var businessDeal = await businessClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{seed.DealId}");
+        var late = await businessClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5 });
+
+        Assert.Equal(1, businessReviews.GetProperty("reviewsCount").GetInt32());
+        Assert.False(businessDeal.GetProperty("canReview").GetBoolean());
+        Assert.Equal(HttpStatusCode.Conflict, late.StatusCode);
+    }
+
+    [IntegrationFact]
+    public async Task Reminder_candidates_and_claims_are_idempotent()
+    {
+        var stuck = await SeedCampaignDealAsync(1_100_101, 1_100_102);
+        var fresh = await SeedCampaignDealAsync(1_100_103, 1_100_104);
+        var reviewed = await SeedCampaignDealAsync(1_100_105, 1_100_106, complete: true);
+        var nowUtc = DateTime.UtcNow;
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        await dbContext.Deals.Where(deal => deal.Id == stuck.DealId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(deal => deal.CreatedAtUtc, nowUtc.AddDays(-8)));
+        await dbContext.Deals.Where(deal => deal.Id == reviewed.DealId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(deal => deal.CompletedAtUtc, (DateTime?)nowUtc.AddDays(-2)));
+        using (var bloggerClient = CreateClient(reviewed.BloggerTelegramUserId))
+        {
+            Assert.Equal(HttpStatusCode.Created, (await bloggerClient.PostAsJsonAsync($"/api/deals/{reviewed.DealId}/reviews", new { rating = 5 })).StatusCode);
+        }
+
+        var reminders = scope.ServiceProvider.GetRequiredService<IDealReminderRepository>();
+        var candidates = await reminders.GetCandidatesAsync(nowUtc, CancellationToken.None);
+        var firstClaim = await reminders.TryClaimAsync(stuck.DealId, DealReminderKind.CompleteDay7, MarketplaceRole.Blogger, nowUtc, CancellationToken.None);
+        var secondClaim = await reminders.TryClaimAsync(stuck.DealId, DealReminderKind.CompleteDay7, MarketplaceRole.Blogger, nowUtc, CancellationToken.None);
+        var otherSide = await reminders.TryClaimAsync(stuck.DealId, DealReminderKind.CompleteDay7, MarketplaceRole.Business, nowUtc, CancellationToken.None);
+
+        Assert.Contains(candidates, candidate => candidate.DealId == stuck.DealId && candidate.Status == DealStatus.Active);
+        Assert.DoesNotContain(candidates, candidate => candidate.DealId == fresh.DealId);
+        var reviewedCandidate = Assert.Single(candidates, candidate => candidate.DealId == reviewed.DealId);
+        Assert.True(reviewedCandidate.BloggerHasReviewed);
+        Assert.False(reviewedCandidate.BusinessHasReviewed);
+        Assert.Equal(reviewed.BusinessTelegramUserId, Assert.Single(DealReminderSchedule.Due(reviewedCandidate, nowUtc)).ChatId);
+        Assert.True(firstClaim);
+        Assert.False(secondClaim);
+        Assert.True(otherSide);
+    }
+
     private async Task<(Guid BloggerId, long BloggerTelegramUserId, long BusinessTelegramUserId)> SeedParticipantsAsync(long bloggerTelegramUserId, long businessTelegramUserId)
     {
         using var scope = factory.Services.CreateScope();
@@ -233,7 +329,7 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
 
         dbContext.AddRange(bloggerUser, businessUser, blogger, business, campaign, application, deal);
         await dbContext.SaveChangesAsync();
-        return new SeededDeal(deal.Id, campaign.Id, application.Id, blogger.Id, bloggerTelegramUserId, businessTelegramUserId);
+        return new SeededDeal(deal.Id, campaign.Id, application.Id, blogger.Id, bloggerTelegramUserId, businessTelegramUserId, business.Id);
     }
 
     private async Task SelectRoleAsync(long telegramUserId, MarketplaceRole role)
@@ -271,5 +367,5 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         return $"auth_date={authDate}&user={Uri.EscapeDataString(user)}&hash={hash}";
     }
 
-    private sealed record SeededDeal(Guid DealId, Guid CampaignId, Guid ApplicationId, Guid BloggerId, long BloggerTelegramUserId, long BusinessTelegramUserId);
+    private sealed record SeededDeal(Guid DealId, Guid CampaignId, Guid ApplicationId, Guid BloggerId, long BloggerTelegramUserId, long BusinessTelegramUserId, Guid BusinessId);
 }

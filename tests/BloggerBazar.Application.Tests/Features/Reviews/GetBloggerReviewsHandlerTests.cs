@@ -23,5 +23,8 @@ public sealed class GetBloggerReviewsHandlerTests
     {
         public Task<IReadOnlyList<ReviewDto>> GetBloggerReviewsAsync(Guid bloggerId, int take, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<ReviewDto>>(reviews.Take(take).ToArray());
+
+        public Task<BusinessReviewsDto> GetBusinessReviewsAsync(Guid businessId, int take, CancellationToken cancellationToken) =>
+            Task.FromResult(new BusinessReviewsDto(null, 0, []));
     }
 }
