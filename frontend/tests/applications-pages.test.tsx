@@ -79,6 +79,16 @@ describe("application mutation screens", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: translate("applications.withdraw", undefined, "ru") })).not.toBeInTheDocument());
   });
 
+  it("shows a localized city and the blogger's own message", async () => {
+    api.getMyCampaignApplication.mockResolvedValue({ ...application, city: "tashkent", message: "Ready this week" });
+    render(<I18nProvider><MyApplicationDetails id="application-a" /></I18nProvider>);
+
+    expect(await screen.findByText(translate("taxonomy.city.tashkent", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.queryByText("tashkent")).not.toBeInTheDocument();
+    expect(screen.getByText(translate("applications.yourMessage", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText("Ready this week")).toBeInTheDocument();
+  });
+
   it("reconciles a withdraw conflict to the server final state", async () => {
     api.withdrawMyCampaignApplication.mockRejectedValueOnce(new ApiError(409));
     api.getMyCampaignApplication.mockResolvedValueOnce(application).mockResolvedValueOnce({ ...application, status: 2 });

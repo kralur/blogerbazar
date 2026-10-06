@@ -199,9 +199,9 @@ export function CampaignDetails({ id }: { id: string }) {
           <h1 className="campaign-hero__title">{campaign.title}</h1>
         </div>
         <div className="p-5"><FactGrid facts={[
-          { label: t("common.budget"), value: budget, wide: true },
           { label: t("campaign.location"), value: campaign.city ? cityLabel(campaign.city, language) : null },
-          { label: t("campaigns.deadline"), value: campaign.deadline ? formatDate(campaign.deadline) : null }
+          { label: t("campaigns.deadline"), value: campaign.deadline ? formatDate(campaign.deadline) : null },
+          { label: t("common.budget"), value: budget, wide: true }
         ]} /><p className="mt-4 text-sm leading-6 text-brand-muted">{campaign.description}</p></div>
       </Card>
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}

@@ -7,6 +7,7 @@ import { formatCurrency } from "../lib/currency";
 import { dealRoute } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
 import { PageHeader } from "../components/PageHeader";
+import { DetailSection, FactGrid } from "../components/details/DetailBlocks";
 
 type LoadState = "loading" | "ready" | "not-found" | "error";
 
@@ -80,11 +81,14 @@ export function OfferDetails({ id }: { id: string }) {
   return <div className="screen screen--with-nav offer-details">
     <PageHeader actions={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t("offers.title")}</p>
-    <h1 className="mt-1 text-2xl font-extrabold leading-tight">{t(offerFormatLabelKey(offer.format))}</h1>
-    <Card className="mt-5"><div className="flex items-center gap-3"><Avatar name={offer.counterpartyName} size="sm" src={offer.counterpartyImageUrl} /><div className="min-w-0"><p className="text-xs font-semibold text-brand-muted">{t("deals.counterparty")}</p><p className="truncate font-extrabold">{offer.counterpartyName}</p></div></div></Card>
-    <Card className="mt-4"><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{offer.message}</p>
-      <dl className="my-campaign-details__facts"><div><dt>{t("offers.budget")}</dt><dd>{offer.offeredBudget != null ? formatCurrency(offer.offeredBudget) : t("offers.budgetNegotiable")}</dd></div>{offer.deadline && <div><dt>{t("offers.deadline")}</dt><dd>{formatDate(offer.deadline)}</dd></div>}{offer.state === "pending" && offer.expiresAtUtc && <div><dt>{t("offers.expiresAt")}</dt><dd>{formatDate(offer.expiresAtUtc, true)}</dd></div>}</dl>
-    </Card>
+    <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{t(offerFormatLabelKey(offer.format))}</h1>
+    <div className="request-row request-row--static mt-4"><Avatar name={offer.counterpartyName} size="sm" src={offer.counterpartyImageUrl} variant="catalog" /><span className="request-row__body"><span className="request-row__meta">{t("deals.counterparty")}</span><strong className="truncate">{offer.counterpartyName}</strong></span></div>
+    <FactGrid className="mt-4" facts={[
+      { label: t("offers.budget"), value: offer.offeredBudget != null ? formatCurrency(offer.offeredBudget) : t("offers.budgetNegotiable") },
+      { label: t("offers.deadline"), value: offer.deadline ? formatDate(offer.deadline) : null },
+      { label: t("offers.expiresAt"), value: offer.state === "pending" && offer.expiresAtUtc ? formatDate(offer.expiresAtUtc, true) : null, wide: true }
+    ]} />
+    <DetailSection title={t("offers.message")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{offer.message}</p></Card></DetailSection>
     {offer.canRespond && <div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => decide(false)} type="button" variant="secondary">{t("offers.decline")}</Button><Button disabled={busy} onClick={() => decide(true)} type="button">{t("offers.accept")}</Button></div>}
     {offer.dealId && <Button className="mt-5 w-full" onClick={() => { window.location.hash = dealRoute(offer.dealId!); }} type="button">{t("deals.open")}</Button>}
     <Toast message={toast} tone={tone} />

@@ -9,6 +9,7 @@ import { formatBudgetRange, formatCurrency } from "../lib/currency";
 import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey } from "../lib/offerStatus";
 import { PageHeader } from "../components/PageHeader";
+import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
 
 type LoadState = "loading" | "ready" | "denied" | "not-found" | "error";
 
@@ -115,20 +116,33 @@ export function DealDetails({ id }: { id: string }) {
   return <div className="screen screen--with-nav deal-details">
     <PageHeader actions={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t(dealSourceLabelKey(deal.sourceType))}</p>
-    <h1 className="mt-1 text-2xl font-extrabold leading-tight">{terms?.title ?? t("deals.source.collaborationRequest")}</h1>
-    <Card className="mt-5"><div className="flex items-center gap-3"><Avatar name={deal.counterpartyName} size="sm" src={deal.counterpartyImageUrl} /><div className="min-w-0"><p className="text-xs font-semibold text-brand-muted">{t("deals.counterparty")}</p><p className="truncate font-extrabold">{deal.counterpartyName}</p></div></div></Card>
+    <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{terms?.title ?? t("deals.source.collaborationRequest")}</h1>
+    <div className="request-row request-row--static mt-4"><Avatar name={deal.counterpartyName} size="sm" src={deal.counterpartyImageUrl} variant="catalog" /><span className="request-row__body"><span className="request-row__meta">{t("deals.counterparty")}</span><strong className="truncate">{deal.counterpartyName}</strong></span></div>
     {deal.termsSource === "liveCampaignFallback" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.termsFallbackNote")}</p>}
     {deal.termsSource === "collaboration" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.collaborationNote")}</p>}
-    {terms && <>
-      <Card className="mt-4"><h2 className="font-extrabold">{t("deals.terms")}</h2><p className="mt-3 text-sm leading-6 text-brand-muted">{terms.description}</p>
-        <dl className="my-campaign-details__facts"><div><dt>{t("common.city")}</dt><dd>{terms.city ? cityLabel(terms.city, language) : t("common.notSpecified")}</dd></div>{budget && <div><dt>{t("deals.campaignBudget")}</dt><dd>{budget}</dd></div>}{terms.deadline && <div><dt>{t("deals.deadline")}</dt><dd>{formatDate(terms.deadline)}</dd></div>}</dl>
-        {terms.categories.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{terms.categories.map((category) => <Badge key={category} tone="blue">{categoryLabel(category, language)}</Badge>)}</div>}
-      </Card>
-      {terms.requirements.length > 0 && <Card className="mt-4"><h2 className="font-extrabold">{t("common.requirements")}</h2><ul className="mt-3 grid gap-2 text-sm text-brand-muted">{terms.requirements.map((value) => <li key={value}>{value}</li>)}</ul></Card>}
-    </>}
-    {deal.offer && <Card className="mt-4"><h2 className="font-extrabold">{t("deals.offerTerms")}</h2><p className="mt-3 whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p><dl className="my-campaign-details__facts"><div><dt>{t("offers.format")}</dt><dd>{t(offerFormatLabelKey(deal.offer.format))}</dd></div><div><dt>{t("offers.budget")}</dt><dd>{deal.offer.offeredBudget != null ? formatCurrency(deal.offer.offeredBudget) : t("offers.budgetNegotiable")}</dd></div>{deal.offer.deadline && <div><dt>{t("offers.deadline")}</dt><dd>{formatDate(deal.offer.deadline)}</dd></div>}</dl></Card>}
-    {contactItems.length > 0 && hasContacts(contactItems) && <section className="mt-4"><h2 className="mb-3 font-extrabold">{t("deals.contacts")}</h2><ContactList items={contactItems} /></section>}
-    <Card className="mt-4"><dl className="my-campaign-details__facts"><div><dt>{t("deals.startedAt")}</dt><dd>{formatDate(deal.createdAtUtc)}</dd></div>{deal.completedAtUtc && <div><dt>{t("deals.completedAt")}</dt><dd>{formatDate(deal.completedAtUtc)}</dd></div>}</dl></Card>
+    {terms && <DetailSection title={t("deals.terms")}>
+      <FactGrid facts={[
+        { label: t("common.city"), value: terms.city ? cityLabel(terms.city, language) : t("common.notSpecified") },
+        { label: t("deals.deadline"), value: terms.deadline ? formatDate(terms.deadline) : null },
+        { label: t("deals.campaignBudget"), value: budget, wide: true }
+      ]} />
+      {terms.description && <Card className="mt-2"><p className="text-sm leading-6 text-brand-muted">{terms.description}</p></Card>}
+      {terms.categories.length > 0 && <div className="mt-3"><ChipList items={terms.categories.map((category) => categoryLabel(category, language))} /></div>}
+    </DetailSection>}
+    {terms && terms.requirements.length > 0 && <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-2 text-sm text-brand-muted">{terms.requirements.map((value) => <li key={value}>{value}</li>)}</ul></Card></DetailSection>}
+    {deal.offer && <DetailSection title={t("deals.offerTerms")}>
+      <FactGrid facts={[
+        { label: t("offers.format"), value: t(offerFormatLabelKey(deal.offer.format)) },
+        { label: t("offers.budget"), value: deal.offer.offeredBudget != null ? formatCurrency(deal.offer.offeredBudget) : t("offers.budgetNegotiable") },
+        { label: t("offers.deadline"), value: deal.offer.deadline ? formatDate(deal.offer.deadline) : null }
+      ]} />
+      <Card className="mt-2"><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p></Card>
+    </DetailSection>}
+    {contactItems.length > 0 && hasContacts(contactItems) && <DetailSection title={t("deals.contacts")}><ContactList items={contactItems} /></DetailSection>}
+    <FactGrid className="mt-4" facts={[
+      { label: t("deals.startedAt"), value: formatDate(deal.createdAtUtc) },
+      { label: t("deals.completedAt"), value: deal.completedAtUtc ? formatDate(deal.completedAtUtc) : null }
+    ]} />
     {deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={() => setCompleteOpen(true)} type="button">{t("requests.complete")}</Button>}
     {deal.canReview && <Card className="mt-5"><h2 className="font-extrabold">{t("requests.reviewTitle")}</h2>
       <div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${t("requests.rating")} ${value}`} aria-pressed={value === rating} className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${value <= rating ? "bg-brand-soft text-brand-warning" : "bg-brand-soft text-brand-muted opacity-50"}`} key={value} onClick={() => setRating(value)} type="button">★</button>)}</div>

@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMyCampaignApplicationsPage, type MarketplaceRole, type MyCampaignApplicationItem } from "../api/marketplace";
 import { CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
-import { Avatar, Badge, Card } from "../components/ui";
+import { Badge } from "../components/ui";
 import { useI18n } from "../i18n";
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone, type CampaignApplicationStatus } from "../lib/campaignApplicationStatus";
 import { subscribeCampaignApplicationCache } from "../data/campaignApplicationCache";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
+import { RequestRow } from "../components/RequestRow";
 
 const pageSize = 20;
 
@@ -54,7 +55,7 @@ export function BloggerApplications({ activeMarketplaceRole }: { activeMarketpla
     {catalog.failure && !catalog.loadedInitialResult && <CatalogState icon="refresh" onRetry={retry} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}
     {catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={retry} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}
     {!catalog.loading && !catalog.failure && catalog.items.length === 0 && <CatalogState icon={status == null ? "briefcase" : "filter"} onRetry={status == null ? undefined : () => setStatus(undefined)} subtitle={t(status == null ? "applications.emptySubtitle" : "applications.filteredEmptySubtitle")} title={t(status == null ? "applications.emptyTitle" : "applications.filteredEmptyTitle")} />}
-    {catalog.items.map((item) => <a aria-label={t("applications.openAria", { title: item.campaignTitle })} className="application-card" href={`#/my-application/${item.id}`} key={item.id}><Card><div className="flex gap-3"><Avatar name={item.businessName} size="sm" src={item.businessAvatarUrl} /><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-bold">{item.businessName}</p><h2 className="mt-1 text-base font-extrabold">{item.campaignTitle}</h2></div><Badge tone={campaignApplicationStatusTone(item.status)}>{t(campaignApplicationStatusLabelKey(item.status))}</Badge></div><p className="mt-2 text-xs text-brand-muted">{t("applications.sentAt", { date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(item.createdAtUtc)) })}</p></div></div></Card></a>)}
+    <div className="request-list">{catalog.items.map((item) => <RequestRow ariaLabel={t("applications.openAria", { title: item.campaignTitle })} href={`#/my-application/${item.id}`} imageUrl={item.businessAvatarUrl} key={item.id} meta={t("applications.sentAt", { date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(item.createdAtUtc)) })} name={item.businessName} status={<Badge tone={campaignApplicationStatusTone(item.status)}>{t(campaignApplicationStatusLabelKey(item.status))}</Badge>} title={item.campaignTitle} />)}</div>
     {catalog.hasMore && <div aria-hidden="true" ref={sentinelRef} />}
     {catalog.loadingMore && <SearchSkeleton compact count={2} />}
     {catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void catalog.load(catalog.page + 1, true)} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}

@@ -56,6 +56,16 @@ describe("My Requests role-aware loading", () => {
     expect(await screen.findByText("Coffee")).toBeInTheDocument();
   });
 
+  it("marks the selected tab for assistive technology", async () => {
+    api.getMyDeals.mockResolvedValueOnce([]);
+    render(<I18nProvider><MyRequests activeMarketplaceRole="Blogger" /></I18nProvider>);
+    await screen.findByText("blogger-applications");
+    const deals = screen.getByRole("button", { name: translate("requests.deals", undefined, "ru") });
+    expect(screen.getByRole("button", { name: translate("requests.applications", undefined, "ru") })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(deals);
+    expect(deals).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("opens the tab named in a Home link", async () => {
     api.getMyDeals.mockResolvedValueOnce([{ id: "deal-a", title: "Coffee", counterpartyName: "Lumi", status: 0, createdAtUtc: "2026-09-01T00:00:00Z", canComplete: true, canReview: false }]);
     window.location.hash = "#/requests?tab=deals";

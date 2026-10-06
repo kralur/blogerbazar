@@ -9,7 +9,7 @@ import {
   type MyDeal,
   type Offer
 } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, BottomSheet, Button, Card, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Toast } from "../components/ui";
+import { Badge, BottomNav, BottomSheet, Button, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
@@ -19,6 +19,8 @@ import { subscribeDealCache } from "../data/dealCache";
 import { dealRoute, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerRoute, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
 import { PageHeader } from "../components/PageHeader";
+import { RequestRow } from "../components/RequestRow";
+import { formatCurrency } from "../lib/currency";
 
 const formatDate = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(value));
 
@@ -131,40 +133,32 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     <div className="screen screen--with-nav">
       <PageHeader actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
 
-      <div className="mt-5 grid grid-cols-3 rounded-2xl bg-brand-soft p-1">
-        <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "applications" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("applications")} type="button">{t("requests.applications")}</button>
-        <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "offers" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("offers")} type="button">{t("offers.tab")}</button>
-        <button className={`rounded-xl py-2.5 text-sm font-bold transition ${view === "deals" ? "bg-white text-brand-ink shadow-sm" : "text-brand-muted"}`} onClick={() => setView("deals")} type="button">{t("requests.deals")}</button>
+      <div aria-label={t("requests.title")} className="catalog-search__segments catalog-search__segments--three" role="group">
+        {([["applications", t("requests.applications")], ["offers", t("offers.tab")], ["deals", t("requests.deals")]] as const).map(([value, label]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button">{label}</button>)}
       </div>
 
       {view === "offers" ? (
         offersLoading ? <div className="mt-5"><LoadingState title={t("offers.loading")} /></div> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(activeMarketplaceRole === "Blogger" ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
-          <div className="mt-5 grid gap-3">
+          <div className="request-list">
             {offers.map((offer) => (
-              <a className="block text-left" href={`#${offerRoute(offer.id)}`} key={offer.id}>
-                <Card><div className="flex gap-3"><Avatar name={offer.counterpartyName} size="sm" src={offer.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{offer.counterpartyName}</h2><Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{t(offerFormatLabelKey(offer.format))}</p><p className="mt-2 text-xs text-brand-muted">{formatDate(offer.createdAtUtc, locale)}</p></div></div></Card>
-              </a>
+              <RequestRow href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, locale)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} title={`${t(offerFormatLabelKey(offer.format))}${offer.offeredBudget != null ? ` · ${formatCurrency(offer.offeredBudget)}` : ""}`} />
             ))}
           </div>
         )
       ) : view === "applications" && activeMarketplaceRole === "Blogger" ? <BloggerApplications activeMarketplaceRole={activeMarketplaceRole} /> : view === "applications" ? (
         requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> :
         !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
-          <div className="mt-5 grid gap-3">
+          <div className="request-list">
             {visibleRequests.map((request) => (
-              <button className="text-left" key={request.id} onClick={() => setSelectedRequest(request)} type="button">
-                <Card><div className="flex gap-3"><Avatar name={request.counterpartyName} size="sm" src={request.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{request.counterpartyName}</h2><Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{request.campaignTitle}</p><p className="mt-2 text-xs text-brand-muted">{formatDate(request.createdAtUtc, locale)}</p></div></div></Card>
-              </button>
+              <RequestRow imageUrl={request.counterpartyImageUrl} key={request.id} meta={formatDate(request.createdAtUtc, locale)} name={request.counterpartyName} onClick={() => setSelectedRequest(request)} status={<Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge>} title={request.campaignTitle} />
             ))}
           </div>
         )
       ) : (
         dealsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} subtitle={t("requests.loadFailed")} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
-          <div className="mt-5 grid gap-3">
+          <div className="request-list">
             {visibleDeals.map((deal) => (
-              <a className="block text-left" href={`#${dealRoute(deal.id)}`} key={deal.id}>
-                <Card><div className="flex gap-3"><Avatar name={deal.counterpartyName} size="sm" src={deal.counterpartyImageUrl} /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h2 className="truncate font-extrabold">{deal.counterpartyName}</h2><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge></div><p className="mt-1 truncate text-sm text-brand-muted">{deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title}</p><p className="mt-2 text-xs text-brand-muted">{deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, locale)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, locale)}`}</p></div></div></Card>
-              </a>
+              <RequestRow href={`#${dealRoute(deal.id)}`} imageUrl={deal.counterpartyImageUrl} key={deal.id} meta={deal.canReview ? t("deals.awaitingReview") : deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, locale)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, locale)}`} name={deal.counterpartyName} status={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} title={deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title} />
             ))}
           </div>
         )
