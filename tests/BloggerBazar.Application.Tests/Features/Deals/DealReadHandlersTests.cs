@@ -83,6 +83,16 @@ public sealed class DealReadHandlersTests
     }
 
     [Fact]
+    public async Task Partner_review_is_announced_only_to_the_other_side()
+    {
+        var row = Row() with { Status = DealStatus.Completed, CompletedAtUtc = DateTime.UtcNow, BloggerHasReviewed = true };
+
+        Assert.True((await List(row, MarketplaceRole.Business)).PartnerHasReviewed);
+        Assert.False((await List(row, MarketplaceRole.Blogger)).PartnerHasReviewed);
+        Assert.True((await Details(row, MarketplaceRole.Business)).PartnerHasReviewed);
+    }
+
+    [Fact]
     public async Task Review_closes_fourteen_days_after_completion()
     {
         var completedAt = DateTime.UtcNow.AddDays(-14).AddMinutes(-1);

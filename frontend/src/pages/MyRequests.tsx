@@ -143,8 +143,8 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       {view === "offers" ? (
         offersLoading ? <div className="mt-5"><LoadingState title={t("offers.loading")} /></div> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(activeMarketplaceRole === "Blogger" ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
           <div className="request-list">
-            {offers.map((offer) => (
-              <RequestRow href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, language)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} title={`${t(offerFormatLabelKey(offer.format))}${offer.offeredBudget != null ? ` · ${formatCurrency(offer.offeredBudget)}` : ""}`} />
+            {waitingFirst(offers, (offer) => offer.canRespond).map((offer) => (
+              <RequestRow action={offer.canRespond ? t("requests.awaitingYourAnswer") : null} href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, language)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} title={`${t(offerFormatLabelKey(offer.format))}${offer.offeredBudget != null ? ` · ${formatCurrency(offer.offeredBudget)}` : ""}`} />
             ))}
           </div>
         )
@@ -152,16 +152,16 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
         requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} title={t("requests.loadFailed")} /></div> :
         !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="request-list">
-            {visibleRequests.map((request) => (
-              <RequestRow imageUrl={request.counterpartyImageUrl} key={request.id} meta={formatDate(request.createdAtUtc, language)} name={request.counterpartyName} onClick={() => setSelectedRequest(request)} status={<Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge>} title={request.campaignTitle} />
+            {waitingFirst(visibleRequests, (request) => request.canAccept).map((request) => (
+              <RequestRow action={request.canAccept ? t("requests.awaitingYourAnswer") : null} imageUrl={request.counterpartyImageUrl} key={request.id} meta={formatDate(request.createdAtUtc, language)} name={request.counterpartyName} onClick={() => setSelectedRequest(request)} status={<Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge>} title={request.campaignTitle} />
             ))}
           </div>
         )
       ) : (
         dealsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
           <div className="request-list">
-            {visibleDeals.map((deal) => (
-              <RequestRow href={`#${dealRoute(deal.id)}`} imageUrl={deal.counterpartyImageUrl} key={deal.id} meta={deal.canReview ? t("deals.awaitingReview") : deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, language)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, language)}`} name={deal.counterpartyName} status={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} title={deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title} />
+            {waitingFirst(visibleDeals, (deal) => deal.canReview).map((deal) => (
+              <RequestRow action={deal.canReview ? t(deal.partnerHasReviewed ? "deals.partnerReviewedRow" : "deals.awaitingReview") : null} href={`#${dealRoute(deal.id)}`} imageUrl={deal.counterpartyImageUrl} key={deal.id} meta={deal.canReview ? t("deals.awaitingReview") : deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, language)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, language)}`} name={deal.counterpartyName} status={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} title={deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title} />
             ))}
           </div>
         )
@@ -185,4 +185,9 @@ function hashRequestsView(): RequestsView | null {
   if (typeof window === "undefined" || !window.location.hash.startsWith("#/requests")) return null;
   const tab = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("tab");
   return tab === "applications" || tab === "offers" || tab === "deals" ? tab : null;
+}
+
+// Items that wait for the viewer go first; the rest keep their order (Array.sort is stable).
+function waitingFirst<T>(items: T[], waiting: (item: T) => boolean) {
+  return [...items].sort((a, b) => Number(waiting(b)) - Number(waiting(a)));
 }

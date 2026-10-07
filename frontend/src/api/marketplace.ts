@@ -599,6 +599,8 @@ export type MyDeal = {
   canReview: boolean;
   sourceType?: DealSourceType;
   termsSource?: DealTermsSource;
+  // The partner already reviewed this deal; its content stays hidden until the viewer reviews too.
+  partnerHasReviewed?: boolean;
 };
 
 export type DealSourceType = "campaignApplication" | "collaborationRequest";
@@ -632,6 +634,7 @@ export type DealDetails = {
   reviewDeadlineUtc?: string | null;
   // The other side's blogger or business profile id; absent from an older API.
   counterpartyProfileId?: string | null;
+  partnerHasReviewed?: boolean;
 };
 export type DealOffer = { format?: OfferFormat | null; offeredBudget?: number | null; deadline?: string | null; message: string };
 

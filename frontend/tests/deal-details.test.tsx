@@ -148,6 +148,14 @@ describe("Deal details", () => {
     expect(screen.getByText(translate("deals.reviewDeadline", { date }, "ru"))).toBeInTheDocument();
   });
 
+  it("tells that the partner already reviewed and hides only the content", async () => {
+    api.getMyDeal.mockResolvedValue({ ...completedDeal, partnerHasReviewed: true });
+    renderDeal();
+
+    expect(await screen.findByText(translate("deals.partnerReviewedHint", { partner: completedDeal.counterpartyName }, "ru"))).toBeInTheDocument();
+    expect(screen.queryByText(ru("deals.reviewBlindHint"))).not.toBeInTheDocument();
+  });
+
   it("tells the participant when the review window has closed", async () => {
     api.getMyDeal.mockResolvedValue({ ...completedDeal, canReview: false, reviewDeadlineUtc: "2026-09-19T00:00:00Z" });
     renderDeal();

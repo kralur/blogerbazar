@@ -599,4 +599,7 @@
   ,"details.totalFollowers": "Jami obunachilar"
   ,"profileMedia.telegramPhoto": "Hozir Telegram’dagi rasm ko‘rsatilmoqda. Katalogda ko‘rinishi uchun o‘zingiznikini yuklang."
   ,"profileMedia.helperShort": "JPG, PNG yoki WEBP, 5 MB gacha."
+  ,"requests.awaitingYourAnswer": "Javobingizni kutmoqda"
+  ,"deals.partnerReviewedRow": "Sizga fikr qoldirishdi"
+  ,"deals.partnerReviewedHint": "{partner} sizga fikr qoldirdi. Uni ko‘rish uchun o‘z fikringizni qoldiring: ikkala fikr bir vaqtda ochiladi."
 }

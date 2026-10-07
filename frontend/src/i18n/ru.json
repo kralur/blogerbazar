@@ -600,4 +600,7 @@
   ,"details.totalFollowers": "Всего подписчиков"
   ,"profileMedia.telegramPhoto": "Сейчас показано фото из Telegram. Загрузите своё, чтобы его видели в каталоге."
   ,"profileMedia.helperShort": "JPG, PNG или WEBP до 5 МБ."
+  ,"requests.awaitingYourAnswer": "Ждёт вашего ответа"
+  ,"deals.partnerReviewedRow": "Вам оставили отзыв"
+  ,"deals.partnerReviewedHint": "{partner} уже оставил(а) вам отзыв. Оставьте свой, чтобы его увидеть: отзывы откроются обоим сразу."
 }

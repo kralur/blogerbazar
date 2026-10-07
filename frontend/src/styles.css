@@ -1243,6 +1243,9 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .request-row__top strong { min-width: 0; max-width: 100%; overflow: hidden; font-size: .9375rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .request-row__title { overflow: hidden; color: var(--bb-text); font-size: .875rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .request-row__meta { color: var(--bb-text-secondary); font-size: .75rem; }
+.request-row--action { border-color: var(--bb-accent); box-shadow: inset 3px 0 0 var(--bb-accent); }
+.request-row__action { display: inline-flex; align-items: center; gap: .375rem; color: var(--bb-text); font-size: .75rem; font-weight: 800; }
+.request-row__action-dot { width: .5rem; height: .5rem; flex: 0 0 auto; border-radius: 999px; background: var(--bb-error); }
 .request-card { padding: .875rem; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-card); background: var(--bb-surface); }
 .request-card > .request-row { padding: 0; border: 0; background: transparent; }
 .request-card__message { margin: .75rem 0 0; padding: .75rem; border-radius: .75rem; background: var(--bb-surface-secondary); color: var(--bb-text); font-size: .875rem; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
@@ -1432,7 +1435,10 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .action-badge { display: inline-grid; min-width: 1.125rem; height: 1.125rem; place-items: center; padding: 0 .3rem; border-radius: 999px; background: var(--bb-error, #E5484D); color: #fff; font-size: .6875rem; font-weight: 800; line-height: 1; }
 .bottom-nav__item { position: relative; }
 .bottom-nav__item .action-badge { position: absolute; top: .125rem; left: calc(50% + .5rem); border: 2px solid var(--bb-surface); }
-.catalog-search__segment .action-badge { margin-left: .375rem; vertical-align: .0625rem; }
+/* On tabs the badge is a dot in the corner: a long label like "Предложения" leaves no room for a number on a
+   narrow screen. The count itself is on the bottom nav and in the label for screen readers. */
+.catalog-search__segment:has(.action-badge) { position: relative; }
+.catalog-search__segment .action-badge { position: absolute; top: .375rem; right: .375rem; width: .5rem; min-width: 0; height: .5rem; padding: 0; overflow: hidden; font-size: 0; }
 
 /* Profile links: business name in a campaign, reviewer in a review, a business's open campaigns. */
 .campaign-hero__business { display: flex; min-height: 2.75rem; align-items: center; gap: .75rem; color: inherit; text-decoration: none; }
@@ -1464,3 +1470,5 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .platform-stats__row strong { flex: 0 0 auto; color: var(--bb-text); font-size: 1rem; font-weight: 800; }
 .platform-stats__name { margin: 0; color: var(--bb-text); font-size: .9375rem; font-weight: 750; }
 .platform-stats__details { margin: .125rem 0 0; color: var(--bb-text-secondary); font-size: .75rem; }
+.deal-review__partner { display: flex; align-items: flex-start; gap: .5rem; margin: .75rem 0 0; padding: .625rem .75rem; border: 1px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .8125rem; font-weight: 700; line-height: 1.4; }
+.deal-review__partner .request-row__action-dot { margin-top: .3rem; }

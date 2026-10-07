@@ -74,7 +74,8 @@ internal sealed record DealView(
     bool CanReview,
     bool HasReviewed,
     DealOfferDto? Offer,
-    DateTime? ReviewDeadlineUtc)
+    DateTime? ReviewDeadlineUtc,
+    bool PartnerHasReviewed)
 {
     public static DealView From(DealReadRow row, MarketplaceRole viewerRole) => From(row, viewerRole, DateTime.UtcNow);
 
@@ -96,7 +97,9 @@ internal sealed record DealView(
             row.CollaborationRequestId is not null && row.OfferMessage is not null
                 ? new DealOfferDto(Offers.OfferFormats.ToName(row.OfferFormat), row.OfferedBudget, row.OfferDeadline, row.OfferMessage)
                 : null,
-            row.Status == DealStatus.Completed ? Reviews.ReviewWindow.EndsAtUtc(row.CompletedAtUtc) : null);
+            row.Status == DealStatus.Completed ? Reviews.ReviewWindow.EndsAtUtc(row.CompletedAtUtc) : null,
+            // Only that a review exists, never its rating: the blind rule still hides the content.
+            viewerIsBlogger ? row.BusinessHasReviewed : row.BloggerHasReviewed);
     }
 
     private static (string SourceType, string TermsSource, DealTermsDto? Terms) ResolveTerms(DealReadRow row)

@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { Avatar, Icon } from "./ui";
 
 // One row for applications, offers and deals: who, what, status and when.
-export function RequestRow({ href, onClick, ariaLabel, name, imageUrl, title, meta, status }: {
+// A row that waits for the viewer shows that as a marked line instead of the date, so the tab badge has a visible match.
+export function RequestRow({ href, onClick, ariaLabel, name, imageUrl, title, meta, status, action }: {
   href?: string;
   onClick?: () => void;
   ariaLabel?: string;
@@ -11,17 +12,18 @@ export function RequestRow({ href, onClick, ariaLabel, name, imageUrl, title, me
   title?: string | null;
   meta?: string | null;
   status: ReactNode;
+  action?: string | null;
 }) {
   const content = <>
     <Avatar name={name} size="sm" src={imageUrl} variant="catalog" />
     <span className="request-row__body">
       <span className="request-row__top"><strong>{name}</strong>{status}</span>
       {title && <span className="request-row__title">{title}</span>}
-      {meta && <span className="request-row__meta">{meta}</span>}
+      {action ? <span className="request-row__action"><span aria-hidden="true" className="request-row__action-dot" />{action}</span> : meta && <span className="request-row__meta">{meta}</span>}
     </span>
     <Icon className="request-row__chevron" name="back" />
   </>;
   return href
-    ? <a aria-label={ariaLabel} className="request-row" href={href}>{content}</a>
-    : <button aria-label={ariaLabel} className="request-row" onClick={onClick} type="button">{content}</button>;
+    ? <a aria-label={ariaLabel} className={action ? "request-row request-row--action" : "request-row"} href={href}>{content}</a>
+    : <button aria-label={ariaLabel} className={action ? "request-row request-row--action" : "request-row"} onClick={onClick} type="button">{content}</button>;
 }
