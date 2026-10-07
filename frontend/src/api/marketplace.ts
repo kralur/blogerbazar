@@ -180,6 +180,7 @@ export type CurrentPlatformUser = {
   role: number;
   selectedMarketplaceRole?: MarketplaceRoleValue | null;
   isBlocked: boolean;
+  preferredLanguage?: "ru" | "uz" | null;
 };
 
 export type FavoriteBlogger = {
@@ -737,6 +738,11 @@ export async function updateAdminUserRole(telegramUserId: number, role: number) 
 
 export async function setAdminUserBlocked(telegramUserId: number, isBlocked: boolean) {
   return api<AdminPlatformUser>("/api/admin/users/" + telegramUserId + "/blocked", { method: "PATCH", body: JSON.stringify({ isBlocked }) });
+}
+
+// Bot messages use the language stored here (D39).
+export async function updateInterfaceLanguage(language: "ru" | "uz") {
+  return api<CurrentPlatformUser>("/api/users/me/language", { method: "PUT", body: JSON.stringify({ language }) });
 }
 
 export async function selectMarketplaceRole(role: MarketplaceRole) {

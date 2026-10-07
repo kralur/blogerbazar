@@ -23,6 +23,7 @@ public sealed class PlatformUser
     public string? Username { get; private set; }
     public PlatformRole Role { get; private set; }
     public MarketplaceRole? SelectedMarketplaceRole { get; private set; }
+    public string? PreferredLanguage { get; private set; }
     public bool IsBlocked { get; private set; }
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAtUtc { get; private set; }
@@ -41,6 +42,13 @@ public sealed class PlatformUser
 
     public void SetRole(PlatformRole role) { Role = role; UpdatedAtUtc = DateTime.UtcNow; }
     public void SelectMarketplaceRole(MarketplaceRole role) { SelectedMarketplaceRole = role; UpdatedAtUtc = DateTime.UtcNow; }
+    public void SetPreferredLanguage(string language)
+    {
+        if (!InterfaceLanguage.IsSupported(language)) throw new ArgumentException("The interface language is not supported.", nameof(language));
+        PreferredLanguage = language;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void SetBlocked(bool isBlocked) { IsBlocked = isBlocked; UpdatedAtUtc = DateTime.UtcNow; }
     public void SoftDelete(long deletedByTelegramUserId) { IsDeleted = true; DeletedAtUtc = DateTime.UtcNow; DeletedByTelegramUserId = deletedByTelegramUserId; UpdatedAtUtc = DeletedAtUtc.Value; }
     public void RestoreForNewOnboarding(string firstName, string? username)

@@ -5,14 +5,13 @@ namespace BloggerBazar.Application.Notifications;
 
 internal static class BestEffortTelegramNotification
 {
-    public static async Task SendAsync(ITelegramBotClient? botClient, ILogger? logger, long chatId, string text, CancellationToken cancellationToken)
-    {
-        if (botClient is null) return;
-        try { await botClient.SendNotificationAsync(chatId, text, cancellationToken); }
-        catch (Exception exception) { logger?.LogWarning(exception, "Telegram notification delivery failed for chat {ChatId}", chatId); }
-    }
+    public static Task SendAsync(ITelegramBotClient? botClient, ILogger? logger, long chatId, BotText text, CancellationToken cancellationToken) =>
+        SendCoreAsync(botClient, logger, chatId, text, null, cancellationToken);
 
-    public static async Task SendAsync(ITelegramBotClient? botClient, ILogger? logger, long chatId, string text, string miniAppRoute, CancellationToken cancellationToken)
+    public static Task SendAsync(ITelegramBotClient? botClient, ILogger? logger, long chatId, BotText text, string miniAppRoute, CancellationToken cancellationToken) =>
+        SendCoreAsync(botClient, logger, chatId, text, miniAppRoute, cancellationToken);
+
+    private static async Task SendCoreAsync(ITelegramBotClient? botClient, ILogger? logger, long chatId, BotText text, string? miniAppRoute, CancellationToken cancellationToken)
     {
         if (botClient is null) return;
         try { await botClient.SendNotificationAsync(chatId, text, miniAppRoute, cancellationToken); }

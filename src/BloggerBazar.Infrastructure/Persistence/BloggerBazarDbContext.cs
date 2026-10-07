@@ -67,6 +67,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         user.Property(entity => entity.Username).HasMaxLength(64);
         user.Property(entity => entity.Role).HasConversion<int>();
         user.Property(entity => entity.SelectedMarketplaceRole).HasConversion<int?>();
+        user.Property(entity => entity.PreferredLanguage).HasMaxLength(2);
         user.HasIndex(entity => entity.TelegramUserId).IsUnique();
         user.HasIndex(entity => new { entity.Role, entity.IsBlocked, entity.IsDeleted });
 

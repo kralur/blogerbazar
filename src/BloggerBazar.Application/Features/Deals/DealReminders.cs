@@ -85,7 +85,7 @@ public static class DealReminderSchedule
         return null;
     }
 
-    internal static string Text(DealReminderKind kind) => kind switch
+    internal static BotText Text(DealReminderKind kind) => kind switch
     {
         DealReminderKind.ReviewDay7 => BotMessages.ReviewReminderLastWeek,
         DealReminderKind.ReviewDay1 or DealReminderKind.ReviewDay3 => BotMessages.ReviewReminder,

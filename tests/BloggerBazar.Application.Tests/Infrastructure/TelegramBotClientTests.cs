@@ -1,5 +1,9 @@
+using System.Text.Json;
 using BloggerBazar.Api.Controllers;
+using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Infrastructure.Security;
 using BloggerBazar.Infrastructure.Telegram;
+using Microsoft.Extensions.Options;
 
 namespace BloggerBazar.Application.Tests.Infrastructure;
 
@@ -21,8 +25,58 @@ public sealed class TelegramBotClientTests
     [Fact]
     public void Start_message_greets_in_russian_and_uzbek()
     {
-        Assert.Contains("Добро пожаловать в BloggerBazar", TelegramBotClient.StartMessage);
-        Assert.Contains("BloggerBazar’ga xush kelibsiz", TelegramBotClient.StartMessage);
+        Assert.Contains("Добро пожаловать в BloggerBazar", TelegramBotClient.StartText.Russian);
+        Assert.Contains("BloggerBazar’ga xush kelibsiz", TelegramBotClient.StartText.Uzbek);
+    }
+
+    [Theory]
+    [InlineData("ru", "Привет")]
+    [InlineData("uz", "Salom")]
+    [InlineData(null, "Привет\n\nSalom")]
+    [InlineData("en", "Привет\n\nSalom")]
+    public void Bot_text_uses_the_stored_language_or_both(string? language, string expected) =>
+        Assert.Equal(expected, new BotText("Привет", "Salom").For(language));
+
+    [Theory]
+    [InlineData("ru", "Открыть")]
+    [InlineData("uz", "Ochish")]
+    [InlineData(null, "Открыть / Ochish")]
+    public void Button_label_follows_the_language(string? language, string expected) =>
+        Assert.Equal(expected, TelegramBotClient.ButtonLabel(TelegramBotClient.OpenButton, language));
+
+    [Theory]
+    [InlineData("uz", "Salom", "Ochish")]
+    [InlineData(null, "Привет\n\nSalom", "Открыть / Ochish")]
+    public async Task Notification_is_sent_in_the_recipient_language(string? language, string expectedText, string expectedButton)
+    {
+        var handler = new CapturingHandler();
+        var client = new TelegramBotClient(
+            new HttpClient(handler) { BaseAddress = new Uri("https://api.telegram.org/") },
+            Options.Create(new TelegramOptions { BotToken = "test-token", MiniAppUrl = "https://app.example/" }),
+            new FixedLanguage(language));
+
+        await client.SendNotificationAsync(7, new BotText("Привет", "Salom"), "/deal/1", CancellationToken.None);
+
+        using var body = JsonDocument.Parse(handler.Body!);
+        Assert.Equal(7, body.RootElement.GetProperty("chat_id").GetInt64());
+        Assert.Equal(expectedText, body.RootElement.GetProperty("text").GetString());
+        Assert.Equal(expectedButton, body.RootElement.GetProperty("reply_markup").GetProperty("inline_keyboard")[0][0].GetProperty("text").GetString());
+    }
+
+    private sealed class FixedLanguage(string? language) : IRecipientLanguageLookup
+    {
+        public Task<string?> GetAsync(long chatId, CancellationToken cancellationToken) => Task.FromResult(language);
+    }
+
+    private sealed class CapturingHandler : HttpMessageHandler
+    {
+        public string? Body { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Body = await request.Content!.ReadAsStringAsync(cancellationToken);
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+        }
     }
 
     [Theory]

@@ -68,6 +68,7 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.telegram.org/");
             client.Timeout = TimeSpan.FromSeconds(5);
         });
+        services.AddScoped<IRecipientLanguageLookup, RecipientLanguageLookup>();
         services.AddHttpClient<ITelegramBotClient, TelegramBotClient>(client =>
         {
             client.BaseAddress = new Uri("https://api.telegram.org/");

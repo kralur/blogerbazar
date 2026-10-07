@@ -27,6 +27,15 @@ public sealed class UsersController(ISender sender, ITelegramWebAppValidator tel
         return Ok(await sender.Send(new DeleteCurrentAccountCommand(telegramUser.Id, HttpContext.TraceIdentifier), cancellationToken));
     }
 
+    [HttpPut("language")]
+    [ProducesResponseType<CurrentPlatformUserDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<CurrentPlatformUserDto>> SetLanguage(SetInterfaceLanguageRequest request, CancellationToken cancellationToken)
+    {
+        var telegramUser = GetTelegramUser();
+        return Ok(await sender.Send(new SetInterfaceLanguageCommand(telegramUser.Id, request.Language), cancellationToken));
+    }
+
     [HttpPut("selected-role")]
     public async Task<ActionResult<CurrentPlatformUserDto>> SelectRole(SelectMarketplaceRoleRequest request, CancellationToken cancellationToken)
     {

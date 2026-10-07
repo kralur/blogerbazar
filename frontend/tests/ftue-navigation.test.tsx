@@ -10,7 +10,8 @@ const api = vi.hoisted(() => ({
   getMyBrandFaceProfile: vi.fn(),
   getMyBusinessProfile: vi.fn(),
   normalizeMarketplaceRole: vi.fn((role: string | null | undefined) => role ?? undefined),
-  selectMarketplaceRole: vi.fn()
+  selectMarketplaceRole: vi.fn(),
+  updateInterfaceLanguage: vi.fn(() => Promise.resolve())
 }));
 const telegram = vi.hoisted(() => ({
   isTelegram: true,
@@ -48,6 +49,7 @@ describe("FTUE navigation", () => {
 
     expect(await screen.findByRole("heading", { name: translate("onboarding.title", undefined, "ru") })).toBeInTheDocument();
     expect(screen.queryByText("Brand Face form")).not.toBeInTheDocument();
+    expect(api.updateInterfaceLanguage).not.toHaveBeenCalled();
   });
 
   it("opens Home directly only when FTUE was already completed", async () => {
@@ -56,6 +58,8 @@ describe("FTUE navigation", () => {
     render(<I18nProvider><App /></I18nProvider>);
 
     expect(await screen.findByRole("heading", { name: "Home screen" })).toBeInTheDocument();
+    await waitFor(() => expect(api.updateInterfaceLanguage).toHaveBeenCalledWith("ru"));
+    expect(api.updateInterfaceLanguage).toHaveBeenCalledTimes(1);
   });
 
   it("opens the selected profile form only after explicit role confirmation", async () => {

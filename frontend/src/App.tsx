@@ -1,5 +1,6 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, type MarketplaceRole } from "./api/marketplace";
+import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, updateInterfaceLanguage, type MarketplaceRole } from "./api/marketplace";
+import { useI18n } from "./i18n";
 import { LoadingState } from "./components/ui";
 import { LaunchScreen } from "./components/LaunchScreen";
 import { useTelegram, telegramBridge } from "./telegram/TelegramProvider";
@@ -115,6 +116,15 @@ export function App() {
     if (onboardingStep === "complete") telegramBridge.requestBotMessages();
   }, [onboardingStep]);
 
+  const { language } = useI18n();
+  const syncedLanguage = useRef<string>();
+  useEffect(() => {
+    if (onboardingStep !== "complete" || syncedLanguage.current === language) return;
+    syncedLanguage.current = language;
+    // Best effort: a failed sync only means bot messages stay bilingual until the next launch.
+    void updateInterfaceLanguage(language).catch(() => { syncedLanguage.current = undefined; });
+  }, [language, onboardingStep]);
+
   useEffect(() => {
     if (onboardingStep === "complete" && ["/my-campaigns", "/my-campaign", "/my-campaign-edit"].includes(route.path)) setVisitedMyCampaigns(true);
   }, [onboardingStep, route.path]);
@@ -196,6 +206,7 @@ export function App() {
     clearDealCache();
     clearPublicDetailCache();
     setSessionEpoch((current) => current + 1);
+    syncedLanguage.current = undefined;
     setOnboardingStep("welcome");
     if (window.location.hash !== "#/") window.location.hash = "/";
   }, [setBackButtonHandler]);
