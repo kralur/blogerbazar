@@ -44,6 +44,22 @@ start - Открыть BloggerBazar / BloggerBazar’ni ochish
 
 Других команд нет: вся работа — в приложении, бот только приветствует и присылает уведомления.
 
+## 6. Webhook — без него бот не отвечает на `/start`
+
+Telegram пересылает сообщения боту на `POST https://<домен API>/api/webhooks/telegram`. Сервер принимает
+запрос только с заголовком секрета, равным `Telegram__WebhookSecret` (Railway, сервис API; 1–256 символов:
+латиница, цифры, `_`, `-`). Без переменной сервер отвечает 401 на всё.
+
+Включить (в браузере, одной строкой; токен и секрет никому не пересылать):
+
+```text
+https://api.telegram.org/bot<ТОКЕН>/setWebhook?url=https://<ДОМЕН_API>/api/webhooks/telegram&secret_token=<СЕКРЕТ>&allowed_updates=["message","pre_checkout_query"]&drop_pending_updates=true
+```
+
+Проверить: `https://api.telegram.org/bot<ТОКЕН>/getWebhookInfo` — `url` указывает на API, нет `last_error_message`.
+Уведомления (сервер → пользователь) от webhook не зависят: им нужен только `Telegram:BotToken` и чтобы
+пользователь нажал «Start» или разрешил сообщения в приложении.
+
 ## Что бот отвечает сам (код)
 
 - Язык сообщений — язык, выбранный в приложении (D39). Пока он неизвестен (пользователь ещё не открывал

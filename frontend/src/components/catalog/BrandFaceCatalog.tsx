@@ -5,7 +5,7 @@ import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useProfileDataRefresh } from "../../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../../i18n";
-import { formatCurrency } from "../../lib/currency";
+import { formatCurrency, formatNumericInput } from "../../lib/currency";
 import { uzbekistanRegions } from "../../lib/taxonomy";
 import { useTelegram } from "../../telegram/TelegramProvider";
 import { BottomSheet, Icon, SearchBar } from "../ui";
@@ -166,8 +166,8 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
       <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, safeCategoryLabel(category, t)])]} value={draftFilters.category ?? ""} />
       <FilterSelect label={t("common.city")} onChange={(value) => setDraft("city", value)} options={[["", t("common.any")], ...uzbekistanRegions.map((city) => [city, cityLabel(city)])]} value={draftFilters.city ?? ""} />
       <label className="catalog-search__filter-select"><span>{t("search.language")}</span><input aria-label={t("search.language")} onChange={(event) => setDraft("language", event.target.value)} placeholder={t("search.languagePlaceholder")} type="text" value={draftFilters.language ?? ""} /></label>
-      <label className="catalog-search__filter-select"><span>{t("search.minPrice")}</span><input aria-label={t("search.minPrice")} inputMode="numeric" onChange={(event) => setDraft("minPrice", Number(event.target.value) || undefined)} placeholder={t("search.anyPrice")} type="number" value={draftFilters.minPrice ?? ""} /></label>
-      <label className="catalog-search__filter-select"><span>{t("search.maxPrice")}</span><input aria-label={t("search.maxPrice")} inputMode="numeric" onChange={(event) => setDraft("maxPrice", Number(event.target.value) || undefined)} placeholder={t("search.anyPrice")} type="number" value={draftFilters.maxPrice ?? ""} /></label>
+      <label className="catalog-search__filter-select"><span>{t("search.minPrice")}</span><input aria-label={t("search.minPrice")} inputMode="numeric" onChange={(event) => setDraft("minPrice", Number(event.target.value.replace(/\D/g, "")) || undefined)} placeholder={t("search.anyPrice")} type="text" value={draftFilters.minPrice ? formatNumericInput(String(draftFilters.minPrice)) : ""} /></label>
+      <label className="catalog-search__filter-select"><span>{t("search.maxPrice")}</span><input aria-label={t("search.maxPrice")} inputMode="numeric" onChange={(event) => setDraft("maxPrice", Number(event.target.value.replace(/\D/g, "")) || undefined)} placeholder={t("search.anyPrice")} type="text" value={draftFilters.maxPrice ? formatNumericInput(String(draftFilters.maxPrice)) : ""} /></label>
       <div className="catalog-search__sheet-actions"><button className="catalog-search__secondary-button" onClick={resetFilters} type="button">{t("common.reset")}</button><button className="catalog-search__primary-button" onClick={applyFilters} type="button">{t("common.apply")}</button></div>
     </div></BottomSheet>
     {!(failure && !loadedInitialResult) && <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("search.brandFacesLoading") : t("search.found", { count: total })}</p>}

@@ -26,7 +26,7 @@ vi.mock("../src/components/ui", () => ({
   Input: ({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) => <label>{label}<input {...props} /></label>,
   LoadingState: ({ title }: { title: string }) => <p>{title}</p>,
   Modal: ({ children, open, title }: { children: React.ReactNode; open: boolean; title: string }) => open ? <section aria-label={title}>{children}</section> : null,
-  Textarea: ({ label, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string }) => <label>{label}<textarea {...props} /></label>,
+  Textarea: ({ label, error, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; error?: string }) => <><label>{label}<textarea aria-invalid={error ? true : undefined} {...props} /></label>{error && <span>{error}</span>}</>,
   Toast: ({ message }: { message: string }) => message ? <p role="status">{message}</p> : null
 }));
 
@@ -134,7 +134,7 @@ describe("Offer form", () => {
     fireEvent.change(select, { target: { value: "open" } });
 
     await waitFor(() => expect(screen.getByLabelText(ru("offers.message"))).toHaveValue("Coffee launch\n\nReels about our new coffee"));
-    expect(screen.getByLabelText(ru("offers.budget"))).toHaveValue("900000");
+    expect(screen.getByLabelText(ru("offers.budget"))).toHaveValue("900 000");
     expect(screen.getByLabelText(ru("offers.deadline"))).toHaveValue("2030-05-20");
   });
 
@@ -148,7 +148,9 @@ describe("Offer form", () => {
     renderForm();
     fireEvent.click(screen.getByRole("button", { name: ru("offers.send") }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(ru("offers.messageRequired"));
+    expect(await screen.findByText(ru("offers.messageRequired"))).toBeInTheDocument();
+    expect(screen.getByLabelText(ru("offers.message"))).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(ru("offers.message"))).toBeRequired();
     expect(api.createOffer).not.toHaveBeenCalled();
   });
 

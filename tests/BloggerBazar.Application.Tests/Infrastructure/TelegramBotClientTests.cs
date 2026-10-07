@@ -22,6 +22,16 @@ public sealed class TelegramBotClientTests
     public void No_button_without_a_valid_https_mini_app_url_or_route(string miniAppUrl, string? route) =>
         Assert.Null(TelegramBotClient.MiniAppRouteUrl(miniAppUrl, route));
 
+    [Theory]
+    [InlineData("sendMessage")]
+    [InlineData("answerPreCheckoutQuery")]
+    public void Bot_api_uri_keeps_the_token_colon_in_the_path(string method)
+    {
+        var uri = new Uri(new Uri("https://api.telegram.org/"), TelegramBotApi.MethodUri("8685133134:AAH-x_y", method));
+
+        Assert.Equal($"https://api.telegram.org/bot8685133134:AAH-x_y/{method}", uri.AbsoluteUri);
+    }
+
     [Fact]
     public void Start_message_greets_in_russian_and_uzbek()
     {
@@ -52,11 +62,13 @@ public sealed class TelegramBotClientTests
         var handler = new CapturingHandler();
         var client = new TelegramBotClient(
             new HttpClient(handler) { BaseAddress = new Uri("https://api.telegram.org/") },
-            Options.Create(new TelegramOptions { BotToken = "test-token", MiniAppUrl = "https://app.example/" }),
+            Options.Create(new TelegramOptions { BotToken = "123456:ABC-def_ghi", MiniAppUrl = "https://app.example/" }),
             new FixedLanguage(language));
 
         await client.SendNotificationAsync(7, new BotText("Привет", "Salom"), "/deal/1", CancellationToken.None);
 
+        // Real bot tokens contain a colon; the request must still go to the Bot API host.
+        Assert.Equal("https://api.telegram.org/bot123456:ABC-def_ghi/sendMessage", handler.RequestUri?.AbsoluteUri);
         using var body = JsonDocument.Parse(handler.Body!);
         Assert.Equal(7, body.RootElement.GetProperty("chat_id").GetInt64());
         Assert.Equal(expectedText, body.RootElement.GetProperty("text").GetString());
@@ -71,9 +83,11 @@ public sealed class TelegramBotClientTests
     private sealed class CapturingHandler : HttpMessageHandler
     {
         public string? Body { get; private set; }
+        public Uri? RequestUri { get; private set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            RequestUri = request.RequestUri;
             Body = await request.Content!.ReadAsStringAsync(cancellationToken);
             return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
         }

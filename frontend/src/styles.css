@@ -118,7 +118,9 @@
 @layer base {
   /* iOS WebKit gives date inputs an intrinsic width and centred text, so they overflow narrow grids and sheets. */
   input[type="date"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; text-align: left; }
-  input[type="date"]::-webkit-date-and-time-value { min-height: 1.5em; text-align: left; }
+  input[type="date"]::-webkit-date-and-time-value { min-height: 1.5em; line-height: 1.5em; text-align: left; }
+  /* Without native appearance the value sits at the top; padding centres it within the control height. */
+  input[type="date"].ds-field { padding-block: max(0px, calc((var(--bb-control-height) - 1.5em - 2px) / 2)); }
 }
 
 @layer components {

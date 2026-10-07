@@ -32,7 +32,7 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
         }
 
         var language = await LanguageOfAsync(chatId, cancellationToken);
-        using var response = await httpClient.PostAsJsonAsync($"bot{botToken}/sendMessage", new
+        using var response = await httpClient.PostAsJsonAsync(TelegramBotApi.MethodUri(botToken, "sendMessage"), new
         {
             chat_id = chatId,
             text = StartText.For(language),
@@ -74,7 +74,7 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
         var telegram = options.Value;
         if (string.IsNullOrWhiteSpace(telegram.BotToken)) throw new InvalidOperationException("Telegram:BotToken must be configured to send bot messages.");
         var buttonUrl = MiniAppRouteUrl(telegram.MiniAppUrl, miniAppRoute);
-        using var response = await httpClient.PostAsJsonAsync($"bot{telegram.BotToken}/sendMessage", new
+        using var response = await httpClient.PostAsJsonAsync(TelegramBotApi.MethodUri(telegram.BotToken, "sendMessage"), new
         {
             chat_id = chatId,
             text,

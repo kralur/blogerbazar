@@ -50,10 +50,11 @@ public sealed class TelegramPaymentsWebhookController(
                 {
                     await botClient.SendStartMessageAsync(chat.Id, cancellationToken);
                 }
-                catch (HttpRequestException exception)
+                catch (Exception exception) when (exception is not OperationCanceledException)
                 {
+                    // A non-2xx answer makes Telegram redeliver this update and hold the updates behind it
+                    // (payments included); a missed greeting is not worth that, so log it and acknowledge.
                     logger.LogError(exception, "Unable to send Telegram start message to chat {ChatId}.", chat.Id);
-                    return StatusCode(StatusCodes.Status502BadGateway);
                 }
             }
 

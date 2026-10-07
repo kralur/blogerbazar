@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { createOffer, getMyCampaign, getMyCampaigns, type MyCampaign, type Offer, type OfferFormat } from "../api/marketplace";
 import { useI18n } from "../i18n";
-import { isPastDay, localDay } from "../lib/currency";
+import { formatNumericInput, isPastDay, localDay } from "../lib/currency";
 import { offerFormatLabelKey, offerFormats } from "../lib/offerStatus";
 import { FilterSelect } from "./catalog/CatalogShared";
 import { Button, Input, Modal, Textarea } from "./ui";
@@ -13,6 +13,7 @@ export function OfferForm({ bloggerId, open, onClose, onSent }: { bloggerId: str
   const { t } = useI18n();
   const [format, setFormat] = useState<OfferFormat>("reels");
   const [budget, setBudget] = useState("");
+  const [messageError, setMessageError] = useState("");
   const [deadline, setDeadline] = useState(() => localDay(7));
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -40,6 +41,7 @@ export function OfferForm({ bloggerId, open, onClose, onSent }: { bloggerId: str
       if (campaignBudget != null) setBudget(String(campaignBudget));
       if (campaign.deadline && !isPastDay(campaign.deadline)) setDeadline(campaign.deadline.slice(0, 10));
       setMessage([campaign.title, campaign.description].filter(Boolean).join("\n\n").slice(0, MessageLimit));
+      setMessageError("");
     } catch {
       setError(t("offers.campaignFillFailed"));
     }
@@ -49,7 +51,7 @@ export function OfferForm({ bloggerId, open, onClose, onSent }: { bloggerId: str
     event.preventDefault();
     if (sendingRef.current) return;
     if (!message.trim()) {
-      setError(t("offers.messageRequired"));
+      setMessageError(t("offers.messageRequired"));
       return;
     }
 
@@ -80,15 +82,15 @@ export function OfferForm({ bloggerId, open, onClose, onSent }: { bloggerId: str
   };
 
   return <Modal onClose={() => !sending && onClose()} open={open} title={t("offers.formTitle")}>
-    <form className="grid gap-3" onSubmit={submit}>
+    <form className="grid gap-3" noValidate onSubmit={submit}>
       {campaigns.length > 0 && <FilterSelect label={t("offers.fromCampaign")} onChange={(value) => void fillFromCampaign(value)} options={[["", t("offers.fromCampaignNone")], ...campaigns.map((campaign) => [campaign.id, campaign.title])]} value={campaignId} />}
       <div>
         <p className="mb-2 text-sm font-bold">{t("offers.format")}</p>
         <div className="grid grid-cols-2 gap-2">{offerFormats.map((value) => <button aria-pressed={format === value} className={`rounded-2xl border px-3 py-2.5 text-sm font-bold ${format === value ? "choice-selected" : "border-brand-line"}`} key={value} onClick={() => setFormat(value)} type="button">{t(offerFormatLabelKey(value))}</button>)}</div>
       </div>
-      <Input inputMode="numeric" label={t("offers.budget")} min={0} onChange={(event) => setBudget(event.target.value.replace(/[^\d]/g, ""))} placeholder={t("offers.budgetPlaceholder")} value={budget} />
+      <Input inputMode="numeric" label={t("offers.budget")} onChange={(event) => setBudget(event.target.value.replace(/\D/g, ""))} placeholder={t("offers.budgetPlaceholder")} value={formatNumericInput(budget)} />
       <Input label={t("offers.deadline")} min={localDay(0)} onChange={(event) => setDeadline(event.target.value)} type="date" value={deadline} />
-      <Textarea label={t("offers.message")} maxLength={MessageLimit} onChange={(event) => setMessage(event.target.value)} placeholder={t("offers.messagePlaceholder")} value={message} />
+      <Textarea error={messageError} label={t("offers.message")} maxLength={MessageLimit} onChange={(event) => { setMessage(event.target.value); if (messageError) setMessageError(""); }} placeholder={t("offers.messagePlaceholder")} required value={message} />
       {error && <p className="text-sm font-semibold text-red-600" role="alert">{error}</p>}
       <p className="text-xs text-brand-muted">{t("offers.formHint")}</p>
       <Button disabled={sending} type="submit">{sending ? t("offers.sending") : t("offers.send")}</Button>

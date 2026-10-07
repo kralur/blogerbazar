@@ -3,6 +3,7 @@ using System.Text.Json;
 using BloggerBazar.Application.Abstractions.Payments;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Infrastructure.Security;
+using BloggerBazar.Infrastructure.Telegram;
 using Microsoft.Extensions.Options;
 
 namespace BloggerBazar.Infrastructure.Payments;
@@ -72,7 +73,7 @@ internal sealed class TelegramPaymentGateway(
             throw new InvalidOperationException("Telegram:BotToken is not configured.");
         }
 
-        using var response = await httpClient.PostAsJsonAsync($"bot{botToken}/{method}", body, cancellationToken);
+        using var response = await httpClient.PostAsJsonAsync(TelegramBotApi.MethodUri(botToken, method), body, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidOperationException("Telegram Payments API request failed.");
