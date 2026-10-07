@@ -42,7 +42,7 @@ public sealed class ConfirmContactUnlockPaymentHandler(
 
         if (outcome.SendNotification)
         {
-            await BestEffortTelegramNotification.SendAsync(botClient, logger, outcome.TelegramUserId, "BloggerBazar: оплата подтверждена, контакты разблокированы.", cancellationToken);
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, outcome.TelegramUserId, BotMessages.ContactUnlockPaid, cancellationToken);
         }
 
         return outcome.Order!;

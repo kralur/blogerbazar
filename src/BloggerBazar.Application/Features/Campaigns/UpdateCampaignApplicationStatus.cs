@@ -66,7 +66,7 @@ public sealed class UpdateCampaignApplicationStatusHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (command.Status == CampaignApplicationStatus.Rejected)
         {
-            await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, $"BloggerBazar: заявка на кампанию «{application.Campaign.Title}» отклонена.", cancellationToken);
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, BotMessages.CampaignApplicationRejected(application.Campaign.Title), $"/my-application/{application.Id}", cancellationToken);
         }
         return MyCampaignApplicationDto.ForBusiness(application, blogger);
     }

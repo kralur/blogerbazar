@@ -1,6 +1,7 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Campaigns;
+using BloggerBazar.Application.Tests.Features.Deals;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using System.Reflection;
@@ -24,6 +25,25 @@ public sealed class ApplyToCampaignHandlerTests
         Assert.Equal(campaign.Id, result.CampaignId);
         Assert.Equal(blogger.Id, result.BloggerId);
         Assert.Single(applications.Applications);
+    }
+
+    [Fact]
+    public async Task Notifies_the_business_in_both_languages_with_a_button_to_the_inbox()
+    {
+        var business = ApprovedBusiness(99, "Business");
+        var campaign = PublishedCampaign(business);
+        var blogger = BloggerProfile.Create(12, "Madina", "Ташкент", ["Lifestyle"]);
+        blogger.Approve();
+        var bot = new SpyBotClient();
+        var handler = new ApplyToCampaignHandler(new InMemoryCampaignRepository(campaign), new InMemoryPlatformUserRepository(BloggerUser(12), User(99)), new InMemoryBloggerRepository(blogger), new InMemoryBusinessRepository(), new InMemoryApplicationRepository(), new SpyUnitOfWork(), botClient: bot);
+
+        await handler.Handle(new ApplyToCampaignCommand(campaign.Id, 12, null), CancellationToken.None);
+
+        Assert.Equal(99L, Assert.Single(bot.NotifiedChats));
+        var text = Assert.Single(bot.Texts);
+        Assert.Contains("Новый отклик от Madina", text);
+        Assert.Contains("kampaniyasiga javob yubordi", text);
+        Assert.Equal($"/my-campaign-applications/{campaign.Id}", Assert.Single(bot.Routes));
     }
 
     [Fact]

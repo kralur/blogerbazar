@@ -44,7 +44,7 @@ public sealed class CompleteDealHandler(
             if (completedByThisRequest && deal.Status == DealStatus.Completed)
             {
                 var targetChatId = participant.Role == MarketplaceRole.Blogger ? deal.Business.TelegramUserId : deal.Blogger.TelegramUserId;
-                await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, "BloggerBazar: сделка завершена. Теперь можно оставить отзыв.", $"/deal/{deal.Id}", cancellationToken);
+                await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, BotMessages.DealCompleted, $"/deal/{deal.Id}", cancellationToken);
             }
         }
 

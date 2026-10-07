@@ -43,7 +43,7 @@ public sealed class CreateCollaborationRequestHandler(
         var request = CollaborationRequest.Create(blogger.Id, business.Id, command.Message.Trim());
         await requests.AddAsync(request, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, $"BloggerBazar: {business.Name} отправил(а) вам предложение о сотрудничестве.", cancellationToken);
+        await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, BotMessages.CollaborationRequestReceived(business.Name), cancellationToken);
         return CollaborationRequestDto.From(request, blogger.Name, business.Name);
     }
 }

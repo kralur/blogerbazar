@@ -72,7 +72,7 @@ public sealed class AcceptCampaignApplicationHandler(
             throw new InvalidOperationException("Campaign application decision conflicts with an existing deal.");
         }
         var blogger = bloggers is null ? null : await bloggers.GetByIdAsync(application.BloggerId, cancellationToken);
-        if (blogger is not null) await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, $"BloggerBazar: ваша заявка на кампанию «{application.Campaign.Title}» принята.", cancellationToken);
+        if (blogger is not null) await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, BotMessages.CampaignApplicationAccepted(application.Campaign.Title), $"/deal/{deal.Id}", cancellationToken);
         return DealDto.From(deal);
     }
 }

@@ -178,7 +178,7 @@ public sealed class CreateOfferHandler(
             botClient,
             logger,
             blogger.TelegramUserId,
-            $"BloggerBazar: {business.Name} предлагает вам сотрудничество. Ответьте в течение 48 часов.\n{business.Name} sizga hamkorlik taklif qilmoqda. 48 soat ichida javob bering.",
+            BotMessages.OfferReceived(business.Name),
             $"/offer/{offer.Id}",
             cancellationToken);
         return OfferDto.ForBusiness(offer, blogger, now);
@@ -267,7 +267,7 @@ public sealed class AcceptOfferHandler(
             botClient,
             logger,
             offer.Business.TelegramUserId,
-            $"BloggerBazar: {offer.Blogger.Name} принял(а) ваше предложение. Сделка создана.\n{offer.Blogger.Name} taklifingizni qabul qildi. Bitim yaratildi.",
+            BotMessages.OfferAccepted(offer.Blogger.Name),
             $"/deal/{deal.Id}",
             cancellationToken);
         return new(offer.Id, OfferStates.Accepted, deal.Id);
@@ -307,7 +307,7 @@ public sealed class DeclineOfferHandler(
             botClient,
             logger,
             offer.Business.TelegramUserId,
-            $"BloggerBazar: {offer.Blogger.Name} отклонил(а) ваше предложение.\n{offer.Blogger.Name} taklifingizni rad etdi.",
+            BotMessages.OfferDeclined(offer.Blogger.Name),
             $"/offer/{offer.Id}",
             cancellationToken);
         return new(offer.Id, OfferStates.Declined, null);

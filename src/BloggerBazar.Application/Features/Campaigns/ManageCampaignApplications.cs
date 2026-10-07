@@ -291,7 +291,7 @@ public sealed class DecideCampaignApplicationHandler(
         if (blogger is not null)
         {
             await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId,
-                $"BloggerBazar: ваша заявка на кампанию «{application.Campaign.Title}» принята.", cancellationToken);
+                BotMessages.CampaignApplicationAccepted(application.Campaign.Title), $"/deal/{deal.Id}", cancellationToken);
         }
         return new CampaignApplicationDecisionDto(application.Id, (int)application.Status, deal.Id);
     }

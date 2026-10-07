@@ -48,10 +48,10 @@ public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository prof
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var notification = command.NeedsChanges
-            ? "BloggerBazar: необходимо исправить несколько пунктов. После сохранения отправьте профиль ещё раз."
+            ? BotMessages.BloggerProfileNeedsChanges
             : command.Approve
-                ? "🎉 Поздравляем! Ваш профиль успешно прошёл модерацию. Теперь он доступен пользователям BloggerBazar."
-                : "BloggerBazar: анкета не прошла проверку. Исправьте замечания и отправьте снова.";
+                ? BotMessages.BloggerProfileApproved
+                : BotMessages.BloggerProfileRejected;
         await BestEffortTelegramNotification.SendAsync(botClient, logger, profile.TelegramUserId, notification, cancellationToken);
         return AdminBloggerProfileDto.From(profile);
     }

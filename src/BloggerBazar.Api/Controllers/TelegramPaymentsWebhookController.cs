@@ -76,15 +76,17 @@ public sealed class TelegramPaymentsWebhookController(
         return Ok();
     }
 
-    private static bool IsStartCommand(string? text, string botUsername)
+    internal static bool IsStartCommand(string? text, string botUsername)
     {
-        if (string.Equals(text, "/start", StringComparison.Ordinal))
+        // A deep link (t.me/bot?start=payload) sends "/start payload"; the payload is not used yet.
+        var command = text?.Split(' ', 2)[0];
+        if (string.Equals(command, "/start", StringComparison.Ordinal))
         {
             return true;
         }
 
         var normalizedUsername = botUsername.Trim().TrimStart('@');
         return !string.IsNullOrWhiteSpace(normalizedUsername)
-            && string.Equals(text, $"/start@{normalizedUsername}", StringComparison.OrdinalIgnoreCase);
+            && string.Equals(command, $"/start@{normalizedUsername}", StringComparison.OrdinalIgnoreCase);
     }
 }

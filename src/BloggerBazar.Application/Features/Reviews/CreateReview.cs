@@ -86,8 +86,8 @@ public sealed class CreateReviewHandler(
         var revealed = await reviews.PublishRevealedAsync(deal.Id, nowUtc, cancellationToken) > 0;
         var targetChatId = reviewerIsBlogger ? deal.Business.TelegramUserId : deal.Blogger.TelegramUserId;
         var text = revealed
-            ? "BloggerBazar: партнёр тоже оставил отзыв — оба отзыва опубликованы."
-            : "BloggerBazar: партнёр оставил отзыв о сотрудничестве. Оцените и вы — отзывы откроются, когда оба оценят друг друга.";
+            ? BotMessages.ReviewsPublished
+            : BotMessages.PartnerReviewed;
         await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, text, $"/deal/{deal.Id}", cancellationToken);
         return ReviewDto.From(review) with { ReviewerName = reviewerIsBlogger ? deal.Blogger.Name : deal.Business.Name };
     }

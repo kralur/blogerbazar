@@ -28,7 +28,7 @@ public sealed class ModerateBusinessProfileHandler(IBusinessProfileRepository bu
         if (command.NeedsChanges) profile.RequestChanges(); else if (command.Approve) profile.Approve(); else profile.Reject();
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
-        await BestEffortTelegramNotification.SendAsync(botClient, logger, profile.TelegramUserId, command.Approve ? "🎉 Профиль компании одобрен и доступен в BloggerBazar." : command.NeedsChanges ? "BloggerBazar: необходимо исправить несколько пунктов профиля компании." : "BloggerBazar: профиль компании не прошёл проверку.", cancellationToken);
+        await BestEffortTelegramNotification.SendAsync(botClient, logger, profile.TelegramUserId, command.Approve ? BotMessages.BusinessProfileApproved : command.NeedsChanges ? BotMessages.BusinessProfileNeedsChanges : BotMessages.BusinessProfileRejected, cancellationToken);
         return BusinessProfileDto.From(profile);
     }
 }

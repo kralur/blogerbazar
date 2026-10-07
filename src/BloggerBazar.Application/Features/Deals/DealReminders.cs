@@ -87,9 +87,9 @@ public static class DealReminderSchedule
 
     internal static string Text(DealReminderKind kind) => kind switch
     {
-        DealReminderKind.ReviewDay7 => "BloggerBazar: осталась неделя, чтобы оценить завершённую сделку. Отзывы публикуются, когда обе стороны оценят друг друга.",
-        DealReminderKind.ReviewDay1 or DealReminderKind.ReviewDay3 => "BloggerBazar: оцените завершённую сделку. Отзывы публикуются, когда обе стороны оценят друг друга.",
-        _ => "BloggerBazar: сделка всё ещё активна. Если сотрудничество завершено, отметьте это в приложении."
+        DealReminderKind.ReviewDay7 => BotMessages.ReviewReminderLastWeek,
+        DealReminderKind.ReviewDay1 or DealReminderKind.ReviewDay3 => BotMessages.ReviewReminder,
+        _ => BotMessages.CompletionReminder
     };
 }
 

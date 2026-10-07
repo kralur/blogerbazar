@@ -7,6 +7,15 @@ namespace BloggerBazar.Infrastructure.Telegram;
 
 internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<TelegramOptions> options) : ITelegramBotClient
 {
+    // The backend does not store the user's interface language, so the greeting carries Russian and Uzbek.
+    internal const string StartMessage =
+        "👋 Добро пожаловать в BloggerBazar — площадку, где бизнес находит блогеров для рекламы.\n\n" +
+        "Здесь я буду присылать уведомления: новые отклики и предложения, решения по ним, статус сделок и напоминания об отзывах.\n\n" +
+        "Нажмите «Открыть», чтобы начать.\n\n" +
+        "👋 BloggerBazar’ga xush kelibsiz — bu yerda biznes reklama uchun blogerlarni topadi.\n\n" +
+        "Bu yerda sizga bildirishnomalar yuboraman: yangi javoblar va takliflar, ular bo‘yicha qarorlar, bitimlar holati va fikr qoldirish haqida eslatmalar.\n\n" +
+        "Boshlash uchun «Ochish» tugmasini bosing.";
+
     public async Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken)
     {
         var telegram = options.Value;
@@ -19,13 +28,13 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
         using var response = await httpClient.PostAsJsonAsync($"bot{botToken}/sendMessage", new
         {
             chat_id = chatId,
-            text = "👋 Добро пожаловать в BloggerBazar!\n\nПлощадка, где бизнес находит блогеров, а блогеры — рекламные интеграции.\n\nНажмите кнопку ниже, чтобы открыть приложение.",
+            text = StartMessage,
             reply_markup = Uri.TryCreate(telegram.MiniAppUrl, UriKind.Absolute, out var miniAppUrl)
                 ? new
                 {
                     inline_keyboard = new[]
                     {
-                        new[] { new { text = "🚀 Открыть BloggerBazar", web_app = new { url = miniAppUrl.ToString() } }
+                        new[] { new { text = "🚀 Открыть / Ochish", web_app = new { url = miniAppUrl.ToString() } }
                     }
                     }
                 }

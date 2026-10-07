@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Controllers;
 using BloggerBazar.Infrastructure.Telegram;
 
 namespace BloggerBazar.Application.Tests.Infrastructure;
@@ -16,4 +17,22 @@ public sealed class TelegramBotClientTests
     [InlineData("https://app.example/", null)]
     public void No_button_without_a_valid_https_mini_app_url_or_route(string miniAppUrl, string? route) =>
         Assert.Null(TelegramBotClient.MiniAppRouteUrl(miniAppUrl, route));
+
+    [Fact]
+    public void Start_message_greets_in_russian_and_uzbek()
+    {
+        Assert.Contains("Добро пожаловать в BloggerBazar", TelegramBotClient.StartMessage);
+        Assert.Contains("BloggerBazar’ga xush kelibsiz", TelegramBotClient.StartMessage);
+    }
+
+    [Theory]
+    [InlineData("/start", true)]
+    [InlineData("/start campaign_42", true)]
+    [InlineData("/start@BloggerBazarBot", true)]
+    [InlineData("/start@bloggerbazarbot ref", true)]
+    [InlineData("/started", false)]
+    [InlineData("hello", false)]
+    [InlineData(null, false)]
+    public void Start_command_accepts_a_deep_link_payload(string? text, bool expected) =>
+        Assert.Equal(expected, TelegramPaymentsWebhookController.IsStartCommand(text, "@BloggerBazarBot"));
 }

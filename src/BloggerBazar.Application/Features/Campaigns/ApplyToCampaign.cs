@@ -83,7 +83,7 @@ public sealed class ApplyToCampaignHandler(
         }
         if (campaign.Business is not null)
         {
-            await BestEffortTelegramNotification.SendAsync(botClient, logger, campaign.Business.TelegramUserId, $"BloggerBazar: новая заявка от {blogger.Name} на кампанию «{campaign.Title}».", cancellationToken);
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, campaign.Business.TelegramUserId, BotMessages.NewCampaignApplication(blogger.Name, campaign.Title), $"/my-campaign-applications/{campaign.Id}", cancellationToken);
         }
         return CampaignApplicationDto.From(application);
     }
