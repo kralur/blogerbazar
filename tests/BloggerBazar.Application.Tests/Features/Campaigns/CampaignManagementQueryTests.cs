@@ -129,7 +129,7 @@ public sealed class CampaignManagementQueryTests
     {
         var properties = typeof(MyCampaignItemDto).GetProperties().Select(property => property.Name).OrderBy(name => name).ToArray();
 
-        Assert.Equal(["ApplicationsCount", "Categories", "City", "CreatedAtUtc", "Deadline", "Id", "IsPromoted", "MaxBudget", "MinBudget", "Status", "Title", "UpdatedAtUtc"], properties);
+        Assert.Equal(["ApplicationsCount", "Categories", "City", "CreatedAtUtc", "Deadline", "Id", "IsPromoted", "MaxBudget", "MinBudget", "PendingApplicationsCount", "Status", "Title", "UpdatedAtUtc"], properties);
     }
 
     private static PlatformUser ActiveBusinessUser(long telegramUserId)
