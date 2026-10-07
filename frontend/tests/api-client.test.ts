@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, getApiErrorMessage } from "../src/api/client";
 import { translate } from "../src/i18n";
-import { acceptMyCampaignApplication, applyToCampaign, closeMyCampaign, getBrandFaceCatalog, getBrandFaceFavorites, getCampaignApplicationInbox, getCampaignCatalog, getCampaigns, getMyCampaign, getMyCampaignApplication, getMyCampaignApplicationsPage, getMyCampaigns, rejectMyCampaignApplication, removeBrandFaceFavorite, saveBrandFaceFavorite, updateMyCampaign, withdrawMyCampaignApplication } from "../src/api/marketplace";
+import { acceptMyCampaignApplication, applyToCampaign, closeMyCampaign, getBrandFaceCatalog, getBrandFaceFavorites, getCampaignApplicationInbox, getCampaignCatalog, getMyCampaign, getMyCampaignApplication, getMyCampaignApplicationsPage, getMyCampaigns, rejectMyCampaignApplication, removeBrandFaceFavorite, saveBrandFaceFavorite, updateMyCampaign, withdrawMyCampaignApplication } from "../src/api/marketplace";
 
 describe("API client", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -91,11 +91,9 @@ describe("API client", () => {
       pageSize: 10,
       hasMore: false
     });
-    await getCampaigns();
 
     expect(fetchMock.mock.calls[0][0]).toBe("/api/campaigns/catalog?query=Coffee&city=tashkent-city&category=beauty&minBudget=100000&maxBudget=300000&deadlineFrom=2026-08-01&deadlineTo=2026-08-31&sort=budget_desc&page=2&pageSize=10");
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
-    expect(fetchMock.mock.calls[1][0]).toBe("/api/campaigns?pageSize=20");
   });
 
   it("uses private My Campaigns endpoints without sending a BusinessId or reusing public catalog routes", async () => {

@@ -473,11 +473,6 @@ export async function getBusinessReviews(id: string, signal?: AbortSignal): Prom
   return api<BusinessReviews>(`/api/businesses/${id}/reviews?take=5`, { signal });
 }
 
-export async function getCampaigns(): Promise<CampaignCardData[]> {
-  const response = await api<{ campaigns: ApiCampaign[] }>("/api/campaigns?pageSize=20");
-  return response.campaigns.map(asCampaignCard);
-}
-
 export async function getCampaignCatalog(query: CampaignCatalogQuery = {}, signal?: AbortSignal): Promise<CampaignCatalogResponse> {
   const params = new URLSearchParams();
   Object.entries({ ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 20 }).forEach(([key, value]) => {
@@ -804,46 +799,4 @@ export async function createCampaign(input: {
   publishImmediately: boolean;
 }) {
   return api("/api/campaigns", { method: "POST", body: JSON.stringify(input) });
-}
-
-export type PendingBloggerProfile = {
-  id: string;
-  name: string;
-  city: string;
-  categories: string[];
-  avatarUrl?: string | null;
-  totalFollowers: number;
-  status: number;
-  createdAtUtc: string;
-};
-
-export type PendingBusinessProfile = {
-  id: string;
-  name: string;
-  username?: string | null;
-  city?: string | null;
-  logoUrl?: string | null;
-  description?: string | null;
-  moderationStatus: number;
-  createdAtUtc: string;
-};
-
-export async function getPendingBloggerProfiles() {
-  return api<PendingBloggerProfile[]>("/api/admin/bloggers/pending");
-}
-
-export async function moderateBloggerProfile(id: string, decision: "approve" | "reject") {
-  return api<PendingBloggerProfile>(`/api/admin/bloggers/${id}/${decision}`, { method: "POST" });
-}
-
-export async function requestBloggerChanges(id: string) {
-  return api<PendingBloggerProfile>(`/api/admin/bloggers/${id}/needs-changes`, { method: "POST" });
-}
-
-export async function getPendingBusinessProfiles() {
-  return api<PendingBusinessProfile[]>("/api/admin/businesses/pending");
-}
-
-export async function moderateBusinessProfile(id: string, decision: "approve" | "reject" | "needs-changes") {
-  return api<PendingBusinessProfile>(`/api/admin/businesses/${id}/${decision}`, { method: "POST" });
 }

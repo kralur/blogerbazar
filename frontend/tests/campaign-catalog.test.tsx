@@ -33,7 +33,6 @@ vi.mock("../src/components/ui", () => ({
   BottomNav: () => <nav aria-label="bottom-nav" />,
   BottomSheet: ({ children, open, title, onClose }: { children: React.ReactNode; open: boolean; title: string; onClose: () => void }) => open ? <section aria-label={title}><button aria-label="close-sheet" onClick={onClose} type="button">close</button>{children}</section> : null,
   Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
-  FloatingActionButton: ({ ariaLabel, children, onClick }: { ariaLabel: string; children: React.ReactNode; onClick: () => void }) => <button aria-label={ariaLabel} onClick={onClick} type="button">{children}</button>,
   Icon: () => <svg />,
   Input: ({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) => <label>{label}<input {...props} /></label>,
   Modal: ({ children, id, open }: { children: React.ReactNode; id?: string; open: boolean }) => open ? <section data-testid="campaign-modal" id={id}>{children}</section> : null,

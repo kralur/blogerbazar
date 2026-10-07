@@ -10,7 +10,7 @@ const telegram = vi.hoisted(() => ({ isTelegram: false, setBackButtonHandler: vi
 
 vi.mock("../src/telegram/TelegramProvider", () => ({
   useTelegram: () => telegram,
-  telegramBridge: { initData: "" }
+  telegramBridge: { initData: "", requestBotMessages: () => undefined }
 }));
 
 describe("first-time flow", () => {

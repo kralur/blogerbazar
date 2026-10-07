@@ -21,7 +21,7 @@ const telegram = vi.hoisted(() => ({
 vi.mock("../src/api/marketplace", () => api);
 vi.mock("../src/telegram/TelegramProvider", () => ({
   useTelegram: () => telegram,
-  telegramBridge: { initData: "telegram-init-data" }
+  telegramBridge: { initData: "telegram-init-data", requestBotMessages: () => undefined }
 }));
 vi.mock("../src/features/favorites/FavoritesProvider", () => ({
   FavoritesProvider: ({ children }: { children: ReactNode }) => <>{children}</>

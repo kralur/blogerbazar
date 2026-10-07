@@ -685,28 +685,6 @@
     @apply transition duration-200 ease-out active:scale-[0.98] motion-reduce:transition-none;
   }
 
-  .section-header {
-    @apply mb-3 flex items-center justify-between gap-3;
-  }
-
-  .section-header__title {
-    color: var(--bb-text);
-    font-size: 1.125rem;
-    font-weight: 800;
-    line-height: 1.25;
-  }
-
-  .section-header__action {
-    min-height: 2.75rem;
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    color: var(--bb-action);
-    font-size: .8125rem;
-    font-weight: 800;
-    transition: color 160ms ease, opacity 160ms ease;
-  }
-
   .shimmer {
     border: 1px solid var(--bb-border);
     background: linear-gradient(90deg, var(--bb-surface-secondary) 25%, var(--bb-surface) 42%, var(--bb-surface-secondary) 64%);
@@ -819,7 +797,6 @@
     letter-spacing: -.035em;
   }
 
-
   .home-search { margin-top: 1rem; }
   .home-search h2 { font-size: 1.125rem; line-height: 1.25; }
   .home-search__form { display: flex; min-height: 3.25rem; align-items: center; gap: .5rem; margin-top: .75rem; padding: .25rem .25rem .25rem .875rem; border: 1px solid var(--bb-text); border-radius: .875rem; background: var(--bb-surface); }
@@ -887,7 +864,6 @@
   .home-category-chip { display: inline-flex; min-height: 2.75rem; align-items: center; border: 1px solid var(--bb-border); border-radius: 999px; background: var(--bb-surface); padding: .5rem .875rem; color: var(--bb-text); font-size: .8125rem; font-weight: 750; line-height: 1.2; text-decoration: none; transition: border-color 160ms ease, background-color 160ms ease; }
   .home-category-chip:hover,
   .home-category-chip:active { border-color: var(--bb-accent); background: var(--bb-accent-subtle); }
-
 
   .home-inline-empty,
   .home-error { display: grid; gap: 1rem; margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
@@ -996,10 +972,6 @@
     padding-bottom: .75rem;
     background: color-mix(in srgb, var(--bb-background) 90%, transparent);
     backdrop-filter: blur(18px);
-  }
-
-  .floating-action {
-    bottom: max(calc(var(--bb-bottom-nav-height) + .5rem), calc(var(--bb-bottom-nav-height) + .5rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom))));
   }
 
 }
@@ -1233,9 +1205,6 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .management-back-link:active { border-color: var(--bb-text-secondary); background: var(--bb-surface-secondary); }
 .avatar-surface { border: 1px solid var(--bb-border); background: var(--bb-surface-secondary); color: var(--bb-text); }
 .avatar-verified { border: 3px solid var(--bb-surface); background: var(--bb-accent); color: var(--bb-accent-text); }
-.paywall-icon { background: var(--bb-surface-secondary); color: var(--bb-text); }
-.floating-action { background: var(--bb-accent); color: var(--bb-accent-text); box-shadow: var(--bb-shadow-action); }
-.floating-action:active { background: var(--bb-accent-pressed); }
 .profile-cover { height: 7rem; margin: .75rem -1rem 0; overflow: hidden; border-block: 1px solid var(--bb-border); background: var(--bb-surface-secondary); }
 .campaign-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--bb-border); }
 .campaign-hero__title { margin: .75rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: 1.375rem; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
-import { formatCurrency } from "../lib/currency";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { requestGuardedNavigation } from "../navigation/guardedNavigation";
@@ -86,18 +85,6 @@ export function Button({
 
 export function Card({ children, className, ...props }: ComponentPropsWithoutRef<"section">) {
   return <section className={cn("glass-card p-4", className)} {...props}>{children}</section>;
-}
-
-export function Container({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("mx-auto w-full max-w-[430px]", className)}>{children}</div>;
-}
-
-export function SectionHeader({ title, action, href }: { title: string; action?: string; href?: string }) {
-  return <div className="section-header"><h2 className="section-header__title">{title}</h2>{action && href && <a className="section-header__action" href={href}>{action}</a>}</div>;
-}
-
-export function Divider({ className }: { className?: string }) {
-  return <div className={cn("h-px bg-[color:var(--bb-border)]", className)} />;
 }
 
 export function Input({ label, error, suffix, className, onInvalid, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string; suffix?: ReactNode }) {
@@ -197,15 +184,6 @@ export function Badge({ children, tone = "blue" }: { children: ReactNode; tone?:
   );
 }
 
-export function StatusBadge({ children, status = "neutral" }: { children: ReactNode; status?: "success" | "warning" | "neutral" | "info" }) {
-  const tone = status === "success" ? "green" : status === "warning" ? "gold" : status === "info" ? "blue" : "gray";
-  return <Badge tone={tone}>{children}</Badge>;
-}
-
-export function Price({ value, className }: { value?: number | null; className?: string }) {
-  return <span className={cn("font-extrabold tracking-tight", className)}>{formatCurrency(value)}</span>;
-}
-
 export function Avatar({ src, name, size = "md", verified = false, variant = "default" }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean; variant?: "default" | "catalog" | "neutral" }) {
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [src]);
@@ -245,31 +223,6 @@ export function StatsCard({ icon, value, label }: { icon?: string; value: string
   );
 }
 
-export function PaywallCard({ title, subtitle, price, cta, onClick }: { title: string; subtitle: string; price?: string; cta?: string; onClick?: () => void }) {
-  const { t } = useI18n();
-  return (
-    <Card className="overflow-hidden p-0">
-      <div className="relative p-5 text-center">
-        <div className="paywall-icon relative mx-auto grid h-16 w-16 place-items-center rounded-2xl">
-          <Icon name="lock" />
-        </div>
-        <h3 className="relative mt-4 text-xl font-extrabold leading-tight">{title}</h3>
-        <p className="relative mt-2 text-sm leading-5 text-brand-muted">{subtitle}</p>
-        <div className="relative mt-3 text-lg font-extrabold">{price ?? formatCurrency(29000)}</div>
-        <Button aria-describedby={onClick ? undefined : "paywall-coming-soon"} className="relative mt-4 w-full" disabled={!onClick} onClick={onClick} type="button">
-          {cta ?? t("common.open")}
-        </Button>
-        {!onClick && <p className="relative mt-2 text-xs text-brand-muted" id="paywall-coming-soon">{t("ui.paywallSoon")}</p>}
-      </div>
-    </Card>
-  );
-}
-
-export function PromotionCard({ title, subtitle, audience }: { title: string; subtitle: string; audience: string }) {
-  const { t } = useI18n();
-  return <Card className="overflow-hidden"><Badge tone="gray">{t("ui.soon")}</Badge><h3 className="mt-3 text-lg font-extrabold">{title}</h3><p className="mt-2 text-sm leading-5 text-brand-muted">{subtitle}</p><p className="mt-3 text-xs font-bold text-brand-muted">{t("ui.forAudience", { audience })}</p><Button className="mt-4 w-full" disabled title={t("ui.promotionUnavailable")} type="button">{t("ui.soon")}</Button></Card>;
-}
-
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cn("shimmer rounded-[var(--bb-radius-card)]", className)} />;
 }
@@ -294,20 +247,6 @@ export function LoadingState({ title }: { title?: string }) {
 export function ErrorState({ title, subtitle, onRetry }: { title?: string; subtitle?: string; onRetry?: () => void }) {
   const { t } = useI18n();
   return <div className="space-y-3"><EmptyState icon="filter" subtitle={subtitle ?? t("ui.errorSubtitle")} title={title ?? t("ui.errorTitle")} />{onRetry && <Button className="w-full" onClick={onRetry} type="button">{t("common.retry")}</Button>}</div>;
-}
-
-export function OfflineState({ onRetry }: { onRetry?: () => void }) {
-  const { t } = useI18n();
-  return <ErrorState onRetry={onRetry} subtitle={t("ui.offlineSubtitle")} title={t("ui.offlineTitle")} />;
-}
-
-export function PermissionDeniedState({ subtitle }: { subtitle?: string }) {
-  const { t } = useI18n();
-  return <EmptyState icon="lock" subtitle={subtitle ?? t("ui.accessDeniedSubtitle")} title={t("ui.accessDenied")} />;
-}
-
-export function NoDataState({ title, subtitle, icon = "search", action }: { title: string; subtitle: string; icon?: string; action?: ReactNode }) {
-  return <div className="space-y-3"><EmptyState icon={icon} subtitle={subtitle} title={title} />{action}</div>;
 }
 
 export type ToastTone = "success" | "saved" | "deleted" | "copied" | "error" | "warning" | "info";
@@ -429,12 +368,6 @@ export function FixedActionBar({ children }: { children: ReactNode }) {
   }, []);
   if (typeof document === "undefined") return null;
   return createPortal(<div className="fixed-action-bar fixed inset-x-0 z-40 mx-auto max-w-[430px] px-5">{children}</div>, document.body);
-}
-
-export function FloatingActionButton({ children, ariaLabel, onClick }: { children: ReactNode; ariaLabel: string; onClick: () => void }) {
-  const rootScreenVisible = useRootScreenVisibility();
-  if (!rootScreenVisible || typeof document === "undefined") return null;
-  return createPortal(<button aria-label={ariaLabel} className="floating-action fixed right-5 z-40 grid h-14 w-14 place-items-center rounded-full transition active:scale-95" onClick={onClick} type="button">{children}</button>, document.body);
 }
 
 export function BottomNav() {

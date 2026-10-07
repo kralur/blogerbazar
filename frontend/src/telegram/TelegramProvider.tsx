@@ -3,7 +3,7 @@ import { LaunchScreen } from "../components/LaunchScreen";
 import { resolveTelegramContentTop, TelegramLaunch } from "./telegramTheme";
 import { getThemePreference, resolveColorScheme, themePreferenceChangedEvent } from "../lib/themePreference";
 
-type TelegramUser = { id: number; username?: string; first_name?: string; photo_url?: string; language_code?: string };
+type TelegramUser = { id: number; username?: string; first_name?: string; photo_url?: string; language_code?: string; allows_write_to_pm?: boolean };
 type TelegramBackButton = { show?: () => void; hide?: () => void; onClick?: (handler: () => void) => void; offClick?: (handler: () => void) => void };
 type TelegramHaptic = { selectionChanged?: () => void; impactOccurred?: (style: "light" | "medium" | "heavy" | "rigid" | "soft") => void; notificationOccurred?: (type: "error" | "success" | "warning") => void };
 type TelegramInset = { top?: number; bottom?: number; left?: number; right?: number };
@@ -35,6 +35,8 @@ type TelegramWebApp = {
   disableVerticalSwipes?: () => void;
   openLink?: (url: string) => void;
   openTelegramLink?: (url: string) => void;
+  isVersionAtLeast?: (version: string) => boolean;
+  requestWriteAccess?: (callback?: (allowed: boolean) => void) => void;
   onEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "fullscreenFailed" | "orientationChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
   offEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "fullscreenFailed" | "orientationChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
 };
@@ -47,10 +49,27 @@ function webApp(): TelegramWebApp | undefined {
   return typeof window === "undefined" ? undefined : window.Telegram?.WebApp;
 }
 
+const writeAccessRequestedKey = "bloggerbazar.writeAccessRequested";
+
+// The bot can message only users who opened its chat or allowed it here; notifications fail silently otherwise.
+function requestBotMessages() {
+  const app = webApp();
+  if (!app?.initData || !app.requestWriteAccess || app.initDataUnsafe?.user?.allows_write_to_pm) return;
+  if (app.isVersionAtLeast && !app.isVersionAtLeast("6.9")) return;
+  try {
+    if (localStorage.getItem(writeAccessRequestedKey) === "true") return;
+    localStorage.setItem(writeAccessRequestedKey, "true");
+  } catch {
+    return;
+  }
+  try { app.requestWriteAccess(); } catch { /* unsupported client */ }
+}
+
 export const telegramBridge = {
   get initData() { return webApp()?.initData ?? ""; },
   get user() { return webApp()?.initDataUnsafe?.user; },
-  get isTelegram() { return Boolean(webApp()?.initData); }
+  get isTelegram() { return Boolean(webApp()?.initData); },
+  requestBotMessages
 };
 
 type TelegramContextValue = {

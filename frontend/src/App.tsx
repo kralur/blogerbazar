@@ -2,7 +2,7 @@ import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, type MarketplaceRole } from "./api/marketplace";
 import { LoadingState } from "./components/ui";
 import { LaunchScreen } from "./components/LaunchScreen";
-import { useTelegram } from "./telegram/TelegramProvider";
+import { useTelegram, telegramBridge } from "./telegram/TelegramProvider";
 import { FavoritesProvider } from "./features/favorites/FavoritesProvider";
 import { RootScreenVisibility } from "./navigation/RootScreenVisibility";
 import { useTelegramBackHandler } from "./hooks/useTelegramBackHandler";
@@ -110,6 +110,10 @@ export function App() {
       setVisitedRootRoutes((current) => current.has(route.path) ? current : new Set([...current, route.path]));
     }
   }, [onboardingStep, route.path]);
+
+  useEffect(() => {
+    if (onboardingStep === "complete") telegramBridge.requestBotMessages();
+  }, [onboardingStep]);
 
   useEffect(() => {
     if (onboardingStep === "complete" && ["/my-campaigns", "/my-campaign", "/my-campaign-edit"].includes(route.path)) setVisitedMyCampaigns(true);
