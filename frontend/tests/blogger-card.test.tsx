@@ -27,7 +27,7 @@ describe("BloggerCard", () => {
     rerender(<I18nProvider><BloggerCard blogger={blogger} /></I18nProvider>);
     expect(screen.queryByText(ru("search.er"))).not.toBeInTheDocument();
     expect(screen.queryByText(ru("card.priceFrom"))).not.toBeInTheDocument();
-    expect(screen.queryByText("—")).not.toBeInTheDocument();
+    expect(screen.queryByText("-")).not.toBeInTheDocument();
   });
 
   it("uses the same layout on Home rails", () => {

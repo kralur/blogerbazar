@@ -1,5 +1,7 @@
 # Telegram-бот: тексты и настройка в BotFather
 
+Правило владельца (2026-10-07): в текстах для пользователей (приложение, бот, BotFather) не использовать длинное тире «—».
+
 Настраивает владелец вручную в [@BotFather](https://t.me/BotFather). Код этих настроек не меняет
 (CLAUDE.md, правило 5). Всё ниже — в чате с BotFather: `/mybots` → выбрать бота.
 
@@ -8,10 +10,10 @@
 Видно в пустом чате до нажатия «Start». `Edit Bot` → `Edit Description` (или команда `/setdescription`):
 
 ```text
-BloggerBazar — площадка, где бизнес находит блогеров для рекламы, а блогеры — рекламные заказы.
+BloggerBazar: площадка, где бизнес находит блогеров для рекламы, а блогеры находят рекламные заказы.
 Бот присылает уведомления: новые отклики и предложения, сделки, напоминания об отзывах.
 
-BloggerBazar — biznes reklama uchun blogerlarni, blogerlar esa reklama buyurtmalarini topadigan maydon.
+BloggerBazar: biznes reklama uchun blogerlarni, blogerlar esa reklama buyurtmalarini topadigan maydon.
 Bot bildirishnomalar yuboradi: yangi javoblar va takliflar, bitimlar, fikrlar haqida eslatmalar.
 ```
 

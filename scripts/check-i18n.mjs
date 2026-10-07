@@ -44,6 +44,10 @@ const failures = [];
 if (missingInUz.length || missingInRu.length) failures.push(`dictionary mismatch (uz: ${missingInUz.join(", ") || "none"}; ru: ${missingInRu.join(", ") || "none"})`);
 if (duplicates.length) failures.push(`duplicate dictionary keys: ${duplicates.join(", ")}`);
 if (missingReferences.length) failures.push(`missing translation keys: ${missingReferences.join(", ")}`);
+// Owner rule: user-facing texts do not use the em dash.
+const emDashKeys = ["ru", "uz"].flatMap((language) => Object.entries(JSON.parse(readFileSync(join(dictionaryRoot, `${language}.json`), "utf8")))
+  .filter(([, value]) => typeof value === "string" && value.includes("\u2014")).map(([key]) => `${language}:${key}`));
+if (emDashKeys.length) failures.push(`em dash in dictionary texts: ${emDashKeys.join(", ")}`);
 if (hardcoded.length) failures.push(`hardcoded Cyrillic/Uzbek UI text outside i18n: ${hardcoded.join(", ")}`);
 if (failures.length) throw new Error(`i18n audit failed\n- ${failures.join("\n- ")}`);
 console.log(`i18n audit passed: ${ru.size} keys, ${references.size} references, no hardcoded RU/UZ text.`);

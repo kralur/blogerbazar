@@ -8,10 +8,10 @@ namespace BloggerBazar.Infrastructure.Telegram;
 internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<TelegramOptions> options, IRecipientLanguageLookup languages) : ITelegramBotClient
 {
     internal static readonly BotText StartText = new(
-        "👋 Добро пожаловать в BloggerBazar — площадку, где бизнес находит блогеров для рекламы.\n\n" +
+        "👋 Добро пожаловать в BloggerBazar! Здесь бизнес находит блогеров для рекламы.\n\n" +
         "Здесь я буду присылать уведомления: новые отклики и предложения, решения по ним, статус сделок и напоминания об отзывах.\n\n" +
         "Нажмите «Открыть», чтобы начать.",
-        "👋 BloggerBazar’ga xush kelibsiz — bu yerda biznes reklama uchun blogerlarni topadi.\n\n" +
+        "👋 BloggerBazar’ga xush kelibsiz! Bu yerda biznes reklama uchun blogerlarni topadi.\n\n" +
         "Bu yerda sizga bildirishnomalar yuboraman: yangi javoblar va takliflar, ular bo‘yicha qarorlar, bitimlar holati va fikr qoldirish haqida eslatmalar.\n\n" +
         "Boshlash uchun «Ochish» tugmasini bosing.");
 

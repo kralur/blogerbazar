@@ -4,9 +4,9 @@
 const NUMBER_LOCALE = "ru-RU";
 const formatPlain = (value: number, fractionDigits?: number) => new Intl.NumberFormat(NUMBER_LOCALE, fractionDigits == null ? undefined : { maximumFractionDigits: fractionDigits }).format(value);
 
-export const formatNumber = (value?: number | null) => value == null ? "—" : formatPlain(value);
+export const formatNumber = (value?: number | null) => value == null ? "-" : formatPlain(value);
 export const formatCompactNumber = (value?: number | null) => {
-  if (value == null) return "—";
+  if (value == null) return "-";
   if (currentLanguage() !== "uz") return new Intl.NumberFormat(NUMBER_LOCALE, { notation: "compact", maximumFractionDigits: 1 }).format(value);
   const abs = Math.abs(value);
   if (abs >= 1_000_000_000) return `${formatPlain(value / 1_000_000_000, 1)} ${translate("format.billions", undefined, "uz")}`;
@@ -31,7 +31,7 @@ export const formatShortDate = (value: string | Date, language: Language = curre
   const time = options.time ? `, ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}` : "";
   return options.year ? `${day}, ${date.getFullYear()}${time}` : `${day}${time}`;
 };
-export const formatDate = (value?: string | Date | null) => value ? formatShortDate(value, currentLanguage(), { year: true }) : "—";
+export const formatDate = (value?: string | Date | null) => value ? formatShortDate(value, currentLanguage(), { year: true }) : "-";
 // Date inputs speak local calendar days (yyyy-mm-dd).
 export const localDay = (offsetDays = 0) => {
   const date = new Date();

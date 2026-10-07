@@ -16,8 +16,8 @@ internal static class BotMessages
         $"«{campaignTitle}» kampaniyasiga javobingiz rad etildi.");
 
     public static BotText CampaignApplicationAccepted(string campaignTitle) => Bilingual(
-        $"Ваш отклик на кампанию «{campaignTitle}» принят. Сделка создана — контакты партнёра открыты в сделке.",
-        $"«{campaignTitle}» kampaniyasiga javobingiz qabul qilindi. Bitim yaratildi — hamkor kontaktlari bitim sahifasida.");
+        $"Ваш отклик на кампанию «{campaignTitle}» принят. Сделка создана, контакты партнёра открыты в сделке.",
+        $"«{campaignTitle}» kampaniyasiga javobingiz qabul qilindi. Bitim yaratildi, hamkor kontaktlari bitim sahifasida.");
 
     public static BotText OfferReceived(string businessName) => Bilingual(
         $"{businessName} предлагает вам сотрудничество. Ответьте в течение 48 часов.",
@@ -40,12 +40,12 @@ internal static class BotMessages
         "Bitim yakunlandi. Endi fikr qoldirishingiz mumkin.");
 
     public static BotText PartnerReviewed => Bilingual(
-        "Партнёр оставил отзыв о сотрудничестве. Оцените и вы — отзывы откроются, когда оба оценят друг друга.",
-        "Hamkor hamkorlik haqida fikr qoldirdi. Siz ham baholang — fikrlar ikkalangiz baholaganingizdan keyin ochiladi.");
+        "Партнёр оставил отзыв о сотрудничестве. Оцените и вы: отзывы откроются, когда оба оценят друг друга.",
+        "Hamkor hamkorlik haqida fikr qoldirdi. Siz ham baholang: fikrlar ikkalangiz baholaganingizdan keyin ochiladi.");
 
     public static BotText ReviewsPublished => Bilingual(
-        "Партнёр тоже оставил отзыв — оба отзыва опубликованы.",
-        "Hamkor ham fikr qoldirdi — ikkala fikr e’lon qilindi.");
+        "Партнёр тоже оставил отзыв, оба отзыва опубликованы.",
+        "Hamkor ham fikr qoldirdi, ikkala fikr e’lon qilindi.");
 
     public static BotText ReviewReminderLastWeek => Bilingual(
         "Осталась неделя, чтобы оценить завершённую сделку. Отзывы публикуются, когда обе стороны оценят друг друга.",
