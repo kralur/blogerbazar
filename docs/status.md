@@ -3,13 +3,13 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-06, публикация Redesign R5._
+_Последнее обновление: 2026-10-07, старт MVP Release Candidate QA._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | Redesign R5 (см. `git log`; предыдущие checkpoints `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Published `main` / `origin/main` | `c9e5e9e` MVP QA, раунд 4 (предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
 | CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 · R2b: https://github.com/kralur/blogerbazar/pull/7 · R3: https://github.com/kralur/blogerbazar/pull/8 · R4: https://github.com/kralur/blogerbazar/pull/9 · R5: https://github.com/kralur/blogerbazar/pull/10 |
 
@@ -22,7 +22,8 @@ _Последнее обновление: 2026-10-06, публикация Redes
   применяется при старте только если `Database__ApplyMigrationsOnStartup=true` в Railway — проверить (8.19).
 - **Phase 4C — Reviews 2.0 + напоминания** (D33): опубликована (`fd2054d`). Миграция
   `AddReviewPublicationAndDealReminders` одобрена владельцем; в Railway тоже нужен `ApplyMigrationsOnStartup` (8.19).
-- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). **R2a — главная**: опубликована (`6d965bd`). **R2b — каталоги и карточки**: опубликованы (`7c0c6a9`). **R3 — детальные страницы**: опубликованы (`ba3bfa8`). **R4 — заявки и сделки**: опубликованы (`8764b6e`). **R5 — кабинет бизнеса**: опубликован (`a4385ef`). **R6 — профиль и онбординг**: опубликован (`755e847`). **R7 — QA**: опубликован (`e8a6ca1`). **MVP QA, раунд 1 (iOS, тёмная тема)**: опубликован (`66c2e1f`). **Срок кампании и коды конфликтов (D36)**: опубликован (`8478f84`). **MVP QA, раунд 2** + D37: опубликован (`eb82bb4`). **MVP QA, раунд 3**: опубликован (`f82d387`). **D38 — экран «Настройки» и выбор темы**: опубликован (`0b8aed0`). **MVP QA, раунд 4** (одна кнопка фото: заменить/удалить через меню): на review.
+- **FEATURE FREEZE** (D35). **Redesign R1 — основа**: опубликован (`945c7f6`). **R2a — главная**: опубликована (`6d965bd`). **R2b — каталоги и карточки**: опубликованы (`7c0c6a9`). **R3 — детальные страницы**: опубликованы (`ba3bfa8`). **R4 — заявки и сделки**: опубликованы (`8764b6e`). **R5 — кабинет бизнеса**: опубликован (`a4385ef`). **R6 — профиль и онбординг**: опубликован (`755e847`). **R7 — QA**: опубликован (`e8a6ca1`). **MVP QA, раунд 1 (iOS, тёмная тема)**: опубликован (`66c2e1f`). **Срок кампании и коды конфликтов (D36)**: опубликован (`8478f84`). **MVP QA, раунд 2** + D37: опубликован (`eb82bb4`). **MVP QA, раунд 3**: опубликован (`f82d387`). **D38 — экран «Настройки» и выбор темы**: опубликован (`0b8aed0`). **MVP QA, раунд 4** (одна кнопка фото: заменить/удалить через меню): опубликован (`c9e5e9e`).
+- **MVP Release Candidate QA**: в работе — чек-лист `docs/rc-qa.md`, прогон на устройствах владельцем.
 
 ## Последние результаты gates
 
