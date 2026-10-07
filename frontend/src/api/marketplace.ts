@@ -7,6 +7,8 @@ export type PlatformDetails = {
   id: string;
   type: "instagram" | "telegram" | "tiktok" | "youtube" | "threads";
   followers: number;
+  averageReach?: number | null;
+  engagementRate?: number | null;
   url?: string | null;
 };
 
@@ -91,6 +93,8 @@ export type MyCampaign = {
   createdAtUtc: string;
   updatedAtUtc: string;
   applicationsCount: number;
+  // Applications still waiting for accept or reject; absent from an older API.
+  pendingApplicationsCount?: number;
 };
 export type MyCampaignsResponse = { items: MyCampaign[]; total: number; page: number; pageSize: number; hasMore: boolean };
 export type MyCampaignDetails = MyCampaign & { description: string; requirements: string[] };
@@ -145,7 +149,7 @@ type ApiBlogger = {
   reviewsCount: number;
   completedDealsCount: number;
   portfolioItems?: Array<{ id: string; title: string; type: number; url: string }>;
-  platforms?: Array<{ id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null }>;
+  platforms?: Array<{ id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null; averageReach?: number | null; engagementRate?: number | null }>;
 };
 
 type ApiCampaign = {
@@ -282,7 +286,7 @@ export type MarketplaceHome = {
   categories: string[];
   statistics: { approvedBloggers: number; companies: number; activeCampaigns: number; completedDeals: number; averageRating?: number | null };
 };
-export type BloggerReview = { id: string; rating: number; comment?: string | null; reviewerName?: string | null; createdAtUtc: string };
+export type BloggerReview = { id: string; rating: number; comment?: string | null; reviewerName?: string | null; createdAtUtc: string; reviewerProfileId?: string | null; reviewerImageUrl?: string | null };
 export type MyBusinessProfile = {
   id: string;
   name: string;
@@ -317,7 +321,7 @@ export type MyBloggerProfile = {
   barterEnabled: boolean;
   status: number;
   portfolioItems: Array<{ id: string; title: string; type: number; url: string }>;
-  platforms: Array<{ id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null }>;
+  platforms: Array<{ id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null; averageReach?: number | null; engagementRate?: number | null }>;
 };
 
 export type BusinessProfileInput = {
@@ -349,7 +353,7 @@ export type BloggerProfileInput = {
   postPrice?: number;
   integrationPrice?: number;
   barterEnabled: boolean;
-  platforms?: Array<{ type: string; url: string; followers?: number; screenshotUrl?: string }>;
+  platforms?: Array<{ type: string; url: string; followers?: number; screenshotUrl?: string; averageReach?: number; engagementRate?: number }>;
   portfolioItems: Array<{ title: string; type: "IMAGE" | "VIDEO"; url: string }>;
 };
 
@@ -401,7 +405,7 @@ const asBloggerDetails = (blogger: ApiBlogger): BloggerDetails => ({
   rating: blogger.rating ?? null,
   platforms: (blogger.platforms ?? []).flatMap((platform) => {
     const type = platform.type.toLowerCase();
-    return isDisplayPlatformType(type) ? [{ id: platform.id, type, url: platform.url, followers: platform.followers ?? 0 }] : [];
+    return isDisplayPlatformType(type) ? [{ id: platform.id, type, url: platform.url, followers: platform.followers ?? 0, averageReach: platform.averageReach ?? null, engagementRate: platform.engagementRate ?? null }] : [];
   }),
   portfolioItems: (blogger.portfolioItems ?? []).map((item) => ({ id: item.id, title: item.title, type: item.type === 1 ? "VIDEO" : "IMAGE", url: item.url }))
 });
@@ -507,9 +511,17 @@ export async function closeMyCampaign(id: string, signal?: AbortSignal): Promise
   return api<CampaignMutationResponse>(`/api/campaigns/mine/${id}/close`, { method: "POST", signal });
 }
 
+export async function reopenMyCampaign(id: string, signal?: AbortSignal): Promise<CampaignMutationResponse> {
+  return api<CampaignMutationResponse>(`/api/campaigns/mine/${id}/reopen`, { method: "POST", signal });
+}
+
+export async function deleteMyCampaign(id: string, signal?: AbortSignal): Promise<void> {
+  await api<void>(`/api/campaigns/mine/${id}`, { method: "DELETE", signal });
+}
+
 export type CampaignApplicationCreateResult = { id: string; campaignId: string; bloggerId: string; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string };
 export type MyCampaignApplicationItem = { id: string; campaignId: string; campaignTitle: string; businessName: string; businessAvatarUrl?: string | null; city?: string | null; categories: string[]; minBudget?: number | null; maxBudget?: number | null; deadline?: string | null; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string; dealId?: string | null };
-export type MyCampaignApplicationDetails = MyCampaignApplicationItem & { campaignDescription: string; requirements: string[] };
+export type MyCampaignApplicationDetails = MyCampaignApplicationItem & { campaignDescription: string; requirements: string[]; businessId?: string | null };
 export type MyCampaignApplicationsQuery = { campaignId?: string; status?: CampaignApplicationStatus; page?: number; pageSize?: number };
 export type MyCampaignApplicationsPage = { items: MyCampaignApplicationItem[]; total: number; page: number; pageSize: number; hasMore: boolean };
 export type CampaignApplicationInboxItem = { id: string; bloggerId: string; bloggerName: string; bloggerAvatarUrl?: string | null; city: string; categories: string[]; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string; dealId?: string | null };
@@ -562,6 +574,7 @@ export type MyCampaignApplication = {
   status: CampaignApplicationStatus;
   canAccept: boolean;
   createdAtUtc: string;
+  counterpartyProfileId?: string | null;
 };
 
 export async function getMyCampaignApplications() {
@@ -617,6 +630,8 @@ export type DealDetails = {
   hasReviewed: boolean;
   offer?: DealOffer | null;
   reviewDeadlineUtc?: string | null;
+  // The other side's blogger or business profile id; absent from an older API.
+  counterpartyProfileId?: string | null;
 };
 export type DealOffer = { format?: OfferFormat | null; offeredBudget?: number | null; deadline?: string | null; message: string };
 
@@ -636,6 +651,7 @@ export type Offer = {
   expiresAtUtc?: string | null;
   dealId?: string | null;
   canRespond: boolean;
+  businessId?: string | null;
 };
 export type OfferDecision = { id: string; state: OfferState; dealId?: string | null };
 export type CreateOfferInput = { bloggerId: string; format: OfferFormat; offeredBudget?: number | null; deadline?: string | null; message: string };
@@ -751,6 +767,27 @@ export async function selectMarketplaceRole(role: MarketplaceRole) {
 
 export async function getMyBrandFaceProfile() {
   return api<MyBrandFaceProfile>("/api/brand-faces/me");
+}
+
+export type PublicBusinessCampaign = { id: string; title: string; city?: string | null; budgetFrom?: number | null; budgetTo?: number | null; deadline?: string | null };
+export type PublicBusinessProfile = {
+  id: string;
+  name: string;
+  city?: string | null;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  description?: string | null;
+  isVerified: boolean;
+  completedDealsCount: number;
+  createdAtUtc: string;
+  openCampaigns: PublicBusinessCampaign[];
+  rating?: number | null;
+  reviewsCount: number;
+  reviews?: BloggerReview[] | null;
+};
+
+export async function getPublicBusiness(id: string) {
+  return api<PublicBusinessProfile>(`/api/businesses/${id}`);
 }
 
 export async function getBrandFace(id: string) {

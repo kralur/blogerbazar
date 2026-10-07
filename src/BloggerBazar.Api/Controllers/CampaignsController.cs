@@ -96,6 +96,27 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
         return Ok(await sender.Send(new CloseCampaignCommand(campaignId, actor.Id), cancellationToken));
     }
 
+    [HttpPost("mine/{campaignId:guid}/reopen")]
+    [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<CampaignDto>> Reopen(Guid campaignId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new ReopenCampaignCommand(campaignId, actor.Id), cancellationToken));
+    }
+
+    [HttpDelete("mine/{campaignId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(Guid campaignId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        await sender.Send(new DeleteCampaignCommand(campaignId, actor.Id), cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("mine/{campaignId:guid}/applications")]
     [ProducesResponseType<CampaignApplicationInboxResult>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

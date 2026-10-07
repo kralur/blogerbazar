@@ -55,6 +55,9 @@ public sealed class UpdateBloggerProfileValidator : AbstractValidator<UpdateBlog
         {
             item.RuleFor(value => value.Type).NotEmpty();
             item.RuleFor(value => value).Must(value => ContactValidation.IsSupportedPlatform(value.Type, value.Url));
+            item.RuleFor(value => value.Followers).GreaterThanOrEqualTo(0).When(value => value.Followers.HasValue);
+            item.RuleFor(value => value.AverageReach).GreaterThanOrEqualTo(0).When(value => value.AverageReach.HasValue);
+            item.RuleFor(value => value.EngagementRate).InclusiveBetween(0m, 100m).When(value => value.EngagementRate.HasValue);
         });
     }
 }
@@ -82,7 +85,7 @@ public sealed class UpdateBloggerProfileHandler(IBloggerProfileRepository profil
         await portfolioItems.DeleteForBloggerAsync(profile.Id, cancellationToken);
         await portfolioItems.AddRangeAsync((command.PortfolioItems ?? []).Select(item => PortfolioItem.Create(profile.Id, item.Title.Trim(), item.Type, item.Url.Trim())), cancellationToken);
         await platforms.DeleteForBloggerAsync(profile.Id, cancellationToken);
-        await platforms.AddRangeAsync((command.Platforms ?? []).Select(platform => SocialPlatform.Create(profile.Id, platform.Type.Trim(), platform.Url.Trim(), platform.Followers, platform.ScreenshotUrl?.Trim())), cancellationToken);
+        await platforms.AddRangeAsync((command.Platforms ?? []).Select(platform => SocialPlatform.Create(profile.Id, platform.Type.Trim(), platform.Url.Trim(), platform.Followers, platform.ScreenshotUrl?.Trim(), platform.AverageReach, platform.EngagementRate)), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return BloggerProfileDto.From(profile);

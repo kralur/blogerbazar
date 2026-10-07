@@ -5,6 +5,7 @@ import { useTelegram } from "../telegram/TelegramProvider";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { requestGuardedNavigation } from "../navigation/guardedNavigation";
 import { useVirtualKeyboard } from "../layout/VirtualKeyboardProvider";
+import { ActionBadge, useActionCounts } from "../features/actionCounts/ActionCountsProvider";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -376,6 +377,7 @@ export function BottomNav() {
   const rootScreenVisible = useRootScreenVisibility();
   const { isOpen: keyboardOpen } = useVirtualKeyboard();
   const [hash, setHash] = useState(window.location.hash || "#/");
+  const actionCounts = useActionCounts();
 
   useEffect(() => {
     const handler = () => setHash(window.location.hash || "#/");
@@ -391,14 +393,14 @@ export function BottomNav() {
   ];
   const isActive = (href: string) => {
     if (href === "#/search") return hash.startsWith("#/search") || hash.startsWith("#/blogger/") || hash.startsWith("#/brand-face-detail/");
-    if (href === "#/campaigns") return hash.startsWith("#/campaigns") || hash.startsWith("#/campaign/") || hash.startsWith("#/my-campaigns") || hash.startsWith("#/my-campaign/") || hash.startsWith("#/my-campaign-applications/");
+    if (href === "#/campaigns") return hash.startsWith("#/campaigns") || hash.startsWith("#/campaign/") || hash.startsWith("#/company/") || hash.startsWith("#/my-campaigns") || hash.startsWith("#/my-campaign/") || hash.startsWith("#/my-campaign-applications/");
     if (href === "#/requests") return hash.startsWith("#/requests") || hash.startsWith("#/my-application/") || hash.startsWith("#/deal/") || hash.startsWith("#/offer/");
     return ["#/profile", "#/settings", "#/favorites", "#/blogger-form", "#/business"].some((route) => hash.startsWith(route))
       || (hash.startsWith("#/brand-face") && !hash.startsWith("#/brand-face-detail/"));
   };
   const renderItem = (item: typeof items[number]) => {
     const active = isActive(item.href);
-    return <a aria-current={active ? "page" : undefined} className={cn("bottom-nav__item", active && "bottom-nav__item--active")} href={item.href} key={item.href} onClick={() => haptic.selection()}><span aria-hidden="true" className="bottom-nav__icon"><Icon name={item.icon} /></span><span className="bottom-nav__label">{item.label}</span></a>;
+    return <a aria-current={active ? "page" : undefined} className={cn("bottom-nav__item", active && "bottom-nav__item--active")} href={item.href} key={item.href} onClick={() => haptic.selection()}><span aria-hidden="true" className="bottom-nav__icon"><Icon name={item.icon} /></span>{item.href === "#/requests" && <ActionBadge count={actionCounts.total} label={t("requests.actionBadge", { count: actionCounts.total })} />}<span className="bottom-nav__label">{item.label}</span></a>;
   };
 
   if (!rootScreenVisible || keyboardOpen || typeof document === "undefined") return null;

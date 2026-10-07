@@ -21,6 +21,15 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
         return profile is null ? NotFound() : Ok(profile);
     }
 
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType<PublicBusinessProfileDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PublicBusinessProfileDto>> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var profile = await sender.Send(new GetPublicBusinessProfileQuery(id), cancellationToken);
+        return profile is null ? NotFound() : Ok(profile);
+    }
+
     [HttpGet("{id:guid}/reviews")]
     [ProducesResponseType<BusinessReviewsDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, CancellationToken cancellationToken = default) =>

@@ -144,6 +144,13 @@ describe("Offer form", () => {
     expect(screen.queryByLabelText(ru("offers.fromCampaign"))).not.toBeInTheDocument();
   });
 
+  it("opens prefilled from a price tile and stays editable", async () => {
+    render(<I18nProvider><OfferForm bloggerId="blogger-a" initialBudget={250_000} initialFormat="post" onClose={vi.fn()} onSent={vi.fn()} open /></I18nProvider>);
+
+    await waitFor(() => expect(screen.getByLabelText(ru("offers.budget"))).toHaveValue("250 000"));
+    expect(screen.getByRole("button", { name: ru("card.post") })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("requires a message before sending", async () => {
     renderForm();
     fireEvent.click(screen.getByRole("button", { name: ru("offers.send") }));

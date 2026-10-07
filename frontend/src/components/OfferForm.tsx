@@ -9,7 +9,8 @@ import { Button, Input, Modal, Textarea } from "./ui";
 
 const MessageLimit = 1000;
 
-export function OfferForm({ bloggerId, open, onClose, onSent }: { bloggerId: string; open: boolean; onClose: () => void; onSent: (offer: Offer) => void }) {
+// initialFormat and initialBudget prefill the form when it opens from a price tile; both stay editable.
+export function OfferForm({ bloggerId, open, onClose, onSent, initialFormat, initialBudget }: { bloggerId: string; open: boolean; onClose: () => void; onSent: (offer: Offer) => void; initialFormat?: OfferFormat; initialBudget?: number | null }) {
   const { t } = useI18n();
   const [format, setFormat] = useState<OfferFormat>("reels");
   const [budget, setBudget] = useState("");
@@ -23,6 +24,12 @@ export function OfferForm({ bloggerId, open, onClose, onSent }: { bloggerId: str
   const [campaignId, setCampaignId] = useState("");
 
   // A business can start from one of its open campaigns instead of typing the terms again.
+  useEffect(() => {
+    if (!open) return;
+    if (initialFormat) setFormat(initialFormat);
+    if (initialBudget) setBudget(String(initialBudget));
+  }, [initialBudget, initialFormat, open]);
+
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();

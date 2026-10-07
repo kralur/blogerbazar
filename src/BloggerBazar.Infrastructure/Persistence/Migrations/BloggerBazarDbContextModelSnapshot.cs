@@ -983,11 +983,18 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("AverageReach")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("BloggerId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("EngagementRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
 
                     b.Property<int?>("Followers")
                         .HasColumnType("integer");

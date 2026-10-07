@@ -107,13 +107,13 @@ describe("Home", () => {
   });
 
   it("shows Business tasks from real campaign and deal data above the rails", async () => {
-    api.getMyCampaigns.mockResolvedValue({ items: [{ id: "campaign-a", title: "Autumn launch", applicationsCount: 7, status: 1 }, { id: "campaign-b", title: "Quiet campaign", applicationsCount: 0, status: 1 }], total: 2, page: 1, pageSize: 20, hasMore: false });
+    api.getMyCampaigns.mockResolvedValue({ items: [{ id: "campaign-a", title: "Autumn launch", applicationsCount: 7, pendingApplicationsCount: 3, status: 1 }, { id: "campaign-b", title: "Quiet campaign", applicationsCount: 4, pendingApplicationsCount: 0, status: 1 }], total: 2, page: 1, pageSize: 20, hasMore: false });
     api.getMyDeals.mockResolvedValue([{ id: "deal-a", status: 0, canReview: false }, { id: "deal-b", status: 1, canReview: true }]);
     renderHome("Business");
 
     const campaign = await screen.findByRole("link", { name: new RegExp("Autumn launch") });
     expect(campaign).toHaveAttribute("href", "#/my-campaign-applications/campaign-a");
-    expect(campaign).toHaveTextContent(translate("home.activityApplications", { count: 7 }, "ru"));
+    expect(campaign).toHaveTextContent(translate("home.activityPendingApplications", { count: 3 }, "ru"));
     expect(screen.queryByText("Quiet campaign")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: new RegExp(translate("home.activityActiveDeals", { count: 1 }, "ru")) })).toHaveAttribute("href", "#/requests?tab=deals");
     expect(screen.getByText(translate("home.activityReviews", { count: 1 }, "ru"))).toBeInTheDocument();

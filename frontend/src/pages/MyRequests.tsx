@@ -21,6 +21,8 @@ import { offerFormatLabelKey, offerRoute, offerStateLabelKey, offerStateTone } f
 import { PageHeader } from "../components/PageHeader";
 import { RequestRow } from "../components/RequestRow";
 import { formatShortDate, formatCurrency } from "../lib/currency";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
+import { ActionBadge, useActionCounts } from "../features/actionCounts/ActionCountsProvider";
 
 const formatDate = (value: string, language: Language) => formatShortDate(value, language);
 
@@ -34,6 +36,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     [CampaignApplicationStatus.Rejected]: t("requests.applicationRejected"),
     [CampaignApplicationStatus.Withdrawn]: t("requests.applicationWithdrawn")
   };
+  const actionCounts = useActionCounts();
   const [view, setView] = useState<RequestsView>(() => hashRequestsView() ?? "applications");
   // Home activity links open a specific tab: #/requests?tab=deals|offers|applications
   useEffect(() => {
@@ -103,6 +106,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     setDeals((current) => current.map((deal) => deal.id === details.id ? { ...deal, status: details.status, completedAtUtc: details.completedAtUtc, canComplete: details.canComplete, canReview: details.canReview } : deal));
   }), []);
   useProfileDataRefresh(load);
+  useScreenRefresh(load);
 
   const withinRange = (value: string) => {
     const date = new Date(value);
@@ -133,7 +137,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       <PageHeader actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
 
       <div aria-label={t("requests.title")} className="catalog-search__segments catalog-search__segments--three" role="group">
-        {([["applications", t("requests.applications")], ["offers", t("offers.tab")], ["deals", t("requests.deals")]] as const).map(([value, label]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button">{label}</button>)}
+        {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button">{label}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}
       </div>
 
       {view === "offers" ? (

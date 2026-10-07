@@ -303,7 +303,10 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       warning: () => app?.HapticFeedback?.notificationOccurred?.("warning")
     },
     openLink: (url) => {
-      if (url.startsWith("https://t.me/")) {
+      // Telegram's openLink accepts only http(s); call and mail links go to the WebView, which hands them to the OS.
+      if (url.startsWith("tel:") || url.startsWith("mailto:")) {
+        window.location.href = url;
+      } else if (url.startsWith("https://t.me/")) {
         app?.openTelegramLink?.(url);
       } else if (app?.openLink) {
         app.openLink(url);

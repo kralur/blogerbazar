@@ -39,7 +39,18 @@ async function completeBasic(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: continueLabel() }));
 }
 
+// Instagram is the first platform block; its stats appear once a handle is typed.
+function fillAudience(handle = "@madina_style") {
+  const instagram = screen.getAllByPlaceholderText("@username")[0] as HTMLInputElement;
+  if (instagram.value) return;
+  fireEvent.change(instagram, { target: { value: handle } });
+  fireEvent.change(screen.getAllByPlaceholderText("10 000")[0], { target: { value: "10000" } });
+  fireEvent.change(screen.getAllByPlaceholderText("5 000")[0], { target: { value: "25000" } });
+  fireEvent.change(screen.getAllByPlaceholderText("5,5")[0], { target: { value: "5.5" } });
+}
+
 async function completeAudience(user: ReturnType<typeof userEvent.setup>) {
+  fillAudience();
   await waitFor(() => expect(screen.getByRole("button", { name: continueLabel() })).toBeEnabled());
   await user.click(screen.getByRole("button", { name: continueLabel() }));
 }
@@ -134,17 +145,25 @@ describe("Blogger profile wizard", () => {
     const user = userEvent.setup();
     renderCreate();
     await completeBasic(user);
+    fillAudience();
+    await user.type(screen.getByPlaceholderText("https://youtube.com/@channel"), "youtube.com/@madina");
+    fireEvent.change(screen.getAllByPlaceholderText("10 000")[1], { target: { value: "2000" } });
+    fireEvent.change(screen.getAllByPlaceholderText("5 000")[1], { target: { value: "1000" } });
+    fireEvent.change(screen.getAllByPlaceholderText("5,5")[1], { target: { value: "3" } });
+    expect(screen.getByText(translate("form.totalFollowers", { count: "12 000" }, "ru"))).toBeInTheDocument();
     await completeAudience(user);
     await completePrices(user);
     await user.type(screen.getByPlaceholderText("https://..."), "portfolio.example");
-    await user.type(screen.getAllByPlaceholderText("@username")[0], "@madina_style");
-    await user.type(screen.getByPlaceholderText("https://youtube.com/@channel"), "youtube.com/@madina");
     await user.click(screen.getByRole("button", { name: continueLabel() }));
     await user.click(screen.getByRole("button", { name: translate("wizard.createProfile", undefined, "ru") }));
+    // Totals are derived: followers and reach add up, ER is weighted by each platform's followers.
     await waitFor(() => expect(api.createBloggerProfile).toHaveBeenCalledWith(expect.objectContaining({
-      name: "Madina", username: "@madina", phone: "+998 88 123 45 67", totalFollowers: 10000, averageReach: 25000, engagementRate: 5.5, storiesPrice: 250000, reelsPrice: 500000, barterEnabled: true,
+      name: "Madina", username: "@madina", phone: "+998 88 123 45 67", totalFollowers: 12000, averageReach: 26000, engagementRate: 5.08, storiesPrice: 250000, reelsPrice: 500000, barterEnabled: true,
       portfolioItems: [{ title: translate("form.blogger.portfolioTitle", undefined, "ru"), type: "IMAGE", url: "https://portfolio.example" }],
-      platforms: expect.arrayContaining([{ type: "instagram", url: "https://instagram.com/madina_style" }, { type: "youtube", url: "https://youtube.com/@madina" }])
+      platforms: [
+        { type: "instagram", url: "https://instagram.com/madina_style", followers: 10000, averageReach: 25000, engagementRate: 5.5 },
+        { type: "youtube", url: "https://youtube.com/@madina", followers: 2000, averageReach: 1000, engagementRate: 3 }
+      ]
     })));
   });
 
@@ -152,8 +171,10 @@ describe("Blogger profile wizard", () => {
     const user = userEvent.setup();
     renderCreate();
     await completeBasic(user);
-    expect(screen.getByText(translate("form.engagementRateLabel", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText(translate("form.platformsTitle", undefined, "ru"))).toBeInTheDocument();
     expect(screen.getByText(translate("form.engagementRateHelper", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
+    fillAudience();
     expect(screen.getByText("%")).toBeInTheDocument();
     expect(screen.getByDisplayValue("5.5")).toHaveValue("5.5");
     await completeAudience(user);
@@ -166,11 +187,12 @@ describe("Blogger profile wizard", () => {
     const user = userEvent.setup();
     renderCreate();
     await completeBasic(user);
+    fillAudience();
     fireEvent.change(screen.getByDisplayValue("5.5"), { target: { value: "5,5" } });
     await completeAudience(user);
     await completePrices(user);
     await user.click(screen.getByRole("button", { name: continueLabel() }));
-    expect(screen.getByText("5,5%")).toBeInTheDocument();
+    expect(screen.getByText(/ER 5,5%/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: translate("wizard.createProfile", undefined, "ru") }));
     await waitFor(() => expect(api.createBloggerProfile).toHaveBeenCalledWith(expect.objectContaining({ engagementRate: 5.5, storiesPrice: 250000, reelsPrice: 500000 })));
   });
@@ -225,6 +247,8 @@ describe("Blogger profile wizard", () => {
     render(<I18nProvider><BloggerProfileForm /></I18nProvider>);
     await screen.findByDisplayValue("Aziza");
     await completeBasic(user);
+    expect(screen.getByDisplayValue("aziza")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("12 000")).toBeInTheDocument();
     await completeAudience(user);
     expect(screen.getByDisplayValue("200 000")).toHaveValue("200 000");
     expect(screen.getAllByText(translate("currency.uzs", undefined, "ru"))).toHaveLength(4);
@@ -232,6 +256,7 @@ describe("Blogger profile wizard", () => {
     await user.click(screen.getByRole("button", { name: continueLabel() }));
     await user.click(screen.getByRole("button", { name: translate("wizard.saveChanges", undefined, "ru") }));
     await waitFor(() => expect(api.updateBloggerProfile).toHaveBeenCalledTimes(1));
+    expect(api.updateBloggerProfile).toHaveBeenCalledWith(expect.objectContaining({ totalFollowers: 12000, averageReach: 3000, engagementRate: 4.5, platforms: [{ type: "instagram", url: "https://instagram.com/aziza", followers: 12000, averageReach: 3000, engagementRate: 4.5 }] }));
     expect(api.createBloggerProfile).not.toHaveBeenCalled();
   });
 
@@ -262,8 +287,9 @@ describe("Blogger profile wizard", () => {
     renderCreate();
     fireEvent.change(screen.getByPlaceholderText("+998 90 123 45 67"), { target: { value: "+998 88 123 45 67" } });
     await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "uz") }));
-    expect(screen.getByText(translate("form.engagementRateLabel", undefined, "uz"))).toBeInTheDocument();
+    expect(screen.getByText(translate("form.platformsTitle", undefined, "uz"))).toBeInTheDocument();
     expect(screen.getByText(translate("form.engagementRateHelper", undefined, "uz"))).toBeInTheDocument();
+    fillAudience();
     await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "uz") }));
     expect(screen.getAllByText(translate("currency.uzs", undefined, "uz"))).toHaveLength(4);
     expect(screen.getByText(translate("form.optionalField", { label: translate("card.post", undefined, "uz") }, "uz"))).toBeInTheDocument();

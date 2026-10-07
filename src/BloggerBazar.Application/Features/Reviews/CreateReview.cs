@@ -12,7 +12,8 @@ namespace BloggerBazar.Application.Features.Reviews;
 
 public sealed record CreateReviewCommand(Guid DealId, long TelegramUserId, int Rating, string? Comment) : IRequest<ReviewDto>;
 
-public sealed record ReviewDto(Guid Id, Guid DealId, int TargetType, int Rating, string? Comment, string? ReviewerName, DateTime CreatedAtUtc)
+// The reviewer is the other side of the deal: a business reviews a blogger, a blogger reviews a business.
+public sealed record ReviewDto(Guid Id, Guid DealId, int TargetType, int Rating, string? Comment, string? ReviewerName, DateTime CreatedAtUtc, Guid? ReviewerProfileId = null, string? ReviewerImageUrl = null)
 {
     public static ReviewDto From(Review review)
     {
@@ -23,7 +24,14 @@ public sealed record ReviewDto(Guid Id, Guid DealId, int TargetType, int Rating,
             _ => null
         };
 
-        return new(review.Id, review.DealId, (int)review.TargetType, review.Rating, review.Comment, reviewerName, review.CreatedAtUtc);
+        var (reviewerId, reviewerImage) = review.TargetType switch
+        {
+            ReviewTargetType.Blogger => ((Guid?)review.Deal?.BusinessId, review.Deal?.Business?.LogoUrl),
+            ReviewTargetType.Business => ((Guid?)review.Deal?.BloggerId, review.Deal?.Blogger?.AvatarUrl),
+            _ => ((Guid?)null, (string?)null)
+        };
+
+        return new(review.Id, review.DealId, (int)review.TargetType, review.Rating, review.Comment, reviewerName, review.CreatedAtUtc, reviewerId, reviewerImage);
     }
 }
 
@@ -85,9 +93,10 @@ public sealed class CreateReviewHandler(
         // Blind reviews: this one stays hidden until the partner reviews too or the window ends.
         var revealed = await reviews.PublishRevealedAsync(deal.Id, nowUtc, cancellationToken) > 0;
         var targetChatId = reviewerIsBlogger ? deal.Business.TelegramUserId : deal.Blogger.TelegramUserId;
+        var reviewerName = reviewerIsBlogger ? deal.Blogger.Name : deal.Business.Name;
         var text = revealed
-            ? BotMessages.ReviewsPublished
-            : BotMessages.PartnerReviewed;
+            ? BotMessages.ReviewsPublished(reviewerName, DealTopic.Of(deal))
+            : BotMessages.PartnerReviewed(reviewerName, DealTopic.Of(deal));
         await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, text, $"/deal/{deal.Id}", cancellationToken);
         return ReviewDto.From(review) with { ReviewerName = reviewerIsBlogger ? deal.Blogger.Name : deal.Business.Name };
     }

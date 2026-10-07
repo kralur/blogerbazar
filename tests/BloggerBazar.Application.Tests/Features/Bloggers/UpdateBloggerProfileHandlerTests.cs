@@ -26,6 +26,40 @@ public sealed class UpdateBloggerProfileHandlerTests
         Assert.Equal("New work", portfolios.Items[0].Title);
     }
 
+    [Fact]
+    public async Task Keeps_followers_reach_and_engagement_for_each_platform()
+    {
+        var profile = BloggerProfile.Create(101, "Madina", "Tashkent", ["Lifestyle"]);
+        var platforms = new InMemorySocialPlatformRepository();
+        var handler = new UpdateBloggerProfileHandler(new InMemoryBloggerRepository(profile), new InMemoryPortfolioRepository(), platforms, new SpyUnitOfWork());
+
+        await handler.Handle(Command([
+            new SocialPlatformInput("instagram", "https://instagram.com/madina", 10000, null, 25000, 5.5m),
+            new SocialPlatformInput("telegram", "https://t.me/madina", 3000, null)]), CancellationToken.None);
+
+        var instagram = Assert.Single(platforms.Items, item => item.Type == "instagram");
+        Assert.Equal(10000, instagram.Followers);
+        Assert.Equal(25000, instagram.AverageReach);
+        Assert.Equal(5.5m, instagram.EngagementRate);
+        var telegram = Assert.Single(platforms.Items, item => item.Type == "telegram");
+        Assert.Null(telegram.AverageReach);
+        Assert.Null(telegram.EngagementRate);
+    }
+
+    [Fact]
+    public void Rejects_negative_or_impossible_platform_numbers()
+    {
+        var result = new UpdateBloggerProfileValidator().Validate(Command([new SocialPlatformInput("instagram", "https://instagram.com/madina", -1, null, -5, 120m)]));
+
+        Assert.Contains(result.Errors, error => error.PropertyName.EndsWith("Followers"));
+        Assert.Contains(result.Errors, error => error.PropertyName.EndsWith("AverageReach"));
+        Assert.Contains(result.Errors, error => error.PropertyName.EndsWith("EngagementRate") && error.PropertyName.StartsWith("Platforms"));
+    }
+
+    private static UpdateBloggerProfileCommand Command(IReadOnlyCollection<SocialPlatformInput> platforms) => new(
+        101, "Madina", null, "@madina", "Tashkent", ["Beauty"], null, null,
+        13000, 12000, 5m, 350000, 550000, null, null, true, "+998901234567", null, [], Platforms: platforms);
+
     private sealed class InMemoryBloggerRepository(BloggerProfile profile) : IBloggerProfileRepository
     {
         public Task AddAsync(BloggerProfile value, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -48,7 +82,8 @@ public sealed class UpdateBloggerProfileHandlerTests
 
     private sealed class InMemorySocialPlatformRepository : ISocialPlatformRepository
     {
-        public Task DeleteForBloggerAsync(Guid bloggerId, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task AddRangeAsync(IEnumerable<SocialPlatform> platforms, CancellationToken cancellationToken) => Task.CompletedTask;
+        public List<SocialPlatform> Items { get; } = [];
+        public Task DeleteForBloggerAsync(Guid bloggerId, CancellationToken cancellationToken) { Items.RemoveAll(item => item.BloggerId == bloggerId); return Task.CompletedTask; }
+        public Task AddRangeAsync(IEnumerable<SocialPlatform> platforms, CancellationToken cancellationToken) { Items.AddRange(platforms); return Task.CompletedTask; }
     }
 }

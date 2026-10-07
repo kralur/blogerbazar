@@ -13,24 +13,49 @@ import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { normalizeWebsite, safeExternalUrl, socialHandle, socialUrl } from "../lib/contacts";
 import { formatCurrency, formatDecimalInput, formatNumericInput, formatNumber, formatPercentage, formatPhoneInput, normalizeDecimalInput, normalizeNumericInput } from "../lib/currency";
 import { isOtherCategory, normalizeRegion, otherCategoryPrefix } from "../lib/taxonomy";
+import { platformLabel } from "../lib/platforms";
 import { useTelegram } from "../telegram/TelegramProvider";
 
-const initial = { name: "", lastName: "", username: "", city: "tashkent-city", phone: "+998", email: "", totalFollowers: "10 000", averageReach: "25 000", engagementRate: "5.5", storiesPrice: "250 000", reelsPrice: "500 000", postPrice: "350 000", integrationPrice: "900 000", bio: "", portfolioUrl: "", instagram: "", tiktok: "", youtube: "" };
+// Audience is entered per platform; the profile totals the catalog filters on are derived from it.
+const platformKinds = ["instagram", "telegram", "tiktok", "youtube"] as const;
+type PlatformKind = typeof platformKinds[number];
+const emptyPlatformStats = { instagramFollowers: "", instagramReach: "", instagramEr: "", telegramFollowers: "", telegramReach: "", telegramEr: "", tiktokFollowers: "", tiktokReach: "", tiktokEr: "", youtubeFollowers: "", youtubeReach: "", youtubeEr: "" };
+const initial = { name: "", lastName: "", username: "", city: "tashkent-city", phone: "+998", email: "", storiesPrice: "250 000", reelsPrice: "500 000", postPrice: "350 000", integrationPrice: "900 000", bio: "", portfolioUrl: "", instagram: "", telegram: "", tiktok: "", youtube: "", ...emptyPlatformStats };
 type BloggerForm = typeof initial;
 type Field = keyof BloggerForm;
-type Errors = Partial<Record<Field | "categories", string>>;
+type ErrorKey = Field | "categories" | "platforms";
+type Errors = Partial<Record<ErrorKey, string>>;
 type Step = 0 | 1 | 2 | 3 | 4;
 
-const stepFields: Record<Exclude<Step, 4>, Array<Field | "categories">> = {
+const followersField = (kind: PlatformKind) => `${kind}Followers` as const;
+const reachField = (kind: PlatformKind) => `${kind}Reach` as const;
+const erField = (kind: PlatformKind) => `${kind}Er` as const;
+
+const stepFields: Record<Exclude<Step, 4>, ErrorKey[]> = {
   0: ["name", "lastName", "username", "city", "phone", "email"],
-  1: ["categories", "totalFollowers", "averageReach", "engagementRate"],
+  1: ["categories", "platforms", ...platformKinds.flatMap((kind): ErrorKey[] => [kind, followersField(kind), reachField(kind), erField(kind)])],
   2: ["storiesPrice", "reelsPrice", "postPrice", "integrationPrice"],
-  3: ["bio", "portfolioUrl", "instagram", "tiktok", "youtube"]
+  3: ["bio", "portfolioUrl"]
 };
 
 const usernamePattern = /^@[A-Za-z0-9_]{5,32}$/;
 const phonePattern = /^\+998\s\d{2}\s\d{3}\s\d{2}\s\d{2}$/;
-const numericFields = ["totalFollowers", "averageReach", "storiesPrice", "reelsPrice", "postPrice", "integrationPrice"] as const;
+const handlePatterns: Record<Exclude<PlatformKind, "youtube">, RegExp> = { instagram: /^@?[A-Za-z0-9._]{1,30}$/, tiktok: /^@?[A-Za-z0-9._]{1,30}$/, telegram: /^@?[A-Za-z0-9_]{5,32}$/ };
+
+function filledPlatforms(form: BloggerForm) {
+  return platformKinds.filter((kind) => form[kind].trim());
+}
+
+export function platformTotals(form: BloggerForm) {
+  const filled = filledPlatforms(form).map((kind) => ({ followers: normalizeNumericInput(form[followersField(kind)]), reach: normalizeNumericInput(form[reachField(kind)]), er: normalizeDecimalInput(form[erField(kind)]) }));
+  const totalFollowers = filled.reduce((sum, item) => sum + item.followers, 0);
+  const averageReach = filled.reduce((sum, item) => sum + item.reach, 0);
+  // ER of the whole profile is weighted by audience size, so a small channel does not skew it.
+  const weighted = filled.filter((item) => Number.isFinite(item.er) && item.followers > 0);
+  const weight = weighted.reduce((sum, item) => sum + item.followers, 0);
+  const engagementRate = weight > 0 ? Math.round(weighted.reduce((sum, item) => sum + item.er * item.followers, 0) / weight * 100) / 100 : NaN;
+  return { totalFollowers, averageReach, engagementRate };
+}
 
 function initialBloggerForm(firstName?: string, username?: string): BloggerForm {
   const normalizedUsername = username?.trim().replace(/^@+/, "");
@@ -46,36 +71,39 @@ function validate(form: BloggerForm, categories: string[], t: (key: string) => s
   if (!phonePattern.test(form.phone)) errors.phone = t("form.validation.phone");
   if (form.email && (form.email.length > 254 || !/^\S+@\S+\.\S+$/.test(form.email))) errors.email = t("form.validation.email");
   if (!categories.length || categories.length > 5) errors.categories = t("form.validation.categories");
-  if (normalizeNumericInput(form.totalFollowers) <= 0) errors.totalFollowers = t("form.validation.followers");
-  if (normalizeNumericInput(form.averageReach) <= 0) errors.averageReach = t("form.validation.reach");
-  const engagementRate = normalizeDecimalInput(form.engagementRate);
-  if (!Number.isFinite(engagementRate) || engagementRate < 0.1 || engagementRate > 100) errors.engagementRate = t("form.validation.er");
+  if (!filledPlatforms(form).length) errors.platforms = t("form.validation.platforms");
+  for (const kind of filledPlatforms(form)) {
+    const handle = form[kind].trim();
+    if (kind === "youtube" ? !safeExternalUrl(handle) : !handlePatterns[kind].test(handle)) errors[kind] = t(kind === "youtube" ? "form.validation.website" : "form.validation.socialUsername");
+    if (normalizeNumericInput(form[followersField(kind)]) <= 0) errors[followersField(kind)] = t("form.validation.followers");
+    if (normalizeNumericInput(form[reachField(kind)]) <= 0) errors[reachField(kind)] = t("form.validation.reach");
+    const engagementRate = normalizeDecimalInput(form[erField(kind)]);
+    if (!Number.isFinite(engagementRate) || engagementRate < 0.1 || engagementRate > 100) errors[erField(kind)] = t("form.validation.er");
+  }
   if (normalizeNumericInput(form.storiesPrice) <= 0) errors.storiesPrice = t("form.validation.stories");
   if (normalizeNumericInput(form.reelsPrice) <= 0) errors.reelsPrice = t("form.validation.reels");
   if (form.bio.length > 500) errors.bio = t("form.validation.bio");
-  if (form.instagram && !/^@?[A-Za-z0-9._]{1,30}$/.test(form.instagram.trim())) errors.instagram = t("form.validation.socialUsername");
-  if (form.tiktok && !/^@?[A-Za-z0-9._]{1,30}$/.test(form.tiktok.trim())) errors.tiktok = t("form.validation.socialUsername");
-  if (form.youtube && !safeExternalUrl(form.youtube)) errors.youtube = t("form.validation.website");
   if (form.portfolioUrl && !safeExternalUrl(form.portfolioUrl)) errors.portfolioUrl = t("form.validation.website");
   return errors;
 }
 
 function validationMessages(t: (key: string) => string): Record<string, string> {
   return {
-    name: t("form.validation.name"), lastName: t("form.validation.name"), username: t("form.validation.username"), city: t("form.validation.city"), phone: t("form.validation.phone"), email: t("form.validation.email"), categories: t("form.validation.categories"), totalFollowers: t("form.validation.followers"), averageReach: t("form.validation.reach"), engagementRate: t("form.validation.er"), storiesPrice: t("form.validation.stories"), reelsPrice: t("form.validation.reels"), postPrice: t("form.validation.stories"), integrationPrice: t("form.validation.stories"), bio: t("form.validation.bio"), portfolioUrl: t("form.validation.website"), instagram: t("form.validation.socialUsername"), tiktok: t("form.validation.socialUsername"), youtube: t("form.validation.website")
+    name: t("form.validation.name"), lastName: t("form.validation.name"), username: t("form.validation.username"), city: t("form.validation.city"), phone: t("form.validation.phone"), email: t("form.validation.email"), categories: t("form.validation.categories"), platforms: t("form.validation.platforms"), storiesPrice: t("form.validation.stories"), reelsPrice: t("form.validation.reels"), postPrice: t("form.validation.stories"), integrationPrice: t("form.validation.stories"), bio: t("form.validation.bio"), portfolioUrl: t("form.validation.website"), instagram: t("form.validation.socialUsername"), telegram: t("form.validation.socialUsername"), tiktok: t("form.validation.socialUsername"), youtube: t("form.validation.website")
   };
 }
 
-function fieldFromServerName(value: string): Field | "categories" | undefined {
+function fieldFromServerName(value: string): ErrorKey | undefined {
   const field = value.toLowerCase().replace(/\[.*$/, "");
-  const mapping: Record<string, Field | "categories"> = {
-    lastname: "lastName", totalfollowers: "totalFollowers", averagereach: "averageReach", engagementrate: "engagementRate", storiesprice: "storiesPrice", reelsprice: "reelsPrice", postprice: "postPrice", integrationprice: "integrationPrice", portfolioitems: "portfolioUrl", platforms: "instagram", avatar: "bio", media: "bio"
+  // Profile totals are derived from the platforms, so their server errors point back at the platforms block.
+  const mapping: Record<string, ErrorKey> = {
+    lastname: "lastName", totalfollowers: "platforms", averagereach: "platforms", engagementrate: "platforms", storiesprice: "storiesPrice", reelsprice: "reelsPrice", postprice: "postPrice", integrationprice: "integrationPrice", portfolioitems: "portfolioUrl", platforms: "platforms", avatar: "bio", media: "bio"
   };
   if (mapping[field]) return mapping[field];
-  return ["name", "username", "city", "phone", "email", "categories", "bio", "portfoliourl", "instagram", "tiktok", "youtube"].includes(field) ? (field === "portfoliourl" ? "portfolioUrl" : field as Field | "categories") : undefined;
+  return ["name", "username", "city", "phone", "email", "categories", "bio", "portfoliourl"].includes(field) ? (field === "portfoliourl" ? "portfolioUrl" : field as ErrorKey) : undefined;
 }
 
-function stepForField(field: Field | "categories"): Step {
+function stepForField(field: ErrorKey): Step {
   if (stepFields[0].includes(field)) return 0;
   if (stepFields[1].includes(field)) return 1;
   if (stepFields[2].includes(field)) return 2;
@@ -92,7 +120,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   const [form, setForm] = useState(() => initialBloggerForm(user?.first_name, user?.username));
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["lifestyle"]);
   const [barterEnabled, setBarterEnabled] = useState(true);
-  const [touched, setTouched] = useState<Partial<Record<Field | "categories", boolean>>>({});
+  const [touched, setTouched] = useState<Partial<Record<ErrorKey, boolean>>>({});
   const [serverErrors, setServerErrors] = useState<Errors>({});
   const [edited, setEdited] = useState<Partial<Record<"name" | "username", boolean>>>({});
   const [step, setStep] = useState<Step>(0);
@@ -125,8 +153,21 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
     let active = true;
     getMyBloggerProfile().then((profile) => {
       if (!active) return;
-      const platform = (type: string) => socialHandle(profile.platforms.find((item) => item.type.toLowerCase() === type)?.url ?? "");
-      setForm({ name: profile.name, lastName: profile.lastName ?? "", username: profile.username ?? "", city: normalizeRegion(profile.city) || initial.city, phone: formatPhoneInput(profile.phone ?? initial.phone), email: profile.email ?? "", totalFollowers: formatNumericInput(String(profile.totalFollowers)), averageReach: formatNumericInput(String(profile.averageReach ?? "")), engagementRate: formatDecimalInput(profile.engagementRate ?? ""), storiesPrice: formatNumericInput(String(profile.storiesPrice ?? "")), reelsPrice: formatNumericInput(String(profile.reelsPrice ?? "")), postPrice: formatNumericInput(String(profile.postPrice ?? "")), integrationPrice: formatNumericInput(String(profile.integrationPrice ?? "")), bio: profile.bio ?? "", portfolioUrl: profile.portfolioItems[0]?.url ?? "", instagram: platform("instagram"), tiktok: platform("tiktok"), youtube: profile.platforms.find((item) => item.type.toLowerCase() === "youtube")?.url ?? "" });
+      const stats: Record<string, string> = {};
+      const handles: Partial<Record<PlatformKind, string>> = {};
+      const saved = platformKinds.flatMap((kind) => {
+        const item = profile.platforms.find((platform) => platform.type.toLowerCase() === kind);
+        return item ? [{ kind, item }] : [];
+      });
+      for (const { kind, item } of saved) {
+        handles[kind] = kind === "youtube" ? item.url : kind === "telegram" ? `@${socialHandle(item.url)}` : socialHandle(item.url);
+        // Profiles saved before per-platform stats have only totals; with a single platform those totals are that platform's.
+        const legacy = saved.length === 1 && item.followers == null;
+        stats[followersField(kind)] = formatNumericInput(String((legacy ? profile.totalFollowers : item.followers) ?? ""));
+        stats[reachField(kind)] = formatNumericInput(String((legacy ? profile.averageReach : item.averageReach) ?? ""));
+        stats[erField(kind)] = formatDecimalInput((legacy ? profile.engagementRate : item.engagementRate) ?? "");
+      }
+      setForm({ ...initial, ...stats, name: profile.name, lastName: profile.lastName ?? "", username: profile.username ?? "", city: normalizeRegion(profile.city) || initial.city, phone: formatPhoneInput(profile.phone ?? initial.phone), email: profile.email ?? "", storiesPrice: formatNumericInput(String(profile.storiesPrice ?? "")), reelsPrice: formatNumericInput(String(profile.reelsPrice ?? "")), postPrice: formatNumericInput(String(profile.postPrice ?? "")), integrationPrice: formatNumericInput(String(profile.integrationPrice ?? "")), bio: profile.bio ?? "", portfolioUrl: profile.portfolioItems[0]?.url ?? "", instagram: handles.instagram ?? "", telegram: handles.telegram ?? "", tiktok: handles.tiktok ?? "", youtube: handles.youtube ?? "" });
       setSelectedCategories(profile.categories);
       setBarterEnabled(profile.barterEnabled);
       setAvatarUrl(profile.avatarUrl ?? null);
@@ -148,7 +189,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
     return () => URL.revokeObjectURL(nextPreviewUrl);
   }, [pendingImage]);
 
-  const clearServerError = useCallback((field: Field | "categories") => {
+  const clearServerError = useCallback((field: ErrorKey) => {
     setServerErrors((current) => ({ ...current, [field]: undefined }));
     setServerSummary("");
   }, []);
@@ -161,16 +202,23 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
     setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const numeric = (key: typeof numericFields[number]) => (event: ChangeEvent<HTMLInputElement>) => {
+  const numeric = (key: Field) => (event: ChangeEvent<HTMLInputElement>) => {
     setDirty(true);
     clearServerError(key);
+    clearServerError("platforms");
     setForm((current) => ({ ...current, [key]: formatNumericInput(event.target.value) }));
   };
 
-  const decimal = (event: ChangeEvent<HTMLInputElement>) => {
+  const decimal = (key: Field) => (event: ChangeEvent<HTMLInputElement>) => {
     setDirty(true);
-    clearServerError("engagementRate");
-    setForm((current) => ({ ...current, engagementRate: event.target.value }));
+    clearServerError(key);
+    clearServerError("platforms");
+    setForm((current) => ({ ...current, [key]: event.target.value }));
+  };
+
+  const updateHandle = (kind: PlatformKind) => (event: ChangeEvent<HTMLInputElement>) => {
+    clearServerError("platforms");
+    update(kind)(event);
   };
 
   const selectCity = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -185,17 +233,17 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
     setSelectedCategories(categories);
   };
 
-  const blur = (field: Field | "categories") => () => {
+  const blur = (field: ErrorKey) => () => {
     setTouched((current) => ({ ...current, [field]: true }));
     if (field === "portfolioUrl" || field === "youtube") setForm((current) => ({ ...current, [field]: normalizeWebsite(current[field]) }));
-    if (field === "engagementRate") setForm((current) => ({ ...current, engagementRate: formatDecimalInput(current.engagementRate) }));
+    if (field.endsWith("Er")) setForm((current) => ({ ...current, [field]: formatDecimalInput(current[field as Field]) }));
   };
 
   const markStepTouched = useCallback((currentStep: Exclude<Step, 4>) => {
     setTouched((current) => ({ ...current, ...Object.fromEntries(stepFields[currentStep].map((field) => [field, true])) }));
   }, []);
 
-  const focusField = useCallback((field: Field | "categories") => {
+  const focusField = useCallback((field: ErrorKey) => {
     window.requestAnimationFrame(() => {
       const container = document.querySelector<HTMLElement>(`[data-wizard-field="${field}"]`);
       container?.querySelector<HTMLElement>("input, textarea, select, button")?.focus();
@@ -253,8 +301,10 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
       setServerErrors({});
       setServerSummary("");
       const portfolioUrl = normalizeWebsite(form.portfolioUrl);
-      const youtubeUrl = normalizeWebsite(form.youtube);
-      const input = { name: form.name.trim(), lastName: form.lastName.trim() || undefined, username: form.username.trim(), city: form.city.trim(), categories: selectedCategories, bio: form.bio.trim() || undefined, avatarUrl, phone: form.phone.trim(), email: form.email.trim() || undefined, totalFollowers: normalizeNumericInput(form.totalFollowers), averageReach: normalizeNumericInput(form.averageReach), engagementRate: normalizeDecimalInput(form.engagementRate), storiesPrice: normalizeNumericInput(form.storiesPrice), reelsPrice: normalizeNumericInput(form.reelsPrice), postPrice: normalizeNumericInput(form.postPrice) || undefined, integrationPrice: normalizeNumericInput(form.integrationPrice) || undefined, barterEnabled, portfolioItems: portfolioUrl ? [{ title: t("form.blogger.portfolioTitle"), type: "IMAGE" as const, url: portfolioUrl }] : [], platforms: ([form.instagram.trim() ? { type: "instagram", url: socialUrl("instagram", form.instagram) } : null, form.tiktok.trim() ? { type: "tiktok", url: socialUrl("tiktok", form.tiktok) } : null, youtubeUrl ? { type: "youtube", url: youtubeUrl } : null].filter(Boolean) as Array<{ type: string; url: string }>) };
+      const totals = platformTotals(form);
+      const platformUrl = (kind: PlatformKind) => kind === "youtube" ? normalizeWebsite(form.youtube) : socialUrl(kind, form[kind]);
+      const platforms = filledPlatforms(form).map((kind) => ({ type: kind, url: platformUrl(kind), followers: normalizeNumericInput(form[followersField(kind)]), averageReach: normalizeNumericInput(form[reachField(kind)]), engagementRate: normalizeDecimalInput(form[erField(kind)]) }));
+      const input = { name: form.name.trim(), lastName: form.lastName.trim() || undefined, username: form.username.trim(), city: form.city.trim(), categories: selectedCategories, bio: form.bio.trim() || undefined, avatarUrl, phone: form.phone.trim(), email: form.email.trim() || undefined, totalFollowers: totals.totalFollowers, averageReach: totals.averageReach, engagementRate: totals.engagementRate, storiesPrice: normalizeNumericInput(form.storiesPrice), reelsPrice: normalizeNumericInput(form.reelsPrice), postPrice: normalizeNumericInput(form.postPrice) || undefined, integrationPrice: normalizeNumericInput(form.integrationPrice) || undefined, barterEnabled, portfolioItems: portfolioUrl ? [{ title: t("form.blogger.portfolioTitle"), type: "IMAGE" as const, url: portfolioUrl }] : [], platforms };
       if (existing) await updateBloggerProfile(input); else { await createBloggerProfile(input); setExisting(true); }
       let mediaWarning = "";
       try {
@@ -281,7 +331,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
     } catch (error) {
       const message = getApiErrorMessage(error, t("form.submitFailed"), { conflictMessage: t("form.bloggerProfileConflict"), validationMessages: validationMessages(t) });
       if (error instanceof ApiError && error.code === "validation_failed") {
-        const fields = error.validationFields.map(fieldFromServerName).filter((field): field is Field | "categories" => Boolean(field));
+        const fields = error.validationFields.map(fieldFromServerName).filter((field): field is ErrorKey => Boolean(field));
         if (fields.length) {
           setServerErrors(Object.fromEntries(fields.map((field) => [field, validationMessages(t)[field]])));
           setTouched((current) => ({ ...current, ...Object.fromEntries(fields.map((field) => [field, true])) }));
@@ -298,7 +348,8 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   if (!hydrated) return <div className="screen screen--without-nav"><div aria-busy="true" className="wizard-loading" /></div>;
 
   const reviewAvatarUrl = pendingImage === null ? null : previewUrl ?? avatarUrl;
-  const hasPortfolioDetails = Boolean(reviewAvatarUrl || form.bio.trim() || form.portfolioUrl.trim() || form.instagram.trim() || form.tiktok.trim() || form.youtube.trim());
+  const hasPortfolioDetails = Boolean(reviewAvatarUrl || form.bio.trim() || form.portfolioUrl.trim());
+  const totals = platformTotals(form);
   const progressLabel = t("wizard.stepOf", { current: step + 1, total: 5 });
   const submitLabel = existing ? t("wizard.saveChanges") : t("wizard.createProfile");
   const actionLabel = step === 4 ? (saving ? t("form.publishing") : submitLabel) : t("wizard.continue");
@@ -317,9 +368,24 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
       </div></WizardStep>}
       {step === 1 && <WizardStep stepKey={stepTitles[1]}><div className="wizard-fields">
         <div data-wizard-field="categories"><CategoryMultiSelect error={touched.categories ? errors.categories : undefined} onChange={updateCategories} required value={selectedCategories} /></div>
-        <div data-wizard-field="totalFollowers"><Input className="wizard-input" error={touched.totalFollowers ? errors.totalFollowers : undefined} inputMode="numeric" label={t("common.followers")} onBlur={blur("totalFollowers")} onChange={numeric("totalFollowers")} placeholder="25 000" required value={form.totalFollowers} /></div>
-        <div data-wizard-field="averageReach"><Input className="wizard-input" error={touched.averageReach ? errors.averageReach : undefined} inputMode="numeric" label={t("common.reach")} onBlur={blur("averageReach")} onChange={numeric("averageReach")} placeholder="15 000" required value={form.averageReach} /></div>
-        <div data-wizard-field="engagementRate"><Input aria-describedby="engagement-rate-helper" className="wizard-input" error={touched.engagementRate ? errors.engagementRate : undefined} inputMode="decimal" label={t("form.engagementRateLabel")} maxLength={6} onBlur={blur("engagementRate")} onChange={decimal} placeholder="5,5" required suffix="%" value={form.engagementRate} /><p className="wizard-field-helper" id="engagement-rate-helper">{t("form.engagementRateHelper")}</p></div>
+        <fieldset className="wizard-platforms" data-wizard-field="platforms">
+          <legend>{t("form.platformsTitle")}</legend>
+          <p className="wizard-field-helper">{t("form.platformsHelper")}</p>
+          {platformKinds.map((kind) => {
+            const filled = Boolean(form[kind].trim());
+            return <div className="wizard-platform" key={kind}>
+              <div data-wizard-field={kind}><Input className="wizard-input" error={touched[kind] ? errors[kind] : undefined} id={`platform-${kind}`} label={t(`form.${kind}`)} onBlur={blur(kind)} onChange={updateHandle(kind)} placeholder={kind === "youtube" ? "https://youtube.com/@channel" : kind === "telegram" ? "@channel" : "@username"} type={kind === "youtube" ? "url" : "text"} value={form[kind]} /></div>
+              {filled && <div className="wizard-platform__stats">
+                <div data-wizard-field={followersField(kind)}><Input className="wizard-input" error={touched[followersField(kind)] ? errors[followersField(kind)] : undefined} id={`platform-${kind}-followers`} inputMode="numeric" label={t("common.followers")} onBlur={blur(followersField(kind))} onChange={numeric(followersField(kind))} placeholder="10 000" required value={form[followersField(kind)]} /></div>
+                <div data-wizard-field={reachField(kind)}><Input className="wizard-input" error={touched[reachField(kind)] ? errors[reachField(kind)] : undefined} id={`platform-${kind}-reach`} inputMode="numeric" label={t("form.reachShort")} onBlur={blur(reachField(kind))} onChange={numeric(reachField(kind))} placeholder="5 000" required value={form[reachField(kind)]} /></div>
+                <div data-wizard-field={erField(kind)}><Input className="wizard-input" error={touched[erField(kind)] ? errors[erField(kind)] : undefined} id={`platform-${kind}-er`} inputMode="decimal" label={t("form.erShort")} maxLength={6} onBlur={blur(erField(kind))} onChange={decimal(erField(kind))} placeholder="5,5" required suffix="%" value={form[erField(kind)]} /></div>
+              </div>}
+            </div>;
+          })}
+          {touched.platforms && errors.platforms && <p className="wizard-platforms__error" role="alert">{errors.platforms}</p>}
+          {totals.totalFollowers > 0 && <p className="wizard-platforms__total">{t("form.totalFollowers", { count: formatNumber(totals.totalFollowers) })}</p>}
+          <p className="wizard-field-helper">{t("form.engagementRateHelper")}</p>
+        </fieldset>
       </div></WizardStep>}
       {step === 2 && <WizardStep stepKey={stepTitles[2]}><div className="wizard-fields">
         <div data-wizard-field="storiesPrice"><Input className="wizard-input" error={touched.storiesPrice ? errors.storiesPrice : undefined} inputMode="numeric" label={t("card.stories")} onBlur={blur("storiesPrice")} onChange={numeric("storiesPrice")} placeholder="200 000" required suffix={t("currency.uzs")} value={form.storiesPrice} /></div>
@@ -332,22 +398,19 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
         <ProfileMediaPicker className="wizard-media-picker" currentUrl={avatarUrl} disabled={saving} name={form.name || t("profile.telegramUser")} onChange={(image) => { setDirty(true); setPendingImage(image); }} pending={pendingImage} />
         <div data-wizard-field="bio"><Textarea className="wizard-input" error={touched.bio ? errors.bio : undefined} label={t("form.aboutMe")} maxLength={500} onBlur={blur("bio")} onChange={update("bio")} placeholder={t("form.aboutMePlaceholder")} value={form.bio} /></div>
         <div data-wizard-field="portfolioUrl"><Input className="wizard-input" error={touched.portfolioUrl ? errors.portfolioUrl : undefined} label={t("form.portfolioUrl")} onBlur={blur("portfolioUrl")} onChange={update("portfolioUrl")} placeholder="https://..." type="url" value={form.portfolioUrl} /></div>
-        <div data-wizard-field="instagram"><Input className="wizard-input" error={touched.instagram ? errors.instagram : undefined} label={t("form.instagram")} onBlur={blur("instagram")} onChange={update("instagram")} placeholder="@username" value={form.instagram} /></div>
-        <div data-wizard-field="tiktok"><Input className="wizard-input" error={touched.tiktok ? errors.tiktok : undefined} label={t("form.tiktok")} onBlur={blur("tiktok")} onChange={update("tiktok")} placeholder="@username" value={form.tiktok} /></div>
-        <div data-wizard-field="youtube"><Input className="wizard-input" error={touched.youtube ? errors.youtube : undefined} label={t("form.youtube")} onBlur={blur("youtube")} onChange={update("youtube")} placeholder="https://youtube.com/@channel" type="url" value={form.youtube} /></div>
       </div></WizardStep>}
       {step === 4 && <WizardStep stepKey={stepTitles[4]}><div className="wizard-review">
         <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[0] })} editLabel={t("wizard.change")} onEdit={() => setStep(0)} title={stepTitles[0]}>
           <ReviewItem label={t("form.name")} value={[form.name.trim(), form.lastName.trim()].filter(Boolean).join(" ")} /><ReviewItem label={t("form.telegramUsername")} value={form.username.trim()} /><ReviewItem label={t("common.city")} value={cityLabel(form.city, language)} /><ReviewItem label={t("common.phone")} value={form.phone} /><ReviewItem label={t("form.emailOptional")} value={form.email.trim()} />
         </ReviewSection>
         <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[1] })} editLabel={t("wizard.change")} onEdit={() => setStep(1)} title={stepTitles[1]}>
-          <ReviewItem label={t("common.categories")} value={selectedCategories.map((category) => reviewCategory(category, language)).join(", ")} /><ReviewItem label={t("common.followers")} value={formatNumber(normalizeNumericInput(form.totalFollowers))} /><ReviewItem label={t("common.reach")} value={formatNumber(normalizeNumericInput(form.averageReach))} /><ReviewItem label={t("form.engagementRateLabel")} value={formatPercentage(form.engagementRate)} />
+          <ReviewItem label={t("common.categories")} value={selectedCategories.map((category) => reviewCategory(category, language)).join(", ")} />{filledPlatforms(form).map((kind) => <ReviewItem key={kind} label={platformLabel(kind, t)} value={t("form.platformSummary", { followers: formatNumber(normalizeNumericInput(form[followersField(kind)])), reach: formatNumber(normalizeNumericInput(form[reachField(kind)])), er: formatPercentage(form[erField(kind)]) })} />)}<ReviewItem label={t("form.totalFollowersLabel")} value={formatNumber(totals.totalFollowers)} />
         </ReviewSection>
         <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[2] })} editLabel={t("wizard.change")} onEdit={() => setStep(2)} title={stepTitles[2]}>
           <ReviewItem label={t("card.stories")} value={formatCurrency(normalizeNumericInput(form.storiesPrice))} /><ReviewItem label={t("card.reels")} value={formatCurrency(normalizeNumericInput(form.reelsPrice))} /><ReviewItem label={t("card.post")} value={form.postPrice ? formatCurrency(normalizeNumericInput(form.postPrice)) : undefined} /><ReviewItem label={t("card.integration")} value={form.integrationPrice ? formatCurrency(normalizeNumericInput(form.integrationPrice)) : undefined} /><ReviewItem label={t("form.barterReviewTitle")} value={barterEnabled ? t("common.yes") : t("common.no")} />
         </ReviewSection>
         <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[3] })} editLabel={t("wizard.change")} emptyLabel={t("common.notSpecified")} isEmpty={!hasPortfolioDetails} onEdit={() => setStep(3)} title={stepTitles[3]}>
-          {reviewAvatarUrl && <img alt={t("profileMedia.title")} className="wizard-review__logo" src={reviewAvatarUrl} />}<ReviewItem label={t("form.aboutMe")} value={form.bio.trim()} /><ReviewItem label={t("form.portfolioUrl")} value={form.portfolioUrl.trim()} /><ReviewItem label={t("form.instagram")} value={form.instagram.trim()} /><ReviewItem label={t("form.tiktok")} value={form.tiktok.trim()} /><ReviewItem label={t("form.youtube")} value={form.youtube.trim()} />
+          {reviewAvatarUrl && <img alt={t("profileMedia.title")} className="wizard-review__logo" src={reviewAvatarUrl} />}<ReviewItem label={t("form.aboutMe")} value={form.bio.trim()} /><ReviewItem label={t("form.portfolioUrl")} value={form.portfolioUrl.trim()} />
         </ReviewSection>
       </div></WizardStep>}
     </WizardLayout>

@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IBrandFaceFavoritesReadModel, BrandFaceFavoritesReadModel>();
         services.AddScoped<IAdminMarketplaceReadModel, AdminMarketplaceReadModel>();
         services.AddScoped<IReviewReadModel, ReviewReadModel>();
+        services.AddScoped<IPublicBusinessReadModel, PublicBusinessReadModel>();
         services.AddScoped<IDealReadModel, DealReadModel>();
         services.AddSingleton<IContactUnlockPricing, ContactUnlockPricing>();
         services.Configure<ClickTelegramPaymentOptions>(configuration.GetSection(ClickTelegramPaymentOptions.SectionName));

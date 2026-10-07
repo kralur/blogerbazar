@@ -30,8 +30,21 @@ export function currentLanguage(): Language {
   return storedLanguage() ?? telegramLanguage() ?? "ru";
 }
 
+// Russian nouns after a number take one of three forms (1 отзыв, 2 отзыва, 5 отзывов). A text with {count}
+// may have "<key>_one" and "<key>_few" variants; the base key holds the "many" form. Uzbek does not inflect.
+export function russianPluralForm(count: number): "one" | "few" | "many" {
+  const lastTwo = Math.abs(count) % 100;
+  const last = lastTwo % 10;
+  if (lastTwo >= 11 && lastTwo <= 14) return "many";
+  if (last === 1) return "one";
+  if (last >= 2 && last <= 4) return "few";
+  return "many";
+}
+
 export function translate(key: string, values?: Values, language = currentLanguage()) {
-  const template = dictionaries[language][key] ?? dictionaries.ru[key] ?? key;
+  const form = language === "ru" && typeof values?.count === "number" ? russianPluralForm(values.count) : "many";
+  const pluralKey = form === "many" ? key : `${key}_${form}`;
+  const template = dictionaries[language][pluralKey] ?? dictionaries[language][key] ?? dictionaries.ru[key] ?? key;
   return values ? template.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? `{${name}}`)) : template;
 }
 
@@ -41,7 +54,13 @@ const categoryAliases: Record<string, string> = {
 const cityAliases: Record<string, string> = {
   tashkent: "tashkent", "ташкент": "tashkent", samarkand: "samarkand", "самарканд": "samarkand", bukhara: "bukhara", "бухара": "bukhara", fergana: "fergana", "фергана": "fergana", andijan: "andijan", "андижан": "andijan", namangan: "namangan", "наманган": "namangan", uzbekistan: "uzbekistan", "узбекистан": "uzbekistan"
 };
-export const categoryLabel = (value: string, language = currentLanguage()) => translate(`taxonomy.category.${categoryAliases[value.toLowerCase()] ?? value.toLowerCase()}`, undefined, language);
+// "other:<text>" is a category the user typed in; an unknown key never reaches the screen as a raw key.
+export const categoryLabel = (value: string, language = currentLanguage()) => {
+  if (value.startsWith("other:")) return value.slice("other:".length).trim() || translate("common.notSpecified", undefined, language);
+  const key = `taxonomy.category.${categoryAliases[value.toLowerCase()] ?? value.toLowerCase()}`;
+  const label = translate(key, undefined, language);
+  return label === key ? translate("common.notSpecified", undefined, language) : label;
+};
 export const cityLabel = (value: string, language = currentLanguage()) => translate(`taxonomy.city.${cityAliases[value.toLowerCase()] ?? value.toLowerCase()}`, undefined, language);
 
 type I18nContextValue = { language: Language; setLanguage: (language: Language) => void; t: (key: string, values?: Values) => string };

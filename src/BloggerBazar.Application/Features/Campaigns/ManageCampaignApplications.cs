@@ -51,7 +51,8 @@ public sealed record MyCampaignApplicationDetailsDto(
     string? Message,
     int Status,
     DateTime CreatedAtUtc,
-    Guid? DealId);
+    Guid? DealId,
+    Guid? BusinessId = null);
 
 public sealed record CampaignApplicationInboxResult(
     IReadOnlyList<CampaignApplicationInboxItemDto> Items,

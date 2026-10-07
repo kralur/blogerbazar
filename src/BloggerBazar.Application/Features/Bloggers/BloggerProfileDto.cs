@@ -61,8 +61,8 @@ public sealed record PortfolioItemDto(Guid Id, string Title, int Type, string Ur
     public static PortfolioItemDto From(PortfolioItem item) => new(item.Id, item.Title, (int)item.Type, item.Url);
 }
 
-public sealed record SocialPlatformDto(Guid Id, string Type, string Url, int? Followers, string? ScreenshotUrl)
+public sealed record SocialPlatformDto(Guid Id, string Type, string Url, int? Followers, string? ScreenshotUrl, int? AverageReach = null, decimal? EngagementRate = null)
 {
     public static SocialPlatformDto From(SocialPlatform platform) =>
-        new(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl);
+        new(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate);
 }

@@ -10,7 +10,9 @@ import { navigateWithHistoryOrigin } from "../navigation/hashNavigation";
 import { getCachedMyCampaign, removeCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
 import { removeCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
+import { CampaignActionsMenu, myCampaignsFeedbackKey, type CampaignMenuResult } from "../components/CampaignActionsMenu";
 import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 
@@ -50,6 +52,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   }, [id]);
   useEffect(() => load(), [load]);
   useCampaignDataRefresh(() => { void load(); });
+  useScreenRefresh(load);
 
   useEffect(() => {
     const feedback = sessionStorage.getItem(`bloggerbazar.my-campaign-feedback:${id}`);
@@ -86,13 +89,24 @@ export function MyCampaignDetails({ id }: { id: string }) {
     }
   };
 
+  const onMenuResult = (result: CampaignMenuResult) => {
+    if (result.kind === "deleted") {
+      sessionStorage.setItem(myCampaignsFeedbackKey, result.message);
+      window.location.hash = "#/my-campaigns";
+      return;
+    }
+    if (result.kind === "status") setCampaign((current) => current ? { ...current, status: result.status } : current);
+    if (result.kind === "failed" && result.reload) void load();
+    setToast(result.message);
+  };
+
   if (loading && !campaign) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
   if (!campaign) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
 
   const budget = formatBudgetRange(campaign.minBudget, campaign.maxBudget);
   const canManage = campaign.status !== 2;
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
-    <PageHeader back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
+    <PageHeader actions={<CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} />} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
     <section className="my-campaign-details__hero"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}</div><h1>{campaign.title}</h1><p>{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div></section>
     {campaign.status === 1 && isPastDay(campaign.deadline) && <p className="campaign-details__expired" role="status">{t("myCampaignDetails.expiredNote")}</p>}
     {canManage && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}

@@ -54,7 +54,8 @@ public sealed record OfferDto(
     DateTime CreatedAtUtc,
     DateTime? ExpiresAtUtc,
     Guid? DealId,
-    bool CanRespond)
+    bool CanRespond,
+    Guid? BusinessId = null)
 {
     internal static OfferDto From(CollaborationRequest offer, MarketplaceRole viewerRole, DateTime utcNow) =>
         viewerRole == MarketplaceRole.Blogger
@@ -80,7 +81,8 @@ public sealed record OfferDto(
             offer.CreatedAtUtc,
             offer.ExpiresAtUtc,
             offer.Deal?.Id,
-            viewerIsBlogger && state == OfferStates.Pending);
+            viewerIsBlogger && state == OfferStates.Pending,
+            offer.BusinessId);
     }
 
     internal static string StateOf(CollaborationRequest offer, DateTime utcNow) => offer.Status switch

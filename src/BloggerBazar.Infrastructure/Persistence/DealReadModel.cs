@@ -56,5 +56,7 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Format,
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.OfferedBudget,
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Deadline,
-            deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Message));
+            deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Message,
+            deal.BloggerId,
+            deal.BusinessId));
 }

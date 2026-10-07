@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
@@ -8,6 +9,8 @@ namespace BloggerBazar.Application.Features.Campaigns;
 
 public sealed record UpdateCampaignCommand(Guid CampaignId, long TelegramUserId, string Title, string Description, string? City, IReadOnlyCollection<string> Categories, IReadOnlyCollection<string>? Requirements, int? BudgetFrom, int? BudgetTo, DateTime? Deadline) : IRequest<CampaignDto>;
 public sealed record CloseCampaignCommand(Guid CampaignId, long TelegramUserId) : IRequest<CampaignDto>;
+public sealed record ReopenCampaignCommand(Guid CampaignId, long TelegramUserId) : IRequest<CampaignDto>;
+public sealed record DeleteCampaignCommand(Guid CampaignId, long TelegramUserId) : IRequest;
 
 public sealed class UpdateCampaignValidator : AbstractValidator<UpdateCampaignCommand>
 {
@@ -47,5 +50,37 @@ public sealed class CloseCampaignHandler(ICampaignRepository campaigns, IPlatfor
         }
 
         return CampaignDto.From(campaign, business.Name);
+    }
+}
+
+public sealed class ReopenCampaignHandler(ICampaignRepository campaigns, IPlatformUserRepository users, IBusinessProfileRepository businesses, IUnitOfWork unitOfWork, ICatalogCache? cache = null) : IRequestHandler<ReopenCampaignCommand, CampaignDto>
+{
+    public async Task<CampaignDto> Handle(ReopenCampaignCommand command, CancellationToken cancellationToken)
+    {
+        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
+        var campaign = await campaigns.GetByIdForBusinessAsync(command.CampaignId, business.Id, cancellationToken) ?? throw new InvalidOperationException("Campaign was not found.");
+        if (campaign.Status != CampaignStatus.Published)
+        {
+            // A campaign past its deadline would reopen straight into "expired"; the owner moves the deadline first.
+            if (campaign.IsExpired(DateTime.UtcNow)) throw new BusinessRuleConflictException("campaign_expired", "The campaign deadline has passed.");
+            campaign.Publish();
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
+        }
+
+        return CampaignDto.From(campaign, business.Name);
+    }
+}
+
+public sealed class DeleteCampaignHandler(ICampaignRepository campaigns, IPlatformUserRepository users, IBusinessProfileRepository businesses, ICatalogCache? cache = null) : IRequestHandler<DeleteCampaignCommand>
+{
+    public async Task Handle(DeleteCampaignCommand command, CancellationToken cancellationToken)
+    {
+        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
+        _ = await campaigns.GetByIdForBusinessAsync(command.CampaignId, business.Id, cancellationToken) ?? throw new InvalidOperationException("Campaign was not found.");
+        // Applications carry bloggers' history and deals, so a campaign with any of them is closed, never deleted.
+        if (!await campaigns.DeleteWithoutApplicationsAsync(command.CampaignId, business.Id, cancellationToken))
+            throw new BusinessRuleConflictException("campaign_has_applications", "A campaign with applications cannot be deleted.");
+        if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
     }
 }

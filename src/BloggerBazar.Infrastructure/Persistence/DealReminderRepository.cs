@@ -35,7 +35,11 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
                 deal.Blogger.TelegramUserId,
                 deal.Business.TelegramUserId,
                 deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Business),
-                deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Blogger)))
+                deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Blogger),
+                deal.Blogger.Name,
+                deal.Business.Name,
+                deal.CampaignTitleSnapshot,
+                deal.CollaborationRequest != null ? deal.CollaborationRequest.Format : null))
             .ToArrayAsync(cancellationToken);
     }
 

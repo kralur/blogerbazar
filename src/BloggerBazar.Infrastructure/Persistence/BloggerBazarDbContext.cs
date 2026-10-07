@@ -163,6 +163,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         platform.Property(entity => entity.Type).HasMaxLength(50).IsRequired();
         platform.Property(entity => entity.Url).HasMaxLength(2048).IsRequired();
         platform.Property(entity => entity.ScreenshotUrl).HasMaxLength(2048);
+        platform.Property(entity => entity.EngagementRate).HasPrecision(5, 2);
         platform.HasOne(entity => entity.Blogger).WithMany(entity => entity.Platforms).HasForeignKey(entity => entity.BloggerId).OnDelete(DeleteBehavior.Cascade);
         platform.HasIndex(entity => entity.BloggerId);
 

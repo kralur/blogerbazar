@@ -63,7 +63,8 @@ internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbConte
                 application.Message,
                 (int)application.Status,
                 application.CreatedAtUtc,
-                application.Deal == null ? null : application.Deal.Id))
+                application.Deal == null ? null : application.Deal.Id,
+                application.Campaign.BusinessId))
             .SingleOrDefaultAsync(cancellationToken);
 
     public async Task<CampaignApplicationInboxResult> SearchForBusinessAsync(Guid businessId, Guid campaignId, CampaignApplicationSearch search, CancellationToken cancellationToken)

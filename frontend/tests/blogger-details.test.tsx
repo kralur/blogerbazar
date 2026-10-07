@@ -67,9 +67,22 @@ describe("Blogger details", () => {
   it("lists platforms with localized names", async () => {
     renderDetails();
 
-    expect(await screen.findByText(ru("details.platforms"))).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: ru("details.platforms") })).toBeInTheDocument();
     expect(screen.getByText("Instagram")).toBeInTheDocument();
     expect(screen.queryByText("instagram")).not.toBeInTheDocument();
+  });
+
+  it("shows followers, reach and ER for each platform with the total on top", async () => {
+    api.getBlogger.mockResolvedValue({ ...blogger, totalFollowers: 13000, platforms: [
+      { id: "p1", type: "instagram", followers: 10000, averageReach: 25000, engagementRate: 5.5 },
+      { id: "p2", type: "telegram", followers: 3000, averageReach: null, engagementRate: null }
+    ] });
+    renderDetails();
+
+    expect(await screen.findByText(ru("details.totalFollowers"))).toBeInTheDocument();
+    expect(screen.getByText("Telegram")).toBeInTheDocument();
+    expect(screen.getByText(/ER 5,5%/)).toBeInTheDocument();
+    expect(screen.queryByText(ru("details.reach"))).not.toBeInTheDocument();
   });
 
   it("calls a profile without reviews or deals new instead of showing an empty rating", async () => {

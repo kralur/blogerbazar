@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentPlatformUser, getMyCampaigns, normalizeMarketplaceRole, type MyCampaign, type MyCampaignQuery, type MyCampaignSort, type MyCampaignStatus } from "../api/marketplace";
 import { MyCampaignCard } from "../components/MyCampaignCard";
+import { myCampaignsFeedbackKey, type CampaignMenuResult } from "../components/CampaignActionsMenu";
 import { CatalogState, FilterSelect, SearchSkeleton } from "../components/catalog/CatalogShared";
 import { usePaginatedCatalog } from "../components/catalog/usePaginatedCatalog";
-import { BottomNav, SearchBar } from "../components/ui";
+import { BottomNav, SearchBar, Toast } from "../components/ui";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
@@ -11,6 +12,7 @@ import { useI18n } from "../i18n";
 import { campaignStatusLabel } from "../lib/campaignStatus";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { PageHeader } from "../components/PageHeader";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 const pageSize = 20;
 const defaultQuery: MyCampaignQuery = { sort: "newest", pageSize };
@@ -23,6 +25,7 @@ export function MyCampaigns() {
   const [status, setStatus] = useState<MyCampaignStatus | undefined>();
   const [sort, setSort] = useState<MyCampaignSort>("newest");
   const [access, setAccess] = useState<"checking" | "allowed" | "denied" | "failed">("checking");
+  const [toast, setToast] = useState<{ id: number; message: string; tone: "success" | "error" } | null>(null);
   const accessRef = useRef(access);
   const debouncedQuery = useDebouncedValue(query, 300);
   const lastCatalogKeyRef = useRef("");
@@ -40,6 +43,13 @@ export function MyCampaigns() {
   const hasFilters = Boolean(debouncedQuery.trim()) || status !== undefined || sort !== "newest";
 
   useEffect(() => { accessRef.current = access; }, [access]);
+  useEffect(() => {
+    if (!active) return;
+    const feedback = sessionStorage.getItem(myCampaignsFeedbackKey);
+    if (!feedback) return;
+    sessionStorage.removeItem(myCampaignsFeedbackKey);
+    setToast({ id: Date.now(), message: feedback, tone: "success" });
+  }, [active]);
 
   const refreshAccess = useCallback(() => {
     if (!active) return;
@@ -93,6 +103,11 @@ export function MyCampaigns() {
     }
   }, [access, active, load]);
   useCampaignDataRefresh(refreshCampaigns, active && access === "allowed");
+  useScreenRefresh(refreshCampaigns, active && access === "allowed");
+  const onMenuResult = useCallback((result: CampaignMenuResult) => {
+    setToast({ id: Date.now(), message: result.message, tone: result.kind === "failed" ? "error" : "success" });
+    if (result.kind !== "failed" || result.reload) refreshCampaigns();
+  }, [refreshCampaigns]);
 
   return <div aria-hidden={!active} className="campaign-management-screen my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
     <PageHeader actions={access === "allowed" ? <a className="my-campaigns__create" href="#/campaigns?create=1">{t("myCampaigns.create")}</a> : undefined} back={{ href: "#/profile", label: t("myCampaigns.backAria") }} eyebrow={t("myCampaigns.eyebrow")} title={t("myCampaigns.title")} />
@@ -109,13 +124,14 @@ export function MyCampaigns() {
       {failure && !loadedInitialResult && <CatalogState icon={failure === "offline" ? "refresh" : "filter"} onRetry={retry} subtitle={t(failure === "offline" ? "myCampaigns.offlineSubtitle" : "myCampaigns.errorSubtitle")} title={t(failure === "offline" ? "myCampaigns.offlineTitle" : "myCampaigns.errorTitle")} />}
       {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={retry} subtitle={t(failure === "offline" ? "myCampaigns.offlineSubtitle" : "myCampaigns.errorSubtitle")} title={t(failure === "offline" ? "myCampaigns.offlineTitle" : "myCampaigns.errorTitle")} />}
       {!loading && !failure && items.length === 0 && <CatalogState actionLabel={hasFilters ? t("myCampaigns.clearFilters") : t("myCampaigns.create")} icon={hasFilters ? "filter" : "briefcase"} onRetry={hasFilters ? reset : () => { window.location.hash = "/campaigns?create=1"; }} subtitle={t(hasFilters ? "myCampaigns.filteredEmptySubtitle" : "myCampaigns.emptySubtitle")} title={t(hasFilters ? "myCampaigns.filteredEmptyTitle" : "myCampaigns.emptyTitle")} />}
-      {loadedInitialResult && items.map((campaign) => <MyCampaignCard campaign={campaign} key={campaign.id} />)}
+      {loadedInitialResult && items.map((campaign) => <MyCampaignCard campaign={campaign} key={campaign.id} onMenuResult={onMenuResult} />)}
       {hasMore && <div aria-hidden="true" ref={sentinelRef} />}
       {loadingMore && <SearchSkeleton compact count={2} />}
       {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={retryMore} subtitle={t("myCampaigns.loadMoreSubtitle")} title={t("myCampaigns.loadMoreTitle")} />}
       {loadedInitialResult && !hasMore && !loadingMore && !loadMoreFailed && items.length > 0 && <p className="catalog-search__end">{t("myCampaigns.endOfList")}</p>}
     </section>
     </>}
+    <Toast key={toast?.id} message={toast?.message ?? ""} tone={toast?.tone ?? "success"} />
     <BottomNav />
   </div>;
 }

@@ -34,6 +34,7 @@ vi.mock("../src/components/ui", () => ({
   Icon: () => <svg />,
   LoadingState: ({ title }: { title: string }) => <p>{title}</p>,
   Modal: ({ children, open, title }: { children: React.ReactNode; open: boolean; title: string }) => open ? <section aria-label={title}>{children}</section> : null,
+  BottomSheet: ({ children, open, title }: { children: React.ReactNode; open: boolean; title: string }) => open ? <section aria-label={title}>{children}</section> : null,
   SearchBar: ({ value, onChange, onClear, placeholder, clearAriaLabel }: { value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; onClear?: () => void; placeholder?: string; clearAriaLabel?: string }) => <><input aria-label={placeholder} onChange={onChange} value={value} />{value && onClear && <button aria-label={clearAriaLabel} onClick={onClear} type="button">clear</button>}</>,
   Skeleton: () => <div>loading</div>,
   Toast: () => null

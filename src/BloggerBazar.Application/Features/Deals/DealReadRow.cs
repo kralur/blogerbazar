@@ -58,7 +58,9 @@ public sealed record DealReadRow(
     CollaborationFormat? OfferFormat = null,
     int? OfferedBudget = null,
     DateTime? OfferDeadline = null,
-    string? OfferMessage = null);
+    string? OfferMessage = null,
+    Guid? BloggerId = null,
+    Guid? BusinessId = null);
 
 public sealed record DealOfferDto(string? Format, int? OfferedBudget, DateTime? Deadline, string Message);
 

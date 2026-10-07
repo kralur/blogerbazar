@@ -13,11 +13,12 @@ import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatShortDate, formatNumericInput, localDay, normalizeNumericInput } from "../lib/currency";
-import { isOtherCategory, uzbekistanRegions } from "../lib/taxonomy";
+import { uzbekistanRegions } from "../lib/taxonomy";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { PageHeader } from "../components/PageHeader";
 import { replaceHistoryRoute } from "../navigation/hashNavigation";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 const pageSize = 20;
 const filterSheetId = "campaign-catalog-filters";
@@ -26,7 +27,7 @@ const defaultFilters: CampaignCatalogQuery = { sort: "promoted", pageSize };
 
 type CampaignFilterKey = "category" | "city" | "minBudget" | "maxBudget" | "deadlineFrom" | "deadlineTo";
 type CampaignActiveFilterKey = CampaignFilterKey | "budget" | "deadline";
-type CreateCapability = "none" | "profileMissing" | "ready";
+type CreateCapability = "none" | "profileMissing" | "ready" | "blogger";
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
 function normalizeFilters(filters: CampaignCatalogQuery): CampaignCatalogQuery {
@@ -130,8 +131,9 @@ export function Campaigns() {
   const refreshCreateCapability = useCallback(async () => {
     try {
       const user = await getCurrentPlatformUser();
-      if (normalizeMarketplaceRole(user.selectedMarketplaceRole) !== "Business") {
-        setCreateCapability("none");
+      const role = normalizeMarketplaceRole(user.selectedMarketplaceRole);
+      if (role !== "Business") {
+        setCreateCapability(role === "Blogger" ? "blogger" : "none");
         return;
       }
       await getMyBusinessProfile();
@@ -172,6 +174,7 @@ export function Campaigns() {
     refreshCatalog();
   });
   useCampaignDataRefresh(refreshCatalog, active);
+  useScreenRefresh(async () => { await refreshCreateCapability(); refreshCatalog(); });
 
   const openFilters = () => {
     draftFiltersRef.current = appliedFilters;
@@ -249,7 +252,7 @@ export function Campaigns() {
   };
 
   return <div aria-hidden={!active} className="campaign-catalog catalog-search screen screen--with-nav" hidden={!active}>
-    <PageHeader actions={canCreate ? <><a className="page-header__secondary" href="#/my-campaigns">{t("myCampaigns.open")}</a>{!isDefaultEmpty && <button aria-label={t("campaigns.createAria")} className="my-campaigns__create" onClick={() => setCreateOpen(true)} type="button"><Icon className="h-4 w-4" name="plus" />{t("campaigns.createShort")}</button>}</> : undefined} eyebrow={t("campaigns.eyebrow")} title={t("campaigns.title")} />
+    <PageHeader actions={canCreate ? <><a className="page-header__secondary" href="#/my-campaigns">{t("myCampaigns.open")}</a>{!isDefaultEmpty && <button aria-label={t("campaigns.createAria")} className="my-campaigns__create" onClick={() => setCreateOpen(true)} type="button"><Icon className="h-4 w-4" name="plus" />{t("campaigns.createShort")}</button>}</> : createCapability === "blogger" ? <a className="page-header__secondary" href="#/requests?tab=applications">{t("applications.title")}</a> : undefined} eyebrow={t("campaigns.eyebrow")} title={t("campaigns.title")} />
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("campaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("campaigns.search")} value={query} /></div>
     <div className="catalog-search__controls">
       <button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("campaigns.filtersAria")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button>
@@ -293,7 +296,7 @@ function CampaignFiltersSheet({ open, onClose, filters, categories, error, onSet
     onSetFilter(key, digits === "" || !isValid ? undefined : Number(digits));
   };
   return <BottomSheet id={filterSheetId} onClose={onClose} open={open} title={t("campaigns.filtersTitle")} variant="neutral"><div className="catalog-search__sheet-content campaign-catalog__sheet-content">
-    <FilterSelect label={t("common.categories")} onChange={(value) => onSetFilter("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, safeCategoryLabel(category, t)])]} value={filters.category ?? ""} />
+    <FilterSelect label={t("common.categories")} onChange={(value) => onSetFilter("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, categoryLabel(category)])]} value={filters.category ?? ""} />
     <FilterSelect label={t("common.city")} onChange={(value) => onSetFilter("city", value)} options={[["", t("common.any")], ...uzbekistanRegions.map((city) => [city, cityLabel(city)])]} value={filters.city ?? ""} />
     <div className="campaign-catalog__budget-grid">
       <CurrencyFilterInput label={t("campaigns.minBudget")} onChange={updateBudget("minBudget")} value={budgetInputs.minBudget} currency={t("currency.uzs")} />
@@ -324,7 +327,7 @@ function DateFilterInput({ label, value, onChange, onClear }: { label: string; v
 
 function buildActiveChips(filters: CampaignCatalogQuery, language: "ru" | "uz", t: Translate) {
   const chips: Array<{ key: CampaignActiveFilterKey; label: string }> = [];
-  if (filters.category) chips.push({ key: "category", label: safeCategoryLabel(filters.category, t) });
+  if (filters.category) chips.push({ key: "category", label: categoryLabel(filters.category) });
   if (filters.city) chips.push({ key: "city", label: cityLabel(filters.city) });
   if (filters.minBudget != null || filters.maxBudget != null) chips.push({ key: "budget", label: formatBudgetChip(filters.minBudget, filters.maxBudget, t) });
   if (filters.deadlineFrom || filters.deadlineTo) chips.push({ key: "deadline", label: formatDeadlineChip(filters.deadlineFrom, filters.deadlineTo, language, t) });
@@ -350,11 +353,6 @@ function getFilterError(filters: CampaignCatalogQuery, t: Translate) {
   return null;
 }
 
-function safeCategoryLabel(value: string, t: Translate) {
-  if (isOtherCategory(value)) return value.slice("other:".length).trim() || t("common.notSpecified");
-  const label = categoryLabel(value);
-  return label.startsWith("taxonomy.category.") ? t("common.notSpecified") : label;
-}
 
 function sortOptions(t: Translate): string[][] {
   return [["promoted", t("campaigns.sortPromoted")], ["newest", t("campaigns.sortNewest")], ["deadline_asc", t("campaigns.sortDeadline")], ["budget_asc", t("campaigns.sortBudgetAsc")], ["budget_desc", t("campaigns.sortBudgetDesc")]];

@@ -20,6 +20,7 @@ internal sealed class DealRepository(BloggerBazarDbContext dbContext) : IDealRep
         dbContext.Deals.AsNoTracking()
             .Include(deal => deal.Blogger)
             .Include(deal => deal.Business)
+            .Include(deal => deal.CollaborationRequest)
             .Where(deal => deal.Id == dealId)
             .Where(DealParticipantFilter.For(role, profileId))
             .SingleOrDefaultAsync(cancellationToken);

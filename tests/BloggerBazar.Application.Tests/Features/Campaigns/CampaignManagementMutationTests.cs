@@ -2,6 +2,7 @@ using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Api.Contracts.Campaigns;
 using BloggerBazar.Api.Controllers;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -24,6 +25,8 @@ public sealed class CampaignManagementMutationTests
 
         await Assert.ThrowsAsync<AuthenticationException>(() => controller.Update(Guid.NewGuid(), request, CancellationToken.None));
         await Assert.ThrowsAsync<AuthenticationException>(() => controller.Close(Guid.NewGuid(), CancellationToken.None));
+        await Assert.ThrowsAsync<AuthenticationException>(() => controller.Reopen(Guid.NewGuid(), CancellationToken.None));
+        await Assert.ThrowsAsync<AuthenticationException>(() => controller.Delete(Guid.NewGuid(), CancellationToken.None));
     }
 
     [Fact]
@@ -127,6 +130,68 @@ public sealed class CampaignManagementMutationTests
         Assert.Equal(["campaigns"], cache.RotatedCatalogs);
     }
 
+    [Fact]
+    public async Task Owner_can_publish_a_closed_campaign_again()
+    {
+        var business = Business(10);
+        var campaign = CampaignFor(business, CampaignStatus.Archived);
+        var cache = new RecordingCache();
+        var handler = new ReopenCampaignHandler(new CampaignRepository(campaign), new UserRepository(User(10)), new BusinessRepository(business), new UnitOfWork(), cache);
+
+        var result = await handler.Handle(new ReopenCampaignCommand(campaign.Id, 10), CancellationToken.None);
+        await handler.Handle(new ReopenCampaignCommand(campaign.Id, 10), CancellationToken.None);
+
+        Assert.Equal(CampaignStatus.Published, campaign.Status);
+        Assert.Equal((int)CampaignStatus.Published, result.Status);
+        Assert.Equal(["campaigns"], cache.RotatedCatalogs);
+    }
+
+    [Fact]
+    public async Task Campaign_past_its_deadline_is_not_reopened()
+    {
+        var business = Business(10);
+        var campaign = Campaign.Create(business.Id, "Title", "Description", ["beauty"], null, 100, 200, "tashkent", DateTime.UtcNow.AddDays(-3));
+        campaign.Archive();
+        var handler = new ReopenCampaignHandler(new CampaignRepository(campaign), new UserRepository(User(10)), new BusinessRepository(business), new UnitOfWork());
+
+        var exception = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(new ReopenCampaignCommand(campaign.Id, 10), CancellationToken.None));
+
+        Assert.Equal("campaign_expired", exception.Code);
+        Assert.Equal(CampaignStatus.Archived, campaign.Status);
+    }
+
+    [Fact]
+    public async Task Owner_can_delete_a_campaign_without_applications()
+    {
+        var business = Business(10);
+        var campaign = CampaignFor(business, CampaignStatus.Published);
+        var repository = new CampaignRepository(campaign);
+        var cache = new RecordingCache();
+
+        await new DeleteCampaignHandler(repository, new UserRepository(User(10)), new BusinessRepository(business), cache).Handle(new DeleteCampaignCommand(campaign.Id, 10), CancellationToken.None);
+
+        Assert.Null(await repository.GetByIdAsync(campaign.Id, CancellationToken.None));
+        Assert.Equal(["campaigns"], cache.RotatedCatalogs);
+    }
+
+    [Fact]
+    public async Task Campaign_with_applications_is_kept_and_foreign_campaign_is_missing()
+    {
+        var business = Business(10);
+        var campaign = CampaignFor(business, CampaignStatus.Published);
+        var repository = new CampaignRepository(campaign) { WithApplications = { campaign.Id } };
+        var handler = new DeleteCampaignHandler(repository, new UserRepository(User(10)), new BusinessRepository(business));
+
+        var conflict = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(new DeleteCampaignCommand(campaign.Id, 10), CancellationToken.None));
+        Assert.Equal("campaign_has_applications", conflict.Code);
+        Assert.NotNull(await repository.GetByIdAsync(campaign.Id, CancellationToken.None));
+
+        var other = Business(20);
+        var foreign = new DeleteCampaignHandler(repository, new UserRepository(User(20)), new BusinessRepository(other));
+        var missing = await Assert.ThrowsAsync<InvalidOperationException>(() => foreign.Handle(new DeleteCampaignCommand(campaign.Id, 20), CancellationToken.None));
+        Assert.Contains("not found", missing.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData("   ", "Description", 0, 100)]
     [InlineData("Title", "   ", 0, 100)]
@@ -179,6 +244,9 @@ public sealed class CampaignManagementMutationTests
         public Task<Campaign?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(campaigns.SingleOrDefault(campaign => campaign.Id == id));
         public Task<Campaign?> GetByIdForBusinessAsync(Guid id, Guid businessId, CancellationToken cancellationToken) => Task.FromResult(campaigns.SingleOrDefault(campaign => campaign.Id == id && campaign.BusinessId == businessId));
         public Task<IReadOnlyList<Campaign>> SearchPublishedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Campaign>>([]);
+        public HashSet<Guid> WithApplications { get; } = [];
+        public Task<bool> DeleteWithoutApplicationsAsync(Guid id, Guid businessId, CancellationToken cancellationToken) =>
+            Task.FromResult(!WithApplications.Contains(id) && campaigns.RemoveAll(campaign => campaign.Id == id && campaign.BusinessId == businessId) == 1);
     }
 
     private sealed class BusinessRepository(params BusinessProfile[] initial) : IBusinessProfileRepository

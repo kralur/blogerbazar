@@ -11,6 +11,7 @@ import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useI18n } from "../i18n";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { PageHeader } from "../components/PageHeader";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type FavoriteTab = "blogger" | "brandFace";
 type MutableRef<T> = { current: T };
@@ -57,6 +58,7 @@ function BloggerFavorites({ active }: { active: boolean }) {
 
   useInitialFavoriteLoad(active, startedRef, catalog.load, catalog.cancel);
   useProfileDataRefresh(useCallback(() => { if (active) refresh(); }, [active, refresh]));
+  useScreenRefresh(refresh, active);
   useInfiniteFavoritesScroll({ active, failure: catalog.failure, hasMore: catalog.hasMore, load: catalog.load, loadMoreFailed: catalog.loadMoreFailed, loading: catalog.loading, loadingMore: catalog.loadingMore, page: catalog.page, sentinelRef });
 
   return <section aria-busy={catalog.loading || catalog.loadingMore} aria-live="polite" className="catalog-search__results">
@@ -77,6 +79,7 @@ function BrandFaceFavorites({ active }: { active: boolean }) {
 
   useInitialFavoriteLoad(active, startedRef, catalog.load, catalog.cancel);
   useProfileDataRefresh(useCallback(() => { if (active) refresh(); }, [active, refresh]));
+  useScreenRefresh(refresh, active);
   useInfiniteFavoritesScroll({ active, failure: catalog.failure, hasMore: catalog.hasMore, load: catalog.load, loadMoreFailed: catalog.loadMoreFailed, loading: catalog.loading, loadingMore: catalog.loadingMore, page: catalog.page, sentinelRef });
 
   return <section aria-busy={catalog.loading || catalog.loadingMore} aria-live="polite" className="catalog-search__results">

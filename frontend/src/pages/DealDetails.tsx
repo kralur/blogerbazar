@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
-import { completeDeal, createDealReview, getDealContact, getMyDeal, type ContactDetails, type DealDetails as Deal } from "../api/marketplace";
+import { completeDeal, createDealReview, getDealContact, getMyDeal, type ContactDetails, type DealDetails as Deal, type MarketplaceRole } from "../api/marketplace";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Modal, Textarea, Toast } from "../components/ui";
@@ -10,10 +10,12 @@ import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } fr
 import { offerFormatLabelKey } from "../lib/offerStatus";
 import { PageHeader } from "../components/PageHeader";
 import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
+import { CounterpartyRow } from "../components/CounterpartyRow";
 
 type LoadState = "loading" | "ready" | "denied" | "not-found" | "error";
 
-export function DealDetails({ id }: { id: string }) {
+export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
   const [deal, setDeal] = useState<Deal | null>(() => getCachedDeal(id));
   const [state, setState] = useState<LoadState>(deal ? "ready" : "loading");
@@ -57,6 +59,7 @@ export function DealDetails({ id }: { id: string }) {
     void load();
     return () => { requestRef.current += 1; actionRef.current += 1; busyRef.current = false; };
   }, [id, load]);
+  useScreenRefresh(load);
 
   const ready = state === "ready";
   useEffect(() => {
@@ -116,7 +119,7 @@ export function DealDetails({ id }: { id: string }) {
     <PageHeader actions={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t(dealSourceLabelKey(deal.sourceType))}</p>
     <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{terms?.title ?? t("deals.source.collaborationRequest")}</h1>
-    <div className="request-row request-row--static mt-4"><Avatar name={deal.counterpartyName} size="sm" src={deal.counterpartyImageUrl} variant="catalog" /><span className="request-row__body"><span className="request-row__meta">{t("deals.counterparty")}</span><strong className="truncate">{deal.counterpartyName}</strong></span></div>
+    <CounterpartyRow href={deal.counterpartyProfileId ? (viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyName} />
     {deal.termsSource === "liveCampaignFallback" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.termsFallbackNote")}</p>}
     {deal.termsSource === "collaboration" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.collaborationNote")}</p>}
     {terms && <DetailSection title={t("deals.terms")}>

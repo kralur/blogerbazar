@@ -57,22 +57,24 @@ export function ProfileMediaPicker({
 
   const fileInput = <input accept="image/jpeg,image/png,image/webp" aria-label={t("profileMedia.selectAria")} className="sr-only" disabled={disabled} id={inputId} onChange={selectFile} ref={inputRef} type="file" />;
 
-  // One "+" on the avatar: with no removable photo it opens the file picker; otherwise a small menu
-  // offers replace or delete, so there is no separate "x" sitting on the photo.
+  // One "+" on the avatar always opens the same small menu, for every role: choose a new photo, and delete
+  // only when the profile has its own photo. A Telegram photo shown as a fallback is labelled as such.
   const openPhotoActions = () => {
     setError("");
-    if (canDelete) setActionsOpen(true);
-    else inputRef.current?.click();
+    setActionsOpen(true);
   };
+  const showsTelegramPhoto = !canDelete && Boolean(fallbackUrl) && displayedUrl === fallbackUrl;
 
   if (compact) return <div aria-label={t("profileMedia.sectionAria")} className="relative shrink-0">
     {fileInput}
     <Avatar name={name} size="md" src={displayedUrl} />
-    <button aria-haspopup={canDelete ? "dialog" : undefined} aria-label={canDelete ? t("profileMedia.manage") : t("profileMedia.upload")} className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-white avatar-verified shadow-card disabled:opacity-50" disabled={disabled} onClick={openPhotoActions} type="button"><Icon className="h-4 w-4" name="plus" /></button>
+    <button aria-haspopup="dialog" aria-label={canDelete ? t("profileMedia.manage") : t("profileMedia.upload")} className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-white avatar-verified shadow-card disabled:opacity-50" disabled={disabled} onClick={openPhotoActions} type="button"><Icon className="h-4 w-4" name="plus" /></button>
     <BottomSheet onClose={() => setActionsOpen(false)} open={actionsOpen} title={t("profileMedia.title")}>
       <div className="grid gap-2">
+        {showsTelegramPhoto && <p className="text-sm leading-5 text-brand-muted">{t("profileMedia.telegramPhoto")}</p>}
         <Button onClick={() => { setActionsOpen(false); inputRef.current?.click(); }} type="button" variant="secondary">{t("profileMedia.replacePhoto")}</Button>
-        <Button onClick={() => { setActionsOpen(false); onChange(null); }} type="button" variant="danger">{t("profileMedia.deletePhoto")}</Button>
+        {canDelete && <Button onClick={() => { setActionsOpen(false); onChange(null); }} type="button" variant="danger">{t("profileMedia.deletePhoto")}</Button>}
+        <p className="text-xs leading-5 text-brand-muted">{t("profileMedia.helperShort")}</p>
       </div>
     </BottomSheet>
     {error && <p className="absolute left-0 top-full z-10 mt-2 w-56 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-brand-danger shadow-card" role="alert">{error}</p>}

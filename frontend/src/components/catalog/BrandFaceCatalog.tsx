@@ -13,6 +13,7 @@ import { CatalogState, FilterSelect, SearchSkeleton, ActiveFilterChips } from ".
 import { CatalogTypeSegmentedControl } from "./CatalogTypeSegmentedControl";
 import { usePaginatedCatalog } from "./usePaginatedCatalog";
 import { PageHeader } from "../PageHeader";
+import { useScreenRefresh } from "../../hooks/useScreenRefresh";
 
 const pageSize = 20;
 const filterSheetId = "brand-face-search-filters";
@@ -60,6 +61,7 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
   const { items, total, loading, loadingMore, loadMoreFailed, failure, page, hasMore, loadedInitialResult, load, cancel } = usePaginatedCatalog<BrandFaceCatalogItem>({ active, fetchPage });
 
   const refresh = useCallback(() => { void load(1, false, true); }, [load]);
+  useScreenRefresh(refresh);
 
   useEffect(() => {
     void getCategories().then(setCategories).catch(() => undefined);
@@ -163,7 +165,7 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
     <div className="catalog-search__controls"><button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("search.filters")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button><label className="catalog-search__sort"><span>{t("search.sort")}</span><select aria-label={t("search.sort")} onChange={(event) => changeSort(event.target.value as BrandFaceCatalogSort)} value={appliedFilters.sort ?? "promoted"}>{sortOptions(t).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetFilters} />
     <BottomSheet id={filterSheetId} onClose={() => setFiltersOpen(false)} open={filtersOpen} title={t("search.filters")}><div className="catalog-search__sheet-content">
-      <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, safeCategoryLabel(category, t)])]} value={draftFilters.category ?? ""} />
+      <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, categoryLabel(category)])]} value={draftFilters.category ?? ""} />
       <FilterSelect label={t("common.city")} onChange={(value) => setDraft("city", value)} options={[["", t("common.any")], ...uzbekistanRegions.map((city) => [city, cityLabel(city)])]} value={draftFilters.city ?? ""} />
       <label className="catalog-search__filter-select"><span>{t("search.language")}</span><input aria-label={t("search.language")} onChange={(event) => setDraft("language", event.target.value)} placeholder={t("search.languagePlaceholder")} type="text" value={draftFilters.language ?? ""} /></label>
       <label className="catalog-search__filter-select"><span>{t("search.minPrice")}</span><input aria-label={t("search.minPrice")} inputMode="numeric" onChange={(event) => setDraft("minPrice", Number(event.target.value.replace(/\D/g, "")) || undefined)} placeholder={t("search.anyPrice")} type="text" value={draftFilters.minPrice ? formatNumericInput(String(draftFilters.minPrice)) : ""} /></label>
@@ -187,7 +189,7 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
 
 function buildActiveChips(filters: BrandFaceCatalogFilters, t: Translate) {
   const chips: Array<{ key: FilterKey; label: string }> = [];
-  if (filters.category) chips.push({ key: "category", label: safeCategoryLabel(filters.category, t) });
+  if (filters.category) chips.push({ key: "category", label: categoryLabel(filters.category) });
   if (filters.city) chips.push({ key: "city", label: cityLabel(filters.city) });
   if (filters.language) chips.push({ key: "language", label: filters.language });
   if (filters.minPrice) chips.push({ key: "minPrice", label: t("search.priceFrom", { amount: formatCurrency(filters.minPrice) }) });
@@ -196,10 +198,6 @@ function buildActiveChips(filters: BrandFaceCatalogFilters, t: Translate) {
   return chips;
 }
 
-function safeCategoryLabel(value: string, t: Translate) {
-  const label = categoryLabel(value);
-  return label.startsWith("taxonomy.category.") ? t("common.notSpecified") : label;
-}
 
 function sortOptions(t: Translate): string[][] {
   return [["promoted", t("search.sortPromoted")], ["newest", t("search.sortNewest")], ["price_asc", t("search.sortPriceAsc")], ["price_desc", t("search.sortPriceDesc")]];

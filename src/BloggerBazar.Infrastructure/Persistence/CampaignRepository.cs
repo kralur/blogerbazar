@@ -39,5 +39,10 @@ internal sealed class CampaignRepository(BloggerBazarDbContext dbContext) : ICam
         await dbContext.Campaigns.AsNoTracking()
             .OrderByDescending(campaign => campaign.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
+    public async Task<bool> DeleteWithoutApplicationsAsync(Guid id, Guid businessId, CancellationToken cancellationToken) =>
+        await dbContext.Campaigns
+            .Where(campaign => campaign.Id == id && campaign.BusinessId == businessId && !campaign.Applications.Any())
+            .ExecuteDeleteAsync(cancellationToken) == 1;
+
     public async Task AddAsync(Campaign campaign, CancellationToken cancellationToken) => await dbContext.Campaigns.AddAsync(campaign, cancellationToken);
 }

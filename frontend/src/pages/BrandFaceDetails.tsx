@@ -9,6 +9,7 @@ import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 export function BrandFaceDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
@@ -40,6 +41,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
     return () => { requestIdRef.current += 1; };
   }, [load]);
   useProfileDataRefresh(load);
+  useScreenRefresh(load);
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
   if (!profile) return <div className="screen screen--with-nav"><ErrorState onRetry={load} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;

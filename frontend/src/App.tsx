@@ -1,6 +1,9 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, updateInterfaceLanguage, type MarketplaceRole } from "./api/marketplace";
 import { useI18n } from "./i18n";
+import { PullToRefresh } from "./components/PullToRefresh";
+import { ActionCountsProvider } from "./features/actionCounts/ActionCountsProvider";
+import { requestScreenRefresh } from "./hooks/useScreenRefresh";
 import { LoadingState } from "./components/ui";
 import { LaunchScreen } from "./components/LaunchScreen";
 import { useTelegram, telegramBridge } from "./telegram/TelegramProvider";
@@ -24,6 +27,7 @@ const BusinessProfileForm = lazy(async () => ({ default: (await import("./pages/
 const BloggerProfileForm = lazy(async () => ({ default: (await import("./pages/BloggerProfileForm")).BloggerProfileForm }));
 const BloggerSearch = lazy(async () => ({ default: (await import("./pages/BloggerSearch")).BloggerSearch }));
 const BrandFaceDetails = lazy(async () => ({ default: (await import("./pages/BrandFaceDetails")).BrandFaceDetails }));
+const BusinessDetails = lazy(async () => ({ default: (await import("./pages/BusinessDetails")).BusinessDetails }));
 const BrandFaceProfileForm = lazy(async () => ({ default: (await import("./pages/BrandFaceProfileForm")).BrandFaceProfileForm }));
 const CampaignDetails = lazy(async () => ({ default: (await import("./pages/CampaignDetails")).CampaignDetails }));
 const Campaigns = lazy(async () => ({ default: (await import("./pages/Campaigns")).Campaigns }));
@@ -114,6 +118,19 @@ export function App() {
 
   useEffect(() => {
     if (onboardingStep === "complete") telegramBridge.requestBotMessages();
+  }, [onboardingStep]);
+
+  // Back in the app after a while: data other people changed meanwhile is reloaded without a gesture.
+  useEffect(() => {
+    if (onboardingStep !== "complete") return;
+    let hiddenAt: number | null = null;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+      if (hiddenAt !== null && Date.now() - hiddenAt > 30_000) void requestScreenRefresh();
+      hiddenAt = null;
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [onboardingStep]);
 
   const { language } = useI18n();
@@ -230,12 +247,12 @@ export function App() {
   useTelegramBackHandler(goBackFromNestedRoute, onboardingStep === "complete" && !rootRoutes.includes(route.path));
 
   useEffect(() => {
-    if (["/blogger", "/brand-face-detail", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications", "/deal", "/offer"].includes(route.path)) {
+    if (["/blogger", "/brand-face-detail", "/company", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications", "/deal", "/offer"].includes(route.path)) {
       window.scrollTo(0, 0);
     }
   }, [route.id, route.path]);
 
-  const knownRoutes = ["/", "/profile", "/settings", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
+  const knownRoutes = ["/", "/profile", "/settings", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/company", "/search", "/blogger", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
@@ -248,7 +265,7 @@ export function App() {
 
   if (!initialDestinationResolved) return <LaunchScreen />;
 
-  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
+  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" /><PullToRefresh enabled={onboardingStep === "complete"} /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome key={selectedRole ?? "none"} role={selectedRole} /></RootScreenVisibility>}
       {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={handleMarketplaceRoleSelected} /></RootScreenVisibility>}
@@ -258,9 +275,10 @@ export function App() {
       {route.path === "/business" && <BusinessProfileForm />}
       {route.path === "/brand-face" && <BrandFaceProfileForm />}
       {route.path === "/brand-face-detail" && route.id && <BrandFaceDetails id={route.id} />}
+      {route.path === "/company" && route.id && <BusinessDetails id={route.id} />}
       {(visitedRootRoutes.has("/search") || route.path === "/search") && <RootScreenVisibility active={route.path === "/search"}><CachedSearch /></RootScreenVisibility>}
       {route.path === "/blogger" && route.id && <BloggerDetails id={route.id} />}
-      {(visitedRootRoutes.has("/campaigns") || route.path === "/campaigns") && <RootScreenVisibility active={route.path === "/campaigns"}><CachedCampaigns /></RootScreenVisibility>}
+      {(visitedRootRoutes.has("/campaigns") || route.path === "/campaigns") && <RootScreenVisibility active={route.path === "/campaigns"}><CachedCampaigns key={selectedRole ?? "none"} /></RootScreenVisibility>}
       {route.path === "/campaign" && route.id && <CampaignDetails id={route.id} />}
       {(visitedMyCampaigns || route.path === "/my-campaigns") && <RootScreenVisibility active={route.path === "/my-campaigns"}><CachedMyCampaigns key={selectedRole ?? "none"} /></RootScreenVisibility>}
       {route.path === "/my-campaign" && route.id && <MyCampaignDetails id={route.id} />}
@@ -268,10 +286,10 @@ export function App() {
       {route.path === "/my-campaign-applications" && route.id && <MyCampaignApplications campaignId={route.id} />}
       {(visitedRootRoutes.has("/requests") || route.path === "/requests") && <RootScreenVisibility active={route.path === "/requests"}><CachedRequests activeMarketplaceRole={selectedRole} key={`${selectedRole ?? "none"}-${sessionEpoch}`} /></RootScreenVisibility>}
       {route.path === "/my-application" && route.id && <MyApplicationDetails id={route.id} />}
-      {route.path === "/deal" && route.id && <DealDetails id={route.id} />}
-      {route.path === "/offer" && route.id && <OfferDetails id={route.id} />}
+      {route.path === "/deal" && route.id && <DealDetails id={route.id} viewerRole={selectedRole} />}
+      {route.path === "/offer" && route.id && <OfferDetails id={route.id} viewerRole={selectedRole} />}
       {route.path === "/admin" && <Admin />}
       {!knownRoutes.includes(route.path) && <Home />}
     </>}
-  </Suspense></main></FavoritesProvider>;
+  </Suspense></main></ActionCountsProvider></FavoritesProvider>;
 }

@@ -110,7 +110,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             .OrderByDescending(item => item.CreatedAtUtc)
             .Select(item => new PortfolioItemDto(item.Id, item.Title, (int)item.Type, item.Url)).ToArrayAsync(cancellationToken);
         var platforms = await dbContext.SocialPlatforms.AsNoTracking().Where(item => item.BloggerId == profile.Id)
-            .Select(item => new SocialPlatformDto(item.Id, item.Type, item.Url, item.Followers, item.ScreenshotUrl)).ToArrayAsync(cancellationToken);
+            .Select(item => new SocialPlatformDto(item.Id, item.Type, item.Url, item.Followers, item.ScreenshotUrl, item.AverageReach, item.EngagementRate)).ToArrayAsync(cancellationToken);
         return new MyBloggerProfileDto(profile.Id, profile.Name, profile.LastName, profile.Username, profile.City, profile.Categories,
             profile.Bio, profile.AvatarUrl, profile.Phone, profile.Email, profile.TotalFollowers, profile.AverageReach, profile.EngagementRate,
             profile.StoriesPrice, profile.ReelsPrice, profile.PostPrice, profile.IntegrationPrice, profile.BarterEnabled, profile.Status, portfolioItems, platforms);
@@ -143,14 +143,14 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
         {
             response.AddRange(await dbContext.CampaignApplications.AsNoTracking().Where(application => application.BloggerId == bloggerId && !application.Campaign.Business.IsDeleted)
                 .Select(application => new MyCampaignApplicationDto(application.Id, application.CampaignId, application.Campaign.Title,
-                    application.Campaign.Business.Name, application.Campaign.Business.LogoUrl, application.Message, (int)application.Status, false, application.CreatedAtUtc))
+                    application.Campaign.Business.Name, application.Campaign.Business.LogoUrl, application.Message, (int)application.Status, false, application.CreatedAtUtc, application.Campaign.BusinessId))
                 .ToArrayAsync(cancellationToken));
         }
         if (businessId.HasValue)
         {
             response.AddRange(await dbContext.CampaignApplications.AsNoTracking().Where(application => application.Campaign.BusinessId == businessId && !application.Blogger.IsDeleted)
                 .Select(application => new MyCampaignApplicationDto(application.Id, application.CampaignId, application.Campaign.Title,
-                    application.Blogger.Name, application.Blogger.AvatarUrl, application.Message, (int)application.Status, true, application.CreatedAtUtc))
+                    application.Blogger.Name, application.Blogger.AvatarUrl, application.Message, (int)application.Status, true, application.CreatedAtUtc, application.BloggerId))
                 .ToArrayAsync(cancellationToken));
         }
         return response.OrderByDescending(application => application.CreatedAtUtc).ToArray();
@@ -198,7 +198,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             .Select(item => new PortfolioItemRow(item.BloggerId, new PortfolioItemDto(item.Id, item.Title, (int)item.Type, item.Url)))
             .ToArrayAsync(cancellationToken);
         var platforms = await dbContext.SocialPlatforms.AsNoTracking().Where(platform => ids.Contains(platform.BloggerId))
-            .Select(platform => new SocialPlatformRow(platform.BloggerId, new SocialPlatformDto(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl)))
+            .Select(platform => new SocialPlatformRow(platform.BloggerId, new SocialPlatformDto(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate)))
             .ToArrayAsync(cancellationToken);
 
         var portfoliosByBlogger = portfolioItems.GroupBy(item => item.BloggerId).ToDictionary(group => group.Key, group => (IReadOnlyCollection<PortfolioItemDto>)group.Select(item => item.Item).ToArray());

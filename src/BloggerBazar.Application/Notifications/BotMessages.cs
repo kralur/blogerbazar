@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Domain.Enums;
 
 namespace BloggerBazar.Application.Notifications;
 
@@ -35,29 +36,56 @@ internal static class BotMessages
         $"{businessName} отправил(а) вам предложение о сотрудничестве.",
         $"{businessName} sizga hamkorlik taklifini yubordi.");
 
-    public static BotText DealCompleted => Bilingual(
-        "Сделка завершена. Теперь можно оставить отзыв.",
-        "Bitim yakunlandi. Endi fikr qoldirishingiz mumkin.");
+    // A deal is named after its campaign; an offer deal has no campaign, so its format names it.
+    private static string? TopicRussian(DealTopic topic) => topic.CampaignTitle is { Length: > 0 } title ? $"«{title}»" : topic.Format switch
+    {
+        CollaborationFormat.Stories => "Stories",
+        CollaborationFormat.Reels => "Reels",
+        CollaborationFormat.Post => "«Пост»",
+        CollaborationFormat.Integration => "«Интеграция»",
+        _ => null
+    };
 
-    public static BotText PartnerReviewed => Bilingual(
-        "Партнёр оставил отзыв о сотрудничестве. Оцените и вы: отзывы откроются, когда оба оценят друг друга.",
-        "Hamkor hamkorlik haqida fikr qoldirdi. Siz ham baholang: fikrlar ikkalangiz baholaganingizdan keyin ochiladi.");
+    private static string? TopicUzbek(DealTopic topic) => topic.CampaignTitle is { Length: > 0 } title ? $"«{title}»" : topic.Format switch
+    {
+        CollaborationFormat.Stories => "Stories",
+        CollaborationFormat.Reels => "Reels",
+        CollaborationFormat.Post => "«Post»",
+        CollaborationFormat.Integration => "«Integratsiya»",
+        _ => null
+    };
 
-    public static BotText ReviewsPublished => Bilingual(
-        "Партнёр тоже оставил отзыв, оба отзыва опубликованы.",
-        "Hamkor ham fikr qoldirdi, ikkala fikr e’lon qilindi.");
+    private static string Spaced(string? value) => value is null ? "" : $" {value}";
+    private static string WithPartnerRussian(string? partner) => string.IsNullOrWhiteSpace(partner) ? "" : $" с партнёром {partner}";
+    private static string WithPartnerUzbek(string? partner) => string.IsNullOrWhiteSpace(partner) ? "" : $"{partner} bilan ";
 
-    public static BotText ReviewReminderLastWeek => Bilingual(
-        "Осталась неделя, чтобы оценить завершённую сделку. Отзывы публикуются, когда обе стороны оценят друг друга.",
-        "Yakunlangan bitimni baholash uchun bir hafta qoldi. Fikrlar ikki tomon ham baholaganidan keyin e’lon qilinadi.");
+    // Uzbek puts the deal name before "bitim" and adds the possessive suffix: "«X» bitimi", or plain "bitim".
+    private static string DealUzbek(DealTopic topic, string suffix, string plainSuffix) =>
+        TopicUzbek(topic) is { } name ? $"{name} bitim{suffix}" : $"bitim{plainSuffix}";
 
-    public static BotText ReviewReminder => Bilingual(
-        "Оцените завершённую сделку. Отзывы публикуются, когда обе стороны оценят друг друга.",
-        "Yakunlangan bitimni baholang. Fikrlar ikki tomon ham baholaganidan keyin e’lon qilinadi.");
+    public static BotText DealCompleted(string partner, DealTopic topic) => Bilingual(
+        $"{partner} отметил(а) сделку{Spaced(TopicRussian(topic))} завершённой. Оставьте отзыв о сотрудничестве.",
+        $"{partner} {DealUzbek(topic, "ini", "ni")} yakunlangan deb belgiladi. Hamkorlik haqida fikr qoldiring.");
 
-    public static BotText CompletionReminder => Bilingual(
-        "Сделка всё ещё активна. Если сотрудничество завершено, отметьте это в приложении.",
-        "Bitim hali faol. Hamkorlik yakunlangan bo‘lsa, buni ilovada belgilang.");
+    public static BotText PartnerReviewed(string partner, DealTopic topic) => Bilingual(
+        $"{partner} оставил(а) отзыв о сделке{Spaced(TopicRussian(topic))}. Оставьте и свой отзыв: вы увидите отзывы друг друга, когда оба оцените сделку.",
+        $"{partner} {DealUzbek(topic, "i", "")} haqida fikr qoldirdi. Siz ham fikr qoldiring: ikkalangiz baholaganingizda bir-biringizning fikrlarini ko‘rasiz.");
+
+    public static BotText ReviewsPublished(string partner, DealTopic topic) => Bilingual(
+        $"{partner} тоже оставил(а) отзыв о сделке{Spaced(TopicRussian(topic))}. Оба отзыва опубликованы.",
+        $"{partner} ham {DealUzbek(topic, "i", "")} haqida fikr qoldirdi. Ikkala fikr e’lon qilindi.");
+
+    public static BotText ReviewReminderLastWeek(string? partner, DealTopic topic) => Bilingual(
+        $"Осталась неделя, чтобы оценить сделку{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)}. Отзывы публикуются, когда обе стороны оценят друг друга.",
+        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "ini", "ni")} baholash uchun bir hafta qoldi. Fikrlar ikki tomon ham baholaganidan keyin e’lon qilinadi.");
+
+    public static BotText ReviewReminder(string? partner, DealTopic topic) => Bilingual(
+        $"Оцените сделку{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)}. Отзывы публикуются, когда обе стороны оценят друг друга.",
+        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "ini", "ni")} baholang. Fikrlar ikki tomon ham baholaganidan keyin e’lon qilinadi.");
+
+    public static BotText CompletionReminder(string? partner, DealTopic topic) => Bilingual(
+        $"Сделка{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)} всё ещё активна. Если сотрудничество завершено, отметьте это в приложении.",
+        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "i", "")} hali faol. Hamkorlik yakunlangan bo‘lsa, buni ilovada belgilang.");
 
     public static BotText ContactUnlockPaid => Bilingual(
         "Оплата подтверждена, контакты разблокированы.",

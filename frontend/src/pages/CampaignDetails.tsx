@@ -10,6 +10,7 @@ import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDeta
 import { getCachedCampaignApplication, setCachedCampaignApplication } from "../data/campaignApplicationCache";
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
 import { PageHeader } from "../components/PageHeader";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 export function CampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
@@ -22,6 +23,7 @@ export function CampaignDetails({ id }: { id: string }) {
   const [applicationMessage, setApplicationMessage] = useState("");
   const [applying, setApplying] = useState(false);
   const [canApply, setCanApply] = useState(false);
+  const [blockedReason, setBlockedReason] = useState<ApplyBlockedReason | null>(null);
   const [application, setApplication] = useState(() => getCachedCampaignApplication(id));
   const [applicationLookupFailed, setApplicationLookupFailed] = useState(false);
   const [toast, setToast] = useState("");
@@ -57,6 +59,7 @@ export function CampaignDetails({ id }: { id: string }) {
     loadCampaign();
     return () => { requestIdRef.current += 1; };
   }, [loadCampaign]);
+  useScreenRefresh(loadCampaign);
 
   useEffect(() => {
     const businessId = campaign?.businessId;
@@ -84,6 +87,7 @@ export function CampaignDetails({ id }: { id: string }) {
       applicationRequestRef.current += 1;
       applicationMutationRef.current += 1;
       setCanApply(false);
+      setBlockedReason(null);
       setApplication(null);
       setApplicationLookupFailed(false);
       return;
@@ -100,6 +104,12 @@ export function CampaignDetails({ id }: { id: string }) {
       const isOwnCampaign = businessResult.status === "fulfilled" && businessResult.value.id === campaign.businessId;
       const eligible = activeRole === "Blogger" && bloggerIsApproved && campaign.status === 1 && !isOwnCampaign;
       setCanApply(eligible);
+      setBlockedReason(eligible || userResult.status !== "fulfilled" ? null
+        : isOwnCampaign ? "own"
+        : campaign.status !== 1 ? "closed"
+        : activeRole !== "Blogger" ? "role"
+        : bloggerResult.status === "rejected" && bloggerResult.reason instanceof ApiError && bloggerResult.reason.status === 404 ? "noProfile"
+        : null);
       setApplicationLookupFailed(false);
       if (!eligible) { setApplication(null); return; }
       const cachedApplication = getCachedCampaignApplication(campaignId);
@@ -196,7 +206,7 @@ export function CampaignDetails({ id }: { id: string }) {
       <PageHeader actions={<Badge tone={expired ? "gray" : campaign.isPromoted ? "gold" : "blue"}>{expired ? t("campaign.expired") : campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>} back={{ href: "#/campaigns", label: t("nav.campaigns") }} />
       <Card className="mt-4 overflow-hidden p-0">
         <div className="campaign-hero">
-          <div className="flex items-center gap-3"><Avatar name={companyInitials} size="sm" variant="neutral" /><p className="min-w-0 truncate text-sm font-semibold text-brand-muted">{campaign.company}</p></div>
+          <a aria-label={t("company.openAria", { name: campaign.company })} className="campaign-hero__business" href={`#/company/${campaign.businessId}`}><Avatar name={companyInitials} size="sm" variant="neutral" /><span className="min-w-0 truncate text-sm font-semibold text-brand-muted">{campaign.company}</span><Icon className="campaign-hero__business-chevron" name="back" /></a>
           <h1 className="campaign-hero__title">{campaign.title}</h1>
         </div>
         <div className="p-5"><FactGrid facts={[
@@ -208,12 +218,25 @@ export function CampaignDetails({ id }: { id: string }) {
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       {campaign.categories.length > 0 && <DetailSection title={t("campaign.suitable")}><ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
       <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></DetailSection>
-      {businessReviews && <DetailSection aside={businessReviews.reviewsCount > 0 ? <Rating count={businessReviews.reviewsCount} value={businessReviews.rating} /> : undefined} title={t("campaign.businessReviews")}><ReviewList emptyText={t("campaign.noBusinessReviews")} reviews={businessReviews.items} /></DetailSection>}
+      {businessReviews && <DetailSection aside={businessReviews.reviewsCount > 0 ? <Rating count={businessReviews.reviewsCount} value={businessReviews.rating} /> : undefined} title={t("campaign.businessReviews")}><ReviewList reviewerRoute={(profileId) => `#/blogger/${profileId}`} emptyText={t("campaign.noBusinessReviews")} reviews={businessReviews.items} /></DetailSection>}
       {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
-      {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary w-full" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : null}
+      {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary w-full" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
       <Toast message={toast} tone={toastTone} /><BottomNav />
     </div>
   );
+}
+
+type ApplyBlockedReason = "own" | "closed" | "role" | "noProfile";
+
+// Explains why there is no apply button instead of leaving an empty space.
+function ApplyBlockedNote({ campaignId, reason }: { campaignId: string; reason: ApplyBlockedReason }) {
+  const { t } = useI18n();
+  const action = reason === "own" ? { href: `#/my-campaign-applications/${campaignId}`, label: t("campaign.blockedOwnAction") }
+    : reason === "role" ? { href: "#/profile", label: t("campaign.blockedRoleAction") }
+    : reason === "noProfile" ? { href: "#/blogger-form", label: t("campaign.blockedNoProfileAction") }
+    : null;
+  const text = reason === "own" ? t("campaign.blockedOwn") : reason === "role" ? t("campaign.blockedRole") : reason === "noProfile" ? t("campaign.blockedNoProfile") : t("campaign.blockedClosed");
+  return <div className="campaign-details__expired" role="status"><p>{text}</p>{action && <a className="campaign-details__blocked-action" href={action.href}>{action.label}</a>}</div>;
 }

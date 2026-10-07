@@ -9,6 +9,7 @@ import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone, type 
 import { subscribeCampaignApplicationCache } from "../data/campaignApplicationCache";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { RequestRow } from "../components/RequestRow";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 const pageSize = 20;
 
@@ -34,6 +35,7 @@ export function BloggerApplications({ activeMarketplaceRole }: { activeMarketpla
     return () => catalog.cancel();
   }, [catalog.cancel, visible]);
 
+  useScreenRefresh(() => catalog.load(1, false, true), visible && allowed);
   useEffect(() => subscribeCampaignApplicationCache(() => {
     if (visible && allowed) void catalog.load(1, false, true);
   }), [allowed, catalog.load, visible]);

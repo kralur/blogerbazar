@@ -8,6 +8,7 @@ import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { categoryLabel, useI18n } from "../i18n";
 import { PageHeader } from "../components/PageHeader";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type HomeData = Awaited<ReturnType<typeof getMarketplaceHome>>;
 type HomeRole = MarketplaceRole;
@@ -75,7 +76,7 @@ function HomeSearch({ role, categories }: { role: HomeRole; categories: string[]
 type ActivityItem = { key: string; title: string; detail: string; href: string };
 
 // "Your tasks": only real, actionable items from existing endpoints; hidden when there is nothing to do.
-function useHomeActivity(role: HomeRole, enabled: boolean) {
+function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
   const { t } = useI18n();
   const [items, setItems] = useState<ActivityItem[] | null>(null);
   useEffect(() => {
@@ -88,11 +89,13 @@ function useHomeActivity(role: HomeRole, enabled: boolean) {
       const next: ActivityItem[] = [];
       if (roleResult.status === "fulfilled") {
         if (role === "Business") {
+          // Only applications still waiting for a decision are a task; an older API without the field falls back to all.
+          const waiting = (campaign: { applicationsCount: number; pendingApplicationsCount?: number }) => campaign.pendingApplicationsCount ?? campaign.applicationsCount;
           const campaigns = (roleResult.value as Awaited<ReturnType<typeof getMyCampaigns>>).items
-            .filter((campaign) => campaign.applicationsCount > 0)
-            .sort((left, right) => right.applicationsCount - left.applicationsCount)
+            .filter((campaign) => waiting(campaign) > 0)
+            .sort((left, right) => waiting(right) - waiting(left))
             .slice(0, 2);
-          campaigns.forEach((campaign) => next.push({ key: `campaign-${campaign.id}`, title: campaign.title, detail: t("home.activityApplications", { count: campaign.applicationsCount }), href: `#/my-campaign-applications/${campaign.id}` }));
+          campaigns.forEach((campaign) => next.push({ key: `campaign-${campaign.id}`, title: campaign.title, detail: t("home.activityPendingApplications", { count: waiting(campaign) }), href: `#/my-campaign-applications/${campaign.id}` }));
         } else {
           (roleResult.value as Awaited<ReturnType<typeof getMyOffers>>).filter((offer) => offer.canRespond).slice(0, 2)
             .forEach((offer) => next.push({ key: `offer-${offer.id}`, title: t("home.activityOfferFrom", { name: offer.counterpartyName }), detail: t("home.activityOfferDetail"), href: `#/offer/${offer.id}` }));
@@ -107,7 +110,7 @@ function useHomeActivity(role: HomeRole, enabled: boolean) {
       setItems(next);
     });
     return () => { cancelled = true; };
-  }, [enabled, role, t]);
+  }, [enabled, reloadKey, role, t]);
   return items;
 }
 
@@ -168,8 +171,10 @@ export function Home({ role, initialData, initialError = false, initialLoading =
     return () => activeRequest.current?.abort();
   }, [isPreview, load]);
   useProfileDataRefresh(load);
+  const [activityReloadKey, setActivityReloadKey] = useState(0);
+  useScreenRefresh(() => { setActivityReloadKey((key) => key + 1); load(); });
 
-  const activity = useHomeActivity(resolvedRole, !isPreview);
+  const activity = useHomeActivity(resolvedRole, !isPreview, activityReloadKey);
   const hasAnyBlogger = Boolean(data?.promotedBloggers.length || data?.topRatedBloggers.length || data?.newBloggers.length);
   const hasCampaigns = Boolean(data?.promotedCampaigns.length);
   const bloggerRail = (title: string, bloggers: HomeData["topRatedBloggers"]) => bloggers.length > 0 && <HomeSection actionHref="#/search" title={title}>{bloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>;

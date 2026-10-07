@@ -28,5 +28,14 @@ export function ContactList({ items }: { items: ContactItem[] }) {
     }
   };
 
-  return <><Card className="divide-y divide-brand-line p-0">{visibleItems.map((item) => <div className="flex items-center gap-3 p-3" key={`${item.kind}-${item.value}`}><span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink"><Icon name={iconByKind[item.kind]} /></span><a className="min-w-0 flex-1" href={item.href!} onClick={(event) => { event.preventDefault(); openLink(item.href!); }}><span className="block text-xs font-semibold text-brand-muted">{t(`contacts.${item.kind}`)}</span><span className="mt-0.5 block text-sm font-bold [overflow-wrap:anywhere] [text-wrap:balance]">{displayContact(item)}</span></a><button aria-label={t("contacts.copyAria", { value: displayContact(item) })} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-brand-muted transition hover:bg-brand-soft active:scale-95" onClick={() => void copy(displayContact(item))} type="button"><Icon name="copy" /></button></div>)}</Card><Toast message={toast} tone="copied" /></>;
+  // Some Telegram clients ignore call links from a Mini App, so the number is also copied as a fallback.
+  const openContact = (item: (typeof visibleItems)[number]) => {
+    haptic.selection();
+    if (item.kind === "phone") {
+      void copyText(displayContact(item)).then(() => setToast(t("contacts.phoneCopied")), () => undefined);
+    }
+    openLink(item.href!);
+  };
+
+  return <><Card className="divide-y divide-brand-line p-0">{visibleItems.map((item) => <div className="flex items-center gap-3 p-3" key={`${item.kind}-${item.value}`}><span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink"><Icon name={iconByKind[item.kind]} /></span><a className="min-w-0 flex-1" href={item.href!} onClick={(event) => { event.preventDefault(); openContact(item); }}><span className="block text-xs font-semibold text-brand-muted">{t(`contacts.${item.kind}`)}</span><span className="contact-list__value mt-0.5 block text-sm font-bold [overflow-wrap:anywhere] [text-wrap:balance]">{displayContact(item)}</span></a><button aria-label={t("contacts.copyAria", { value: displayContact(item) })} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-brand-muted transition hover:bg-brand-soft active:scale-95" onClick={() => void copy(displayContact(item))} type="button"><Icon name="copy" /></button></div>)}</Card><Toast message={toast} tone="copied" /></>;
 }

@@ -112,7 +112,7 @@ internal sealed class S3ProfileMediaStorage(
             throw new ProfileMediaValidationException();
         }
 
-        return image;
+        return ImageOrientation.Apply(image, codec.EncodedOrigin);
     }
 
     private SKImage ResizeImage(SKBitmap image)

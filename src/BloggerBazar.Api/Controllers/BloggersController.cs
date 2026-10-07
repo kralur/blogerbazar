@@ -99,5 +99,5 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     }).ToArray();
 
     private static IReadOnlyCollection<SocialPlatformInput>? ToPlatforms(CreateBloggerProfileRequest request) => request.Platforms?.Select(platform =>
-        new SocialPlatformInput(platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl)).ToArray();
+        new SocialPlatformInput(platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate)).ToArray();
 }

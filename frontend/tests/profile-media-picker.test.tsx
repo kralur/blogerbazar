@@ -18,13 +18,15 @@ describe("ProfileMediaPicker (compact)", () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it("goes straight to choosing a file when there is no photo to remove", () => {
-    render(<I18nProvider><ProfileMediaPicker canRemove={false} compact name="Umid" onChange={vi.fn()} pending={undefined} /></I18nProvider>);
+  it("opens the same menu without a delete option when only the Telegram photo is shown", () => {
+    render(<I18nProvider><ProfileMediaPicker canRemove={false} compact fallbackUrl="https://t.me/i/userpic/a.jpg" name="Umid" onChange={vi.fn()} pending={undefined} /></I18nProvider>);
     const input = screen.getByLabelText(ru("profileMedia.selectAria")) as HTMLInputElement;
     const click = vi.spyOn(input, "click");
 
     fireEvent.click(screen.getByRole("button", { name: ru("profileMedia.upload") }));
-    expect(click).toHaveBeenCalled();
+    expect(screen.getByText(ru("profileMedia.telegramPhoto"))).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: ru("profileMedia.deletePhoto") })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: ru("profileMedia.replacePhoto") }));
+    expect(click).toHaveBeenCalled();
   });
 });

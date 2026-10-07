@@ -18,7 +18,11 @@ public sealed record DealReminderCandidate(
     long BloggerTelegramUserId,
     long BusinessTelegramUserId,
     bool BloggerHasReviewed,
-    bool BusinessHasReviewed);
+    bool BusinessHasReviewed,
+    string? BloggerName = null,
+    string? BusinessName = null,
+    string? CampaignTitle = null,
+    CollaborationFormat? Format = null);
 
 public sealed record DueDealReminder(DealReminderKind Kind, MarketplaceRole RecipientRole, long ChatId);
 
@@ -85,12 +89,18 @@ public static class DealReminderSchedule
         return null;
     }
 
-    internal static BotText Text(DealReminderKind kind) => kind switch
+    // The recipient sees the other side's name: a blogger is reminded about the business and vice versa.
+    internal static BotText Text(DealReminderKind kind, DealReminderCandidate deal, MarketplaceRole recipientRole)
     {
-        DealReminderKind.ReviewDay7 => BotMessages.ReviewReminderLastWeek,
-        DealReminderKind.ReviewDay1 or DealReminderKind.ReviewDay3 => BotMessages.ReviewReminder,
-        _ => BotMessages.CompletionReminder
-    };
+        var partner = recipientRole == MarketplaceRole.Blogger ? deal.BusinessName : deal.BloggerName;
+        var topic = new DealTopic(deal.CampaignTitle, deal.Format);
+        return kind switch
+        {
+            DealReminderKind.ReviewDay7 => BotMessages.ReviewReminderLastWeek(partner, topic),
+            DealReminderKind.ReviewDay1 or DealReminderKind.ReviewDay3 => BotMessages.ReviewReminder(partner, topic),
+            _ => BotMessages.CompletionReminder(partner, topic)
+        };
+    }
 }
 
 public sealed class ProcessDealRemindersHandler(
@@ -118,7 +128,7 @@ public sealed class ProcessDealRemindersHandler(
                     continue;
                 }
 
-                await BestEffortTelegramNotification.SendAsync(botClient, logger, reminder.ChatId, DealReminderSchedule.Text(reminder.Kind), $"/deal/{deal.DealId}", cancellationToken);
+                await BestEffortTelegramNotification.SendAsync(botClient, logger, reminder.ChatId, DealReminderSchedule.Text(reminder.Kind, deal, reminder.RecipientRole), $"/deal/{deal.DealId}", cancellationToken);
                 sent++;
             }
         }

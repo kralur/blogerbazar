@@ -10,6 +10,7 @@ import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone, canAc
 import { dealRoute } from "../lib/dealStatus";
 import { PageHeader } from "../components/PageHeader";
 import { RequestRow } from "../components/RequestRow";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 const pageSize = 20;
 
@@ -48,6 +49,7 @@ export function MyCampaignApplications({ campaignId }: { campaignId: string }) {
     return () => { cancelled = true; };
   }, [reload]);
   useEffect(() => { if (access === "allowed") void catalog.load(1, false); }, [access, catalog.load, request]);
+  useScreenRefresh(() => catalog.load(1, false, true), access === "allowed");
   useEffect(() => () => { decisionRef.current += 1; decidingRef.current = false; catalog.cancel(); }, [catalog.cancel, campaignId]);
   useEffect(() => {
     const sentinel = sentinelRef.current;

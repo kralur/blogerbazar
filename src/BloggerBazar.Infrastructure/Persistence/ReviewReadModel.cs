@@ -29,5 +29,7 @@ internal sealed class ReviewReadModel(BloggerBazarDbContext dbContext) : IReview
     private static IQueryable<ReviewDto> Latest(IQueryable<Review> reviews, int take) =>
         reviews.OrderByDescending(review => review.CreatedAtUtc).ThenByDescending(review => review.Id).Take(take)
             .Select(review => new ReviewDto(review.Id, review.DealId, (int)review.TargetType, review.Rating, review.Comment,
-                review.TargetType == ReviewTargetType.Blogger ? review.Deal.Business.Name : review.Deal.Blogger.Name, review.CreatedAtUtc));
+                review.TargetType == ReviewTargetType.Blogger ? review.Deal.Business.Name : review.Deal.Blogger.Name, review.CreatedAtUtc,
+                review.TargetType == ReviewTargetType.Blogger ? review.Deal.BusinessId : review.Deal.BloggerId,
+                review.TargetType == ReviewTargetType.Blogger ? review.Deal.Business.LogoUrl : review.Deal.Blogger.AvatarUrl));
 }

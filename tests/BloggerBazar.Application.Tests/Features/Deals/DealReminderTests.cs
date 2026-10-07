@@ -129,6 +129,31 @@ public sealed class DealReminderTests
         Assert.Contains("активна", Assert.Single(bot.Texts));
     }
 
+    [Fact]
+    public async Task Reminder_names_the_partner_and_the_deal()
+    {
+        var deal = Active(Daytime.AddDays(-7)) with { BloggerName = "Madina", BusinessName = "Lumi", CampaignTitle = "Запуск ресторана" };
+        var bot = new SpyBotClient();
+
+        await new ProcessDealRemindersHandler(new FakeReminders(deal), new SpyReviews(), bot).Handle(new ProcessDealRemindersCommand(Daytime), CancellationToken.None);
+
+        var byChat = bot.NotifiedChats.Zip(bot.Texts).ToDictionary(pair => pair.First, pair => pair.Second);
+        Assert.Contains("Сделка «Запуск ресторана» с партнёром Lumi всё ещё активна", byChat[10]);
+        Assert.Contains("Сделка «Запуск ресторана» с партнёром Madina всё ещё активна", byChat[20]);
+        Assert.Contains("Madina bilan «Запуск ресторана» bitimi hali faol", byChat[20]);
+    }
+
+    [Fact]
+    public async Task Offer_deal_reminder_is_named_after_its_format()
+    {
+        var deal = Active(Daytime.AddDays(-7)) with { BloggerName = "Madina", BusinessName = "Lumi", Format = CollaborationFormat.Post };
+        var bot = new SpyBotClient();
+
+        await new ProcessDealRemindersHandler(new FakeReminders(deal), new SpyReviews(), bot).Handle(new ProcessDealRemindersCommand(Daytime), CancellationToken.None);
+
+        Assert.All(bot.Texts, text => Assert.Contains("Сделка «Пост» с партнёром", text));
+    }
+
     private static DealReminderCandidate Completed(DateTime completedAtUtc) =>
         new(Guid.NewGuid(), DealStatus.Completed, completedAtUtc.AddDays(-5), completedAtUtc, 10, 20, false, false);
 

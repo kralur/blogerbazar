@@ -147,7 +147,9 @@ public sealed class CreateReviewHandlerTests
 
         Assert.Null(Assert.Single(reviews.Reviews).PublishedAtUtc);
         Assert.Equal([deal.Id], reviews.PublishedDeals);
-        Assert.Contains("Оцените и вы", Assert.Single(bot.Texts));
+        var text = Assert.Single(bot.Texts);
+        Assert.Contains("Оставьте и свой отзыв", text);
+        Assert.StartsWith(blogger.Name, text);
         Assert.Equal($"/deal/{deal.Id}", Assert.Single(bot.Routes));
     }
 

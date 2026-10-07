@@ -27,7 +27,8 @@ public sealed record MyCampaignItemDto(
     bool IsPromoted,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
-    int ApplicationsCount);
+    int ApplicationsCount,
+    int PendingApplicationsCount = 0);
 
 public sealed record MyCampaignDetailsDto(
     Guid Id,
@@ -43,7 +44,8 @@ public sealed record MyCampaignDetailsDto(
     bool IsPromoted,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
-    int ApplicationsCount);
+    int ApplicationsCount,
+    int PendingApplicationsCount = 0);
 
 public sealed class SearchMyCampaignsValidator : AbstractValidator<SearchMyCampaignsQuery>
 {

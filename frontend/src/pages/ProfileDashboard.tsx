@@ -9,6 +9,7 @@ import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { ProfileMediaPicker, type PendingProfileImage } from "../components/ProfileMediaPicker";
 import { notifyProfileDataChanged, useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { PageHeader } from "../components/PageHeader";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type SelectedRole = "blogger" | "brandFace" | "business";
 const selectedRoleKey = "bloggerbazar.selectedRole";
@@ -76,6 +77,7 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
 
   useEffect(() => loadDashboard(), [loadDashboard]);
   useProfileDataRefresh(loadDashboard);
+  useScreenRefresh(loadDashboard);
 
   const selectRole = async (nextRole: SelectedRole) => {
     if (switchingRole || nextRole === role) return;

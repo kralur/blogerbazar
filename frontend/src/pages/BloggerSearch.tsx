@@ -14,6 +14,7 @@ import { formatCurrency, formatNumber, formatPercentage } from "../lib/currency"
 import { uzbekistanRegions } from "../lib/taxonomy";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { PageHeader } from "../components/PageHeader";
+import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 const pageSize = 20;
 const defaultFilters: BloggerSearchFilters = { sort: "popular", pageSize };
@@ -112,6 +113,7 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
   }, [active, cancel, catalogKey, load]);
 
   useProfileDataRefresh(refresh);
+  useScreenRefresh(refresh);
 
   useEffect(() => {
     const syncHashSearch = () => {
@@ -202,7 +204,7 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
     </div>
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetFilters} />
     <BottomSheet id={filterSheetId} onClose={() => setFiltersOpen(false)} open={filtersOpen} title={t("search.filters")}><div className="catalog-search__sheet-content">
-      <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, safeCategoryLabel(category, t)])]} value={draftFilters.category ?? ""} />
+      <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, categoryLabel(category)])]} value={draftFilters.category ?? ""} />
       <FilterSelect label={t("common.city")} onChange={(value) => setDraft("city", value)} options={[["", t("common.any")], ...uzbekistanRegions.map((city) => [city, cityLabel(city)])]} value={draftFilters.city ?? ""} />
       <FilterSelect label={t("search.platform")} onChange={(value) => setDraft("platform", value)} options={platformOptions(t)} value={draftFilters.platform ?? ""} />
       <FilterSelect label={t("search.followers")} onChange={(value) => setDraft("minFollowers", Number(value) || undefined)} options={followersOptions(t)} value={String(draftFilters.minFollowers ?? "")} />
@@ -233,7 +235,7 @@ function hashCatalogType(): CatalogType {
 
 function buildActiveChips(filters: BloggerSearchFilters, t: Translate) {
   const chips: Array<{ key: FilterKey; label: string }> = [];
-  if (filters.category) chips.push({ key: "category", label: safeCategoryLabel(filters.category, t) });
+  if (filters.category) chips.push({ key: "category", label: categoryLabel(filters.category) });
   if (filters.city) chips.push({ key: "city", label: cityLabel(filters.city) });
   if (filters.platform) chips.push({ key: "platform", label: platformOptions(t).find(([value]) => value === filters.platform)?.[1] ?? t("common.notSpecified") });
   if (filters.minFollowers) chips.push({ key: "minFollowers", label: t("search.followersAtLeast", { count: formatNumber(filters.minFollowers) }) });
@@ -244,10 +246,6 @@ function buildActiveChips(filters: BloggerSearchFilters, t: Translate) {
 }
 
 
-function safeCategoryLabel(value: string, t: Translate) {
-  const label = categoryLabel(value);
-  return label.startsWith("taxonomy.category.") ? t("common.notSpecified") : label;
-}
 
 function platformOptions(t: Translate): string[][] {
   return [["", t("common.all")], ["instagram", t("search.platformInstagram")], ["telegram", t("search.platformTelegram")], ["tiktok", t("search.platformTiktok")], ["youtube", t("search.platformYoutube")]];
