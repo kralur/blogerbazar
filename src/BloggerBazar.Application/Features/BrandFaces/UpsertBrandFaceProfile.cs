@@ -62,7 +62,7 @@ public sealed class UpsertBrandFaceProfileHandler(IBrandFaceProfileRepository pr
             profile.Restore();
         }
 
-        profile.Update(command.Name.Trim(), command.City.Trim(), command.Age, command.Gender?.Trim(), command.Languages.Select(value => value.Trim()).ToArray(), command.Categories.Select(value => value.Trim()).ToArray(), command.Experience?.Trim(), command.Instagram?.Trim(), command.Telegram?.Trim(), command.PortfolioUrl?.Trim(), command.CollaborationPrice, command.Description?.Trim(), command.AvatarUrl?.Trim());
+        profile.Update(command.Name.Trim(), command.City.Trim(), command.Age, command.Gender?.Trim(), command.Languages.Select(value => value.Trim()).ToArray(), command.Categories.Select(value => value.Trim()).ToArray(), command.Experience?.Trim(), command.Instagram?.Trim(), command.Telegram?.Trim(), command.PortfolioUrl?.Trim(), command.CollaborationPrice, command.Description?.Trim(), profile.AvatarUrl); // only our upload changes the photo
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return BrandFaceProfileDto.From(profile);

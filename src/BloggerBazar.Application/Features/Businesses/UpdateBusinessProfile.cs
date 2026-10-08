@@ -52,7 +52,7 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
             command.Name.Trim(),
             command.Username?.Trim(),
             command.City?.Trim(),
-            command.LogoUrl,
+            profile.LogoUrl, // only our upload changes the logo
             command.WebsiteUrl?.Trim(),
             command.Description?.Trim(),
             command.Phone?.Trim(),

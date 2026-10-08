@@ -112,12 +112,14 @@ public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profil
         {
             profile.Restore();
         }
+        // Images come only from our own upload (profile media); a URL sent with the form is ignored, so nobody can
+        // point a profile at an arbitrary external picture.
         profile.UpdatePublicProfile(
             command.Name.Trim(), command.LastName?.Trim(), command.Username?.Trim(), command.City.Trim(),
-            command.Categories.Select(category => category.Trim()).ToArray(), command.Bio?.Trim(), command.AvatarUrl, command.Phone?.Trim(), command.Email?.Trim(),
+            command.Categories.Select(category => category.Trim()).ToArray(), command.Bio?.Trim(), profile.AvatarUrl, command.Phone?.Trim(), command.Email?.Trim(),
             command.TotalFollowers, command.AverageReach, command.EngagementRate, command.StoriesPrice,
             command.ReelsPrice, command.PostPrice, command.IntegrationPrice, command.BarterEnabled);
-        profile.UpdateExtendedProfile(command.CoverUrl, command.Age, command.Gender?.Trim(), command.Language?.Trim(), command.Subcategory?.Trim(), command.PriceFrom, command.PriceTo, command.PriceNote?.Trim());
+        profile.UpdateExtendedProfile(profile.CoverUrl, command.Age, command.Gender?.Trim(), command.Language?.Trim(), command.Subcategory?.Trim(), command.PriceFrom, command.PriceTo, command.PriceNote?.Trim());
         profile.Approve(verified: false);
 
         if (existing is null)

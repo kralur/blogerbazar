@@ -21,6 +21,8 @@ public sealed class UpdateBusinessProfileHandlerTests
         Assert.Equal("@lumi", result.Username);
         Assert.Equal("Samarkand", result.City);
         Assert.Equal(1, unitOfWork.SaveCalls);
+        // A logo URL sent with the form is ignored; only our upload sets it.
+        Assert.Null(business.LogoUrl);
     }
 
     [Fact]

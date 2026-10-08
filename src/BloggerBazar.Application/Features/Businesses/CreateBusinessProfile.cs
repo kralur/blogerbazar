@@ -47,7 +47,9 @@ public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository busi
         {
             profile.Restore();
         }
-        profile.Update(command.Name.Trim(), command.Username?.Trim(), command.City?.Trim(), command.LogoUrl, command.WebsiteUrl?.Trim(), command.Description?.Trim(), command.Phone?.Trim(), command.Email?.Trim());
+        // Images come only from our own upload (profile media); a URL sent with the form is ignored, so nobody can
+        // point a profile at an arbitrary external picture.
+        profile.Update(command.Name.Trim(), command.Username?.Trim(), command.City?.Trim(), profile.LogoUrl, command.WebsiteUrl?.Trim(), command.Description?.Trim(), command.Phone?.Trim(), command.Email?.Trim());
         profile.Approve(verified: false);
         if (existing is null)
         {

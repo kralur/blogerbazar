@@ -21,7 +21,8 @@ export function safeExternalUrl(value: string) {
   const normalized = normalizeWebsite(value);
   try {
     const url = new URL(normalized);
-    return url.protocol === "https:" ? url.toString() : null;
+    // "https://bank.uz@evil.com" shows a trusted name but opens another host.
+    return url.protocol === "https:" && !url.username && !url.password ? url.toString() : null;
   } catch {
     return null;
   }

@@ -32,7 +32,9 @@ public static partial class ContactValidation
     public static bool IsHttpsUrl(string? value) => value is not null
         && Uri.TryCreate(value, UriKind.Absolute, out var uri)
         && uri.Scheme == Uri.UriSchemeHttps
-        && !string.IsNullOrWhiteSpace(uri.Host);
+        && !string.IsNullOrWhiteSpace(uri.Host)
+        // "https://bank.uz@evil.com" shows a trusted name but opens another host.
+        && string.IsNullOrEmpty(uri.UserInfo);
 
     public static bool IsSupportedPlatform(string? type, string? url) => type?.Trim().ToLowerInvariant() switch
     {
