@@ -46,6 +46,14 @@ declare global {
   interface Window { Telegram?: { WebApp?: TelegramWebApp } }
 }
 
+// Telegram clients that show a Mini App in a window with its own title bar. Anything else, including an
+// unknown platform, keeps the phone clearance so the Close/menu buttons never cover our header.
+const desktopTelegramPlatforms = new Set(["tdesktop", "macos", "web", "weba", "webk", "unigram"]);
+
+export function isMobileTelegram(platform?: string) {
+  return !platform || !desktopTelegramPlatforms.has(platform);
+}
+
 function webApp(): TelegramWebApp | undefined {
   return typeof window === "undefined" ? undefined : window.Telegram?.WebApp;
 }
@@ -175,7 +183,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       const { chromeTop, effectiveTop } = resolveTelegramContentTop({
         contentTop: contentInsets?.top,
         safeTop: safeInsets?.top,
-        isEmbedded: Boolean(app)
+        isEmbedded: Boolean(app),
+        isMobile: isMobileTelegram(app?.platform)
       });
       const isDark = colorScheme === "dark";
       const background = isDark ? TelegramLaunch.splashBackgroundDark : TelegramLaunch.splashBackground;

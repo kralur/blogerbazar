@@ -4,6 +4,7 @@
 const NUMBER_LOCALE = "ru-RU";
 const formatPlain = (value: number, fractionDigits?: number) => new Intl.NumberFormat(NUMBER_LOCALE, fractionDigits == null ? undefined : { maximumFractionDigits: fractionDigits }).format(value);
 
+export const formatRating = (value: number) => formatPlain(value, 1);
 export const formatNumber = (value?: number | null) => value == null ? "-" : formatPlain(value);
 export const formatCompactNumber = (value?: number | null) => {
   if (value == null) return "-";

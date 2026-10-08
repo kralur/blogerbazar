@@ -33,8 +33,8 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
 
     [HttpGet("{id:guid}/reviews")]
     [ProducesResponseType<BusinessReviewsDto>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new GetBusinessReviewsQuery(id, take), cancellationToken));
+    public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default) =>
+        Ok(await sender.Send(new GetBusinessReviewsQuery(id, take, skip), cancellationToken));
 
     [HttpPost]
     [ProducesResponseType<BusinessProfileDto>(StatusCodes.Status201Created)]

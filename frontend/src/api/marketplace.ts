@@ -470,14 +470,14 @@ export async function getBlogger(id: string): Promise<BloggerDetails> {
   return asBloggerDetails(await api<ApiBlogger>(`/api/bloggers/${id}`));
 }
 
-export async function getBloggerReviews(id: string): Promise<BloggerReview[]> {
-  return api<BloggerReview[]>(`/api/bloggers/${id}/reviews?take=20`);
+export async function getBloggerReviews(id: string, { skip = 0, take = 20 }: { skip?: number; take?: number } = {}): Promise<BloggerReview[]> {
+  return api<BloggerReview[]>(`/api/bloggers/${id}/reviews?take=${take}${skip > 0 ? `&skip=${skip}` : ""}`);
 }
 
 export type BusinessReviews = { rating?: number | null; reviewsCount: number; items: BloggerReview[] };
 
-export async function getBusinessReviews(id: string, signal?: AbortSignal): Promise<BusinessReviews> {
-  return api<BusinessReviews>(`/api/businesses/${id}/reviews?take=5`, { signal });
+export async function getBusinessReviews(id: string, signal?: AbortSignal, { skip = 0, take = 10 }: { skip?: number; take?: number } = {}): Promise<BusinessReviews> {
+  return api<BusinessReviews>(`/api/businesses/${id}/reviews?take=${take}${skip > 0 ? `&skip=${skip}` : ""}`, { signal });
 }
 
 export async function getCampaignCatalog(query: CampaignCatalogQuery = {}, signal?: AbortSignal): Promise<CampaignCatalogResponse> {

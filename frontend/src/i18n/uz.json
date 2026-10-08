@@ -623,4 +623,7 @@
   ,"error.session_expired": "Sessiya eskirdi. Ilovani yopib, qayta oching."
   ,"error.campaign_daily_limit": "Bugun kampaniyalar soni chegarasiga yetdingiz. Ertaga urinib ko‘ring."
   ,"form.validation.erFormat": "ER’ni raqam bilan kiriting, masalan 5,5"
+  ,"myCampaignDetails.noApplicationsHint": "Bloger javob berganda u shu yerda chiqadi va biz Telegramda xabar yuboramiz."
+  ,"details.openPlatformProfile": "{platform} {handle} sahifasini ochish"
+  ,"reviews.showAll": "Hammasini ko‘rish"
 }

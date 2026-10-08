@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getBlogger, getBloggerReviews, getCurrentPlatformUser, getPublicContact, normalizeMarketplaceRole, type BloggerDetails, type BloggerReview, type ContactDetails, type MarketplaceRole, type OfferFormat, type PlatformDetails } from "../api/marketplace";
 import { OfferForm } from "../components/OfferForm";
 import { Avatar, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Rating, Toast } from "../components/ui";
-import { ChipList, DetailSection, FactGrid, ReviewList, type Fact } from "../components/details/DetailBlocks";
+import { ChipList, DetailSection, FactGrid, ReviewsSection, reviewCarouselLimit, type Fact } from "../components/details/DetailBlocks";
 import { platformLabel } from "../lib/platforms";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCompactNumber, formatCurrency, formatPercentage } from "../lib/currency";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { ContactList, hasContacts } from "../components/ContactList";
+import { platformProfileLink } from "../lib/contacts";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
@@ -56,7 +57,7 @@ export function BloggerDetails({ id }: { id: string }) {
   useScreenRefresh(loadBlogger);
 
   useEffect(() => {
-    getBloggerReviews(id).then(setReviews).catch(() => undefined);
+    getBloggerReviews(id, { take: reviewCarouselLimit }).then(setReviews).catch(() => undefined);
   }, [id]);
 
   useEffect(() => {
@@ -117,7 +118,7 @@ export function BloggerDetails({ id }: { id: string }) {
     <DetailSection title={t("details.about")}><Card><p className="text-sm leading-6 text-brand-muted">{blogger.bio ?? t("details.filling")}</p>{tags.length > 0 && <div className="mt-3"><ChipList items={tags} /></div>}</Card></DetailSection>
     {platformStats.length === 0 && blogger.platforms.length > 0 && <DetailSection title={t("details.platforms")}><FactGrid facts={blogger.platforms.map((platform) => ({ label: platformLabel(platform.type, t), value: platform.followers ? formatCompactNumber(platform.followers) : t("card.onRequest") }))} /></DetailSection>}
     {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <a className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-brand-soft" href={item.url} key={item.id} onClick={(event) => { event.preventDefault(); openLink(item.url); }}><img alt={item.title} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" src={item.url} />{item.type === "VIDEO" && <span aria-label={t("details.video")} className="absolute inset-0 grid place-items-center bg-slate-950/30 text-white">▶</span>}</a>)}</div></DetailSection>}
-    <DetailSection title={t("details.reviews")}><ReviewList emptyText={t("details.noReviews")} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews} /></DetailSection>
+    <ReviewsSection allHref={`#/blogger-reviews/${blogger.id}`} count={blogger.reviewsCount} emptyText={t("details.noReviews")} rating={blogger.reviewsCount > 0 ? blogger.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews} title={t("details.reviews")} />
     {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
     {role === "Business" && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm bloggerId={blogger.id} initialBudget={offerPreset?.budget} initialFormat={offerPreset?.format} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
@@ -132,12 +133,14 @@ function positiveCurrency(value?: number | null) {
 // Each platform with its own audience, so "10K followers" is never shown without saying where.
 function PlatformStats({ platforms, total }: { platforms: PlatformDetails[]; total: number }) {
   const { t } = useI18n();
+  const { openLink } = useTelegram();
   return <section aria-label={t("details.platforms")} className="platform-stats mt-5">
     <div className="platform-stats__total"><span>{t("details.totalFollowers")}</span><strong>{formatCompactNumber(total)}</strong></div>
     {platforms.map((platform) => {
       const details = [platform.averageReach ? t("details.platformReach", { value: formatCompactNumber(platform.averageReach) }) : null, platform.engagementRate ? t("details.platformEr", { value: formatPercentage(platform.engagementRate) }) : null].filter(Boolean).join(" · ");
+      const profile = platform.url ? platformProfileLink(platform.type, platform.url) : null;
       return <div className="platform-stats__row" key={platform.id}>
-        <div className="min-w-0"><p className="platform-stats__name">{platformLabel(platform.type, t)}</p>{details && <p className="platform-stats__details">{details}</p>}</div>
+        <div className="min-w-0"><p className="platform-stats__name">{platformLabel(platform.type, t)}{profile && <a aria-label={t("details.openPlatformProfile", { platform: platformLabel(platform.type, t), handle: profile.handle })} className="platform-stats__handle" href={profile.href} onClick={(event) => { event.preventDefault(); openLink(profile.href); }}>{profile.handle}</a>}</p>{details && <p className="platform-stats__details">{details}</p>}</div>
         <strong>{formatCompactNumber(platform.followers)}</strong>
       </div>;
     })}

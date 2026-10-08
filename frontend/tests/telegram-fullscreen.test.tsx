@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Modal } from "../src/components/ui";
 import { I18nProvider } from "../src/i18n";
-import { TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
+import { isMobileTelegram, TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
 import { resolveTelegramContentTop } from "../src/telegram/telegramTheme";
 
 function renderTelegram(platform: string) {
@@ -94,10 +94,40 @@ describe("Telegram fullscreen", () => {
     expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("88px");
   });
 
+  it("leaves no empty band above the page in desktop Telegram", async () => {
+    window.Telegram = { WebApp: {
+      platform: "tdesktop",
+      colorScheme: "light" as const,
+      contentSafeAreaInset: { top: 0, bottom: 0 },
+      safeAreaInset: { top: 0, bottom: 0 },
+      expand: vi.fn(),
+      ready: vi.fn(),
+      requestFullscreen: vi.fn(),
+      disableVerticalSwipes: vi.fn(),
+      MainButton: { hide: vi.fn() },
+      SettingsButton: { hide: vi.fn() }
+    } };
+    render(<I18nProvider><TelegramProvider><p>ready</p></TelegramProvider></I18nProvider>);
+    await screen.findByText("ready");
+    expect(document.documentElement.style.getPropertyValue("--tg-content-safe-top")).toBe("0px");
+    expect(document.documentElement.style.getPropertyValue("--tg-effective-content-top")).toBe("8px");
+  });
+
   it("stacks the Telegram content inset under the device safe area and adds no clearance outside the app", () => {
     expect(resolveTelegramContentTop({ contentTop: 46, safeTop: 59, isEmbedded: true })).toEqual({ chromeTop: 105, effectiveTop: 113 });
     expect(resolveTelegramContentTop({ contentTop: 20, safeTop: 24, isEmbedded: true })).toEqual({ chromeTop: 80, effectiveTop: 88 });
     expect(resolveTelegramContentTop({ contentTop: 0, safeTop: 0, isEmbedded: false })).toEqual({ chromeTop: 0, effectiveTop: 0 });
+  });
+
+  it("keeps the phone clearance on phones and drops it in desktop and web Telegram", () => {
+    expect(resolveTelegramContentTop({ contentTop: 0, safeTop: 0, isEmbedded: true, isMobile: true })).toEqual({ chromeTop: 80, effectiveTop: 88 });
+    expect(resolveTelegramContentTop({ contentTop: 0, safeTop: 0, isEmbedded: true, isMobile: false })).toEqual({ chromeTop: 0, effectiveTop: 8 });
+    expect(isMobileTelegram("ios")).toBe(true);
+    expect(isMobileTelegram("android")).toBe(true);
+    expect(isMobileTelegram(undefined)).toBe(true);
+    expect(isMobileTelegram("tdesktop")).toBe(false);
+    expect(isMobileTelegram("macos")).toBe(false);
+    expect(isMobileTelegram("weba")).toBe(false);
   });
 
   it("registers a modal back handler once when its parent rerenders", async () => {

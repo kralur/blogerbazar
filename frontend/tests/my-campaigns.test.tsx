@@ -176,7 +176,9 @@ describe("My Campaigns management", () => {
 
     await screen.findByText("Launch coffee");
     expect(screen.getByText("Reels")).toBeInTheDocument();
-    expect(screen.getByText("0 заявок")).toBeInTheDocument();
+    // No applications yet: a quiet card instead of a link to an empty inbox.
+    expect(screen.getByText(translate("applications.emptyTitle", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: translate("applications.openInboxAria", { title: "Coffee launch" }, "ru") })).not.toBeInTheDocument();
     expect(document.querySelector(".campaign-management-screen")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: translate("myCampaignDetails.backAria", undefined, "ru") })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: translate("myCampaignDetails.editAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign-edit/campaign-a");

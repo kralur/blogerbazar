@@ -122,13 +122,38 @@ internal sealed class S3ProfileMediaStorage(
             (double)_options.MaxImageDimension / image.Height));
         var width = Math.Max(1, (int)Math.Round(image.Width * scale));
         var height = Math.Max(1, (int)Math.Round(image.Height * scale));
-        using var resized = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
-        if (!image.ScalePixels(resized, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None)))
+
+        // One linear pass skips source pixels when shrinking more than 2x, which leaves jagged, pixelated edges.
+        // Halving first averages every pixel, so the last pass never shrinks by more than 2x.
+        var current = image;
+        try
         {
+            while (current.Width / 2 >= width && current.Height / 2 >= height && (current.Width > width || current.Height > height))
+            {
+                var halved = Scale(current, Math.Max(1, current.Width / 2), Math.Max(1, current.Height / 2));
+                if (!ReferenceEquals(current, image)) current.Dispose();
+                current = halved;
+            }
+
+            using var resized = Scale(current, width, height);
+            return SKImage.FromBitmap(resized);
+        }
+        finally
+        {
+            if (!ReferenceEquals(current, image)) current.Dispose();
+        }
+    }
+
+    private static SKBitmap Scale(SKBitmap source, int width, int height)
+    {
+        var target = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        if (!source.ScalePixels(target, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None)))
+        {
+            target.Dispose();
             throw new ProfileMediaValidationException();
         }
 
-        return SKImage.FromBitmap(resized);
+        return target;
     }
 
     private void ValidateFileMetadata(ProfileMediaUpload upload)

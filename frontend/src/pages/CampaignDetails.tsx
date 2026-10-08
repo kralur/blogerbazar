@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
 import { applyToCampaign, getBusinessReviews, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type BusinessReviews, type CampaignDetails, type ContactDetails } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Rating, Textarea, Toast } from "../components/ui";
+import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatBudgetRange, formatDate, isPastDay } from "../lib/currency";
-import { ChipList, DetailSection, FactGrid, ReviewList } from "../components/details/DetailBlocks";
+import { ChipList, DetailSection, FactGrid, ReviewsSection } from "../components/details/DetailBlocks";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { getCachedCampaignApplication, setCachedCampaignApplication } from "../data/campaignApplicationCache";
@@ -218,7 +218,7 @@ export function CampaignDetails({ id }: { id: string }) {
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       {campaign.categories.length > 0 && <DetailSection title={t("campaign.suitable")}><ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
       <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></DetailSection>
-      {businessReviews && <DetailSection aside={businessReviews.reviewsCount > 0 ? <Rating count={businessReviews.reviewsCount} value={businessReviews.rating} /> : undefined} title={t("campaign.businessReviews")}><ReviewList reviewerRoute={(profileId) => `#/blogger/${profileId}`} emptyText={t("campaign.noBusinessReviews")} reviews={businessReviews.items} /></DetailSection>}
+      {businessReviews && campaign.businessId && <ReviewsSection allHref={`#/company-reviews/${campaign.businessId}`} count={businessReviews.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={businessReviews.rating} reviewerRoute={(profileId) => `#/blogger/${profileId}`} reviews={businessReviews.items} title={t("campaign.businessReviews")} />}
       {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
       {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary w-full" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}

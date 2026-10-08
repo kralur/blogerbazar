@@ -624,4 +624,7 @@
   ,"error.session_expired": "Сессия устарела. Закройте приложение и откройте его снова."
   ,"error.campaign_daily_limit": "Сегодня вы уже создали максимум кампаний. Попробуйте завтра."
   ,"form.validation.erFormat": "Введите ER числом, например 5,5"
+  ,"myCampaignDetails.noApplicationsHint": "Когда блогер откликнется, он появится здесь, а мы пришлём уведомление в Telegram."
+  ,"details.openPlatformProfile": "Открыть {platform} {handle}"
+  ,"reviews.showAll": "Показать все"
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPublicBusiness, type PublicBusinessProfile } from "../api/marketplace";
 import { Avatar, BottomNav, Card, ErrorState, Icon, LoadingState, Rating } from "../components/ui";
-import { DetailSection, FactGrid, ReviewList } from "../components/details/DetailBlocks";
+import { DetailSection, FactGrid, ReviewsSection } from "../components/details/DetailBlocks";
 import { cityLabel, useI18n } from "../i18n";
 import { formatBudgetRange, formatShortDate } from "../lib/currency";
 import { ContactList } from "../components/ContactList";
@@ -64,7 +64,7 @@ export function BusinessDetails({ id }: { id: string }) {
           <Icon className="company-campaign__chevron" name="back" />
         </a>)}</div>}
     </DetailSection>
-    <DetailSection title={t("campaign.businessReviews")}><ReviewList emptyText={t("campaign.noBusinessReviews")} reviewerRoute={(profileId) => `#/blogger/${profileId}`} reviews={profile.reviews ?? []} /></DetailSection>
+    <ReviewsSection allHref={`#/company-reviews/${profile.id}`} count={profile.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={profile.rating} reviewerRoute={(profileId) => `#/blogger/${profileId}`} reviews={profile.reviews ?? []} title={t("campaign.businessReviews")} />
     {website.length > 0 && <DetailSection title={t("company.website")}><ContactList items={website} /></DetailSection>}
     <BottomNav />
   </div>;

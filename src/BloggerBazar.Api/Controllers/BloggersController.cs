@@ -55,8 +55,8 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
 
     [HttpGet("{id:guid}/reviews")]
     [ProducesResponseType<IReadOnlyList<ReviewDto>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ReviewDto>>> GetReviews(Guid id, [FromQuery] int take = 20, CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new GetBloggerReviewsQuery(id, take), cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<ReviewDto>>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default) =>
+        Ok(await sender.Send(new GetBloggerReviewsQuery(id, take, skip), cancellationToken));
 
     [HttpPost]
     [ProducesResponseType<BloggerProfileDto>(StatusCodes.Status201Created)]

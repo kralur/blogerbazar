@@ -185,7 +185,8 @@ describe("Campaign safety foundation", () => {
     renderDetails();
 
     expect(await screen.findByText(translate("campaign.businessReviews", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getByText("rating 4.5 of 2")).toBeInTheDocument();
+    expect(document.querySelector(".reviews-heading__summary")?.textContent).toBe("★ 4,5 · 2");
+    expect(screen.getByRole("link", { name: translate("reviews.showAll", undefined, "ru") })).toHaveAttribute("href", "#/company-reviews/business-a");
     expect(screen.getByText("Clear brief, fast payment")).toBeInTheDocument();
     expect(api.getBusinessReviews).toHaveBeenCalledWith("business-a", expect.any(AbortSignal));
   });
@@ -194,6 +195,7 @@ describe("Campaign safety foundation", () => {
     renderDetails();
 
     expect(await screen.findByText(translate("campaign.noBusinessReviews", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.queryByText(/^rating/)).not.toBeInTheDocument();
+    expect(document.querySelector(".reviews-heading__summary")).toBeNull();
+    expect(screen.queryByRole("link", { name: translate("reviews.showAll", undefined, "ru") })).not.toBeInTheDocument();
   });
 });

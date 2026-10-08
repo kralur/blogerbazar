@@ -102,4 +102,30 @@ describe("Blogger details", () => {
     expect(screen.queryByRole("button", { name: ru("offers.propose") })).not.toBeInTheDocument();
     expect(screen.queryByText(ru("details.createCampaign"))).not.toBeInTheDocument();
   });
+
+  it("links each platform to the blogger's account by its handle", async () => {
+    api.getBlogger.mockResolvedValue({ ...blogger, platforms: [
+      { id: "p1", type: "instagram", url: "https://instagram.com/madina_k", followers: 10000 },
+      { id: "p2", type: "telegram", url: "https://user:pass@t.me/evil", followers: 3000 }
+    ] });
+    renderDetails();
+
+    const link = await screen.findByRole("link", { name: translate("details.openPlatformProfile", { platform: "Instagram", handle: "@madina_k" }, "ru") });
+    expect(link).toHaveAttribute("href", "https://instagram.com/madina_k");
+    expect(link).toHaveTextContent("@madina_k");
+    // The Telegram handle is rebuilt as a plain t.me link, so the hidden credentials never reach the page.
+    expect(screen.getByRole("link", { name: /@evil/ })).toHaveAttribute("href", "https://t.me/evil");
+  });
+
+  it("shows the latest reviews side by side with a link to all of them", async () => {
+    api.getBlogger.mockResolvedValue({ ...blogger, rating: 4.8, reviewsCount: 12 });
+    api.getBloggerReviews.mockResolvedValue([{ id: "r1", dealId: "d1", targetType: 0, rating: 5, comment: "Great reel", reviewerName: "Lumi", createdAtUtc: "2026-09-10T00:00:00Z" }]);
+    renderDetails();
+
+    expect(await screen.findByText("Great reel")).toBeInTheDocument();
+    expect(document.querySelector(".review-carousel")).toBeInTheDocument();
+    expect(document.querySelector(".reviews-heading__summary")?.textContent).toBe("★ 4,8 · 12");
+    expect(screen.getByRole("link", { name: ru("reviews.showAll") })).toHaveAttribute("href", "#/blogger-reviews/blogger-a");
+    expect(api.getBloggerReviews).toHaveBeenCalledWith("blogger-a", { take: 10 });
+  });
 });

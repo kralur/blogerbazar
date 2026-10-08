@@ -37,7 +37,7 @@ public sealed class GetPublicBusinessProfileHandlerTests
 
     private sealed class FakeReviews(BusinessReviewsDto reviews) : IReviewReadModel
     {
-        public Task<IReadOnlyList<ReviewDto>> GetBloggerReviewsAsync(Guid bloggerId, int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<ReviewDto>>([]);
-        public Task<BusinessReviewsDto> GetBusinessReviewsAsync(Guid businessId, int take, CancellationToken cancellationToken) => Task.FromResult(reviews);
+        public Task<IReadOnlyList<ReviewDto>> GetBloggerReviewsAsync(Guid bloggerId, int skip, int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<ReviewDto>>([]);
+        public Task<BusinessReviewsDto> GetBusinessReviewsAsync(Guid businessId, int skip, int take, CancellationToken cancellationToken) => Task.FromResult(reviews);
     }
 }

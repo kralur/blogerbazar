@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
+import { formatRating } from "../lib/currency";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { requestGuardedNavigation } from "../navigation/guardedNavigation";
@@ -208,7 +209,7 @@ export function Rating({ value, count }: { value?: number | null; count?: number
   return (
     <div className="inline-flex items-center gap-1 text-[13px] font-semibold">
       <span className="text-brand-warning">★</span>
-      <span>{value ?? "-"}</span>
+      <span>{value == null ? "-" : formatRating(value)}</span>
       {count !== undefined && <span className="font-normal text-brand-muted">({t("common.reviews", { count })})</span>}
     </div>
   );

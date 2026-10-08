@@ -49,6 +49,15 @@ export function socialUrl(kind: "instagram" | "tiktok" | "telegram", value: stri
   return `https://${host}/${kind === "tiktok" ? "@" : ""}${handle}`;
 }
 
+// The account behind a platform row: "@handle" to show and a safe https link to open it.
+export function platformProfileLink(type: string, url: string) {
+  const handle = socialHandle(url);
+  if (!handle) return null;
+  const kind = type.toLowerCase();
+  const href = kind === "instagram" || kind === "tiktok" || kind === "telegram" ? safeExternalUrl(socialUrl(kind, url)) : safeExternalUrl(url);
+  return href ? { handle: `@${handle}`, href } : null;
+}
+
 export function contactUrl(item: ContactItem) {
   if (item.kind === "phone") return `tel:${item.value.replace(/[^+\d]/g, "")}`;
   if (item.kind === "email") return `mailto:${item.value}`;

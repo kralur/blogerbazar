@@ -1062,6 +1062,16 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .catalog-search__sort select,
 .catalog-search__filter-select select { min-width: 0; flex: 1; border: 0; background: transparent; color: var(--bb-text); font: inherit; font-size: .875rem; font-weight: 700; outline: 0; }
 .catalog-search__sort select { width: 100%; height: 1.75rem; padding: 0; text-align: left; }
+/* Desktop Telegram draws a native grey dropdown box and arrow; our own chevron keeps the sort control looking like the Filters button everywhere. */
+.catalog-search__sort,
+.my-campaigns__controls .catalog-search__filter-select { position: relative; }
+.catalog-search__sort select,
+.my-campaigns__controls .catalog-search__filter-select select { -webkit-appearance: none; appearance: none; padding-right: 1.25rem; cursor: pointer; }
+.catalog-search__sort::after,
+.my-campaigns__controls .catalog-search__filter-select::after { content: ""; position: absolute; top: 50%; right: .75rem; width: .75rem; height: .75rem; transform: translateY(-50%); background: var(--bb-text-secondary); pointer-events: none; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+.catalog-search__sort:focus-within { border-color: var(--bb-accent); box-shadow: 0 0 0 2px var(--bb-accent-subtle); }
+.catalog-search__sort select option,
+.my-campaigns__controls .catalog-search__filter-select select option { background: var(--bb-surface); color: var(--bb-text); }
 
 .catalog-search__chips { gap: .5rem; overflow-x: auto; margin-top: .75rem; padding-bottom: .125rem; scrollbar-width: none; }
 .catalog-search__chips::-webkit-scrollbar { display: none; }
@@ -1215,7 +1225,7 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .profile-role-card--selected { border-color: var(--bb-text); background: var(--bb-accent-subtle); box-shadow: inset 0 0 0 1px var(--bb-text); }
 .choice-selected { border-color: var(--bb-text) !important; background: var(--bb-accent-subtle); color: var(--bb-text); box-shadow: inset 0 0 0 1px var(--bb-text); }
 /* Detail pages (R3): key facts as tiles, neutral chips, one section rhythm. */
-.fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin: 0; }
+.fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
 .fact-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .fact-grid__item { min-width: 0; padding: .75rem; border: 1px solid var(--bb-border); border-radius: .875rem; background: var(--bb-surface); }
 .fact-grid__item--wide { grid-column: 1 / -1; }
@@ -1225,6 +1235,18 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .chip-list { display: flex; flex-wrap: wrap; gap: .375rem; margin: 0; padding: 0; list-style: none; }
 .chip-list li { padding: .375rem .625rem; border: 1px solid var(--bb-border); border-radius: .625rem; background: var(--bb-surface-secondary); color: var(--bb-text); font-size: .8125rem; font-weight: 700; }
 .detail-section { margin-top: 1.5rem; }
+.reviews-heading { display: flex; min-width: 0; align-items: baseline; gap: .5rem; }
+.reviews-heading__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reviews-heading__summary { flex: 0 0 auto; color: var(--bb-text-secondary); font-size: .875rem; font-weight: 700; white-space: nowrap; }
+.reviews-heading__all { flex: 0 0 auto; display: inline-flex; min-height: 2.75rem; align-items: center; color: var(--bb-text); font-size: .8125rem; font-weight: 800; text-decoration: underline; text-underline-offset: .2em; }
+/* Reviews scroll sideways: same-size cards, three lines of text each; the full text is on the "Show all" screen. */
+.review-carousel { display: flex; gap: .5rem; margin: 0 -1rem; padding: 0 1rem .25rem; overflow-x: auto; list-style: none; scroll-snap-type: x mandatory; scroll-padding: 0 1rem; }
+.review-carousel__item { display: flex; flex: 0 0 min(17rem, 82%); scroll-snap-align: start; }
+.review-carousel__item > * { width: 100%; }
+.review-card--compact { display: flex; min-height: 9.75rem; flex-direction: column; }
+.review-card--compact .review-card__comment { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow-wrap: anywhere; }
+.review-card--compact .review-author span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.all-reviews__summary { margin: .5rem 0 0; color: var(--bb-text-secondary); font-size: .875rem; font-weight: 700; }
 .detail-section__heading { display: flex; min-height: 1.75rem; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .75rem; }
 .detail-section__heading h2 { margin: 0; color: var(--bb-text); font-size: 1.125rem; font-weight: 800; line-height: 1.25; }
 .detail-promoted { display: inline-flex; padding: .25rem .625rem; border: 1px solid var(--bb-accent); border-radius: .625rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .75rem; font-weight: 800; }
@@ -1325,6 +1347,9 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .my-campaign-details__inbox:focus-visible { outline: 2px solid var(--bb-text); outline-offset: 2px; }
 .my-campaign-details__inbox strong { display: block; font-size: .9375rem; font-weight: 800; }
 .my-campaign-details__inbox span span { display: block; margin-top: .125rem; font-size: .8125rem; font-weight: 650; opacity: .75; }
+/* Nothing to open yet: a quiet card instead of the lime call to action. */
+.my-campaign-details__inbox--empty { border-color: var(--bb-border); background: var(--bb-surface-secondary); color: var(--bb-text); }
+.my-campaign-details__inbox--empty span span { color: var(--bb-text-secondary); font-weight: 500; line-height: 1.4; opacity: 1; }
 .my-campaign-details__inbox-chevron { flex: 0 0 auto; width: 1.125rem; height: 1.125rem; transform: rotate(180deg); }
 .my-campaign-details__actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; margin-top: 1rem; }
 .my-campaign-details__edit { display: inline-flex; min-height: 3.25rem; align-items: center; justify-content: center; padding: 0 1rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); font-size: .9375rem; font-weight: 800; text-decoration: none; }
@@ -1460,6 +1485,9 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .wizard-platform { display: grid; min-width: 0; gap: .5rem; padding: .75rem; border: 1px solid var(--bb-border); border-radius: .875rem; background: var(--bb-surface); }
 .wizard-platform__stats { display: grid; grid-template-columns: 1.2fr 1fr .8fr; gap: .5rem; min-width: 0; }
 .wizard-platform__stats > div { min-width: 0; }
+/* A short "%" suffix in a narrow column: the wide reserve meant for "so‘m" left no room for the number. */
+.wizard-screen .wizard-platform__stats .input-control__input--with-suffix { padding-right: 2rem !important; }
+.wizard-screen .wizard-platform__stats .input-control__suffix { right: .75rem; }
 .wizard-platforms__error { margin: 0; color: var(--bb-error); font-size: .8125rem; font-weight: 650; }
 .wizard-platforms__total { margin: 0; color: var(--bb-text); font-size: .875rem; font-weight: 800; }
 .platform-stats { display: grid; gap: 0; overflow: hidden; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
@@ -1469,6 +1497,10 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .platform-stats__row + .platform-stats__row, .platform-stats__total + .platform-stats__row { border-top: 1px solid var(--bb-border); }
 .platform-stats__row strong { flex: 0 0 auto; color: var(--bb-text); font-size: 1rem; font-weight: 800; }
 .platform-stats__name { margin: 0; color: var(--bb-text); font-size: .9375rem; font-weight: 750; }
+.platform-stats__name { display: flex; min-width: 0; align-items: baseline; gap: .375rem; }
+.platform-stats__handle { overflow: hidden; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 650; text-decoration: underline; text-decoration-color: var(--bb-border-strong, var(--bb-border)); text-underline-offset: 2px; text-overflow: ellipsis; white-space: nowrap; }
+.platform-stats__handle:hover { color: var(--bb-text); }
+.platform-stats__handle:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; border-radius: .25rem; }
 .platform-stats__details { margin: .125rem 0 0; color: var(--bb-text-secondary); font-size: .75rem; }
 .deal-review__partner { display: flex; align-items: flex-start; gap: .5rem; margin: .75rem 0 0; padding: .625rem .75rem; border: 1px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .8125rem; font-weight: 700; line-height: 1.4; }
 .deal-review__partner .request-row__action-dot { margin-top: .3rem; }

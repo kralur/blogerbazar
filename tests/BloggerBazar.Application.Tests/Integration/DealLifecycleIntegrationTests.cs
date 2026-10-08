@@ -210,6 +210,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var businessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
         var bloggerReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews");
         var bloggerProfile = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}");
+        var businessReviewsNextPage = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews?skip=1");
+        var bloggerReviewsNextPage = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews?skip=1");
 
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);
         Assert.Equal(0, hiddenBusinessReviews.GetProperty("reviewsCount").GetInt32());
@@ -225,6 +227,10 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal("Great reel", bloggerReview.GetProperty("comment").GetString());
         Assert.Equal("Integration business", bloggerReview.GetProperty("reviewerName").GetString());
         Assert.Equal(1, bloggerProfile.GetProperty("reviewsCount").GetInt32());
+        // A later page keeps the totals and holds only what is left.
+        Assert.Equal(1, businessReviewsNextPage.GetProperty("reviewsCount").GetInt32());
+        Assert.Empty(businessReviewsNextPage.GetProperty("items").EnumerateArray());
+        Assert.Empty(bloggerReviewsNextPage.EnumerateArray());
     }
 
     [IntegrationFact]

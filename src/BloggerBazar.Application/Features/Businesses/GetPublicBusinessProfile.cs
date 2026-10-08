@@ -33,7 +33,7 @@ public sealed class GetPublicBusinessProfileHandler(IPublicBusinessReadModel bus
     {
         var profile = await businesses.GetAsync(query.BusinessId, DateTime.UtcNow, cancellationToken);
         if (profile is null) return null;
-        var businessReviews = await reviews.GetBusinessReviewsAsync(query.BusinessId, ReviewsShown, cancellationToken);
+        var businessReviews = await reviews.GetBusinessReviewsAsync(query.BusinessId, 0, ReviewsShown, cancellationToken);
         return profile with { Rating = businessReviews.Rating, ReviewsCount = businessReviews.ReviewsCount, Reviews = businessReviews.Items };
     }
 }
