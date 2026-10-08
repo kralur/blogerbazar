@@ -185,6 +185,8 @@ export type CurrentPlatformUser = {
   selectedMarketplaceRole?: MarketplaceRoleValue | null;
   isBlocked: boolean;
   preferredLanguage?: "ru" | "uz" | null;
+  // Shared from Telegram (D41); profiles show only this number.
+  verifiedPhone?: string | null;
 };
 
 export type FavoriteBlogger = {

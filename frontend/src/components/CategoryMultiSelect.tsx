@@ -10,8 +10,13 @@ export function CategoryMultiSelect({ value, onChange, error, required = false }
   const [query, setQuery] = useState("");
   const [other, setOther] = useState(() => value.find(isOtherCategory)?.slice(otherCategoryPrefix.length) ?? "");
   const available = useMemo(() => marketplaceCategories.filter((category) => categoryLabel(category).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())), [query, t]);
-  const selectedOther = value.find(isOtherCategory);
+  // "Other" opens a text field; the category is added only once there is text, never as a placeholder.
+  const [otherOpen, setOtherOpen] = useState(() => value.some(isOtherCategory));
   const toggle = (category: string) => {
+    if (isOtherCategory(category)) {
+      setOtherOpen(false);
+      setOther("");
+    }
     if (value.includes(category)) onChange(value.filter((item) => item !== category));
     else if (value.length < maxCategories) onChange([...value, category]);
   };
@@ -21,10 +26,11 @@ export function CategoryMultiSelect({ value, onChange, error, required = false }
     onChange(nextValue.trim() ? [...withoutOther, `${otherCategoryPrefix}${nextValue.trim()}`] : withoutOther);
   };
   const toggleOther = () => {
-    if (selectedOther) {
+    if (otherOpen) {
+      setOtherOpen(false);
       setOther("");
       onChange(value.filter((item) => !isOtherCategory(item)));
-    } else if (value.length < maxCategories) onChange([...value, `${otherCategoryPrefix}${other.trim() || "other"}`]);
+    } else if (value.length < maxCategories) setOtherOpen(true);
   };
 
   return <section aria-describedby={error ? "category-selector-error" : undefined} aria-invalid={error ? true : undefined} className="grid gap-3">
@@ -32,10 +38,10 @@ export function CategoryMultiSelect({ value, onChange, error, required = false }
     <Input aria-label={t("categorySelect.searchAria")} onChange={(event) => setQuery(event.target.value)} placeholder={t("categorySelect.searchPlaceholder")} value={query} />
     <div className="flex flex-wrap gap-2">
       {available.map((category) => <button aria-pressed={value.includes(category)} className="category-multi-select__choice" key={category} onClick={() => toggle(category)} type="button"><Chip active={value.includes(category)}>{categoryLabel(category)}</Chip></button>)}
-      <button aria-pressed={Boolean(selectedOther)} className="category-multi-select__choice" onClick={toggleOther} type="button"><Chip active={Boolean(selectedOther)}>{t("categorySelect.other")}</Chip></button>
+      <button aria-pressed={otherOpen} className="category-multi-select__choice" onClick={toggleOther} type="button"><Chip active={otherOpen}>{t("categorySelect.other")}</Chip></button>
     </div>
-    {selectedOther && <Input label={t("categorySelect.otherLabel")} maxLength={44} onChange={(event) => updateOther(event.target.value)} placeholder={t("categorySelect.otherPlaceholder")} value={other} />}
-    {value.length > 0 && <div className="flex flex-wrap gap-2">{value.map((category) => <button aria-label={t("categorySelect.remove", { category: isOtherCategory(category) ? category.slice(otherCategoryPrefix.length) : categoryLabel(category) })} className="category-multi-select__selected" key={category} onClick={() => toggle(category)} type="button">{isOtherCategory(category) ? category.slice(otherCategoryPrefix.length) : categoryLabel(category)}<Icon className="h-3.5 w-3.5" name="close" /></button>)}</div>}
+    {otherOpen && <Input label={t("categorySelect.otherLabel")} maxLength={44} onChange={(event) => updateOther(event.target.value)} placeholder={t("categorySelect.otherPlaceholder")} value={other} />}
+    {value.length > 0 && <div className="flex flex-wrap gap-2">{value.map((category) => <button aria-label={t("categorySelect.remove", { category: categoryLabel(category) })} className="category-multi-select__selected" key={category} onClick={() => toggle(category)} type="button">{categoryLabel(category)}<Icon className="h-3.5 w-3.5" name="close" /></button>)}</div>}
     {error && <p className="text-xs font-semibold text-brand-danger" id="category-selector-error">{error}</p>}
   </section>;
 }

@@ -3,6 +3,10 @@ namespace BloggerBazar.Application.Abstractions.Telegram;
 public interface ITelegramBotClient
 {
     Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken);
+
+    // /phone and a rejected contact: a keyboard button that shares the sender's own number (D41).
+    Task SendPhoneRequestAsync(long chatId, bool rejectedContact, CancellationToken cancellationToken) => Task.CompletedTask;
+    Task SendPhoneVerifiedAsync(long chatId, string phone, CancellationToken cancellationToken) => Task.CompletedTask;
     Task SendNotificationAsync(long chatId, string text, CancellationToken cancellationToken) => Task.CompletedTask;
 
     // miniAppRoute is a hash route such as "/deal/{id}"; the message gets a button that opens it.

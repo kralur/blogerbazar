@@ -19,7 +19,7 @@ import { clearDealCache } from "./data/dealCache";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
-type OnboardingStep = "welcome" | "telegram" | "checking" | "role" | "profile" | "success" | "complete";
+type OnboardingStep = "welcome" | "telegram" | "checking" | "phone" | "role" | "profile" | "success" | "complete";
 
 const Admin = lazy(async () => ({ default: (await import("./pages/Admin")).Admin }));
 const BloggerDetails = lazy(async () => ({ default: (await import("./pages/BloggerDetails")).BloggerDetails }));
@@ -45,6 +45,7 @@ const OnboardingSuccess = lazy(async () => ({ default: (await import("./pages/On
 const ProfileDashboard = lazy(async () => ({ default: (await import("./pages/ProfileDashboard")).ProfileDashboard }));
 const Settings = lazy(async () => ({ default: (await import("./pages/Settings")).Settings }));
 const TelegramAuthorization = lazy(async () => ({ default: (await import("./pages/TelegramAuthorization")).TelegramAuthorization }));
+const PhoneVerification = lazy(async () => ({ default: (await import("./pages/PhoneVerification")).PhoneVerification }));
 const Welcome = lazy(async () => ({ default: (await import("./pages/Welcome")).Welcome }));
 const Favorites = lazy(async () => ({ default: (await import("./pages/Favorites")).Favorites }));
 const CachedHome = memo(Home);
@@ -159,6 +160,11 @@ export function App() {
     try {
       setOnboardingStep("checking");
       const user = await getCurrentPlatformUser();
+      // Everyone, new or returning, confirms the phone from Telegram once before anything else (D41).
+      if (!user.verifiedPhone) {
+        setOnboardingStep("phone");
+        return;
+      }
       const marketplaceRole = normalizeMarketplaceRole(user.selectedMarketplaceRole);
       if (!marketplaceRole) {
         setOnboardingStep("role");
@@ -256,6 +262,7 @@ export function App() {
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
+      : onboardingStep === "phone" ? <PhoneVerification onVerified={() => void resolveDestination()} />
         : onboardingStep === "role" ? <Onboarding onRoleSelected={handleRoleSelected} />
           : onboardingStep === "profile" && selectedRole === "Blogger" ? <BloggerProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
             : onboardingStep === "profile" && selectedRole === "BrandFace" ? <BrandFaceProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />

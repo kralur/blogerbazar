@@ -18,6 +18,18 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
     internal static readonly BotText StartButton = new("🚀 Открыть", "🚀 Ochish");
     internal static readonly BotText OpenButton = new("Открыть", "Ochish");
 
+    internal static readonly BotText PhoneRequestText = new(
+        "Нажмите кнопку ниже, чтобы поделиться номером из Telegram. Он будет в ваших профилях BloggerBazar.",
+        "Telegram’dagi raqamingizni ulashish uchun quyidagi tugmani bosing. U BloggerBazar profillaringizda bo‘ladi.");
+    internal static readonly BotText PhoneRejectedText = new(
+        "Нужен ваш собственный номер. Нажмите кнопку ниже, а не отправляйте чужой контакт.",
+        "O‘zingizning raqamingiz kerak. Boshqa kontaktni yubormang, quyidagi tugmani bosing.");
+    internal static readonly BotText ShareButton = new("📱 Поделиться номером", "📱 Raqamni ulashish");
+
+    internal static BotText PhoneVerifiedText(string phone) => new(
+        $"Номер {phone} подтверждён. Вернитесь в приложение. Сменить номер: команда /phone.",
+        $"{phone} raqami tasdiqlandi. Ilovaga qayting. Raqamni o‘zgartirish: /phone buyrug‘i.");
+
     // Button labels are short, so the bilingual fallback joins them on one line.
     internal static string ButtonLabel(BotText label, string? language) =>
         language is null ? $"{label.Russian} / {label.Uzbek}" : label.For(language);
@@ -47,6 +59,36 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
                 }
                 : null
         }, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task SendPhoneRequestAsync(long chatId, bool rejectedContact, CancellationToken cancellationToken)
+    {
+        var language = await LanguageOfAsync(chatId, cancellationToken);
+        await SendMessageAsync(new
+        {
+            chat_id = chatId,
+            text = (rejectedContact ? PhoneRejectedText : PhoneRequestText).For(language),
+            reply_markup = new
+            {
+                keyboard = new[] { new[] { new { text = ButtonLabel(ShareButton, language), request_contact = true } } },
+                resize_keyboard = true,
+                one_time_keyboard = true
+            }
+        }, cancellationToken);
+    }
+
+    public async Task SendPhoneVerifiedAsync(long chatId, string phone, CancellationToken cancellationToken)
+    {
+        var language = await LanguageOfAsync(chatId, cancellationToken);
+        await SendMessageAsync(new { chat_id = chatId, text = PhoneVerifiedText(phone).For(language), reply_markup = new { remove_keyboard = true } }, cancellationToken);
+    }
+
+    private async Task SendMessageAsync(object payload, CancellationToken cancellationToken)
+    {
+        var botToken = options.Value.BotToken;
+        if (string.IsNullOrWhiteSpace(botToken)) throw new InvalidOperationException("Telegram:BotToken must be configured to send bot messages.");
+        using var response = await httpClient.PostAsJsonAsync(TelegramBotApi.MethodUri(botToken, "sendMessage"), payload, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

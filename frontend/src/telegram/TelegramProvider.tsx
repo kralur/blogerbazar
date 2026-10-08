@@ -37,6 +37,7 @@ type TelegramWebApp = {
   openTelegramLink?: (url: string) => void;
   isVersionAtLeast?: (version: string) => boolean;
   requestWriteAccess?: (callback?: (allowed: boolean) => void) => void;
+  requestContact?: (callback?: (shared: boolean) => void) => void;
   onEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "fullscreenFailed" | "orientationChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
   offEvent?: (event: "themeChanged" | "viewportChanged" | "fullscreenChanged" | "fullscreenFailed" | "orientationChanged" | "safeAreaChanged" | "contentSafeAreaChanged", handler: () => void) => void;
 };
@@ -65,11 +66,21 @@ function requestBotMessages() {
   try { app.requestWriteAccess(); } catch { /* unsupported client */ }
 }
 
+// Telegram's own "share your phone number" dialog; the number reaches the bot, not the page (D41).
+function requestContact(): Promise<boolean> {
+  const app = webApp();
+  if (!app?.requestContact) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    try { app.requestContact?.((shared) => resolve(Boolean(shared))); } catch { resolve(false); }
+  });
+}
+
 export const telegramBridge = {
   get initData() { return webApp()?.initData ?? ""; },
   get user() { return webApp()?.initDataUnsafe?.user; },
   get isTelegram() { return Boolean(webApp()?.initData); },
-  requestBotMessages
+  requestBotMessages,
+  requestContact
 };
 
 type TelegramContextValue = {

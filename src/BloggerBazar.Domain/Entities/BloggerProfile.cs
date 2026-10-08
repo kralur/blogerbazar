@@ -151,6 +151,13 @@ public sealed class BloggerProfile
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    // The profile shows the phone Telegram confirmed for its owner (D41).
+    public void SetVerifiedPhone(string phone)
+    {
+        Phone = phone;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     // Saving a form publishes the profile without checking who is behind it, so only a real check
     // (admin moderation today) may mark it verified.
     public void Approve(bool verified = true)

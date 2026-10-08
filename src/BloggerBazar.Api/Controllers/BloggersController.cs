@@ -64,11 +64,12 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     public async Task<ActionResult<BloggerProfileDto>> Create(CreateBloggerProfileRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
+        var phone = await RequireVerifiedPhoneAsync(sender, actor.Id, cancellationToken);
         var portfolioItems = ToPortfolioItems(request);
         var profile = await sender.Send(new CreateBloggerProfileCommand(
             actor.Id, request.Name, request.LastName, ContactValidation.TelegramHandle(actor.Username), request.City, request.Categories, request.Bio,
             request.AvatarUrl, request.TotalFollowers, request.AverageReach, request.EngagementRate, request.StoriesPrice,
-            request.ReelsPrice, request.PostPrice, request.IntegrationPrice, request.BarterEnabled, request.Phone, request.Email,
+            request.ReelsPrice, request.PostPrice, request.IntegrationPrice, request.BarterEnabled, phone, request.Email,
             portfolioItems, request.CoverUrl, request.Age, request.Gender, request.Language, request.Subcategory,
             request.PriceFrom, request.PriceTo, request.PriceNote, ToPlatforms(request)), cancellationToken);
 
@@ -80,10 +81,11 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     public async Task<ActionResult<BloggerProfileDto>> Update(CreateBloggerProfileRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
+        var phone = await RequireVerifiedPhoneAsync(sender, actor.Id, cancellationToken);
         var profile = await sender.Send(new UpdateBloggerProfileCommand(
             actor.Id, request.Name, request.LastName, ContactValidation.TelegramHandle(actor.Username), request.City, request.Categories, request.Bio,
             request.AvatarUrl, request.TotalFollowers, request.AverageReach, request.EngagementRate, request.StoriesPrice,
-            request.ReelsPrice, request.PostPrice, request.IntegrationPrice, request.BarterEnabled, request.Phone, request.Email,
+            request.ReelsPrice, request.PostPrice, request.IntegrationPrice, request.BarterEnabled, phone, request.Email,
             ToPortfolioItems(request), request.CoverUrl, request.Age, request.Gender, request.Language, request.Subcategory,
             request.PriceFrom, request.PriceTo, request.PriceNote, ToPlatforms(request)), cancellationToken);
         return Ok(profile);

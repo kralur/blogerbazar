@@ -3,6 +3,7 @@ using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Abstractions.Payments;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Features.Payments;
+using BloggerBazar.Application.Features.Users;
 using BloggerBazar.Infrastructure.Payments;
 using BloggerBazar.Infrastructure.Security;
 using MediatR;
@@ -15,7 +16,7 @@ namespace BloggerBazar.Api.Controllers;
 [Route("api/webhooks/telegram")]
 [EnableRateLimiting("telegram-webhook")]
 public sealed class TelegramPaymentsWebhookController(
-    ISender sender,
+    ISender mediator,
     ITelegramPaymentGateway paymentGateway,
     IOptions<ClickTelegramPaymentOptions> paymentOptions,
     IOptions<TelegramOptions> telegramOptions,
@@ -35,7 +36,7 @@ public sealed class TelegramPaymentsWebhookController(
         {
             var isAmountValid = paymentOptions.Value.TryGetAmountUzs(checkout.Currency, checkout.TotalAmount, out var amountUzs);
             var validation = isAmountValid
-                ? await sender.Send(new ValidateContactUnlockCheckoutCommand(checkout.InvoicePayload, checkout.From.Id, amountUzs), cancellationToken)
+                ? await mediator.Send(new ValidateContactUnlockCheckoutCommand(checkout.InvoicePayload, checkout.From.Id, amountUzs), cancellationToken)
                 : TelegramCheckoutValidationDto.Rejected();
 
             await paymentGateway.AnswerPreCheckoutQueryAsync(checkout.Id, validation.IsApproved, validation.ErrorMessage, cancellationToken);
@@ -61,6 +62,24 @@ public sealed class TelegramPaymentsWebhookController(
             return Ok();
         }
 
+        if (update.Message is { Chat: { } phoneChat } && IsCommand(update.Message.Text, "/phone", telegramOptions.Value.BotUsername))
+        {
+            await BestEffortAsync(() => botClient.SendPhoneRequestAsync(phoneChat.Id, false, cancellationToken), phoneChat.Id);
+            return Ok();
+        }
+
+        if (update.Message is { Contact: { } contact, From: { } contactOwner, Chat: { } contactChat })
+        {
+            // Only a contact the sender shared about themselves proves the number; a forwarded card proves nothing.
+            var verifiedPhone = contact.UserId == contactOwner.Id
+                ? await mediator.Send(new VerifyTelegramPhoneCommand(contactOwner.Id, contactOwner.FirstName ?? "", contactOwner.Username, contact.PhoneNumber), cancellationToken)
+                : null;
+            await BestEffortAsync(() => verifiedPhone is null
+                ? botClient.SendPhoneRequestAsync(contactChat.Id, true, cancellationToken)
+                : botClient.SendPhoneVerifiedAsync(contactChat.Id, verifiedPhone, cancellationToken), contactChat.Id);
+            return Ok();
+        }
+
         if (update.Message?.SuccessfulPayment is { } payment && update.Message.From is { } payer)
         {
             if (!paymentOptions.Value.TryGetAmountUzs(payment.Currency, payment.TotalAmount, out var amountUzs))
@@ -69,12 +88,31 @@ public sealed class TelegramPaymentsWebhookController(
                 return Ok();
             }
 
-            await sender.Send(
+            await mediator.Send(
                 new ConfirmContactUnlockPaymentCommand(payment.InvoicePayload, payment.TelegramPaymentChargeId, amountUzs, payer.Id),
                 cancellationToken);
         }
 
         return Ok();
+    }
+
+    // A failed bot reply must not make Telegram redeliver the update and hold the ones behind it.
+    private async Task BestEffortAsync(Func<Task> send, long chatId)
+    {
+        try { await send(); }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "Unable to send a Telegram reply to chat {ChatId}.", chatId);
+        }
+    }
+
+    internal static bool IsCommand(string? text, string command, string botUsername)
+    {
+        var first = text?.Split(' ', 2)[0];
+        if (string.Equals(first, command, StringComparison.Ordinal)) return true;
+        var normalizedUsername = botUsername.Trim().TrimStart('@');
+        return !string.IsNullOrWhiteSpace(normalizedUsername)
+            && string.Equals(first, $"{command}@{normalizedUsername}", StringComparison.OrdinalIgnoreCase);
     }
 
     internal static bool IsStartCommand(string? text, string botUsername)

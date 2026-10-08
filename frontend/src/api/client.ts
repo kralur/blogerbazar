@@ -39,7 +39,7 @@ export function getApiErrorMessage(error: unknown, fallback: string, options?: {
   return error.message || fallback;
 }
 
-const businessConflictCodes = new Set(["offer_daily_limit", "offer_already_active", "campaign_expired", "campaign_has_applications", "favorite_own_profile"]);
+const businessConflictCodes = new Set(["offer_daily_limit", "offer_already_active", "campaign_expired", "campaign_has_applications", "favorite_own_profile", "phone_not_verified"]);
 
 function friendlyError(status: number, code?: string) {
   const normalizedCode = code?.toLowerCase();

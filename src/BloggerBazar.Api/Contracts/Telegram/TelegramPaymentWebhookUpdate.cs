@@ -17,9 +17,18 @@ public sealed record TelegramPaymentMessage(
     [property: JsonPropertyName("from")] TelegramWebhookUser? From,
     [property: JsonPropertyName("successful_payment")] TelegramSuccessfulPayment? SuccessfulPayment,
     [property: JsonPropertyName("text")] string? Text,
-    [property: JsonPropertyName("chat")] TelegramWebhookChat? Chat);
+    [property: JsonPropertyName("chat")] TelegramWebhookChat? Chat,
+    [property: JsonPropertyName("contact")] TelegramWebhookContact? Contact = null);
 
-public sealed record TelegramWebhookUser([property: JsonPropertyName("id")] long Id);
+public sealed record TelegramWebhookUser(
+    [property: JsonPropertyName("id")] long Id,
+    [property: JsonPropertyName("first_name")] string? FirstName = null,
+    [property: JsonPropertyName("username")] string? Username = null);
+
+// A shared contact; user_id is set only when it belongs to a Telegram account.
+public sealed record TelegramWebhookContact(
+    [property: JsonPropertyName("phone_number")] string PhoneNumber,
+    [property: JsonPropertyName("user_id")] long? UserId);
 
 public sealed record TelegramWebhookChat([property: JsonPropertyName("id")] long Id);
 

@@ -54,7 +54,7 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
         RuleForEach(command => command.Categories).NotEmpty().MaximumLength(50);
         RuleFor(command => command.Bio).MaximumLength(500).When(command => command.Bio is not null);
         RuleFor(command => command.AvatarUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.AvatarUrl is not null);
-        RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsUzbekPhone);
+        RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsVerifiedPhone);
         RuleFor(command => command.Email).EmailAddress().MaximumLength(254).When(command => command.Email is not null);
         RuleFor(command => command.TotalFollowers).GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxFollowers);
         RuleFor(command => command.AverageReach).NotNull().GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxReach);

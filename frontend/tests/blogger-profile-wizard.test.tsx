@@ -5,7 +5,7 @@ import { ApiError } from "../src/api/client";
 import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({
-  createBloggerProfile: vi.fn(), deleteProfileImage: vi.fn(), getMyBloggerProfile: vi.fn(), updateBloggerProfile: vi.fn(), uploadProfileImage: vi.fn()
+  createBloggerProfile: vi.fn(), deleteProfileImage: vi.fn(), getCurrentPlatformUser: vi.fn(), getMyBloggerProfile: vi.fn(), updateBloggerProfile: vi.fn(), uploadProfileImage: vi.fn()
 }));
 const telegram = vi.hoisted(() => ({
   haptic: { selection: vi.fn(), success: vi.fn(), warning: vi.fn(), error: vi.fn() },
@@ -34,7 +34,6 @@ function renderCreate(onBackToRole = vi.fn()) {
 const continueLabel = () => translate("wizard.continue", undefined, "ru");
 
 async function completeBasic(user: ReturnType<typeof userEvent.setup>) {
-  fireEvent.change(screen.getByPlaceholderText("+998 90 123 45 67"), { target: { value: "+998 88 123 45 67" } });
   await waitFor(() => expect(screen.getByRole("button", { name: continueLabel() })).toBeEnabled());
   await user.click(screen.getByRole("button", { name: continueLabel() }));
 }
@@ -80,6 +79,7 @@ describe("Blogger profile wizard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.getMyBloggerProfile.mockRejectedValue(new Error("not found"));
+    api.getCurrentPlatformUser.mockResolvedValue({ verifiedPhone: "+998 88 197 29 29" });
     api.createBloggerProfile.mockResolvedValue({});
     api.updateBloggerProfile.mockResolvedValue({});
     api.uploadProfileImage.mockResolvedValue({ url: "https://cdn.example/avatar.png" });
@@ -95,10 +95,13 @@ describe("Blogger profile wizard", () => {
     expect(screen.getByDisplayValue("Madina")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(translate("form.blogger.lastNamePlaceholder", undefined, "ru"))).toHaveValue("");
     expect(document.querySelector(".wizard-screen__top-scrim")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
-    await user.click(screen.getByPlaceholderText("+998 90 123 45 67"));
+    // The phone is shown from Telegram, not typed.
+    expect(await screen.findByText("+998 88 197 29 29")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("+998 90 123 45 67")).not.toBeInTheDocument();
+    await user.clear(screen.getByDisplayValue("Madina"));
     await user.tab();
-    expect(screen.getByText(translate("form.validation.phone", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
+    expect(screen.getByText(translate("form.validation.name", undefined, "ru"))).toBeInTheDocument();
     expect(api.createBloggerProfile).not.toHaveBeenCalled();
   });
 
@@ -167,7 +170,7 @@ describe("Blogger profile wizard", () => {
     await user.click(screen.getByRole("button", { name: translate("wizard.createProfile", undefined, "ru") }));
     // Totals are derived: followers and reach add up, ER is weighted by each platform's followers.
     await waitFor(() => expect(api.createBloggerProfile).toHaveBeenCalledWith(expect.objectContaining({
-      name: "Madina", username: "@madina", phone: "+998 88 123 45 67", totalFollowers: 12000, averageReach: 26000, engagementRate: 5.08, storiesPrice: 250000, reelsPrice: 500000, barterEnabled: true,
+      name: "Madina", username: "@madina", phone: "+998 88 197 29 29", totalFollowers: 12000, averageReach: 26000, engagementRate: 5.08, storiesPrice: 250000, reelsPrice: 500000, barterEnabled: true,
       portfolioItems: [{ title: translate("form.blogger.portfolioTitle", undefined, "ru"), type: "IMAGE", url: "https://portfolio.example" }],
       platforms: [
         { type: "instagram", url: "https://instagram.com/madina_style", followers: 10000, averageReach: 25000, engagementRate: 5.5 },
@@ -295,7 +298,6 @@ describe("Blogger profile wizard", () => {
     const user = userEvent.setup();
     localStorage.setItem("bloggerbazar.language", "uz");
     renderCreate();
-    fireEvent.change(screen.getByPlaceholderText("+998 90 123 45 67"), { target: { value: "+998 88 123 45 67" } });
     await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "uz") }));
     expect(screen.getByText(translate("form.platformsTitle", undefined, "uz"))).toBeInTheDocument();
     expect(screen.getByText(translate("form.engagementRateHelper", undefined, "uz"))).toBeInTheDocument();

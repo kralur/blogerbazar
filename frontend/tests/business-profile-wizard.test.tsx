@@ -8,6 +8,7 @@ import { getKeyboardViewportState } from "../src/components/Wizard";
 const api = vi.hoisted(() => ({
   createBusinessProfile: vi.fn(),
   deleteProfileImage: vi.fn(),
+  getCurrentPlatformUser: vi.fn(),
   getMyBusinessProfile: vi.fn(),
   updateBusinessProfile: vi.fn(),
   uploadProfileImage: vi.fn()
@@ -44,13 +45,13 @@ async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
 
 async function completeStepTwo(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByPlaceholderText(translate("form.companyDescriptionPlaceholder", undefined, "ru")), "Beauty brand");
-  fireEvent.change(screen.getByPlaceholderText("+998 90 123 45 67"), { target: { value: "+998 90 123 45 67" } });
   await waitFor(() => expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeEnabled());
   await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
 }
 
 describe("Business profile wizard", () => {
   beforeEach(() => {
+    api.getCurrentPlatformUser.mockResolvedValue({ verifiedPhone: "+998 88 197 29 29" });
     vi.clearAllMocks();
     api.getMyBusinessProfile.mockRejectedValue(new Error("not found"));
     api.createBusinessProfile.mockResolvedValue({});
@@ -120,7 +121,7 @@ describe("Business profile wizard", () => {
       username: "@lumibeauty",
       city: "tashkent-city",
       description: "Beauty brand",
-      phone: "+998 90 123 45 67"
+      phone: "+998 88 197 29 29"
     })));
     await waitFor(() => expect(api.uploadProfileImage).toHaveBeenCalledWith("business", expect.any(File)));
     expect(callOrder).toEqual(["core", "media"]);

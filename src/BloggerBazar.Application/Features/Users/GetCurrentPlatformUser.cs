@@ -13,7 +13,8 @@ public sealed record CurrentPlatformUserDto(
     PlatformRole Role,
     MarketplaceRole? SelectedMarketplaceRole,
     bool IsBlocked,
-    string? PreferredLanguage = null);
+    string? PreferredLanguage = null,
+    string? VerifiedPhone = null);
 
 public sealed record GetCurrentPlatformUserCommand(long TelegramUserId, string FirstName, string? Username) : IRequest<CurrentPlatformUserDto>;
 
@@ -59,6 +60,6 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
         return ToDto(user);
     }
 
-    internal static CurrentPlatformUserDto ToDto(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.SelectedMarketplaceRole, user.IsBlocked, user.PreferredLanguage);
+    internal static CurrentPlatformUserDto ToDto(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.SelectedMarketplaceRole, user.IsBlocked, user.PreferredLanguage, user.VerifiedPhone);
     private static string? NormalizeUsername(string? username) => string.IsNullOrWhiteSpace(username) ? null : username.Trim().TrimStart('@');
 }

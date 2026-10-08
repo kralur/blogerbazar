@@ -5,6 +5,19 @@ namespace BloggerBazar.Application.Validation;
 public static partial class ContactValidation
 {
     public static bool IsUzbekPhone(string? value) => value is not null && UzbekPhone().IsMatch(value);
+
+    // Telegram sends a contact's number as digits, sometimes with "+". Uzbek numbers get the usual spacing;
+    // any other country is accepted as an international number (D41). Null when it is not a phone number.
+    public static string? NormalizeTelegramPhone(string? value)
+    {
+        var digits = new string((value ?? "").Where(char.IsAsciiDigit).ToArray());
+        if (digits.Length is < 7 or > 15) return null;
+        return digits.Length == 12 && digits.StartsWith("998", StringComparison.Ordinal)
+            ? $"+998 {digits[3..5]} {digits[5..8]} {digits[8..10]} {digits[10..12]}"
+            : $"+{digits}";
+    }
+
+    public static bool IsVerifiedPhone(string? value) => value is not null && NormalizeTelegramPhone(value) == value;
     public static bool IsTelegramUsername(string? value) => value is not null && TelegramUsername().IsMatch(value);
 
     // The handle shown as a contact comes only from Telegram's signed launch data, never from the form,

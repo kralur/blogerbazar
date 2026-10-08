@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { CategoryMultiSelect } from "../src/components/CategoryMultiSelect";
-import { I18nProvider } from "../src/i18n";
+import { categoryLabel, I18nProvider, translate } from "../src/i18n";
 
 vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => ({ haptic: { error: vi.fn() } }) }));
 
@@ -46,5 +46,22 @@ describe("CategoryMultiSelect", () => {
     const ui = readFileSync("src/components/ui.tsx", "utf8");
     expect(component).not.toMatch(/bg-blue|text-brand-blue|cyan/i);
     expect(ui).toContain("marketplace-chip--active");
+  });
+
+  it("adds a custom category only after text is typed, never a placeholder", async () => {
+    const user = userEvent.setup();
+    render(<I18nProvider><CategoryHarness /></I18nProvider>);
+
+    await user.click(screen.getByRole("button", { name: translate("categorySelect.other", undefined, "ru") }));
+    expect(screen.getByRole("status")).toHaveTextContent("");
+    expect(screen.queryByText("other")).not.toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText(translate("categorySelect.otherPlaceholder", undefined, "ru")), "Авто");
+    expect(screen.getByRole("status")).toHaveTextContent("other:Авто");
+  });
+
+  it("shows a legacy empty placeholder as Other", () => {
+    expect(categoryLabel("other:other", "ru")).toBe(translate("categorySelect.other", undefined, "ru"));
+    expect(categoryLabel("other:Психология", "ru")).toBe("Психология");
   });
 });

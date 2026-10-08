@@ -65,6 +65,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         user.HasKey(entity => entity.Id);
         user.Property(entity => entity.FirstName).HasMaxLength(128).IsRequired();
         user.Property(entity => entity.Username).HasMaxLength(64);
+        user.Property(entity => entity.VerifiedPhone).HasMaxLength(32);
         user.Property(entity => entity.Role).HasConversion<int>();
         user.Property(entity => entity.SelectedMarketplaceRole).HasConversion<int?>();
         user.Property(entity => entity.PreferredLanguage).HasMaxLength(2);

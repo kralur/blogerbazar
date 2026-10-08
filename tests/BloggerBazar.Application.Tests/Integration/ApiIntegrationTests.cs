@@ -54,6 +54,8 @@ public sealed class ApiIntegrationTests(BloggerBazarApiFactory factory) : IClass
     {
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new("tma", CreateInitData(900_002));
+        await client.GetAsync("/api/v1/users/me");
+        Assert.Equal(HttpStatusCode.OK, (await ShareContactAsync(client, 900_002, 900_002)).StatusCode);
         var payload = new
         {
             name = "Integration Coffee",
@@ -71,6 +73,26 @@ public sealed class ApiIntegrationTests(BloggerBazarApiFactory factory) : IClass
 
         Assert.Equal(HttpStatusCode.Created, create.StatusCode);
         Assert.Equal(HttpStatusCode.OK, getMine.StatusCode);
+        // The phone comes from Telegram, not from the form ("+998901234567" above is ignored).
+        var mine = await getMine.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("+998 88 197 29 29", mine.GetProperty("phone").GetString());
+    }
+
+    [IntegrationFact]
+    public async Task Profile_cannot_be_saved_without_a_phone_from_telegram_and_a_forwarded_contact_does_not_count()
+    {
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("tma", CreateInitData(900_004));
+        await client.GetAsync("/api/v1/users/me");
+        await ShareContactAsync(client, 900_004, contactOwnerId: 123);
+
+        var create = await client.PostAsJsonAsync("/api/v1/businesses", new { name = "No Phone", city = "tashkent", description = "Test", phone = "+998 90 123 45 67" });
+        var problem = await create.Content.ReadFromJsonAsync<JsonElement>();
+        var me = await client.GetFromJsonAsync<JsonElement>("/api/v1/users/me");
+
+        Assert.Equal(HttpStatusCode.Conflict, create.StatusCode);
+        Assert.Equal("phone_not_verified", problem.GetProperty("code").GetString());
+        Assert.Equal(JsonValueKind.Null, me.GetProperty("verifiedPhone").ValueKind);
     }
 
     [IntegrationFact]
@@ -78,6 +100,8 @@ public sealed class ApiIntegrationTests(BloggerBazarApiFactory factory) : IClass
     {
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new("tma", CreateInitData(900_003));
+        await client.GetAsync("/api/v1/users/me");
+        await ShareContactAsync(client, 900_003, 900_003);
 
         var response = await client.PostAsJsonAsync("/api/v1/businesses", new { name = "" });
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -85,6 +109,27 @@ public sealed class ApiIntegrationTests(BloggerBazarApiFactory factory) : IClass
         Assert.Equal((HttpStatusCode)422, response.StatusCode);
         Assert.Equal("validation_failed", problem.GetProperty("code").GetString());
         Assert.True(problem.TryGetProperty("errors", out _));
+    }
+
+    // What Telegram posts to the webhook when a user shares a contact; contactOwnerId != fromId is a forwarded card.
+    private static Task<HttpResponseMessage> ShareContactAsync(HttpClient client, long fromId, long contactOwnerId)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/webhooks/telegram")
+        {
+            Content = JsonContent.Create(new
+            {
+                update_id = fromId,
+                message = new
+                {
+                    message_id = 1,
+                    from = new { id = fromId, first_name = "Integration" },
+                    chat = new { id = fromId },
+                    contact = new { phone_number = "998881972929", user_id = contactOwnerId }
+                }
+            })
+        };
+        request.Headers.Add("X-Telegram-Bot-Api-Secret-Token", "integration-webhook-secret");
+        return client.SendAsync(request);
     }
 
     private static string CreateInitData(long telegramUserId)

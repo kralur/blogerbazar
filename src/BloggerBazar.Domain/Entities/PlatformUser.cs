@@ -24,6 +24,9 @@ public sealed class PlatformUser
     public PlatformRole Role { get; private set; }
     public MarketplaceRole? SelectedMarketplaceRole { get; private set; }
     public string? PreferredLanguage { get; private set; }
+    // A phone number Telegram itself delivered to the bot from this user; never typed into a form (D41).
+    public string? VerifiedPhone { get; private set; }
+    public DateTime? PhoneVerifiedAtUtc { get; private set; }
     public bool IsBlocked { get; private set; }
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAtUtc { get; private set; }
@@ -47,6 +50,14 @@ public sealed class PlatformUser
         if (!InterfaceLanguage.IsSupported(language)) throw new ArgumentException("The interface language is not supported.", nameof(language));
         PreferredLanguage = language;
         UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void VerifyPhone(string phone, DateTime utcNow)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) throw new ArgumentException("A verified phone is required.", nameof(phone));
+        VerifiedPhone = phone;
+        PhoneVerifiedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
     }
 
     public void SetBlocked(bool isBlocked) { IsBlocked = isBlocked; UpdatedAtUtc = DateTime.UtcNow; }

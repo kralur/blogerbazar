@@ -29,7 +29,7 @@ public sealed class UpdateBusinessProfileValidator : AbstractValidator<UpdateBus
         RuleFor(command => command.LogoUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.LogoUrl is not null);
         RuleFor(command => command.WebsiteUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.WebsiteUrl is not null);
         RuleFor(command => command.Description).NotEmpty().MaximumLength(1000);
-        RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsUzbekPhone);
+        RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsVerifiedPhone);
         RuleFor(command => command.Email).EmailAddress().MaximumLength(254).When(command => command.Email is not null);
     }
 }

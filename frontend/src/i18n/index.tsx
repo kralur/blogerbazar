@@ -56,7 +56,11 @@ const cityAliases: Record<string, string> = {
 };
 // "other:<text>" is a category the user typed in; an unknown key never reaches the screen as a raw key.
 export const categoryLabel = (value: string, language = currentLanguage()) => {
-  if (value.startsWith("other:")) return value.slice("other:".length).trim() || translate("common.notSpecified", undefined, language);
+  if (value.startsWith("other:")) {
+    // Older forms saved the placeholder "other:other" when the field was left empty: show it as "Other".
+    const text = value.slice("other:".length).trim();
+    return !text || text.toLowerCase() === "other" ? translate("categorySelect.other", undefined, language) : text;
+  }
   const key = `taxonomy.category.${categoryAliases[value.toLowerCase()] ?? value.toLowerCase()}`;
   const label = translate(key, undefined, language);
   return label === key ? translate("common.notSpecified", undefined, language) : label;

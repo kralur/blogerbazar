@@ -1478,3 +1478,4 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .telegram-handle-field__label { color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 700; }
 .telegram-handle-field__value { color: var(--bb-text); font-size: 1rem; font-weight: 800; overflow-wrap: anywhere; }
 .telegram-handle-field .wizard-field-helper { margin: 0; }
+.phone-verification__note { margin: 1rem 0 0; padding: .75rem .875rem; border: 1px solid var(--bb-border); border-radius: .875rem; background: var(--bb-surface-secondary); color: var(--bb-text); font-size: .875rem; line-height: 1.45; }

@@ -39,7 +39,7 @@ describe("FTUE navigation", () => {
     vi.clearAllMocks();
     window.location.hash = "#/";
     localStorage.setItem("bloggerbazar.onboarding.welcomeViewed", "true");
-    api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace" });
+    api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace", verifiedPhone: "+998 88 197 29 29" });
     api.getMyBrandFaceProfile.mockRejectedValue(new Error("not found"));
     api.selectMarketplaceRole.mockResolvedValue(undefined);
   });
@@ -75,7 +75,7 @@ describe("FTUE navigation", () => {
   });
 
   it("keeps one launch screen while the initial account lookup is pending", async () => {
-    let resolveUser: ((value: { selectedMarketplaceRole: string }) => void) | undefined;
+    let resolveUser: ((value: { selectedMarketplaceRole: string; verifiedPhone: string }) => void) | undefined;
     api.getCurrentPlatformUser.mockImplementation(() => new Promise((resolve) => { resolveUser = resolve; }));
     render(<I18nProvider><App /></I18nProvider>);
 
@@ -83,8 +83,18 @@ describe("FTUE navigation", () => {
     expect(screen.queryByText("Home screen")).not.toBeInTheDocument();
     expect(api.getCurrentPlatformUser).toHaveBeenCalledTimes(1);
 
-    resolveUser?.({ selectedMarketplaceRole: "BrandFace" });
+    resolveUser?.({ selectedMarketplaceRole: "BrandFace", verifiedPhone: "+998 88 197 29 29" });
     expect(await screen.findByRole("heading", { name: translate("onboarding.title", undefined, "ru") })).toBeInTheDocument();
+  });
+
+  it("asks everyone without a phone from Telegram to share it before choosing a role", async () => {
+    api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace", verifiedPhone: null });
+    localStorage.setItem("bloggerbazar.onboarding.completed", "true");
+    render(<I18nProvider><App /></I18nProvider>);
+
+    expect(await screen.findByRole("heading", { name: translate("phone.title", undefined, "ru") })).toBeInTheDocument();
+    expect(screen.queryByText("Home screen")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: translate("onboarding.title", undefined, "ru") })).not.toBeInTheDocument();
   });
 
   it("leaves launch for the safe Telegram authorization state after an initial API error", async () => {
