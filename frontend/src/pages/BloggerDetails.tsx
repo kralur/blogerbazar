@@ -140,7 +140,7 @@ function PlatformStats({ platforms, total }: { platforms: PlatformDetails[]; tot
       const details = [platform.averageReach ? t("details.platformReach", { value: formatCompactNumber(platform.averageReach) }) : null, platform.engagementRate ? t("details.platformEr", { value: formatPercentage(platform.engagementRate) }) : null].filter(Boolean).join(" · ");
       const profile = platform.url ? platformProfileLink(platform.type, platform.url) : null;
       return <div className="platform-stats__row" key={platform.id}>
-        <div className="min-w-0"><p className="platform-stats__name">{platformLabel(platform.type, t)}{profile && <a aria-label={t("details.openPlatformProfile", { platform: platformLabel(platform.type, t), handle: profile.handle })} className="platform-stats__handle" href={profile.href} onClick={(event) => { event.preventDefault(); openLink(profile.href); }}>{profile.handle}</a>}</p>{details && <p className="platform-stats__details">{details}</p>}</div>
+        <div className="min-w-0"><p className="platform-stats__name"><Icon className="platform-stats__icon" name={platform.type.toLowerCase()} />{platformLabel(platform.type, t)}{profile && <a aria-label={t("details.openPlatformProfile", { platform: platformLabel(platform.type, t), handle: profile.handle })} className="platform-stats__handle" href={profile.href} onClick={(event) => { event.preventDefault(); openLink(profile.href); }}>{profile.handle}</a>}</p>{details && <p className="platform-stats__details">{details}</p>}</div>
         <strong>{formatCompactNumber(platform.followers)}</strong>
       </div>;
     })}

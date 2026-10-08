@@ -4,7 +4,7 @@ import { contactUrl, copyText, displayContact, type ContactItem } from "../lib/c
 import { BottomSheet, Button, Card, Icon, Toast } from "./ui";
 import { useTelegram } from "../telegram/TelegramProvider";
 
-const iconByKind: Record<ContactItem["kind"], string> = { phone: "phone", telegram: "send", instagram: "link", tiktok: "link", youtube: "link", website: "link", email: "mail" };
+const iconByKind: Record<ContactItem["kind"], string> = { phone: "phone", telegram: "send", instagram: "instagram", tiktok: "tiktok", youtube: "youtube", website: "link", email: "mail" };
 
 export function hasContacts(items: ContactItem[]) {
   return items.some((item) => Boolean(item.value.trim()));

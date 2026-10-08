@@ -12,6 +12,7 @@ import { getHistoryOrigin } from "../navigation/hashNavigation";
 import { getCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
 import { removeCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
+import { normalizeRegion } from "../lib/taxonomy";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 type FormValues = {
@@ -32,7 +33,8 @@ function toValues(campaign: MyCampaignDetails): FormValues {
   return {
     title: campaign.title,
     description: campaign.description,
-    city: campaign.city ?? "",
+    // Older campaigns store a city name or alias; the select only knows region keys.
+    city: normalizeRegion(campaign.city),
     categories: campaign.categories,
     requirements: campaign.requirements.join(", "),
     budgetFrom: campaign.minBudget == null ? "" : formatNumericInput(String(campaign.minBudget)),
@@ -209,14 +211,14 @@ export function MyCampaignEdit({ id }: { id: string }) {
   return <div className="campaign-management-screen my-campaign-edit screen screen--with-nav">
     <PageHeader back={{ href: `#/my-campaign/${id}`, label: t("myCampaignEdit.backAria") }} eyebrow={t("myCampaignEdit.eyebrow")} title={t("myCampaignEdit.title")} />
     <form className="my-campaign-edit__form" onSubmit={onSubmit} noValidate>
-      <Input error={fieldErrors.title} label={t("campaigns.title")} maxLength={160} onChange={(event) => setValue("title", event.target.value)} required value={values.title} />
+      <Input error={fieldErrors.title} label={t("campaigns.name")} maxLength={160} onChange={(event) => setValue("title", event.target.value)} required value={values.title} />
       <Textarea error={fieldErrors.description} label={t("myCampaignDetails.description")} maxLength={3000} onChange={(event) => setValue("description", event.target.value)} required value={values.description} />
       <RegionSelect error={fieldErrors.city} onChange={(event) => setValue("city", event.target.value)} value={values.city} />
       <CategoryMultiSelect error={fieldErrors.categories} onChange={(categories) => setValue("categories", categories)} required value={values.categories} />
       <Input error={fieldErrors.requirements} label={t("common.requirements")} maxLength={3000} onChange={(event) => setValue("requirements", event.target.value)} placeholder={t("myCampaignEdit.requirementsPlaceholder")} value={values.requirements} />
       <div className="my-campaign-edit__budget-grid">
-        <Input error={fieldErrors.budgetFrom} inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setValue("budgetFrom", formatNumericInput(event.target.value))} suffix={t("currency.uzs")} value={values.budgetFrom} />
-        <Input error={fieldErrors.budgetTo} inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setValue("budgetTo", formatNumericInput(event.target.value))} suffix={t("currency.uzs")} value={values.budgetTo} />
+        <Input error={fieldErrors.budgetFrom} inputMode="numeric" label={t("campaigns.minBudget")} onChange={(event) => setValue("budgetFrom", formatNumericInput(event.target.value))} suffix={t("currency.uzs")} value={values.budgetFrom} />
+        <Input error={fieldErrors.budgetTo} inputMode="numeric" label={t("campaigns.maxBudget")} onChange={(event) => setValue("budgetTo", formatNumericInput(event.target.value))} suffix={t("currency.uzs")} value={values.budgetTo} />
       </div>
       <Input error={fieldErrors.deadline} label={t("campaigns.deadline")} min={localDay()} onChange={(event) => setValue("deadline", event.target.value)} type="date" value={values.deadline} />
       <Button aria-busy={submitting} className="my-campaign-edit__submit" disabled={submitting || !dirty} type="submit">{submitting ? t("myCampaignEdit.saving") : t("myCampaignEdit.save")}</Button>

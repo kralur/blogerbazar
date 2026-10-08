@@ -67,6 +67,18 @@ describe("Profile dashboard account flows", () => {
     sessionStorage.clear();
   });
 
+  it("links an approved profile to its public page and hides the link while it waits for review", async () => {
+    api.getMyBusinessProfile.mockResolvedValue({ id: "business-a", name: "Lumi Beauty", city: "tashkent-city", moderationStatus: 1 });
+    const { unmount } = render(<I18nProvider><ProfileDashboard /></I18nProvider>);
+    expect(await screen.findByRole("link", { name: translate("profile.viewPublic", undefined, "ru") })).toHaveAttribute("href", "#/company/business-a");
+    unmount();
+
+    api.getMyBusinessProfile.mockResolvedValue({ id: "business-a", name: "Lumi Beauty", city: "tashkent-city", moderationStatus: 0 });
+    renderDashboard();
+    await screen.findByText("Lumi Beauty");
+    expect(screen.queryByRole("link", { name: translate("profile.viewPublic", undefined, "ru") })).not.toBeInTheDocument();
+  });
+
   it("groups shortcuts and links to settings instead of holding the language switcher", async () => {
     api.getMyCampaignApplications.mockResolvedValue([{ id: "a1" }]);
     api.getMyDeals.mockResolvedValue([{ id: "d1" }, { id: "d2" }]);

@@ -41,7 +41,13 @@ export function Icon({ name, className, filled = false }: { name: string; classN
     back: <path d="m15 18-6-6 6-6" />,
     dots: <path d="M12 12h.01M19 12h.01M5 12h.01" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
-    calendar: <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+    calendar: <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />,
+    // Simple line marks for the social platforms, drawn in the text color like every other icon.
+    instagram: <path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm9 9.4A4 4 0 1 1 12.6 8 4 4 0 0 1 16 11.4ZM17.5 6.5h.01" />,
+    telegram: <path d="m22 3-20 7.5 6.5 2.5L18 6l-7.5 8.5 7 6.5L22 3Z" />,
+    tiktok: <path d="M14 3v12.5a3.5 3.5 0 1 1-3.5-3.5M14 3a5 5 0 0 0 5 5" />,
+    youtube: <path d="M2.5 17a24 24 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.6 49.6 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24 24 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.6 49.6 0 0 1-16.2 0A2 2 0 0 1 2.5 17Zm7.5-2 5-3-5-3v6Z" />,
+    threads: <path d="M16.5 11.5c-.5-3-2.5-4-4.5-4-2.5 0-4 1.6-4 1.6M16.5 11.5c0 3-1.8 4.5-4.2 4.5-1.8 0-3.1-1-3.1-2.4 0-1.6 1.6-2.6 4-2.6 3.8 0 6.3 1.8 6.3 4.5 0 3-3 5.5-7.5 5.5C7 21 3.5 17.5 3.5 12S7 3 12 3c4 0 6.5 2 7.5 5" />
   };
 
   return (

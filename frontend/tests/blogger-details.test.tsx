@@ -113,6 +113,7 @@ describe("Blogger details", () => {
     const link = await screen.findByRole("link", { name: translate("details.openPlatformProfile", { platform: "Instagram", handle: "@madina_k" }, "ru") });
     expect(link).toHaveAttribute("href", "https://instagram.com/madina_k");
     expect(link).toHaveTextContent("@madina_k");
+    expect(document.querySelector(".platform-stats__icon")).toBeInTheDocument();
     // The Telegram handle is rebuilt as a plain t.me link, so the hidden credentials never reach the page.
     expect(screen.getByRole("link", { name: /@evil/ })).toHaveAttribute("href", "https://t.me/evil");
   });

@@ -13,7 +13,8 @@ public sealed class ProfileMediaOptions
     public string Region { get; init; } = "auto";
     public bool ForcePathStyle { get; init; } = true;
     public long MaxFileSizeBytes { get; init; } = DefaultMaxFileSizeBytes;
-    public int MaxImageDimension { get; init; } = 1600;
+    // Uploads are avatars and logos, shown at most 128 px wide; 512 px stays sharp at 3x and keeps downscaling light.
+    public int MaxImageDimension { get; init; } = 512;
     public long MaxImagePixels { get; init; } = 25_000_000;
     public int WebpQuality { get; init; } = 85;
 

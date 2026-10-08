@@ -571,6 +571,10 @@
   .wizard-screen .wizard-region-select select:focus { border-color: var(--bb-accent) !important; box-shadow: 0 0 0 3px var(--bb-accent-subtle) !important; }
   .wizard-screen .wizard-input[aria-invalid="true"],
   .wizard-screen .wizard-region-select select[aria-invalid="true"] { border-color: var(--bb-error) !important; }
+  /* Any field with a unit ("so‘m", "%") inside the box, not only the wizard forms. */
+  .input-control { position: relative; display: block; min-width: 0; }
+  .input-control__input--with-suffix { padding-right: 4.5rem !important; }
+  .input-control__suffix { position: absolute; top: 50%; right: 1rem; max-width: 4rem; overflow: hidden; color: var(--bb-text-secondary); font-size: .875rem; font-weight: 700; line-height: 1; pointer-events: none; text-overflow: ellipsis; transform: translateY(-50%); white-space: nowrap; }
   .wizard-screen .input-control { position: relative; display: block; min-width: 0; }
   .wizard-screen .input-control__input--with-suffix { width: 100%; padding-right: 5.5rem !important; }
   .wizard-screen .input-control__suffix { position: absolute; top: 50%; right: 1rem; max-width: 4rem; overflow: hidden; color: var(--bb-text-secondary); font-size: .875rem; font-weight: 700; line-height: 1; pointer-events: none; text-overflow: ellipsis; transform: translateY(-50%); white-space: nowrap; }
@@ -947,16 +951,17 @@
     transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
   }
   .bottom-nav__icon svg { width: 1.125rem; height: 1.125rem; }
+  /* Wrap only between words: "Kampaniyalar" on a 360 px phone must not split into "Kampaniyal / ar". */
   .bottom-nav__label {
-    display: -webkit-box;
-    min-width: 0;
+    display: block;
+    max-width: 100%;
     min-height: 2.1em;
-    overflow: hidden;
-    padding: 0 .0625rem;
+    padding: 0;
+    font-size: clamp(.5625rem, 2.6vw, .625rem);
+    letter-spacing: -.02em;
     text-align: center;
-    overflow-wrap: anywhere;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    overflow-wrap: normal;
+    word-break: keep-all;
   }
   .bottom-nav__item--active { color: var(--bb-text); font-weight: 800; }
   .bottom-nav__item--active .bottom-nav__icon { border-color: var(--bb-accent); background: var(--bb-accent-subtle); color: var(--bb-text); }
@@ -1223,6 +1228,9 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .campaign-hero__title { margin: .75rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: 1.375rem; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; }
 .profile-role-card { border-color: var(--bb-border); background: var(--bb-surface); }
 .profile-role-card--selected { border-color: var(--bb-text); background: var(--bb-accent-subtle); box-shadow: inset 0 0 0 1px var(--bb-text); }
+/* No profile for this role yet: a quiet dashed card, so created roles stand out at a glance. */
+.profile-role-card--missing:not(.profile-role-card--selected) { border-style: dashed; background: transparent; color: var(--bb-text-secondary); }
+.profile-role-card--missing:not(.profile-role-card--selected) svg { color: var(--bb-text-secondary); opacity: .7; }
 .choice-selected { border-color: var(--bb-text) !important; background: var(--bb-accent-subtle); color: var(--bb-text); box-shadow: inset 0 0 0 1px var(--bb-text); }
 /* Detail pages (R3): key facts as tiles, neutral chips, one section rhythm. */
 .fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
@@ -1235,8 +1243,7 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .chip-list { display: flex; flex-wrap: wrap; gap: .375rem; margin: 0; padding: 0; list-style: none; }
 .chip-list li { padding: .375rem .625rem; border: 1px solid var(--bb-border); border-radius: .625rem; background: var(--bb-surface-secondary); color: var(--bb-text); font-size: .8125rem; font-weight: 700; }
 .detail-section { margin-top: 1.5rem; }
-.reviews-heading { display: flex; min-width: 0; align-items: baseline; gap: .5rem; }
-.reviews-heading__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reviews-heading { display: flex; min-width: 0; flex-wrap: wrap; align-items: baseline; column-gap: .5rem; row-gap: 0; }
 .reviews-heading__summary { flex: 0 0 auto; color: var(--bb-text-secondary); font-size: .875rem; font-weight: 700; white-space: nowrap; }
 .reviews-heading__all { flex: 0 0 auto; display: inline-flex; min-height: 2.75rem; align-items: center; color: var(--bb-text); font-size: .8125rem; font-weight: 800; text-decoration: underline; text-underline-offset: .2em; }
 /* Reviews scroll sideways: same-size cards, three lines of text each; the full text is on the "Show all" screen. */
@@ -1498,6 +1505,9 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .platform-stats__row strong { flex: 0 0 auto; color: var(--bb-text); font-size: 1rem; font-weight: 800; }
 .platform-stats__name { margin: 0; color: var(--bb-text); font-size: .9375rem; font-weight: 750; }
 .platform-stats__name { display: flex; min-width: 0; align-items: baseline; gap: .375rem; }
+.profile-public-link { display: flex; min-height: 2.75rem; margin-top: .5rem; align-items: center; justify-content: center; border: 1px solid var(--bb-border); border-radius: .875rem; color: var(--bb-text); font-size: .875rem; font-weight: 800; text-decoration: none; }
+.profile-public-link:active { background: var(--bb-surface-secondary); }
+.platform-stats__icon { flex: 0 0 auto; width: 1rem; height: 1rem; align-self: center; }
 .platform-stats__handle { overflow: hidden; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 650; text-decoration: underline; text-decoration-color: var(--bb-border-strong, var(--bb-border)); text-underline-offset: 2px; text-overflow: ellipsis; white-space: nowrap; }
 .platform-stats__handle:hover { color: var(--bb-text); }
 .platform-stats__handle:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; border-radius: .25rem; }
