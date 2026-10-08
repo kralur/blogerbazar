@@ -48,8 +48,9 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(100);
+        RuleFor(command => command.LastName).MaximumLength(100).When(command => command.LastName is not null);
         RuleFor(command => command.Username).Must(ContactValidation.IsTelegramUsername).When(command => command.Username is not null);
-        RuleFor(command => command.City).NotEmpty().MaximumLength(80);
+        RuleFor(command => command.City).NotEmpty().MaximumLength(80).Must(Regions.IsKnown);
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);
         RuleForEach(command => command.Categories).NotEmpty().MaximumLength(50);
         RuleFor(command => command.Bio).MaximumLength(500).When(command => command.Bio is not null);

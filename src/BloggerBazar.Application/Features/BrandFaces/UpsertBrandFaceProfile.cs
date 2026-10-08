@@ -29,7 +29,7 @@ public sealed class UpsertBrandFaceProfileValidator : AbstractValidator<UpsertBr
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(100);
-        RuleFor(command => command.City).NotEmpty().MaximumLength(80);
+        RuleFor(command => command.City).NotEmpty().MaximumLength(80).Must(Regions.IsKnown);
         RuleFor(command => command.Age).InclusiveBetween(13, 100).When(command => command.Age.HasValue);
         RuleFor(command => command.Gender).MaximumLength(32).When(command => command.Gender is not null);
         RuleFor(command => command.Languages).NotEmpty().Must(items => items.Count <= 5);

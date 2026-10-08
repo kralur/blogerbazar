@@ -1,6 +1,7 @@
 using BloggerBazar.Application.Validation;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -16,7 +17,7 @@ public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCo
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Title).Must(value => !string.IsNullOrWhiteSpace(value)).MaximumLength(160);
         RuleFor(command => command.Description).Must(value => !string.IsNullOrWhiteSpace(value)).MaximumLength(3000);
-        RuleFor(command => command.City).MaximumLength(80).When(command => command.City is not null);
+        RuleFor(command => command.City).MaximumLength(80).Must(Regions.IsKnown).When(command => !string.IsNullOrWhiteSpace(command.City));
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);
         RuleForEach(command => command.Categories).Must(category => !string.IsNullOrWhiteSpace(category)).MaximumLength(50);
         RuleFor(command => command.Requirements).Must(requirements => requirements is null || requirements.Count <= 10);
@@ -36,6 +37,9 @@ public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses,
     {
         var business = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
             ?? throw new InvalidOperationException("Create a business profile before publishing a campaign.");
+        // Keeps one business from flooding the catalog; real businesses create a handful a week.
+        if (await campaigns.CountCreatedSinceAsync(business.Id, DateTime.UtcNow.AddDays(-1), cancellationToken) >= DailyLimit)
+            throw new BusinessRuleConflictException(DailyLimitCode, "Daily campaign limit reached.");
         var campaign = Campaign.Create(business.Id, command.Title.Trim(), command.Description.Trim(), command.Categories.Select(category => category.Trim()).ToArray(), command.Requirements?.Select(requirement => requirement.Trim()).ToArray(), command.BudgetFrom, command.BudgetTo, NormalizeOptional(command.City), command.Deadline?.ToUniversalTime());
         if (command.PublishImmediately)
         {
@@ -47,6 +51,9 @@ public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses,
         if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
         return CampaignDto.From(campaign, business.Name);
     }
+
+    internal const int DailyLimit = 10;
+    internal const string DailyLimitCode = "campaign_daily_limit";
 
     private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

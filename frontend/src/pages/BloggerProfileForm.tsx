@@ -42,6 +42,8 @@ const stepFields: Record<Exclude<Step, 4>, ErrorKey[]> = {
 
 const handlePatterns: Record<Exclude<PlatformKind, "youtube">, RegExp> = { instagram: /^@?[A-Za-z0-9._]{1,30}$/, tiktok: /^@?[A-Za-z0-9._]{1,30}$/, telegram: /^@?[A-Za-z0-9_]{5,32}$/ };
 
+const erPattern = /^\d{1,3}([.,]\d{1,2})?$/;
+
 function filledPlatforms(form: BloggerForm) {
   return platformKinds.filter((kind) => form[kind].trim());
 }
@@ -78,8 +80,11 @@ function validate(form: BloggerForm, categories: string[], t: (key: string) => s
     if (followers <= 0) errors[followersField(kind)] = t("form.validation.followers");
     else if (followers > maxFollowers) errors[followersField(kind)] = t("form.validation.followersTooMany");
     if (normalizeNumericInput(form[reachField(kind)]) <= 0) errors[reachField(kind)] = t("form.validation.reach");
-    const engagementRate = normalizeDecimalInput(form[erField(kind)]);
-    if (!Number.isFinite(engagementRate) || engagementRate < 0.1 || engagementRate > 100) errors[erField(kind)] = t("form.validation.er");
+    const rawEr = form[erField(kind)].trim();
+    const engagementRate = normalizeDecimalInput(rawEr);
+    // "5,5,5" or "1e3" must not quietly become 5.55 or 13.
+    if (rawEr && !erPattern.test(rawEr)) errors[erField(kind)] = t("form.validation.erFormat");
+    else if (!Number.isFinite(engagementRate) || engagementRate < 0.1 || engagementRate > 100) errors[erField(kind)] = t("form.validation.er");
   }
   if (normalizeNumericInput(form.storiesPrice) <= 0) errors.storiesPrice = t("form.validation.stories");
   if (normalizeNumericInput(form.reelsPrice) <= 0) errors.reelsPrice = t("form.validation.reels");
@@ -239,7 +244,8 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   const blur = (field: ErrorKey) => () => {
     setTouched((current) => ({ ...current, [field]: true }));
     if (field === "portfolioUrl" || field === "youtube") setForm((current) => ({ ...current, [field]: normalizeWebsite(current[field]) }));
-    if (field.endsWith("Er")) setForm((current) => ({ ...current, [field]: formatDecimalInput(current[field as Field]) }));
+    // Only a well-formed ER is tidied up; anything else stays as typed so its error is visible.
+    if (field.endsWith("Er")) setForm((current) => erPattern.test(current[field as Field].trim()) ? { ...current, [field]: formatDecimalInput(current[field as Field]) } : current);
   };
 
   const markStepTouched = useCallback((currentStep: Exclude<Step, 4>) => {

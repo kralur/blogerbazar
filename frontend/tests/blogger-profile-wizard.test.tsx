@@ -198,6 +198,19 @@ describe("Blogger profile wizard", () => {
     expect(document.querySelectorAll(".input-control__input--with-suffix")).toHaveLength(4);
   });
 
+  it("rejects ER garbage instead of reading 5,5,5 as 5.55", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await completeBasic(user);
+    fillAudience();
+    const er = screen.getByDisplayValue("5.5");
+    fireEvent.change(er, { target: { value: "5,5,5" } });
+    fireEvent.blur(er);
+
+    expect(await screen.findByText(translate("form.validation.erFormat", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
+  });
+
   it("accepts a comma or dot ER value, submits numeric 5.5 and localizes the Review percentage", async () => {
     const user = userEvent.setup();
     renderCreate();

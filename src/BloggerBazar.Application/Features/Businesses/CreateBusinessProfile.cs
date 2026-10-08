@@ -17,7 +17,7 @@ public sealed class CreateBusinessProfileValidator : AbstractValidator<CreateBus
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(150);
         RuleFor(command => command.Username).Must(ContactValidation.IsTelegramUsername).When(command => command.Username is not null);
-        RuleFor(command => command.City).NotEmpty().MaximumLength(80);
+        RuleFor(command => command.City).NotEmpty().MaximumLength(80).Must(Regions.IsKnown);
         RuleFor(command => command.LogoUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.LogoUrl is not null);
         RuleFor(command => command.WebsiteUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.WebsiteUrl is not null);
         RuleFor(command => command.Description).NotEmpty().MaximumLength(1000);

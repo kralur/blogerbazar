@@ -71,12 +71,15 @@ public sealed class TelegramPaymentsWebhookController(
         if (update.Message is { Contact: { } contact, From: { } contactOwner, Chat: { } contactChat })
         {
             // Only a contact the sender shared about themselves proves the number; a forwarded card proves nothing.
-            var verifiedPhone = contact.UserId == contactOwner.Id
+            var ownContact = contact.UserId == contactOwner.Id;
+            var verifiedPhone = ownContact
                 ? await mediator.Send(new VerifyTelegramPhoneCommand(contactOwner.Id, contactOwner.FirstName ?? "", contactOwner.Username, contact.PhoneNumber), cancellationToken)
                 : null;
-            await BestEffortAsync(() => verifiedPhone is null
-                ? botClient.SendPhoneRequestAsync(contactChat.Id, true, cancellationToken)
-                : botClient.SendPhoneVerifiedAsync(contactChat.Id, verifiedPhone, cancellationToken), contactChat.Id);
+            await BestEffortAsync(() => verifiedPhone is not null
+                ? botClient.SendPhoneVerifiedAsync(contactChat.Id, verifiedPhone, cancellationToken)
+                : ownContact
+                    ? botClient.SendPhoneNotSavedAsync(contactChat.Id, cancellationToken)
+                    : botClient.SendPhoneRequestAsync(contactChat.Id, true, cancellationToken), contactChat.Id);
             return Ok();
         }
 

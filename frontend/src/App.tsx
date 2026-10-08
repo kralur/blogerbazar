@@ -2,6 +2,7 @@ import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, updateInterfaceLanguage, type MarketplaceRole } from "./api/marketplace";
 import { useI18n } from "./i18n";
 import { PullToRefresh } from "./components/PullToRefresh";
+import { SessionExpiredNotice } from "./components/SessionExpiredNotice";
 import { ActionCountsProvider } from "./features/actionCounts/ActionCountsProvider";
 import { requestScreenRefresh } from "./hooks/useScreenRefresh";
 import { LoadingState } from "./components/ui";
@@ -272,7 +273,7 @@ export function App() {
 
   if (!initialDestinationResolved) return <LaunchScreen />;
 
-  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" /><PullToRefresh enabled={onboardingStep === "complete"} /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
+  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" /><PullToRefresh enabled={onboardingStep === "complete"} /><SessionExpiredNotice /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome key={selectedRole ?? "none"} role={selectedRole} /></RootScreenVisibility>}
       {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={handleMarketplaceRoleSelected} /></RootScreenVisibility>}

@@ -39,7 +39,7 @@ export function getApiErrorMessage(error: unknown, fallback: string, options?: {
   return error.message || fallback;
 }
 
-const businessConflictCodes = new Set(["offer_daily_limit", "offer_already_active", "campaign_expired", "campaign_has_applications", "favorite_own_profile", "phone_not_verified"]);
+const businessConflictCodes = new Set(["offer_daily_limit", "offer_already_active", "campaign_expired", "campaign_has_applications", "favorite_own_profile", "phone_not_verified", "campaign_daily_limit"]);
 
 function friendlyError(status: number, code?: string) {
   const normalizedCode = code?.toLowerCase();
@@ -48,7 +48,8 @@ function friendlyError(status: number, code?: string) {
   if (normalizedCode === "payment_provider_unavailable") return translate("error.payment_provider_unavailable");
   if (normalizedCode === "profile_media_unavailable") return translate("error.profile_media_unavailable");
   if (normalizedCode === "invalid_profile_media") return translate("error.invalid_profile_media");
-  if (status === 401 || status === 403) return translate("error.access_denied");
+  if (status === 401) return translate("error.session_expired");
+  if (status === 403) return translate("error.access_denied");
   if (status === 404) return translate("error.not_found");
   if (status === 409) return translate("error.conflict");
   if (status >= 500) return translate("error.server");
@@ -70,6 +71,9 @@ function authHeaders(options?: ApiOptions) {
   return headers;
 }
 
+// Telegram's signed launch data is valid for an hour; after that every call is 401 until the app is reopened.
+export const sessionExpiredEvent = "bloggerbazar:session-expired";
+
 export async function api<T>(path: string, options?: ApiOptions): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -78,6 +82,7 @@ export async function api<T>(path: string, options?: ApiOptions): Promise<T> {
 
   const data = await response.json().catch(() => null) as ProblemDetailsPayload | null;
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") window.dispatchEvent(new Event(sessionExpiredEvent));
     throw new ApiError(response.status, data?.code, Object.keys(data?.errors ?? {}));
   }
 

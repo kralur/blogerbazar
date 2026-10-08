@@ -24,6 +24,9 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
     internal static readonly BotText PhoneRejectedText = new(
         "Нужен ваш собственный номер. Нажмите кнопку ниже, а не отправляйте чужой контакт.",
         "O‘zingizning raqamingiz kerak. Boshqa kontaktni yubormang, quyidagi tugmani bosing.");
+    internal static readonly BotText PhoneNotSavedText = new(
+        "Не получилось сохранить этот номер. Если вы удаляли аккаунт, откройте приложение заново и попробуйте ещё раз.",
+        "Bu raqamni saqlab bo‘lmadi. Agar akkauntni o‘chirgan bo‘lsangiz, ilovani qayta oching va yana urinib ko‘ring.");
     internal static readonly BotText ShareButton = new("📱 Поделиться номером", "📱 Raqamni ulashish");
 
     internal static BotText PhoneVerifiedText(string phone) => new(
@@ -82,6 +85,12 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
     {
         var language = await LanguageOfAsync(chatId, cancellationToken);
         await SendMessageAsync(new { chat_id = chatId, text = PhoneVerifiedText(phone).For(language), reply_markup = new { remove_keyboard = true } }, cancellationToken);
+    }
+
+    public async Task SendPhoneNotSavedAsync(long chatId, CancellationToken cancellationToken)
+    {
+        var language = await LanguageOfAsync(chatId, cancellationToken);
+        await SendMessageAsync(new { chat_id = chatId, text = PhoneNotSavedText.For(language), reply_markup = new { remove_keyboard = true } }, cancellationToken);
     }
 
     private async Task SendMessageAsync(object payload, CancellationToken cancellationToken)

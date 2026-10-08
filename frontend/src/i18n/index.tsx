@@ -65,7 +65,12 @@ export const categoryLabel = (value: string, language = currentLanguage()) => {
   const label = translate(key, undefined, language);
   return label === key ? translate("common.notSpecified", undefined, language) : label;
 };
-export const cityLabel = (value: string, language = currentLanguage()) => translate(`taxonomy.city.${cityAliases[value.toLowerCase()] ?? value.toLowerCase()}`, undefined, language);
+// An unknown city (older data or a direct API call) never reaches the screen as a raw key.
+export const cityLabel = (value: string, language = currentLanguage()) => {
+  const key = `taxonomy.city.${cityAliases[value.toLowerCase()] ?? value.toLowerCase()}`;
+  const label = translate(key, undefined, language);
+  return label === key ? translate("common.notSpecified", undefined, language) : label;
+};
 
 type I18nContextValue = { language: Language; setLanguage: (language: Language) => void; t: (key: string, values?: Values) => string };
 const I18nContext = createContext<I18nContextValue | null>(null);

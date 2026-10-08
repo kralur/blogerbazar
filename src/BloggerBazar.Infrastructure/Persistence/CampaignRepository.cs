@@ -44,5 +44,8 @@ internal sealed class CampaignRepository(BloggerBazarDbContext dbContext) : ICam
             .Where(campaign => campaign.Id == id && campaign.BusinessId == businessId && !campaign.Applications.Any())
             .ExecuteDeleteAsync(cancellationToken) == 1;
 
+    public Task<int> CountCreatedSinceAsync(Guid businessId, DateTime sinceUtc, CancellationToken cancellationToken) =>
+        dbContext.Campaigns.CountAsync(campaign => campaign.BusinessId == businessId && campaign.CreatedAtUtc >= sinceUtc, cancellationToken);
+
     public async Task AddAsync(Campaign campaign, CancellationToken cancellationToken) => await dbContext.Campaigns.AddAsync(campaign, cancellationToken);
 }

@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Domain.Entities;
 
@@ -33,6 +34,20 @@ public sealed class CreateCampaignHandlerTests
         Assert.Contains("business profile", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task Stops_a_business_after_ten_campaigns_a_day()
+    {
+        var business = BusinessProfile.Create(123, "Lumi Beauty", "Ташкент");
+        var campaigns = new InMemoryCampaignRepository();
+        var handler = new CreateCampaignHandler(new InMemoryBusinessRepository(business), campaigns, new SpyUnitOfWork());
+        for (var index = 0; index < 10; index++) await handler.Handle(CreateCommand(), CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(CreateCommand(), CancellationToken.None));
+
+        Assert.Equal("campaign_daily_limit", exception.Code);
+        Assert.Equal(10, campaigns.Campaigns.Count);
+    }
+
     private static CreateCampaignCommand CreateCommand() => new(123, "Skincare launch", "Ищем beauty-блогеров для Reels и Stories.", "Ташкент", ["Красота", "Lifestyle"], ["Нативная интеграция"], 700000, 2400000, null, true);
 
     private sealed class InMemoryBusinessRepository(params BusinessProfile[] profiles) : IBusinessProfileRepository
@@ -63,6 +78,8 @@ public sealed class CreateCampaignHandlerTests
         }
 
         public Task<Campaign?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(Campaigns.SingleOrDefault(campaign => campaign.Id == id));
+        public Task<int> CountCreatedSinceAsync(Guid businessId, DateTime sinceUtc, CancellationToken cancellationToken) =>
+            Task.FromResult(Campaigns.Count(campaign => campaign.BusinessId == businessId && campaign.CreatedAtUtc >= sinceUtc));
         public Task<Campaign?> GetByIdForBusinessAsync(Guid id, Guid businessId, CancellationToken cancellationToken) => Task.FromResult(Campaigns.SingleOrDefault(campaign => campaign.Id == id && campaign.BusinessId == businessId));
 
         public Task<IReadOnlyList<Campaign>> SearchPublishedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken) =>

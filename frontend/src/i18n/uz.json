@@ -620,4 +620,7 @@
   ,"phone.missing": "Raqam tasdiqlanmagan"
   ,"phone.changeHint": "Telegram’ingizdan. O‘zgartirish: bot chatida /phone buyrug‘i."
   ,"error.phone_not_verified": "Avval Telegram’dagi raqamni tasdiqlang: bot chatida /phone buyrug‘i."
+  ,"error.session_expired": "Sessiya eskirdi. Ilovani yopib, qayta oching."
+  ,"error.campaign_daily_limit": "Bugun kampaniyalar soni chegarasiga yetdingiz. Ertaga urinib ko‘ring."
+  ,"form.validation.erFormat": "ER’ni raqam bilan kiriting, masalan 5,5"
 }

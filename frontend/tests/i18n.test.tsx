@@ -44,4 +44,10 @@ describe("category labels", () => {
     expect(categoryLabel("unknown-category", "ru")).toBe(translate("common.notSpecified", undefined, "ru"));
     expect(categoryLabel("beauty", "ru")).toBe(translate("taxonomy.category.beauty", undefined, "ru"));
   });
+
+  it("shows an unknown city as not specified instead of a raw key", async () => {
+    const { cityLabel, translate } = await import("../src/i18n");
+    expect(cityLabel("mars", "ru")).toBe(translate("common.notSpecified", undefined, "ru"));
+    expect(cityLabel("samarkand", "ru")).toBe(translate("taxonomy.city.samarkand", undefined, "ru"));
+  });
 });

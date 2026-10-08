@@ -621,4 +621,7 @@
   ,"phone.missing": "Номер не подтверждён"
   ,"phone.changeHint": "Из вашего Telegram. Сменить: команда /phone в чате бота."
   ,"error.phone_not_verified": "Сначала подтвердите номер из Telegram: команда /phone в чате бота."
+  ,"error.session_expired": "Сессия устарела. Закройте приложение и откройте его снова."
+  ,"error.campaign_daily_limit": "Сегодня вы уже создали максимум кампаний. Попробуйте завтра."
+  ,"form.validation.erFormat": "Введите ER числом, например 5,5"
 }
