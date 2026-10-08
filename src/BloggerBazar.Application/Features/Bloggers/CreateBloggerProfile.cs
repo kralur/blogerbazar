@@ -48,7 +48,7 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(100);
-        RuleFor(command => command.Username).NotEmpty().Must(ContactValidation.IsTelegramUsername);
+        RuleFor(command => command.Username).Must(ContactValidation.IsTelegramUsername).When(command => command.Username is not null);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80);
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);
         RuleForEach(command => command.Categories).NotEmpty().MaximumLength(50);
@@ -56,20 +56,20 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
         RuleFor(command => command.AvatarUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.AvatarUrl is not null);
         RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsUzbekPhone);
         RuleFor(command => command.Email).EmailAddress().MaximumLength(254).When(command => command.Email is not null);
-        RuleFor(command => command.TotalFollowers).GreaterThan(0);
-        RuleFor(command => command.AverageReach).NotNull().GreaterThan(0);
+        RuleFor(command => command.TotalFollowers).GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxFollowers);
+        RuleFor(command => command.AverageReach).NotNull().GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxReach);
         RuleFor(command => command.EngagementRate).NotNull().InclusiveBetween(0.1m, 100m);
-        RuleFor(command => command.StoriesPrice).NotNull().GreaterThan(0);
-        RuleFor(command => command.ReelsPrice).NotNull().GreaterThan(0);
-        RuleFor(command => command.PostPrice).GreaterThanOrEqualTo(0).When(command => command.PostPrice.HasValue);
-        RuleFor(command => command.IntegrationPrice).GreaterThanOrEqualTo(0).When(command => command.IntegrationPrice.HasValue);
+        RuleFor(command => command.StoriesPrice).NotNull().GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxMoney);
+        RuleFor(command => command.ReelsPrice).NotNull().GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxMoney);
+        RuleFor(command => command.PostPrice).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.PostPrice.HasValue);
+        RuleFor(command => command.IntegrationPrice).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.IntegrationPrice.HasValue);
         RuleFor(command => command.PortfolioItems).Must(items => items is null || items.Count <= 12);
         RuleFor(command => command.Age).InclusiveBetween(13, 100).When(command => command.Age.HasValue);
         RuleFor(command => command.Gender).MaximumLength(32).When(command => command.Gender is not null);
         RuleFor(command => command.Language).MaximumLength(16).When(command => command.Language is not null);
         RuleFor(command => command.Subcategory).MaximumLength(100).When(command => command.Subcategory is not null);
-        RuleFor(command => command.PriceFrom).GreaterThanOrEqualTo(0).When(command => command.PriceFrom.HasValue);
-        RuleFor(command => command.PriceTo).GreaterThanOrEqualTo(0).When(command => command.PriceTo.HasValue);
+        RuleFor(command => command.PriceFrom).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.PriceFrom.HasValue);
+        RuleFor(command => command.PriceTo).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.PriceTo.HasValue);
         RuleFor(command => command.PriceNote).MaximumLength(500).When(command => command.PriceNote is not null);
         RuleFor(command => command.CoverUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.CoverUrl is not null);
         RuleFor(command => command.Platforms).Must(items => items is null || items.Count <= 8);
@@ -83,8 +83,8 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
         {
             item.RuleFor(value => value.Type).NotEmpty();
             item.RuleFor(value => value).Must(value => ContactValidation.IsSupportedPlatform(value.Type, value.Url));
-            item.RuleFor(value => value.Followers).GreaterThanOrEqualTo(0).When(value => value.Followers.HasValue);
-            item.RuleFor(value => value.AverageReach).GreaterThanOrEqualTo(0).When(value => value.AverageReach.HasValue);
+            item.RuleFor(value => value.Followers).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxFollowers).When(value => value.Followers.HasValue);
+            item.RuleFor(value => value.AverageReach).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxReach).When(value => value.AverageReach.HasValue);
             item.RuleFor(value => value.EngagementRate).InclusiveBetween(0m, 100m).When(value => value.EngagementRate.HasValue);
         });
     }
@@ -101,7 +101,7 @@ public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profil
             throw new InvalidOperationException("A blogger profile already exists for this Telegram user.");
         }
 
-        if (await profiles.GetByUsernameAsync(command.Username!.Trim(), cancellationToken) is not null)
+        if (command.Username is not null && await profiles.GetByUsernameAsync(command.Username.Trim(), cancellationToken) is not null)
         {
             throw new InvalidOperationException("This Telegram username is already used by another blogger profile.");
         }
@@ -117,7 +117,7 @@ public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profil
             command.TotalFollowers, command.AverageReach, command.EngagementRate, command.StoriesPrice,
             command.ReelsPrice, command.PostPrice, command.IntegrationPrice, command.BarterEnabled);
         profile.UpdateExtendedProfile(command.CoverUrl, command.Age, command.Gender?.Trim(), command.Language?.Trim(), command.Subcategory?.Trim(), command.PriceFrom, command.PriceTo, command.PriceNote?.Trim());
-        profile.Approve();
+        profile.Approve(verified: false);
 
         if (existing is null)
         {

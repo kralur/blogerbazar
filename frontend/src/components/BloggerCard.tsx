@@ -33,7 +33,7 @@ export function BloggerCard({ blogger, variant = "default" }: { blogger: Blogger
   const priceFrom = prices.length > 0 ? formatCurrency(Math.min(...prices)) : null;
   return <article className={`catalog-blogger-card card-enter relative${variant === "home" ? " catalog-card--rail" : ""}`}><a aria-label={t("home.openBlogger", { name: blogger.name })} className="catalog-blogger-card__link" href={`#/blogger/${blogger.id}`}>
     <div className="catalog-blogger-card__identity">
-      <Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} variant="catalog" verified={blogger.verified} />
+      <Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} variant="catalog" />
       <div className="min-w-0 flex-1"><div className="catalog-blogger-card__name-row"><strong>{blogger.name}</strong></div><p>{cityLabel(blogger.city)}{blogger.platform ? ` · ${platformLabel(blogger.platform, t)}` : ""}</p></div>
     </div>
     <div className="catalog-blogger-card__categories">{blogger.isPromoted && <span className="catalog-card__promoted">{t("card.promoted")}</span>}{blogger.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category)}</span>)}</div>

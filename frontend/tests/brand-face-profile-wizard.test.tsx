@@ -91,7 +91,7 @@ describe("Brand Face profile wizard", () => {
     await user.click(screen.getByRole("button", { name: translate("common.back", undefined, "ru") }));
     expect(screen.getByDisplayValue("Русский, O‘zbekcha")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
-    expect(screen.getByDisplayValue("@madina")).toBeInTheDocument();
+    expect(screen.getByText("@madina")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "choose other" }));
     await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
     expect(screen.getByRole("heading", { level: 1, name: translate("wizard.brandFacePortfolioStep", undefined, "ru") })).toBeInTheDocument();
@@ -230,12 +230,12 @@ describe("Brand Face profile wizard", () => {
 
   it("routes server validation to the affected step", async () => {
     const user = userEvent.setup();
-    api.upsertBrandFaceProfile.mockRejectedValue(new ApiError(400, "validation_failed", ["Telegram"]));
+    api.upsertBrandFaceProfile.mockRejectedValue(new ApiError(400, "validation_failed", ["Instagram"]));
     renderCreate();
     await reachReview(user);
     await user.click(screen.getByRole("button", { name: translate("wizard.createProfile", undefined, "ru") }));
-    expect(await screen.findByRole("heading", { level: 1, name: translate("wizard.brandFacePositioningStep", undefined, "ru") })).toBeInTheDocument();
-    expect(screen.getAllByText(translate("form.validation.username", undefined, "ru")).length).toBeGreaterThan(0);
+    expect(await screen.findByRole("heading", { level: 1, name: translate("wizard.brandFacePortfolioStep", undefined, "ru") })).toBeInTheDocument();
+    expect(screen.getAllByText(translate("form.validation.socialUsername", undefined, "ru")).length).toBeGreaterThan(0);
   });
 
   it("hydrates edit mode and uses the same PUT endpoint", async () => {

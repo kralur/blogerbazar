@@ -151,6 +151,7 @@ public sealed class CreateReviewHandlerTests
         Assert.Contains("Оставьте и свой отзыв", text);
         Assert.StartsWith(blogger.Name, text);
         Assert.Equal($"/deal/{deal.Id}", Assert.Single(bot.Routes));
+        Assert.Equal("Оставить отзыв", Assert.Single(bot.Buttons));
     }
 
     [Fact]
@@ -166,6 +167,7 @@ public sealed class CreateReviewHandlerTests
 
         Assert.Equal([blogger.TelegramUserId], bot.NotifiedChats);
         Assert.Contains("опубликованы", Assert.Single(bot.Texts));
+        Assert.Equal("Посмотреть отзывы", Assert.Single(bot.Buttons));
     }
 
     [Fact]

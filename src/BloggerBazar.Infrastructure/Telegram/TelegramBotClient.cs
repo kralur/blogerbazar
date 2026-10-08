@@ -51,15 +51,15 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
     }
 
     public Task SendNotificationAsync(long chatId, string text, CancellationToken cancellationToken) =>
-        SendNotificationCoreAsync(chatId, text, null, null, cancellationToken);
+        SendNotificationCoreAsync(chatId, text, null, null, OpenButton, cancellationToken);
 
     public Task SendNotificationAsync(long chatId, string text, string miniAppRoute, CancellationToken cancellationToken) =>
-        SendNotificationCoreAsync(chatId, text, miniAppRoute, null, cancellationToken);
+        SendNotificationCoreAsync(chatId, text, miniAppRoute, null, OpenButton, cancellationToken);
 
     public async Task SendNotificationAsync(long chatId, BotText text, string? miniAppRoute, CancellationToken cancellationToken)
     {
         var language = await LanguageOfAsync(chatId, cancellationToken);
-        await SendNotificationCoreAsync(chatId, text.For(language), miniAppRoute, language, cancellationToken);
+        await SendNotificationCoreAsync(chatId, text.For(language), miniAppRoute, language, text.Button ?? OpenButton, cancellationToken);
     }
 
     private async Task<string?> LanguageOfAsync(long chatId, CancellationToken cancellationToken)
@@ -69,7 +69,7 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
         catch (Exception exception) when (exception is not OperationCanceledException) { return null; }
     }
 
-    private async Task SendNotificationCoreAsync(long chatId, string text, string? miniAppRoute, string? language, CancellationToken cancellationToken)
+    private async Task SendNotificationCoreAsync(long chatId, string text, string? miniAppRoute, string? language, BotText button, CancellationToken cancellationToken)
     {
         var telegram = options.Value;
         if (string.IsNullOrWhiteSpace(telegram.BotToken)) throw new InvalidOperationException("Telegram:BotToken must be configured to send bot messages.");
@@ -80,7 +80,7 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
             text,
             reply_markup = buttonUrl is null
                 ? null
-                : new { inline_keyboard = new[] { new[] { new { text = ButtonLabel(OpenButton, language), web_app = new { url = buttonUrl } } } } }
+                : new { inline_keyboard = new[] { new[] { new { text = ButtonLabel(button, language), web_app = new { url = buttonUrl } } } } }
         }, cancellationToken);
         response.EnsureSuccessStatusCode();
     }

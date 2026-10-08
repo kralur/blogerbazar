@@ -21,7 +21,8 @@ public sealed class CreateBloggerProfileHandlerTests
         Assert.Equal(1, unitOfWork.SaveCallCount);
         Assert.Single(repository.Profiles);
         Assert.Equal((int)BloggerStatus.Approved, result.Status);
-        Assert.True(result.IsVerified);
+        // Filling in the form proves nothing about who is behind it.
+        Assert.False(result.IsVerified);
     }
 
     [Fact]

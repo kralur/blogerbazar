@@ -151,7 +151,7 @@ public sealed class DealReminderTests
 
         await new ProcessDealRemindersHandler(new FakeReminders(deal), new SpyReviews(), bot).Handle(new ProcessDealRemindersCommand(Daytime), CancellationToken.None);
 
-        Assert.All(bot.Texts, text => Assert.Contains("Сделка «Пост» с партнёром", text));
+        Assert.All(bot.Texts, text => Assert.Contains("Сделка в формате «Пост» с партнёром", text));
     }
 
     private static DealReminderCandidate Completed(DateTime completedAtUtc) =>

@@ -8,9 +8,16 @@ internal static class BotMessages
 {
     private static BotText Bilingual(string russian, string uzbek) => new(russian, uzbek);
 
+    // Buttons say what the recipient does next instead of a generic "Open".
+    internal static readonly BotText ReplyButton = new("Ответить", "Javob berish");
+    internal static readonly BotText OpenDealButton = new("Открыть сделку", "Bitimni ochish");
+    internal static readonly BotText ReviewButton = new("Оставить отзыв", "Fikr qoldirish");
+    internal static readonly BotText ReviewsButton = new("Посмотреть отзывы", "Fikrlarni ko‘rish");
+    internal static readonly BotText ApplicationsButton = new("Посмотреть отклики", "Javoblarni ko‘rish");
+
     public static BotText NewCampaignApplication(string bloggerName, string campaignTitle) => Bilingual(
         $"Новый отклик от {bloggerName} на кампанию «{campaignTitle}».",
-        $"{bloggerName} «{campaignTitle}» kampaniyasiga javob yubordi.");
+        $"{bloggerName} «{campaignTitle}» kampaniyasiga javob yubordi.") with { Button = ApplicationsButton };
 
     public static BotText CampaignApplicationRejected(string campaignTitle) => Bilingual(
         $"Ваш отклик на кампанию «{campaignTitle}» отклонён.",
@@ -18,15 +25,15 @@ internal static class BotMessages
 
     public static BotText CampaignApplicationAccepted(string campaignTitle) => Bilingual(
         $"Ваш отклик на кампанию «{campaignTitle}» принят. Сделка создана, контакты партнёра открыты в сделке.",
-        $"«{campaignTitle}» kampaniyasiga javobingiz qabul qilindi. Bitim yaratildi, hamkor kontaktlari bitim sahifasida.");
+        $"«{campaignTitle}» kampaniyasiga javobingiz qabul qilindi. Bitim yaratildi, hamkor kontaktlari bitim sahifasida.") with { Button = OpenDealButton };
 
     public static BotText OfferReceived(string businessName) => Bilingual(
         $"{businessName} предлагает вам сотрудничество. Ответьте в течение 48 часов.",
-        $"{businessName} sizga hamkorlik taklif qilmoqda. 48 soat ichida javob bering.");
+        $"{businessName} sizga hamkorlik taklif qilmoqda. 48 soat ichida javob bering.") with { Button = ReplyButton };
 
     public static BotText OfferAccepted(string bloggerName) => Bilingual(
         $"{bloggerName} принял(а) ваше предложение. Сделка создана.",
-        $"{bloggerName} taklifingizni qabul qildi. Bitim yaratildi.");
+        $"{bloggerName} taklifingizni qabul qildi. Bitim yaratildi.") with { Button = OpenDealButton };
 
     public static BotText OfferDeclined(string bloggerName) => Bilingual(
         $"{bloggerName} отклонил(а) ваше предложение.",
@@ -34,15 +41,16 @@ internal static class BotMessages
 
     public static BotText CollaborationRequestReceived(string businessName) => Bilingual(
         $"{businessName} отправил(а) вам предложение о сотрудничестве.",
-        $"{businessName} sizga hamkorlik taklifini yubordi.");
+        $"{businessName} sizga hamkorlik taklifini yubordi.") with { Button = ReplyButton };
 
     // A deal is named after its campaign; an offer deal has no campaign, so its format names it.
+    // "сделка в формате Reels" reads naturally; a bare "сделка Reels" does not.
     private static string? TopicRussian(DealTopic topic) => topic.CampaignTitle is { Length: > 0 } title ? $"«{title}»" : topic.Format switch
     {
-        CollaborationFormat.Stories => "Stories",
-        CollaborationFormat.Reels => "Reels",
-        CollaborationFormat.Post => "«Пост»",
-        CollaborationFormat.Integration => "«Интеграция»",
+        CollaborationFormat.Stories => "в формате Stories",
+        CollaborationFormat.Reels => "в формате Reels",
+        CollaborationFormat.Post => "в формате «Пост»",
+        CollaborationFormat.Integration => "в формате «Интеграция»",
         _ => null
     };
 
@@ -65,27 +73,27 @@ internal static class BotMessages
 
     public static BotText DealCompleted(string partner, DealTopic topic) => Bilingual(
         $"{partner} отметил(а) сделку{Spaced(TopicRussian(topic))} завершённой. Оставьте отзыв о сотрудничестве.",
-        $"{partner} {DealUzbek(topic, "ini", "ni")} yakunlangan deb belgiladi. Hamkorlik haqida fikr qoldiring.");
+        $"{partner} {DealUzbek(topic, "ini", "ni")} yakunlangan deb belgiladi. Hamkorlik haqida fikr qoldiring.") with { Button = ReviewButton };
 
     public static BotText PartnerReviewed(string partner, DealTopic topic) => Bilingual(
         $"{partner} оставил(а) отзыв о сделке{Spaced(TopicRussian(topic))}. Оставьте и свой отзыв: вы увидите отзывы друг друга, когда оба оцените сделку.",
-        $"{partner} {DealUzbek(topic, "i", "")} haqida fikr qoldirdi. Siz ham fikr qoldiring: ikkalangiz baholaganingizda bir-biringizning fikrlarini ko‘rasiz.");
+        $"{partner} {DealUzbek(topic, "i", "")} haqida fikr qoldirdi. Siz ham fikr qoldiring: ikkalangiz baholaganingizda bir-biringizning fikrlarini ko‘rasiz.") with { Button = ReviewButton };
 
     public static BotText ReviewsPublished(string partner, DealTopic topic) => Bilingual(
         $"{partner} тоже оставил(а) отзыв о сделке{Spaced(TopicRussian(topic))}. Оба отзыва опубликованы.",
-        $"{partner} ham {DealUzbek(topic, "i", "")} haqida fikr qoldirdi. Ikkala fikr e’lon qilindi.");
+        $"{partner} ham {DealUzbek(topic, "i", "")} haqida fikr qoldirdi. Ikkala fikr e’lon qilindi.") with { Button = ReviewsButton };
 
     public static BotText ReviewReminderLastWeek(string? partner, DealTopic topic) => Bilingual(
         $"Осталась неделя, чтобы оценить сделку{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)}. Отзывы публикуются, когда обе стороны оценят друг друга.",
-        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "ini", "ni")} baholash uchun bir hafta qoldi. Fikrlar ikki tomon ham baholaganidan keyin e’lon qilinadi.");
+        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "ini", "ni")} baholash uchun bir hafta qoldi. Fikrlar ikki tomon ham baholaganidan keyin e’lon qilinadi.") with { Button = ReviewButton };
 
     public static BotText ReviewReminder(string? partner, DealTopic topic) => Bilingual(
         $"Оцените сделку{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)}. Отзывы публикуются, когда обе стороны оценят друг друга.",
-        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "ini", "ni")} baholang. Fikrlar ikki tomon ham baholaganidan keyin e’lon qilinadi.");
+        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "ini", "ni")} baholang. Fikrlar ikki tomon ham baholaganidan keyin e’lon qilinadi.") with { Button = ReviewButton };
 
     public static BotText CompletionReminder(string? partner, DealTopic topic) => Bilingual(
         $"Сделка{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)} всё ещё активна. Если сотрудничество завершено, отметьте это в приложении.",
-        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "i", "")} hali faol. Hamkorlik yakunlangan bo‘lsa, buni ilovada belgilang.");
+        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "i", "")} hali faol. Hamkorlik yakunlangan bo‘lsa, buni ilovada belgilang.") with { Button = OpenDealButton };
 
     public static BotText ContactUnlockPaid => Bilingual(
         "Оплата подтверждена, контакты разблокированы.",

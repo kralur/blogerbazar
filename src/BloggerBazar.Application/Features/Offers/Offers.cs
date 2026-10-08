@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Validation;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Exceptions;
@@ -122,7 +123,7 @@ public sealed class CreateOfferValidator : AbstractValidator<CreateOfferCommand>
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.BloggerId).NotEmpty();
         RuleFor(command => command.Format).Must(OfferFormats.IsKnown);
-        RuleFor(command => command.OfferedBudget).InclusiveBetween(0, 2_000_000_000).When(command => command.OfferedBudget.HasValue);
+        RuleFor(command => command.OfferedBudget).InclusiveBetween(0, InputLimits.MaxMoney).When(command => command.OfferedBudget.HasValue);
         RuleFor(command => command.Deadline).GreaterThan(_ => DateTime.UtcNow.AddDays(-1)).When(command => command.Deadline.HasValue);
         RuleFor(command => command.Message).NotEmpty().MaximumLength(1000);
     }

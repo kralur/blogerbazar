@@ -36,13 +36,13 @@ public sealed class UpsertBrandFaceProfileValidator : AbstractValidator<UpsertBr
         RuleFor(command => command.Categories).NotEmpty().Must(items => items.Count <= 5);
         RuleForEach(command => command.Languages).NotEmpty().MaximumLength(32);
         RuleForEach(command => command.Categories).NotEmpty().MaximumLength(50);
-        RuleFor(command => command.Telegram).NotEmpty().Must(ContactValidation.IsTelegramUsername);
+        RuleFor(command => command.Telegram).Must(ContactValidation.IsTelegramUsername).When(command => command.Telegram is not null);
         RuleFor(command => command.Instagram).Must(ContactValidation.IsInstagramUsername).When(command => command.Instagram is not null);
         RuleFor(command => command.Experience).MaximumLength(2000).When(command => command.Experience is not null);
         RuleFor(command => command.Description).MaximumLength(2000).When(command => command.Description is not null);
         RuleFor(command => command.PortfolioUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.PortfolioUrl is not null);
         RuleFor(command => command.AvatarUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.AvatarUrl is not null);
-        RuleFor(command => command.CollaborationPrice).GreaterThan(0).When(command => command.CollaborationPrice.HasValue);
+        RuleFor(command => command.CollaborationPrice).GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.CollaborationPrice.HasValue);
     }
 }
 
@@ -62,7 +62,7 @@ public sealed class UpsertBrandFaceProfileHandler(IBrandFaceProfileRepository pr
             profile.Restore();
         }
 
-        profile.Update(command.Name.Trim(), command.City.Trim(), command.Age, command.Gender?.Trim(), command.Languages.Select(value => value.Trim()).ToArray(), command.Categories.Select(value => value.Trim()).ToArray(), command.Experience?.Trim(), command.Instagram?.Trim(), command.Telegram!.Trim(), command.PortfolioUrl?.Trim(), command.CollaborationPrice, command.Description?.Trim(), command.AvatarUrl?.Trim());
+        profile.Update(command.Name.Trim(), command.City.Trim(), command.Age, command.Gender?.Trim(), command.Languages.Select(value => value.Trim()).ToArray(), command.Categories.Select(value => value.Trim()).ToArray(), command.Experience?.Trim(), command.Instagram?.Trim(), command.Telegram?.Trim(), command.PortfolioUrl?.Trim(), command.CollaborationPrice, command.Description?.Trim(), command.AvatarUrl?.Trim());
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return BrandFaceProfileDto.From(profile);

@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Validation;
 using BloggerBazar.Api.Contracts.Bloggers;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Bloggers;
@@ -65,7 +66,7 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
         var actor = GetTelegramUser();
         var portfolioItems = ToPortfolioItems(request);
         var profile = await sender.Send(new CreateBloggerProfileCommand(
-            actor.Id, request.Name, request.LastName, request.Username, request.City, request.Categories, request.Bio,
+            actor.Id, request.Name, request.LastName, ContactValidation.TelegramHandle(actor.Username), request.City, request.Categories, request.Bio,
             request.AvatarUrl, request.TotalFollowers, request.AverageReach, request.EngagementRate, request.StoriesPrice,
             request.ReelsPrice, request.PostPrice, request.IntegrationPrice, request.BarterEnabled, request.Phone, request.Email,
             portfolioItems, request.CoverUrl, request.Age, request.Gender, request.Language, request.Subcategory,
@@ -80,7 +81,7 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     {
         var actor = GetTelegramUser();
         var profile = await sender.Send(new UpdateBloggerProfileCommand(
-            actor.Id, request.Name, request.LastName, request.Username, request.City, request.Categories, request.Bio,
+            actor.Id, request.Name, request.LastName, ContactValidation.TelegramHandle(actor.Username), request.City, request.Categories, request.Bio,
             request.AvatarUrl, request.TotalFollowers, request.AverageReach, request.EngagementRate, request.StoriesPrice,
             request.ReelsPrice, request.PostPrice, request.IntegrationPrice, request.BarterEnabled, request.Phone, request.Email,
             ToPortfolioItems(request), request.CoverUrl, request.Age, request.Gender, request.Language, request.Subcategory,

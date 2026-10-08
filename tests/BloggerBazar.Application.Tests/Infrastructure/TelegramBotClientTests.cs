@@ -75,6 +75,24 @@ public sealed class TelegramBotClientTests
         Assert.Equal(expectedButton, body.RootElement.GetProperty("reply_markup").GetProperty("inline_keyboard")[0][0].GetProperty("text").GetString());
     }
 
+    [Theory]
+    [InlineData("ru", "Ответить")]
+    [InlineData("uz", "Javob berish")]
+    [InlineData(null, "Ответить / Javob berish")]
+    public async Task Notification_button_says_what_the_recipient_does_next(string? language, string expectedButton)
+    {
+        var handler = new CapturingHandler();
+        var client = new TelegramBotClient(
+            new HttpClient(handler) { BaseAddress = new Uri("https://api.telegram.org/") },
+            Options.Create(new TelegramOptions { BotToken = "123456:ABC-def_ghi", MiniAppUrl = "https://app.example/" }),
+            new FixedLanguage(language));
+
+        await client.SendNotificationAsync(7, new BotText("Привет", "Salom") with { Button = new BotText("Ответить", "Javob berish") }, "/offer/1", CancellationToken.None);
+
+        using var body = JsonDocument.Parse(handler.Body!);
+        Assert.Equal(expectedButton, body.RootElement.GetProperty("reply_markup").GetProperty("inline_keyboard")[0][0].GetProperty("text").GetString());
+    }
+
     private sealed class FixedLanguage(string? language) : IRecipientLanguageLookup
     {
         public Task<string?> GetAsync(long chatId, CancellationToken cancellationToken) => Task.FromResult(language);

@@ -73,10 +73,12 @@ public sealed class BusinessProfile
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
-    public void Approve()
+    // Saving a form publishes the profile without checking who is behind it, so only a real check
+    // (admin moderation today) may mark it verified.
+    public void Approve(bool verified = true)
     {
         ModerationStatus = BloggerStatus.Approved;
-        IsVerified = true;
+        IsVerified = verified;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

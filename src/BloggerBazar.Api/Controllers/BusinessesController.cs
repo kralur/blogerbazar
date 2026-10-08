@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Validation;
 using BloggerBazar.Api.Contracts.Businesses;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Businesses;
@@ -40,7 +41,7 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
     public async Task<ActionResult<BusinessProfileDto>> Create(CreateBusinessProfileRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
-        var profile = await sender.Send(new CreateBusinessProfileCommand(actor.Id, request.Name, request.Username, request.City, request.LogoUrl, request.WebsiteUrl, request.Description, request.Phone, request.Email), cancellationToken);
+        var profile = await sender.Send(new CreateBusinessProfileCommand(actor.Id, request.Name, ContactValidation.TelegramHandle(actor.Username), request.City, request.LogoUrl, request.WebsiteUrl, request.Description, request.Phone, request.Email), cancellationToken);
         return StatusCode(StatusCodes.Status201Created, profile);
     }
 
@@ -49,6 +50,6 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
     public async Task<ActionResult<BusinessProfileDto>> Update(CreateBusinessProfileRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
-        return Ok(await sender.Send(new UpdateBusinessProfileCommand(actor.Id, request.Name, request.Username, request.City, request.LogoUrl, request.WebsiteUrl, request.Description, request.Phone, request.Email), cancellationToken));
+        return Ok(await sender.Send(new UpdateBusinessProfileCommand(actor.Id, request.Name, ContactValidation.TelegramHandle(actor.Username), request.City, request.LogoUrl, request.WebsiteUrl, request.Description, request.Phone, request.Email), cancellationToken));
     }
 }

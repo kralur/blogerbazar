@@ -29,7 +29,7 @@ public sealed class UpdateBloggerProfileValidator : AbstractValidator<UpdateBlog
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(100);
-        RuleFor(command => command.Username).NotEmpty().Must(ContactValidation.IsTelegramUsername);
+        RuleFor(command => command.Username).Must(ContactValidation.IsTelegramUsername).When(command => command.Username is not null);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80);
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);
         RuleForEach(command => command.Categories).NotEmpty().MaximumLength(50);
@@ -37,13 +37,13 @@ public sealed class UpdateBloggerProfileValidator : AbstractValidator<UpdateBlog
         RuleFor(command => command.AvatarUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.AvatarUrl is not null);
         RuleFor(command => command.Phone).NotEmpty().Must(ContactValidation.IsUzbekPhone);
         RuleFor(command => command.Email).EmailAddress().MaximumLength(254).When(command => command.Email is not null);
-        RuleFor(command => command.TotalFollowers).GreaterThan(0);
-        RuleFor(command => command.AverageReach).NotNull().GreaterThan(0);
+        RuleFor(command => command.TotalFollowers).GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxFollowers);
+        RuleFor(command => command.AverageReach).NotNull().GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxReach);
         RuleFor(command => command.EngagementRate).NotNull().InclusiveBetween(0.1m, 100m);
-        RuleFor(command => command.StoriesPrice).NotNull().GreaterThan(0);
-        RuleFor(command => command.ReelsPrice).NotNull().GreaterThan(0);
-        RuleFor(command => command.PostPrice).GreaterThanOrEqualTo(0).When(command => command.PostPrice.HasValue);
-        RuleFor(command => command.IntegrationPrice).GreaterThanOrEqualTo(0).When(command => command.IntegrationPrice.HasValue);
+        RuleFor(command => command.StoriesPrice).NotNull().GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxMoney);
+        RuleFor(command => command.ReelsPrice).NotNull().GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxMoney);
+        RuleFor(command => command.PostPrice).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.PostPrice.HasValue);
+        RuleFor(command => command.IntegrationPrice).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.IntegrationPrice.HasValue);
         RuleFor(command => command.PortfolioItems).Must(items => items is null || items.Count <= 12);
         RuleForEach(command => command.PortfolioItems!).ChildRules(item =>
         {
@@ -55,8 +55,8 @@ public sealed class UpdateBloggerProfileValidator : AbstractValidator<UpdateBlog
         {
             item.RuleFor(value => value.Type).NotEmpty();
             item.RuleFor(value => value).Must(value => ContactValidation.IsSupportedPlatform(value.Type, value.Url));
-            item.RuleFor(value => value.Followers).GreaterThanOrEqualTo(0).When(value => value.Followers.HasValue);
-            item.RuleFor(value => value.AverageReach).GreaterThanOrEqualTo(0).When(value => value.AverageReach.HasValue);
+            item.RuleFor(value => value.Followers).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxFollowers).When(value => value.Followers.HasValue);
+            item.RuleFor(value => value.AverageReach).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxReach).When(value => value.AverageReach.HasValue);
             item.RuleFor(value => value.EngagementRate).InclusiveBetween(0m, 100m).When(value => value.EngagementRate.HasValue);
         });
     }
@@ -70,7 +70,7 @@ public sealed class UpdateBloggerProfileHandler(IBloggerProfileRepository profil
         var profile = await profiles.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
             ?? throw new InvalidOperationException("Create a blogger profile before updating it.");
 
-        var usernameOwner = await profiles.GetByUsernameAsync(command.Username!.Trim(), cancellationToken);
+        var usernameOwner = command.Username is null ? null : await profiles.GetByUsernameAsync(command.Username.Trim(), cancellationToken);
         if (usernameOwner is not null && usernameOwner.Id != profile.Id)
         {
             throw new InvalidOperationException("This Telegram username is already used by another blogger profile.");
@@ -81,7 +81,7 @@ public sealed class UpdateBloggerProfileHandler(IBloggerProfileRepository profil
             command.TotalFollowers, command.AverageReach, command.EngagementRate, command.StoriesPrice, command.ReelsPrice,
             command.PostPrice, command.IntegrationPrice, command.BarterEnabled);
         profile.UpdateExtendedProfile(command.CoverUrl, command.Age, command.Gender?.Trim(), command.Language?.Trim(), command.Subcategory?.Trim(), command.PriceFrom, command.PriceTo, command.PriceNote?.Trim());
-        profile.Approve();
+        profile.Approve(verified: false);
         await portfolioItems.DeleteForBloggerAsync(profile.Id, cancellationToken);
         await portfolioItems.AddRangeAsync((command.PortfolioItems ?? []).Select(item => PortfolioItem.Create(profile.Id, item.Title.Trim(), item.Type, item.Url.Trim())), cancellationToken);
         await platforms.DeleteForBloggerAsync(profile.Id, cancellationToken);

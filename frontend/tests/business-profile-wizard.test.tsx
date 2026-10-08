@@ -37,9 +37,6 @@ function renderCreate(onBackToRole = vi.fn()) {
 
 async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByPlaceholderText("Lumi Beauty"), "Lumi Beauty");
-  const username = screen.getByPlaceholderText("@username");
-  await user.clear(username);
-  await user.type(username, "@lumibeauty");
   await user.selectOptions(screen.getByRole("combobox", { name: translate("common.city", undefined, "ru") }), "tashkent-city");
   await waitFor(() => expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeEnabled());
   await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
@@ -76,7 +73,9 @@ describe("Business profile wizard", () => {
 
     await user.type(screen.getByPlaceholderText("Lumi Beauty"), "Lumi Beauty");
 
-    expect(screen.getByDisplayValue("@lumibeauty")).toBeInTheDocument();
+    // The handle is shown from Telegram and cannot be typed over.
+    expect(screen.getByText("@lumibeauty")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("@username")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeEnabled();
     expect(api.createBusinessProfile).not.toHaveBeenCalled();
   });

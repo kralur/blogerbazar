@@ -55,7 +55,16 @@ async function completeAudience(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: continueLabel() }));
 }
 
+// Prices start empty (no sample values that could end up in the catalog); the required two are filled here.
+function fillPrices() {
+  const stories = screen.getByPlaceholderText("200 000") as HTMLInputElement;
+  if (!stories.value) fireEvent.change(stories, { target: { value: "250000" } });
+  const reels = screen.getByPlaceholderText("500 000") as HTMLInputElement;
+  if (!reels.value) fireEvent.change(reels, { target: { value: "500000" } });
+}
+
 async function completePrices(user: ReturnType<typeof userEvent.setup>) {
+  fillPrices();
   await waitFor(() => expect(screen.getByRole("button", { name: continueLabel() })).toBeEnabled());
   await user.click(screen.getByRole("button", { name: continueLabel() }));
 }
@@ -179,6 +188,9 @@ describe("Blogger profile wizard", () => {
     expect(screen.getByDisplayValue("5.5")).toHaveValue("5.5");
     await completeAudience(user);
     expect(screen.getAllByText(translate("currency.uzs", undefined, "ru"))).toHaveLength(4);
+    expect(screen.getByPlaceholderText("200 000")).toHaveValue("");
+    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
+    fillPrices();
     expect(screen.getByDisplayValue("250 000")).toHaveValue("250 000");
     expect(document.querySelectorAll(".input-control__input--with-suffix")).toHaveLength(4);
   });
@@ -203,8 +215,6 @@ describe("Blogger profile wizard", () => {
     await completeBasic(user);
     await user.click(screen.getByRole("button", { name: "choose other" }));
     await completeAudience(user);
-    await user.clear(screen.getByDisplayValue("350 000"));
-    await user.clear(screen.getByDisplayValue("900 000"));
     await completePrices(user);
     await user.click(screen.getByRole("button", { name: continueLabel() }));
     await user.click(screen.getByRole("button", { name: translate("wizard.createProfile", undefined, "ru") }));

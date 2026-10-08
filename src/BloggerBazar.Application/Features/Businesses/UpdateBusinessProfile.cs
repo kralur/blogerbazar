@@ -24,7 +24,7 @@ public sealed class UpdateBusinessProfileValidator : AbstractValidator<UpdateBus
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
         RuleFor(command => command.Name).NotEmpty().MaximumLength(150);
-        RuleFor(command => command.Username).NotEmpty().Must(ContactValidation.IsTelegramUsername);
+        RuleFor(command => command.Username).Must(ContactValidation.IsTelegramUsername).When(command => command.Username is not null);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80);
         RuleFor(command => command.LogoUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.LogoUrl is not null);
         RuleFor(command => command.WebsiteUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.WebsiteUrl is not null);
@@ -42,7 +42,7 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
         var profile = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
             ?? throw new InvalidOperationException("Create a business profile before updating it.");
 
-        var usernameOwner = await businesses.GetByUsernameAsync(command.Username!.Trim(), cancellationToken);
+        var usernameOwner = command.Username is null ? null : await businesses.GetByUsernameAsync(command.Username.Trim(), cancellationToken);
         if (usernameOwner is not null && usernameOwner.Id != profile.Id)
         {
             throw new InvalidOperationException("This Telegram username is already used by another business profile.");
@@ -57,7 +57,7 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
             command.Description?.Trim(),
             command.Phone?.Trim(),
             command.Email?.Trim());
-        profile.Approve();
+        profile.Approve(verified: false);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null)
         {

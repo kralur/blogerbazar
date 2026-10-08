@@ -45,7 +45,7 @@ export function BusinessDetails({ id }: { id: string }) {
   return <div className="screen screen--with-nav">
     <PageHeader back={{ href: "#/campaigns", label: t("common.back") }} />
     <div className="mt-4 text-center">
-      <div className="mx-auto w-fit"><Avatar name={profile.name} size="xl" src={profile.logoUrl} verified={profile.isVerified} /></div>
+      <div className="mx-auto w-fit"><Avatar name={profile.name} size="xl" src={profile.logoUrl} /></div>
       <h1 className="mt-3 text-2xl font-extrabold tracking-tight">{profile.name}</h1>
       <p className="mt-1 text-sm text-brand-muted">{[t("common.business"), profile.city ? cityLabel(profile.city, language) : null].filter(Boolean).join(" · ")}</p>
       {profile.reviewsCount > 0 && <div className="mt-2 flex justify-center"><Rating count={profile.reviewsCount} value={profile.rating} /></div>}

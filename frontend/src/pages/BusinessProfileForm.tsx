@@ -5,6 +5,7 @@ import { ProfileMediaPicker, type PendingProfileImage } from "../components/Prof
 import { FixedActionBar, ReviewItem, ReviewSection, WizardErrorSummary, WizardHeader, WizardLayout, WizardStep } from "../components/Wizard";
 import { Button, Icon, Input, Modal, Textarea, Toast } from "../components/ui";
 import { RegionSelect } from "../components/RegionSelect";
+import { TelegramHandleField, useTelegramHandle } from "../components/TelegramHandleField";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { useTelegramBackHandler } from "../hooks/useTelegramBackHandler";
 import { notifyProfileDataChanged } from "../hooks/useProfileDataRefresh";
@@ -20,11 +21,10 @@ type Errors = Partial<Record<Field, string>>;
 type Step = 0 | 1 | 2;
 
 const stepFields: Record<Exclude<Step, 2>, Field[]> = {
-  0: ["name", "username", "city"],
+  0: ["name", "city"],
   1: ["description", "phone", "email", "website"]
 };
 
-const usernamePattern = /^@[A-Za-z0-9_]{5,32}$/;
 const phonePattern = /^\+998\s\d{2}\s\d{3}\s\d{2}\s\d{2}$/;
 
 function initialBusinessForm(username?: string) {
@@ -35,7 +35,6 @@ function initialBusinessForm(username?: string) {
 function validate(form: typeof initial, t: (key: string) => string): Errors {
   const errors: Errors = {};
   if (!form.name.trim()) errors.name = t("form.validation.company");
-  if (!usernamePattern.test(form.username.trim())) errors.username = t("form.validation.companyUsername");
   if (!form.city.trim()) errors.city = t("form.validation.city");
   if (!form.description.trim()) errors.description = t("form.validation.description");
   if (!phonePattern.test(form.phone)) errors.phone = t("form.validation.phone");
@@ -70,6 +69,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
   const { language, t } = useI18n();
   const { haptic, isTelegram, user } = useTelegram();
   const [form, setForm] = useState(() => initialBusinessForm(user?.username));
+  const telegramUsername = useTelegramHandle();
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [serverErrors, setServerErrors] = useState<Errors>({});
   const [step, setStep] = useState<Step>(0);
@@ -183,7 +183,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
       setSaving(true);
       setServerErrors({});
       setServerSummary("");
-      const input = { name: form.name.trim(), username: form.username.trim(), city: form.city.trim(), logoUrl: logoUrl ?? undefined, description: form.description.trim(), phone: form.phone.trim(), email: form.email.trim() || undefined, websiteUrl: form.website.trim() || undefined };
+      const input = { name: form.name.trim(), username: telegramUsername ?? undefined, city: form.city.trim(), logoUrl: logoUrl ?? undefined, description: form.description.trim(), phone: form.phone.trim(), email: form.email.trim() || undefined, websiteUrl: form.website.trim() || undefined };
       if (existing) await updateBusinessProfile(input); else { await createBusinessProfile(input); setExisting(true); }
       let mediaWarning = "";
       try {
@@ -237,7 +237,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
       {step === 0 && <WizardStep stepKey={stepTitles[0]}>
         <div className="wizard-fields">
           <Input className="wizard-input" error={touched.name ? errors.name : undefined} label={t("form.companyName")} onBlur={blur("name")} onChange={update("name")} placeholder="Lumi Beauty" required value={form.name} />
-          <div><Input className="wizard-input" error={touched.username ? errors.username : undefined} label={t("form.telegramUsername")} onBlur={blur("username")} onChange={update("username")} placeholder="@username" required value={form.username} /><p className="wizard-field-helper">{t("form.usernameBusinessHelper")}</p></div>
+          <TelegramHandleField />
           <RegionSelect className="wizard-region-select" error={touched.city ? errors.city : undefined} onChange={selectCity} required value={form.city} />
         </div>
       </WizardStep>}
@@ -255,7 +255,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
           {reviewLogoUrl && <img alt={t("profileMedia.title")} className="wizard-review__logo" src={reviewLogoUrl} />}
           <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[0] })} editLabel={t("common.edit")} onEdit={() => setStep(0)} title={stepTitles[0]}>
             <ReviewItem label={t("form.companyName")} value={form.name.trim()} />
-            <ReviewItem label={t("form.telegramUsername")} value={form.username.trim()} />
+            <ReviewItem label={t("form.telegramUsername")} value={telegramUsername ?? t("form.telegramNoUsername")} />
             <ReviewItem label={t("common.city")} value={cityLabel(form.city, language)} />
           </ReviewSection>
           <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[1] })} editLabel={t("common.edit")} onEdit={() => setStep(1)} title={stepTitles[1]}>

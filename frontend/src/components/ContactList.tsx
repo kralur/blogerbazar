@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "../i18n";
 import { contactUrl, copyText, displayContact, type ContactItem } from "../lib/contacts";
-import { Card, Icon, Toast } from "./ui";
+import { BottomSheet, Button, Card, Icon, Toast } from "./ui";
 import { useTelegram } from "../telegram/TelegramProvider";
 
 const iconByKind: Record<ContactItem["kind"], string> = { phone: "phone", telegram: "send", instagram: "link", tiktok: "link", youtube: "link", website: "link", email: "mail" };
@@ -14,6 +14,7 @@ export function ContactList({ items }: { items: ContactItem[] }) {
   const { t } = useI18n();
   const { haptic, openLink } = useTelegram();
   const [toast, setToast] = useState("");
+  const [phoneActions, setPhoneActions] = useState<string | null>(null);
   const visibleItems = items.filter((item) => Boolean(item.value.trim())).map((item) => ({ ...item, href: contactUrl(item) })).filter((item) => item.href);
   if (!visibleItems.length) return null;
 
@@ -28,14 +29,25 @@ export function ContactList({ items }: { items: ContactItem[] }) {
     }
   };
 
-  // Some Telegram clients ignore call links from a Mini App, so the number is also copied as a fallback.
+  // Telegram on iPhone often blocks call links from a Mini App, so a phone opens a choice instead of failing
+  // silently: call, write to that number in Telegram, or copy it.
   const openContact = (item: (typeof visibleItems)[number]) => {
     haptic.selection();
     if (item.kind === "phone") {
-      void copyText(displayContact(item)).then(() => setToast(t("contacts.phoneCopied")), () => undefined);
+      setPhoneActions(displayContact(item));
+      return;
     }
     openLink(item.href!);
   };
+  const phoneDigits = phoneActions?.replace(/[^\d+]/g, "") ?? "";
 
-  return <><Card className="divide-y divide-brand-line p-0">{visibleItems.map((item) => <div className="flex items-center gap-3 p-3" key={`${item.kind}-${item.value}`}><span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink"><Icon name={iconByKind[item.kind]} /></span><a className="min-w-0 flex-1" href={item.href!} onClick={(event) => { event.preventDefault(); openContact(item); }}><span className="block text-xs font-semibold text-brand-muted">{t(`contacts.${item.kind}`)}</span><span className="contact-list__value mt-0.5 block text-sm font-bold [overflow-wrap:anywhere] [text-wrap:balance]">{displayContact(item)}</span></a><button aria-label={t("contacts.copyAria", { value: displayContact(item) })} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-brand-muted transition hover:bg-brand-soft active:scale-95" onClick={() => void copy(displayContact(item))} type="button"><Icon name="copy" /></button></div>)}</Card><Toast message={toast} tone="copied" /></>;
+  return <><Card className="divide-y divide-brand-line p-0">{visibleItems.map((item) => <div className="flex items-center gap-3 p-3" key={`${item.kind}-${item.value}`}><span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink"><Icon name={iconByKind[item.kind]} /></span><a className="min-w-0 flex-1" href={item.href!} onClick={(event) => { event.preventDefault(); openContact(item); }}><span className="block text-xs font-semibold text-brand-muted">{t(`contacts.${item.kind}`)}</span><span className="contact-list__value mt-0.5 block text-sm font-bold [overflow-wrap:anywhere] [text-wrap:balance]">{displayContact(item)}</span></a><button aria-label={t("contacts.copyAria", { value: displayContact(item) })} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-brand-muted transition hover:bg-brand-soft active:scale-95" onClick={() => void copy(displayContact(item))} type="button"><Icon name="copy" /></button></div>)}</Card><Toast message={toast} tone="copied" />
+    <BottomSheet onClose={() => setPhoneActions(null)} open={phoneActions !== null} title={phoneActions ?? ""} variant="neutral">
+      <div className="grid gap-2">
+        <Button onClick={() => { setPhoneActions(null); openLink(`tel:${phoneDigits}`); }} type="button"><Icon name="phone" />{t("contacts.call")}</Button>
+        <Button onClick={() => { setPhoneActions(null); openLink(`https://t.me/${phoneDigits}`); }} type="button" variant="secondary"><Icon name="send" />{t("contacts.writeInTelegram")}</Button>
+        <Button onClick={() => { const value = phoneActions ?? ""; setPhoneActions(null); void copy(value); }} type="button" variant="secondary"><Icon name="copy" />{t("contacts.copyNumber")}</Button>
+        <p className="text-xs leading-5 text-brand-muted">{t("contacts.callHint")}</p>
+      </div>
+    </BottomSheet></>;
 }

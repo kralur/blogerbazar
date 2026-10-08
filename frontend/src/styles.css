@@ -1472,3 +1472,9 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .platform-stats__details { margin: .125rem 0 0; color: var(--bb-text-secondary); font-size: .75rem; }
 .deal-review__partner { display: flex; align-items: flex-start; gap: .5rem; margin: .75rem 0 0; padding: .625rem .75rem; border: 1px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .8125rem; font-weight: 700; line-height: 1.4; }
 .deal-review__partner .request-row__action-dot { margin-top: .3rem; }
+
+/* The Telegram @username is shown, not typed: it comes from Telegram itself. */
+.telegram-handle-field { display: grid; gap: .25rem; padding: .75rem .875rem; border: 1px solid var(--bb-border); border-radius: .875rem; background: var(--bb-surface-secondary); }
+.telegram-handle-field__label { color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 700; }
+.telegram-handle-field__value { color: var(--bb-text); font-size: 1rem; font-weight: 800; overflow-wrap: anywhere; }
+.telegram-handle-field .wizard-field-helper { margin: 0; }

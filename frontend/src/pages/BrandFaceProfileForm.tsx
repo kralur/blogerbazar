@@ -4,6 +4,7 @@ import { deleteProfileImage, getMyBrandFaceProfile, upsertBrandFaceProfile, uplo
 import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
 import { ProfileMediaPicker, type PendingProfileImage } from "../components/ProfileMediaPicker";
 import { RegionSelect } from "../components/RegionSelect";
+import { TelegramHandleField, useTelegramHandle } from "../components/TelegramHandleField";
 import { FixedActionBar, ReviewItem, ReviewSection, WizardErrorSummary, WizardHeader, WizardLayout, WizardStep } from "../components/Wizard";
 import { Input, Textarea, Toast } from "../components/ui";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
@@ -44,11 +45,10 @@ const initialForm: BrandFaceForm = {
 
 const stepFields: Record<Exclude<Step, 3>, Field[]> = {
   0: ["name", "city", "languages"],
-  1: ["categories", "telegram"],
+  1: ["categories"],
   2: ["instagram", "portfolioUrl", "collaborationPrice", "experience", "description"]
 };
 
-const usernamePattern = /^@[A-Za-z0-9_]{5,32}$/;
 const instagramPattern = /^@[A-Za-z0-9._]{1,30}$/;
 
 function initialBrandFaceForm(firstName?: string, username?: string) {
@@ -96,7 +96,6 @@ function validate(form: BrandFaceForm, categories: string[], t: (key: string) =>
   if (!categories.length) errors.categories = t("form.validation.categories");
   else if (categories.length > 5) errors.categories = t("brandFace.categoriesLimit");
   else if (categories.some((category) => category.trim().length > 50)) errors.categories = t("brandFace.categoryTooLong");
-  if (!usernamePattern.test(form.telegram.trim())) errors.telegram = t("form.validation.username");
   if (form.instagram.trim() && !instagramPattern.test(form.instagram.trim())) errors.instagram = t("form.validation.socialUsername");
   if (form.portfolioUrl.trim() && !isSecureUrl(form.portfolioUrl)) errors.portfolioUrl = t("form.validation.website");
   if (price !== null && price <= 0) errors.collaborationPrice = t("brandFace.priceInvalid");
@@ -137,6 +136,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
   const { language, t } = useI18n();
   const { haptic, isTelegram, user } = useTelegram();
   const [form, setForm] = useState(() => initialBrandFaceForm(user?.first_name, user?.username));
+  const telegramUsername = useTelegramHandle();
   const [categories, setCategories] = useState<string[]>([]);
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [edited, setEdited] = useState<Partial<Record<"name" | "telegram", boolean>>>({});
@@ -306,7 +306,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
         categories,
         experience: form.experience.trim() || null,
         instagram: form.instagram.trim() || null,
-        telegram: form.telegram.trim(),
+        telegram: telegramUsername ?? undefined,
         portfolioUrl: form.portfolioUrl.trim() || null,
         collaborationPrice: form.collaborationPrice ? normalizeNumericInput(form.collaborationPrice) : null,
         description: form.description.trim() || null,
@@ -382,7 +382,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
       {step === 1 && <WizardStep stepKey={stepTitles[1]}>
         <div className="wizard-fields">
           <div data-wizard-field="categories"><CategoryMultiSelect error={touched.categories ? errors.categories : undefined} onChange={updateCategories} required value={categories} /></div>
-          <div data-wizard-field="telegram"><Input className="wizard-input" error={touched.telegram ? errors.telegram : undefined} label={t("form.telegramUsername")} name="telegram" onBlur={blur("telegram")} onChange={update("telegram")} placeholder="@username" required value={form.telegram} /><p className="wizard-field-helper">{t("form.usernameHelper")}</p></div>
+          <TelegramHandleField />
         </div>
       </WizardStep>}
       {step === 2 && <WizardStep stepKey={stepTitles[2]}>
@@ -405,7 +405,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
           </ReviewSection>
           <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[1] })} editLabel={t("wizard.change")} onEdit={() => setStep(1)} title={stepTitles[1]}>
             <ReviewItem label={t("common.categories")} value={categories.map((category) => isOtherCategory(category) ? category.slice(otherCategoryPrefix.length) : categoryLabel(category, language)).join(", ")} />
-            <ReviewItem label={t("form.telegramUsername")} value={form.telegram.trim()} />
+            <ReviewItem label={t("form.telegramUsername")} value={telegramUsername ?? t("form.telegramNoUsername")} />
           </ReviewSection>
           <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[2] })} editLabel={t("wizard.change")} emptyLabel={t("common.notSpecified")} isEmpty={!hasPortfolioDetails} onEdit={() => setStep(2)} title={stepTitles[2]}>
             <ReviewItem label={t("brandFace.instagram")} value={form.instagram.trim()} />

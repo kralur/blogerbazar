@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Validation;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Domain.Entities;
@@ -20,8 +21,8 @@ public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCo
         RuleForEach(command => command.Categories).Must(category => !string.IsNullOrWhiteSpace(category)).MaximumLength(50);
         RuleFor(command => command.Requirements).Must(requirements => requirements is null || requirements.Count <= 10);
         RuleForEach(command => command.Requirements!).Must(requirement => !string.IsNullOrWhiteSpace(requirement)).MaximumLength(300).When(command => command.Requirements is not null);
-        RuleFor(command => command.BudgetFrom).GreaterThanOrEqualTo(0).When(command => command.BudgetFrom.HasValue);
-        RuleFor(command => command.BudgetTo).GreaterThanOrEqualTo(0).When(command => command.BudgetTo.HasValue);
+        RuleFor(command => command.BudgetFrom).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.BudgetFrom.HasValue);
+        RuleFor(command => command.BudgetTo).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.BudgetTo.HasValue);
         RuleFor(command => command.BudgetTo).GreaterThanOrEqualTo(command => command.BudgetFrom!.Value).When(command => command.BudgetFrom.HasValue && command.BudgetTo.HasValue);
         // A campaign cannot be created already expired; the deadline day itself is allowed (same rule as offers).
         RuleFor(command => command.Deadline).GreaterThan(_ => DateTime.UtcNow.AddDays(-1)).When(command => command.Deadline.HasValue);

@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Validation;
 using BloggerBazar.Api.Contracts.BrandFaces;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.BrandFaces;
@@ -47,6 +48,6 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
     public async Task<ActionResult<BrandFaceProfileDto>> Upsert(UpsertBrandFaceProfileRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
-        return Ok(await sender.Send(new UpsertBrandFaceProfileCommand(actor.Id, request.Name, request.City, request.Age, request.Gender, request.Languages, request.Categories, request.Experience, request.Instagram, request.Telegram, request.PortfolioUrl, request.CollaborationPrice, request.Description, request.AvatarUrl), cancellationToken));
+        return Ok(await sender.Send(new UpsertBrandFaceProfileCommand(actor.Id, request.Name, request.City, request.Age, request.Gender, request.Languages, request.Categories, request.Experience, request.Instagram, ContactValidation.TelegramHandle(actor.Username), request.PortfolioUrl, request.CollaborationPrice, request.Description, request.AvatarUrl), cancellationToken));
     }
 }

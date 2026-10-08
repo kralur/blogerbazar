@@ -41,7 +41,11 @@ export const localDay = (offsetDays = 0) => {
 // A campaign deadline is a calendar day; it stays open through that day (same rule as the backend).
 export const isPastDay = (value?: string | null) => Boolean(value) && value!.slice(0, 10) < localDay();
 export const normalizeNumericInput = (value: string) => Number(value.replace(/[^\d]/g, "")) || 0;
-export const formatNumericInput = (value: string) => value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+// Nine digits (up to 999 999 999) cover any real price, budget or audience and stay below the server's limits,
+// so a typo or a "1212121212121" test never reaches the API as a number it cannot store.
+export const maxNumericDigits = 9;
+export const maxFollowers = 500_000_000;
+export const formatNumericInput = (value: string) => value.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, maxNumericDigits).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 export const normalizeDecimalInput = (value: string) => {
   const normalized = value.trim().replace(",", ".").replace(/[^\d.]/g, "");
   const firstSeparator = normalized.indexOf(".");

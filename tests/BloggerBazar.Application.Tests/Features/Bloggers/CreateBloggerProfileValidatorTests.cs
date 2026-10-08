@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Features.Bloggers;
+using BloggerBazar.Application.Validation;
 
 namespace BloggerBazar.Application.Tests.Features.Bloggers;
 
@@ -16,5 +17,27 @@ public sealed class CreateBloggerProfileValidatorTests
         Assert.Contains(result.Errors, error => error.PropertyName == "TotalFollowers");
         Assert.Contains(result.Errors, error => error.PropertyName == "EngagementRate");
         Assert.Contains(result.Errors, error => error.PropertyName == "StoriesPrice");
+    }
+
+    [Fact]
+    public void Rejects_numbers_above_any_real_audience_or_price()
+    {
+        var result = new CreateBloggerProfileValidator().Validate(new CreateBloggerProfileCommand(
+            1, "Name", null, null, "Ташкент", ["Lifestyle"], null, null,
+            InputLimits.MaxFollowers + 1, InputLimits.MaxReach + 1, 5m, InputLimits.MaxMoney + 1, 1_000, null, null, false));
+
+        Assert.Contains(result.Errors, error => error.PropertyName == "TotalFollowers");
+        Assert.Contains(result.Errors, error => error.PropertyName == "AverageReach");
+        Assert.Contains(result.Errors, error => error.PropertyName == "StoriesPrice");
+    }
+
+    [Fact]
+    public void Accepts_a_profile_without_a_telegram_username()
+    {
+        var result = new CreateBloggerProfileValidator().Validate(new CreateBloggerProfileCommand(
+            1, "Name", null, null, "Ташкент", ["Lifestyle"], null, null,
+            10_000, 5_000, 5m, 100_000, 200_000, null, null, false, Phone: "+998901234567"));
+
+        Assert.DoesNotContain(result.Errors, error => error.PropertyName == "Username");
     }
 }

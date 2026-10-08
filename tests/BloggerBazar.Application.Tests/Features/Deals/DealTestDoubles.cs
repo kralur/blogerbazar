@@ -123,11 +123,18 @@ internal sealed class SpyBotClient : ITelegramBotClient
     public List<long> NotifiedChats { get; } = [];
     public List<string> Texts { get; } = [];
     public List<string?> Routes { get; } = [];
+    public List<string?> Buttons { get; } = [];
     public Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task SendNotificationAsync(long chatId, string text, CancellationToken cancellationToken) => Record(chatId, text, null);
 
     public Task SendNotificationAsync(long chatId, string text, string miniAppRoute, CancellationToken cancellationToken) => Record(chatId, text, miniAppRoute);
+
+    public Task SendNotificationAsync(long chatId, BotText text, string? miniAppRoute, CancellationToken cancellationToken)
+    {
+        Buttons.Add(text.Button?.Russian);
+        return Record(chatId, text.For(null), miniAppRoute);
+    }
 
     private Task Record(long chatId, string text, string? route)
     {
