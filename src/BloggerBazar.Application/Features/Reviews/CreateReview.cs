@@ -13,7 +13,7 @@ namespace BloggerBazar.Application.Features.Reviews;
 public sealed record CreateReviewCommand(Guid DealId, long TelegramUserId, int Rating, string? Comment) : IRequest<ReviewDto>;
 
 // The reviewer is the other side of the deal: a business reviews a blogger, a blogger reviews a business.
-public sealed record ReviewDto(Guid Id, Guid DealId, int TargetType, int Rating, string? Comment, string? ReviewerName, DateTime CreatedAtUtc, Guid? ReviewerProfileId = null, string? ReviewerImageUrl = null)
+public sealed record ReviewDto(Guid Id, Guid DealId, int TargetType, int Rating, string? Comment, string? ReviewerName, DateTime CreatedAtUtc, Guid? ReviewerProfileId = null, string? ReviewerImageUrl = null, bool ReviewerDeleted = false)
 {
     public static ReviewDto From(Review review)
     {

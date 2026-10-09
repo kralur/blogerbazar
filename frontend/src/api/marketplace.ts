@@ -288,7 +288,7 @@ export type MarketplaceHome = {
   categories: string[];
   statistics: { approvedBloggers: number; companies: number; activeCampaigns: number; completedDeals: number; averageRating?: number | null };
 };
-export type BloggerReview = { id: string; rating: number; comment?: string | null; reviewerName?: string | null; createdAtUtc: string; reviewerProfileId?: string | null; reviewerImageUrl?: string | null };
+export type BloggerReview = { id: string; rating: number; comment?: string | null; reviewerName?: string | null; createdAtUtc: string; reviewerProfileId?: string | null; reviewerImageUrl?: string | null; reviewerDeleted?: boolean };
 export type MyBusinessProfile = {
   id: string;
   name: string;
@@ -603,6 +603,8 @@ export type MyDeal = {
   termsSource?: DealTermsSource;
   // The partner already reviewed this deal; its content stays hidden until the viewer reviews too.
   partnerHasReviewed?: boolean;
+  // The partner deleted the account: the deal stays, the name and every action are gone.
+  counterpartyDeleted?: boolean;
 };
 
 export type DealSourceType = "campaignApplication" | "collaborationRequest";
@@ -637,6 +639,8 @@ export type DealDetails = {
   // The other side's blogger or business profile id; absent from an older API.
   counterpartyProfileId?: string | null;
   partnerHasReviewed?: boolean;
+  // The partner deleted the account: the deal stays, the name and every action are gone.
+  counterpartyDeleted?: boolean;
 };
 export type DealOffer = { format?: OfferFormat | null; offeredBudget?: number | null; deadline?: string | null; message: string };
 

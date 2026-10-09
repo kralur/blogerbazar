@@ -64,6 +64,25 @@ describe("Deal details", () => {
     expect(screen.queryByText(ru("deals.termsFallbackNote"))).not.toBeInTheDocument();
   });
 
+  it("wishes luck in Uzbek on an active deal and clears its new-deal dot", async () => {
+    localStorage.setItem("bloggerbazar.seen-deals.v1", JSON.stringify({ ids: [] }));
+    renderDeal();
+
+    expect(await screen.findByText("Barakasini bersin!")).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("bloggerbazar.seen-deals.v1") ?? "{}").ids).toContain("deal-a");
+  });
+
+  it("keeps a deal whose partner deleted the account, without the partner name or actions", async () => {
+    api.getMyDeal.mockResolvedValue({ ...activeDeal, counterpartyName: "", counterpartyDeleted: true, canComplete: false });
+    api.getDealContact.mockRejectedValue(new ApiError(404));
+    renderDeal();
+
+    expect(await screen.findByText(ru("deals.partnerDeletedNote"))).toBeInTheDocument();
+    expect(screen.getAllByText(ru("common.deletedAccount")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Barakasini bersin!")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: ru("requests.complete") })).not.toBeInTheDocument();
+  });
+
   it("marks live campaign fallback terms as not historical", async () => {
     api.getMyDeal.mockResolvedValue({ ...activeDeal, termsSource: "liveCampaignFallback" });
     renderDeal();

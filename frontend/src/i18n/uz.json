@@ -627,4 +627,10 @@
   ,"details.openPlatformProfile": "{platform} {handle} sahifasini ochish"
   ,"reviews.showAll": "Hammasini ko‘rish"
   ,"profile.viewPublic": "Anketam boshqalarga qanday ko‘rinadi"
+  ,"common.deletedAccount": "Akkaunt o‘chirilgan"
+  ,"deals.partnerDeletedNote": "Hamkor akkauntini o‘chirdi. Bitim va fikrlar saqlanadi, lekin u bilan bog‘lanish va bitimni yakunlash endi mumkin emas."
+  ,"campaign.blockedBrandFace": "Brend-yuzlar tez orada kampaniyalarga javob bera oladi. Hozircha bizneslar sizni katalogdan topib, to‘g‘ridan-to‘g‘ri yozadi."
+  ,"brandFace.offersSoon": "Brend-yuzlar uchun hamkorlik takliflari tez orada qo‘shiladi. Hozircha quyidagi kontaktlar orqali to‘g‘ridan-to‘g‘ri yozing."
+  ,"deals.blessing": "Barakasini bersin!"
+  ,"deals.newDealRow": "Yangi bitim"
 }

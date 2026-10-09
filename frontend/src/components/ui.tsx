@@ -259,6 +259,10 @@ export function ErrorState({ title, subtitle, onRetry }: { title?: string; subti
 
 export type ToastTone = "success" | "saved" | "deleted" | "copied" | "error" | "warning" | "info";
 
+export function toastDurationMs(tone?: string) {
+  return tone === "copied" ? 1500 : tone === "error" ? 5000 : tone === "warning" ? 4000 : 2500;
+}
+
 export function Toast({ message, tone = "success" }: { message: string; tone?: ToastTone }) {
   const { haptic } = useTelegram();
   const [visible, setVisible] = useState(Boolean(message));
@@ -271,7 +275,8 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
     if (tone === "error") haptic.error();
     else if (tone === "warning") haptic.warning();
     else haptic.success();
-    const timer = window.setTimeout(() => setVisible(false), 4000);
+    // Short for "done", longer for something to read: a confirmation should not cover the screen for 4 s.
+    const timer = window.setTimeout(() => setVisible(false), toastDurationMs(tone));
     return () => window.clearTimeout(timer);
   }, [haptic, message, tone]);
   if (!message || !visible) return null;

@@ -176,6 +176,15 @@ describe("Campaign safety foundation", () => {
     await waitFor(() => expect(screen.queryByRole("link", { name: translate("applications.applyState", undefined, "ru") })).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: translate("campaign.apply", undefined, "ru") })).toBeInTheDocument();
   });
+  it("tells a brand face that applying is coming instead of sending it to switch roles", async () => {
+    api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace" });
+    renderDetails();
+
+    expect(await screen.findByText(translate("campaign.blockedBrandFace", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: translate("campaign.apply", undefined, "ru") })).not.toBeInTheDocument();
+    expect(screen.queryByText(translate("campaign.blockedRole", undefined, "ru"))).not.toBeInTheDocument();
+  });
+
   it("shows the business rating and published reviews", async () => {
     api.getBusinessReviews.mockResolvedValue({
       rating: 4.5,

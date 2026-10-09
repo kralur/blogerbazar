@@ -93,6 +93,26 @@ public sealed class DealReadHandlersTests
     }
 
     [Fact]
+    public async Task Deal_with_a_deleted_partner_stays_but_hides_the_partner_and_every_action()
+    {
+        var active = Row() with { BusinessDeleted = true, BusinessId = Guid.NewGuid() };
+        var completed = Row() with { Status = DealStatus.Completed, CompletedAtUtc = DateTime.UtcNow, BusinessDeleted = true };
+
+        var listed = await List(active, MarketplaceRole.Blogger);
+        var details = await Details(completed, MarketplaceRole.Blogger);
+
+        Assert.True(listed.CounterpartyDeleted);
+        Assert.Equal(string.Empty, listed.CounterpartyName);
+        Assert.Null(listed.CounterpartyImageUrl);
+        Assert.False(listed.CanComplete);
+        Assert.True(details.CounterpartyDeleted);
+        Assert.False(details.CanReview);
+        Assert.Null(details.CounterpartyProfileId);
+        // The business still sees its own side normally when the blogger is the one who stays.
+        Assert.False((await List(active, MarketplaceRole.Business)).CounterpartyDeleted);
+    }
+
+    [Fact]
     public async Task Review_closes_fourteen_days_after_completion()
     {
         var completedAt = DateTime.UtcNow.AddDays(-14).AddMinutes(-1);

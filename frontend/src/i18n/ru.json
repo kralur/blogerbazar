@@ -628,4 +628,10 @@
   ,"details.openPlatformProfile": "Открыть {platform} {handle}"
   ,"reviews.showAll": "Показать все"
   ,"profile.viewPublic": "Как видят мою анкету другие"
+  ,"common.deletedAccount": "Аккаунт удалён"
+  ,"deals.partnerDeletedNote": "Партнёр удалил аккаунт. Сделка и отзывы сохранены, но связаться с ним и завершить сделку уже нельзя."
+  ,"campaign.blockedBrandFace": "Бренд-фейсы смогут откликаться на кампании совсем скоро. А пока бизнес находит вас в каталоге и пишет напрямую."
+  ,"brandFace.offersSoon": "Предложения о сотрудничестве для бренд-фейсов появятся совсем скоро. А пока напишите напрямую по контактам ниже."
+  ,"deals.blessing": "Barakasini bersin!"
+  ,"deals.newDealRow": "Новая сделка"
 }

@@ -25,7 +25,8 @@ public sealed record DealDetailsDto(
     DealOfferDto? Offer = null,
     DateTime? ReviewDeadlineUtc = null,
     Guid? CounterpartyProfileId = null,
-    bool PartnerHasReviewed = false)
+    bool PartnerHasReviewed = false,
+    bool CounterpartyDeleted = false)
 {
     internal static DealDetailsDto From(DealReadRow row, MarketplaceRole viewerRole)
     {
@@ -47,8 +48,9 @@ public sealed record DealDetailsDto(
             view.HasReviewed,
             view.Offer,
             view.ReviewDeadlineUtc,
-            viewerRole == MarketplaceRole.Blogger ? row.BusinessId : row.BloggerId,
-            view.PartnerHasReviewed);
+            view.CounterpartyDeleted ? (Guid?)null : viewerRole == MarketplaceRole.Blogger ? row.BusinessId : row.BloggerId,
+            view.PartnerHasReviewed,
+            view.CounterpartyDeleted);
     }
 }
 

@@ -3,6 +3,7 @@ import { useI18n } from "../i18n";
 import { contactUrl, copyText, displayContact, type ContactItem } from "../lib/contacts";
 import { BottomSheet, Button, Card, Icon, Toast } from "./ui";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { isMobileTelegram } from "../telegram/telegramTheme";
 
 const iconByKind: Record<ContactItem["kind"], string> = { phone: "phone", telegram: "send", instagram: "instagram", tiktok: "tiktok", youtube: "youtube", website: "link", email: "mail" };
 
@@ -40,14 +41,16 @@ export function ContactList({ items }: { items: ContactItem[] }) {
     openLink(item.href!);
   };
   const phoneDigits = phoneActions?.replace(/[^\d+]/g, "") ?? "";
+  const canCall = isMobileTelegram(window.Telegram?.WebApp?.platform);
 
   return <><Card className="divide-y divide-brand-line p-0">{visibleItems.map((item) => <div className="flex items-center gap-3 p-3" key={`${item.kind}-${item.value}`}><span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink"><Icon name={iconByKind[item.kind]} /></span><a className="min-w-0 flex-1" href={item.href!} onClick={(event) => { event.preventDefault(); openContact(item); }}><span className="block text-xs font-semibold text-brand-muted">{t(`contacts.${item.kind}`)}</span><span className="contact-list__value mt-0.5 block text-sm font-bold [overflow-wrap:anywhere] [text-wrap:balance]">{displayContact(item)}</span></a><button aria-label={t("contacts.copyAria", { value: displayContact(item) })} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-brand-muted transition hover:bg-brand-soft active:scale-95" onClick={() => void copy(displayContact(item))} type="button"><Icon name="copy" /></button></div>)}</Card><Toast message={toast} tone="copied" />
     <BottomSheet onClose={() => setPhoneActions(null)} open={phoneActions !== null} title={phoneActions ?? ""} variant="neutral">
       <div className="grid gap-2">
-        <Button onClick={() => { setPhoneActions(null); openLink(`tel:${phoneDigits}`); }} type="button"><Icon name="phone" />{t("contacts.call")}</Button>
+        {/* A real tel: link tapped by the user: Telegram's WebViews drop a call started from script. Desktop has no phone to call with. */}
+        {canCall && <a className="ds-button ds-button--primary tap-target inline-flex items-center justify-center gap-2 px-5" href={`tel:${phoneDigits}`} onClick={() => window.setTimeout(() => setPhoneActions(null), 0)}><Icon name="phone" />{t("contacts.call")}</a>}
         <Button onClick={() => { setPhoneActions(null); openLink(`https://t.me/${phoneDigits}`); }} type="button" variant="secondary"><Icon name="send" />{t("contacts.writeInTelegram")}</Button>
         <Button onClick={() => { const value = phoneActions ?? ""; setPhoneActions(null); void copy(value); }} type="button" variant="secondary"><Icon name="copy" />{t("contacts.copyNumber")}</Button>
-        <p className="text-xs leading-5 text-brand-muted">{t("contacts.callHint")}</p>
+        {canCall && <p className="text-xs leading-5 text-brand-muted">{t("contacts.callHint")}</p>}
       </div>
     </BottomSheet></>;
 }

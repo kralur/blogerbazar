@@ -7,6 +7,14 @@ export const TelegramLaunch = {
   accentHighlight: "#B5E600"
 } as const;
 
+// Telegram clients that show a Mini App in a window with its own title bar. Anything else, including an
+// unknown platform, is treated as a phone: the safe choice for the header clearance and the call button.
+const desktopTelegramPlatforms = new Set(["tdesktop", "macos", "web", "weba", "webk", "unigram"]);
+
+export function isMobileTelegram(platform?: string) {
+  return !platform || !desktopTelegramPlatforms.has(platform);
+}
+
 export const TelegramSafeArea = {
   minimumChromeTop: 80,
   contentGap: 8

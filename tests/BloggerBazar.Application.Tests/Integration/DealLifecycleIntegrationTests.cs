@@ -196,6 +196,37 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task Partner_account_deletion_keeps_the_deal_and_reviews_without_the_partner_identity()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_201, 1_100_202, complete: true);
+        using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+        using var anonymous = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Created, (await bloggerClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 4, comment = "Clear brief" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await businessClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5, comment = "Great reel" })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await businessClient.DeleteAsync("/api/users/me")).StatusCode);
+
+        var deals = await bloggerClient.GetFromJsonAsync<JsonElement>("/api/deals/me");
+        var deal = await bloggerClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{seed.DealId}");
+        var contact = await bloggerClient.GetAsync($"/api/deals/me/{seed.DealId}/contact");
+        var bloggerReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews");
+
+        var listed = Assert.Single(deals.EnumerateArray(), item => item.GetProperty("id").GetGuid() == seed.DealId);
+        Assert.True(listed.GetProperty("counterpartyDeleted").GetBoolean());
+        Assert.Equal(string.Empty, listed.GetProperty("counterpartyName").GetString());
+        Assert.True(deal.GetProperty("counterpartyDeleted").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, deal.GetProperty("counterpartyProfileId").ValueKind);
+        Assert.False(deal.GetProperty("canComplete").GetBoolean());
+        Assert.Equal(HttpStatusCode.NotFound, contact.StatusCode);
+        var review = Assert.Single(bloggerReviews.EnumerateArray());
+        Assert.Equal("Great reel", review.GetProperty("comment").GetString());
+        Assert.True(review.GetProperty("reviewerDeleted").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, review.GetProperty("reviewerName").ValueKind);
+        Assert.Equal(JsonValueKind.Null, review.GetProperty("reviewerProfileId").ValueKind);
+    }
+
+    [IntegrationFact]
     public async Task Blind_reviews_stay_hidden_until_both_sides_review()
     {
         var seed = await SeedCampaignDealAsync(1_100_081, 1_100_082, complete: true);

@@ -20,7 +20,8 @@ public sealed record MyDealDto(
     bool CanReview,
     string SourceType,
     string TermsSource,
-    bool PartnerHasReviewed = false)
+    bool PartnerHasReviewed = false,
+    bool CounterpartyDeleted = false)
 {
     // Kept for backward compatibility of the legacy list; clients should use SourceType.
     internal const string LegacyCollaborationTitle = "Direct collaboration request";
@@ -42,7 +43,8 @@ public sealed record MyDealDto(
             view.CanReview,
             view.SourceType,
             view.TermsSource,
-            view.PartnerHasReviewed);
+            view.PartnerHasReviewed,
+            view.CounterpartyDeleted);
     }
 }
 

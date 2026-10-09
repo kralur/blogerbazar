@@ -10,7 +10,7 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
 {
     public async Task<IReadOnlyList<DealReadRow>> ListForParticipantAsync(MarketplaceRole role, Guid profileId, CancellationToken cancellationToken) =>
         await Project(dbContext.Deals.AsNoTracking()
-                .Where(DealParticipantFilter.For(role, profileId))
+                .Where(DealParticipantFilter.Visible(role, profileId))
                 .OrderByDescending(deal => deal.CreatedAtUtc)
                 .ThenByDescending(deal => deal.Id))
             .ToArrayAsync(cancellationToken);
@@ -18,7 +18,7 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
     public Task<DealReadRow?> FindForParticipantAsync(Guid dealId, MarketplaceRole role, Guid profileId, CancellationToken cancellationToken) =>
         Project(dbContext.Deals.AsNoTracking()
                 .Where(deal => deal.Id == dealId)
-                .Where(DealParticipantFilter.For(role, profileId)))
+                .Where(DealParticipantFilter.Visible(role, profileId)))
             .SingleOrDefaultAsync(cancellationToken);
 
     // IgnoreQueryFilters: the "has reviewed" flags must count hidden (not yet published) reviews too.
@@ -58,5 +58,7 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Deadline,
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Message,
             deal.BloggerId,
-            deal.BusinessId));
+            deal.BusinessId,
+            deal.Blogger.IsDeleted,
+            deal.Business.IsDeleted));
 }

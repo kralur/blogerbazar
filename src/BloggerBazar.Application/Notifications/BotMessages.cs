@@ -23,17 +23,20 @@ internal static class BotMessages
         $"Ваш отклик на кампанию «{campaignTitle}» отклонён.",
         $"«{campaignTitle}» kampaniyasiga javobingiz rad etildi.");
 
+    // "Barakasini bersin!" closes every new-deal message in both languages: local marketing, never translated (owner's decision).
+    internal const string NewDealBlessing = "Barakasini bersin!";
+
     public static BotText CampaignApplicationAccepted(string campaignTitle) => Bilingual(
-        $"Ваш отклик на кампанию «{campaignTitle}» принят. Сделка создана, контакты партнёра открыты в сделке.",
-        $"«{campaignTitle}» kampaniyasiga javobingiz qabul qilindi. Bitim yaratildi, hamkor kontaktlari bitim sahifasida.") with { Button = OpenDealButton };
+        $"Ваш отклик на кампанию «{campaignTitle}» принят. Сделка создана, контакты партнёра открыты в сделке. {NewDealBlessing}",
+        $"«{campaignTitle}» kampaniyasiga javobingiz qabul qilindi. Bitim yaratildi, hamkor kontaktlari bitim sahifasida. {NewDealBlessing}") with { Button = OpenDealButton };
 
     public static BotText OfferReceived(string businessName) => Bilingual(
         $"{businessName} предлагает вам сотрудничество. Ответьте в течение 48 часов.",
         $"{businessName} sizga hamkorlik taklif qilmoqda. 48 soat ichida javob bering.") with { Button = ReplyButton };
 
     public static BotText OfferAccepted(string bloggerName) => Bilingual(
-        $"{bloggerName} принял(а) ваше предложение. Сделка создана.",
-        $"{bloggerName} taklifingizni qabul qildi. Bitim yaratildi.") with { Button = OpenDealButton };
+        $"{bloggerName} принял(а) ваше предложение. Сделка создана. {NewDealBlessing}",
+        $"{bloggerName} taklifingizni qabul qildi. Bitim yaratildi. {NewDealBlessing}") with { Button = OpenDealButton };
 
     public static BotText OfferDeclined(string bloggerName) => Bilingual(
         $"{bloggerName} отклонил(а) ваше предложение.",

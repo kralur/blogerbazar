@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { getMyCampaigns, getMyDeals, getMyOffers, type MarketplaceRole } from "../../api/marketplace";
 import { useScreenRefresh } from "../../hooks/useScreenRefresh";
+import { seenDealsChangedEvent, unseenActiveDealIds } from "../../data/seenDeals";
 
 // Things waiting for the user's own action, not "unread": the numbers are always right and disappear once acted on.
-export type ActionCounts = { offers: number; applications: number; reviews: number; total: number };
+export type ActionCounts = { offers: number; applications: number; reviews: number; newDeals: number; total: number };
 
-const noActions: ActionCounts = { offers: 0, applications: 0, reviews: 0, total: 0 };
+const noActions: ActionCounts = { offers: 0, applications: 0, reviews: 0, newDeals: 0, total: 0 };
 const ActionCountsContext = createContext<ActionCounts>(noActions);
 const navigationRefreshMs = 3_000;
 
@@ -21,16 +22,23 @@ export function ActionCountsProvider({ role, enabled, children }: { role?: Marke
     const [deals, roleData] = await Promise.allSettled([getMyDeals(), role === "Business" ? getMyCampaigns({ pageSize: 50 }) : getMyOffers()]);
     if (requestId !== requestRef.current) return;
     const reviews = deals.status === "fulfilled" ? deals.value.filter((deal) => deal.canReview).length : 0;
+    // A deal the partner just created (accepted offer or application) counts until it is opened once.
+    const newDeals = deals.status === "fulfilled" ? unseenActiveDealIds(deals.value).size : 0;
     let offers = 0;
     let applications = 0;
     if (roleData.status === "fulfilled") {
       if (role === "Business") applications = (roleData.value as Awaited<ReturnType<typeof getMyCampaigns>>).items.reduce((sum, campaign) => sum + (campaign.pendingApplicationsCount ?? 0), 0);
       else offers = (roleData.value as Awaited<ReturnType<typeof getMyOffers>>).filter((offer) => offer.canRespond).length;
     }
-    setCounts({ offers, applications, reviews, total: offers + applications + reviews });
+    setCounts({ offers, applications, reviews, newDeals, total: offers + applications + reviews + newDeals });
   }, [enabled, role]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const onSeen = () => void load();
+    window.addEventListener(seenDealsChangedEvent, onSeen);
+    return () => window.removeEventListener(seenDealsChangedEvent, onSeen);
+  }, [load]);
   useScreenRefresh(load, enabled);
   // Accepting, declining or reviewing ends with navigation, so moving between screens re-checks (at most every 3 s).
   useEffect(() => {

@@ -60,7 +60,9 @@ public sealed record DealReadRow(
     DateTime? OfferDeadline = null,
     string? OfferMessage = null,
     Guid? BloggerId = null,
-    Guid? BusinessId = null);
+    Guid? BusinessId = null,
+    bool BloggerDeleted = false,
+    bool BusinessDeleted = false);
 
 public sealed record DealOfferDto(string? Format, int? OfferedBudget, DateTime? Deadline, string Message);
 
@@ -75,7 +77,8 @@ internal sealed record DealView(
     bool HasReviewed,
     DealOfferDto? Offer,
     DateTime? ReviewDeadlineUtc,
-    bool PartnerHasReviewed)
+    bool PartnerHasReviewed,
+    bool CounterpartyDeleted)
 {
     public static DealView From(DealReadRow row, MarketplaceRole viewerRole) => From(row, viewerRole, DateTime.UtcNow);
 
@@ -83,23 +86,26 @@ internal sealed record DealView(
     {
         var viewerIsBlogger = viewerRole == MarketplaceRole.Blogger;
         var hasReviewed = viewerIsBlogger ? row.BloggerHasReviewed : row.BusinessHasReviewed;
+        // A deleted partner: the deal and its terms stay, the partner's identity and every action go.
+        var partnerDeleted = viewerIsBlogger ? row.BusinessDeleted : row.BloggerDeleted;
         var (sourceType, termsSource, terms) = ResolveTerms(row);
 
         return new(
             sourceType,
             termsSource,
             terms,
-            viewerIsBlogger ? row.BusinessName : row.BloggerName,
-            viewerIsBlogger ? row.BusinessLogoUrl : row.BloggerAvatarUrl,
-            row.Status == DealStatus.Active,
-            row.Status == DealStatus.Completed && !hasReviewed && Reviews.ReviewWindow.IsOpen(row.CompletedAtUtc, nowUtc),
+            partnerDeleted ? string.Empty : viewerIsBlogger ? row.BusinessName : row.BloggerName,
+            partnerDeleted ? (string?)null : viewerIsBlogger ? row.BusinessLogoUrl : row.BloggerAvatarUrl,
+            !partnerDeleted && row.Status == DealStatus.Active,
+            !partnerDeleted && row.Status == DealStatus.Completed && !hasReviewed && Reviews.ReviewWindow.IsOpen(row.CompletedAtUtc, nowUtc),
             hasReviewed,
             row.CollaborationRequestId is not null && row.OfferMessage is not null
                 ? new DealOfferDto(Offers.OfferFormats.ToName(row.OfferFormat), row.OfferedBudget, row.OfferDeadline, row.OfferMessage)
                 : null,
             row.Status == DealStatus.Completed ? Reviews.ReviewWindow.EndsAtUtc(row.CompletedAtUtc) : null,
             // Only that a review exists, never its rating: the blind rule still hides the content.
-            viewerIsBlogger ? row.BusinessHasReviewed : row.BloggerHasReviewed);
+            viewerIsBlogger ? row.BusinessHasReviewed : row.BloggerHasReviewed,
+            partnerDeleted);
     }
 
     private static (string SourceType, string TermsSource, DealTermsDto? Terms) ResolveTerms(DealReadRow row)

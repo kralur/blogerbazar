@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { LaunchScreen } from "../components/LaunchScreen";
-import { resolveTelegramContentTop, TelegramLaunch } from "./telegramTheme";
+import { isMobileTelegram, resolveTelegramContentTop, TelegramLaunch } from "./telegramTheme";
 import { getThemePreference, resolveColorScheme, themePreferenceChangedEvent } from "../lib/themePreference";
 
 type TelegramUser = { id: number; username?: string; first_name?: string; photo_url?: string; language_code?: string; allows_write_to_pm?: boolean };
@@ -44,14 +44,6 @@ type TelegramWebApp = {
 
 declare global {
   interface Window { Telegram?: { WebApp?: TelegramWebApp } }
-}
-
-// Telegram clients that show a Mini App in a window with its own title bar. Anything else, including an
-// unknown platform, keeps the phone clearance so the Close/menu buttons never cover our header.
-const desktopTelegramPlatforms = new Set(["tdesktop", "macos", "web", "weba", "webk", "unigram"]);
-
-export function isMobileTelegram(platform?: string) {
-  return !platform || !desktopTelegramPlatforms.has(platform);
 }
 
 function webApp(): TelegramWebApp | undefined {

@@ -24,7 +24,7 @@ internal sealed class PublicBusinessReadModel(BloggerBazarDbContext dbContext) :
                 profile.Description,
                 profile.IsVerified,
                 profile.CreatedAtUtc,
-                CompletedDeals = profile.Deals.Count(deal => deal.Status == DealStatus.Completed && !deal.Blogger.IsDeleted)
+                CompletedDeals = profile.Deals.Count(deal => deal.Status == DealStatus.Completed)
             })
             .SingleOrDefaultAsync(cancellationToken);
         if (business is null) return null;

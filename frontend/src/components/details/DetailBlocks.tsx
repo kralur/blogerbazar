@@ -34,10 +34,11 @@ export function ReviewList({ reviews, emptyText, reviewerRoute }: { reviews: Blo
 }
 
 function ReviewCard({ review, reviewerRoute, compact = false }: { review: BloggerReview; reviewerRoute?: (profileId: string) => string; compact?: boolean }) {
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   return <Card className={`p-3${compact ? " review-card--compact" : ""}`}>
     <div className="flex items-center justify-between"><Rating value={review.rating} /><span className="text-xs text-brand-muted">{formatShortDate(review.createdAtUtc, language, { year: true })}</span></div>
-    {review.reviewerName && (review.reviewerProfileId && reviewerRoute
+    {review.reviewerDeleted && <p className="review-author review-author--deleted">{t("common.deletedAccount")}</p>}
+    {!review.reviewerDeleted && review.reviewerName && (review.reviewerProfileId && reviewerRoute
       ? <a className="review-author" href={reviewerRoute(review.reviewerProfileId)}><Avatar name={review.reviewerName} size="sm" src={review.reviewerImageUrl} variant="catalog" /><span>{review.reviewerName}</span></a>
       : <p className="mt-2 text-sm font-bold">{review.reviewerName}</p>)}
     {review.comment && <p className="review-card__comment mt-1 text-sm leading-5 text-brand-muted">{review.comment}</p>}

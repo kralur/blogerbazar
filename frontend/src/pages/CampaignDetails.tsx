@@ -107,6 +107,8 @@ export function CampaignDetails({ id }: { id: string }) {
       setBlockedReason(eligible || userResult.status !== "fulfilled" ? null
         : isOwnCampaign ? "own"
         : campaign.status !== 1 ? "closed"
+        // Brand faces cannot apply yet (D19/D34): say it plainly instead of sending them to switch roles.
+        : activeRole === "BrandFace" ? "brandFace"
         : activeRole !== "Blogger" ? "role"
         : bloggerResult.status === "rejected" && bloggerResult.reason instanceof ApiError && bloggerResult.reason.status === 404 ? "noProfile"
         : null);
@@ -228,7 +230,7 @@ export function CampaignDetails({ id }: { id: string }) {
   );
 }
 
-type ApplyBlockedReason = "own" | "closed" | "role" | "noProfile";
+type ApplyBlockedReason = "own" | "closed" | "role" | "noProfile" | "brandFace";
 
 // Explains why there is no apply button instead of leaving an empty space.
 function ApplyBlockedNote({ campaignId, reason }: { campaignId: string; reason: ApplyBlockedReason }) {
@@ -237,6 +239,6 @@ function ApplyBlockedNote({ campaignId, reason }: { campaignId: string; reason: 
     : reason === "role" ? { href: "#/profile", label: t("campaign.blockedRoleAction") }
     : reason === "noProfile" ? { href: "#/blogger-form", label: t("campaign.blockedNoProfileAction") }
     : null;
-  const text = reason === "own" ? t("campaign.blockedOwn") : reason === "role" ? t("campaign.blockedRole") : reason === "noProfile" ? t("campaign.blockedNoProfile") : t("campaign.blockedClosed");
+  const text = reason === "own" ? t("campaign.blockedOwn") : reason === "brandFace" ? t("campaign.blockedBrandFace") : reason === "role" ? t("campaign.blockedRole") : reason === "noProfile" ? t("campaign.blockedNoProfile") : t("campaign.blockedClosed");
   return <div className="campaign-details__expired" role="status"><p>{text}</p>{action && <a className="campaign-details__blocked-action" href={action.href}>{action.label}</a>}</div>;
 }

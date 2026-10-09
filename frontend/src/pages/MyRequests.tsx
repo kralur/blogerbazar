@@ -16,10 +16,12 @@ import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { CampaignApplicationStatus, campaignApplicationStatusTone, canAcceptCampaignApplication } from "../lib/campaignApplicationStatus";
 import { BloggerApplications } from "./BloggerApplications";
 import { subscribeDealCache } from "../data/dealCache";
+import { seenDealsChangedEvent, unseenActiveDealIds } from "../data/seenDeals";
 import { dealRoute, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerRoute, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
 import { PageHeader } from "../components/PageHeader";
 import { RequestRow } from "../components/RequestRow";
+import { CounterpartyRow } from "../components/CounterpartyRow";
 import { formatShortDate, formatCurrency } from "../lib/currency";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { ActionBadge, useActionCounts } from "../features/actionCounts/ActionCountsProvider";
@@ -49,6 +51,13 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
   const [offersFailed, setOffersFailed] = useState(false);
   const [requests, setRequests] = useState<MyCampaignApplication[]>([]);
   const [deals, setDeals] = useState<MyDeal[]>([]);
+  // Re-read which deals are new after one is opened.
+  const [seenTick, setSeenTick] = useState(0);
+  useEffect(() => {
+    const onSeen = () => setSeenTick((tick) => tick + 1);
+    window.addEventListener(seenDealsChangedEvent, onSeen);
+    return () => window.removeEventListener(seenDealsChangedEvent, onSeen);
+  }, []);
   const [selectedRequest, setSelectedRequest] = useState<MyCampaignApplication | null>(null);
   const [requestsLoading, setRequestsLoading] = useState(activeMarketplaceRole !== "Blogger");
   const [requestsFailed, setRequestsFailed] = useState(false);
@@ -117,6 +126,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
   };
   const visibleRequests = requests.filter((request) => withinRange(request.createdAtUtc));
   const visibleDeals = deals.filter((deal) => withinRange(deal.createdAtUtc));
+  const newDealIds = seenTick >= 0 ? unseenActiveDealIds(deals) : new Set<string>();
 
   const accept = async (id: string) => {
     try {
@@ -137,7 +147,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       <PageHeader actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
 
       <div aria-label={t("requests.title")} className="catalog-search__segments catalog-search__segments--three" role="group">
-        {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button">{label}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}
+        {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews + actionCounts.newDeals]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button">{label}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}
       </div>
 
       {view === "offers" ? (
@@ -160,15 +170,15 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       ) : (
         dealsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
           <div className="request-list">
-            {waitingFirst(visibleDeals, (deal) => deal.canReview).map((deal) => (
-              <RequestRow action={deal.canReview ? t(deal.partnerHasReviewed ? "deals.partnerReviewedRow" : "deals.awaitingReview") : null} href={`#${dealRoute(deal.id)}`} imageUrl={deal.counterpartyImageUrl} key={deal.id} meta={deal.canReview ? t("deals.awaitingReview") : deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, language)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, language)}`} name={deal.counterpartyName} status={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} title={deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title} />
+            {waitingFirst(visibleDeals, (deal) => deal.canReview || newDealIds.has(deal.id)).map((deal) => (
+              <RequestRow action={deal.canReview ? t(deal.partnerHasReviewed ? "deals.partnerReviewedRow" : "deals.awaitingReview") : newDealIds.has(deal.id) ? t("deals.newDealRow") : null} href={`#${dealRoute(deal.id)}`} imageUrl={deal.counterpartyImageUrl} key={deal.id} meta={deal.canReview ? t("deals.awaitingReview") : deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, language)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, language)}`} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} status={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} title={deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title} />
             ))}
           </div>
         )
       )}
 
       <Modal onClose={() => setSelectedRequest(null)} open={Boolean(selectedRequest)} title={selectedRequest?.campaignTitle ?? t("requests.title")}>
-        {selectedRequest && <><p className="text-sm font-bold">{selectedRequest.counterpartyName}</p><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status) ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}</>}
+        {selectedRequest && <><CounterpartyRow href={selectedRequest.counterpartyProfileId ? `#/blogger/${selectedRequest.counterpartyProfileId}` : null} imageUrl={selectedRequest.counterpartyImageUrl} label={t("offers.counterpartyBlogger")} name={selectedRequest.counterpartyName} /><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status) ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}</>}
       </Modal>
 
       <BottomSheet onClose={() => setDateFilterOpen(false)} open={dateFilterOpen} title={t("requests.dateFilter")}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">{(["today", "week", "month", "custom"] as const).map((range) => <button className={`rounded-2xl border px-3 py-3 text-sm font-bold ${dateRange === range ? "choice-selected" : "border-brand-line bg-brand-surface"}`} key={range} onClick={() => setDateRange(range)} type="button">{t(`requests.range.${range}`)}</button>)}</div>{dateRange === "custom" && <div className="grid grid-cols-2 gap-3"><Input label={t("requests.fromDate")} onChange={(event) => setFromDate(event.target.value)} type="date" value={fromDate} /><Input label={t("requests.toDate")} onChange={(event) => setToDate(event.target.value)} type="date" value={toDate} /></div>}<Button className="w-full" onClick={() => setDateFilterOpen(false)} type="button">{t("common.apply")}</Button><Button className="w-full" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setDateFilterOpen(false); }} type="button" variant="secondary">{t("common.reset")}</Button></div></BottomSheet>

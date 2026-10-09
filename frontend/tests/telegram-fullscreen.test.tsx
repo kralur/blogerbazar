@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Modal } from "../src/components/ui";
 import { I18nProvider } from "../src/i18n";
-import { isMobileTelegram, TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
-import { resolveTelegramContentTop } from "../src/telegram/telegramTheme";
+import { TelegramProvider, useTelegram } from "../src/telegram/TelegramProvider";
+import { isMobileTelegram, resolveTelegramContentTop } from "../src/telegram/telegramTheme";
 
 function renderTelegram(platform: string) {
   const webApp = {
