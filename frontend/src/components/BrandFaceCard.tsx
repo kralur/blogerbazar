@@ -3,8 +3,9 @@ import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { Avatar } from "./ui";
 import { FavoriteButton } from "./FavoriteButton";
+import { spokenLanguageLabelKey } from "../lib/languages";
 
-export function BrandFaceCard({ profile, onFavoriteChanged, variant = "default" }: { profile: Pick<BrandFaceCatalogItem, "id" | "name" | "city" | "categories" | "languages" | "collaborationPrice" | "avatarUrl" | "isPromoted">; onFavoriteChanged?: (isFavorite: boolean) => void; variant?: "default" | "home" }) {
+export function BrandFaceCard({ profile, onFavoriteChanged, variant = "default" }: { profile: Pick<BrandFaceCatalogItem, "id" | "name" | "city" | "categories" | "languages" | "collaborationPrice" | "avatarUrl" | "isPromoted"> & Partial<Pick<BrandFaceCatalogItem, "age" | "gender">>; onFavoriteChanged?: (isFavorite: boolean) => void; variant?: "default" | "home" }) {
   const { language, t } = useI18n();
   const categories = profile.categories.slice(0, 2);
   const languages = profile.languages.slice(0, 2);
@@ -17,13 +18,13 @@ export function BrandFaceCard({ profile, onFavoriteChanged, variant = "default" 
           <div className="catalog-brand-face-card__name-row">
             <strong>{profile.name}</strong>
           </div>
-          <p>{cityLabel(profile.city, language)}</p>
+          <p>{[profile.gender === "female" || profile.gender === "male" ? t(`brandFace.person.${profile.gender}`) : null, profile.age ? t("brandFace.ageYears", { count: profile.age }) : null, cityLabel(profile.city, language)].filter(Boolean).join(" · ")}</p>
         </div>
       </div>
       {(profile.isPromoted || categories.length > 0 || languages.length > 0) && <div className="catalog-brand-face-card__chips">
         {profile.isPromoted && <span className="catalog-card__promoted">{t("search.promoted")}</span>}
         {categories.map((category) => <span key={`category:${category}`}>{categoryLabel(category, language)}</span>)}
-        {languages.map((language) => <span key={`language:${language}`}>{language}</span>)}
+        {languages.map((code) => <span key={`language:${code}`}>{spokenLanguageLabelKey(code) ? t(spokenLanguageLabelKey(code)!) : code}</span>)}
       </div>}
       <div className="catalog-brand-face-card__price">
         <span>{t("common.price")}</span>

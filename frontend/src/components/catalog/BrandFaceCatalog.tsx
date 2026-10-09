@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { spokenLanguageLabelKey, spokenLanguages } from "../../lib/languages";
 import { getBrandFaceCatalog, getCategories, type BrandFaceCatalogFilters, type BrandFaceCatalogSort, type BrandFaceCatalogItem } from "../../api/marketplace";
 import { BrandFaceCard } from "../BrandFaceCard";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
@@ -19,7 +20,10 @@ const pageSize = 20;
 const filterSheetId = "brand-face-search-filters";
 const defaultFilters: BrandFaceCatalogFilters = { sort: "promoted", pageSize };
 
-type FilterKey = "category" | "city" | "language" | "minPrice" | "maxPrice" | "sort";
+type FilterKey = "category" | "city" | "language" | "minPrice" | "maxPrice" | "sort" | "gender" | "age";
+// A business looks for "a woman of 20-25" first (QA Q20): age is offered as ranges, sent as minAge/maxAge.
+const ageRanges: Array<[number, number]> = [[16, 20], [21, 25], [26, 30], [31, 40], [41, 80]];
+const ageRangeKey = (filters: BrandFaceCatalogFilters) => filters.minAge && filters.maxAge ? `${filters.minAge}-${filters.maxAge}` : "";
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
 function hashCategory() {
@@ -112,8 +116,15 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
     return () => observer.disconnect();
   }, [active, failure, hasMore, load, loadMoreFailed, loading, loadingMore, page]);
 
-  const setDraft = (key: FilterKey, value: string | number | undefined) => {
+  const setDraft = (key: Exclude<FilterKey, "age">, value: string | number | undefined) => {
     const next = normalizedFilters({ ...draftFiltersRef.current, [key]: value || undefined });
+    draftFiltersRef.current = next;
+    setDraftFilters(next);
+  };
+
+  const setDraftAge = (value: string) => {
+    const [minAge, maxAge] = value ? value.split("-").map(Number) : [undefined, undefined];
+    const next = normalizedFilters({ ...draftFiltersRef.current, minAge, maxAge });
     draftFiltersRef.current = next;
     setDraftFilters(next);
   };
@@ -150,8 +161,9 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
 
   const removeFilter = (key: FilterKey) => {
     haptic.selection();
-    setAppliedFilters((current) => normalizedFilters({ ...current, [key]: undefined }));
-    const nextDraft = normalizedFilters({ ...draftFiltersRef.current, [key]: undefined });
+    const cleared = key === "age" ? { minAge: undefined, maxAge: undefined } : { [key]: undefined };
+    setAppliedFilters((current) => normalizedFilters({ ...current, ...cleared }));
+    const nextDraft = normalizedFilters({ ...draftFiltersRef.current, ...cleared });
     draftFiltersRef.current = nextDraft;
     setDraftFilters(nextDraft);
   };
@@ -167,7 +179,9 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
     <BottomSheet id={filterSheetId} onClose={() => setFiltersOpen(false)} open={filtersOpen} title={t("search.filters")}><div className="catalog-search__sheet-content">
       <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, categoryLabel(category)])]} value={draftFilters.category ?? ""} />
       <FilterSelect label={t("common.city")} onChange={(value) => setDraft("city", value)} options={[["", t("common.any")], ...uzbekistanRegions.map((city) => [city, cityLabel(city)])]} value={draftFilters.city ?? ""} />
-      <label className="catalog-search__filter-select"><span>{t("search.language")}</span><input aria-label={t("search.language")} onChange={(event) => setDraft("language", event.target.value)} placeholder={t("search.languagePlaceholder")} type="text" value={draftFilters.language ?? ""} /></label>
+      <FilterSelect label={t("brandFace.filterGender")} onChange={(value) => setDraft("gender", value)} options={[["", t("brandFace.filterAny")], ["female", t("brandFace.gender.female")], ["male", t("brandFace.gender.male")]]} value={draftFilters.gender ?? ""} />
+      <FilterSelect label={t("brandFace.filterAge")} onChange={setDraftAge} options={[["", t("brandFace.filterAny")], ...ageRanges.map(([min, max]) => [`${min}-${max}`, `${min}–${max}`])]} value={ageRangeKey(draftFilters)} />
+      <FilterSelect label={t("search.language")} onChange={(value) => setDraft("language", value)} options={[["", t("brandFace.filterAny")], ...spokenLanguages.map((code) => [code, t(`language.${code}`)])]} value={draftFilters.language ?? ""} />
       <label className="catalog-search__filter-select"><span>{t("search.minPrice")}</span><input aria-label={t("search.minPrice")} inputMode="numeric" onChange={(event) => setDraft("minPrice", Number(event.target.value.replace(/\D/g, "")) || undefined)} placeholder={t("search.anyPrice")} type="text" value={draftFilters.minPrice ? formatNumericInput(String(draftFilters.minPrice)) : ""} /></label>
       <label className="catalog-search__filter-select"><span>{t("search.maxPrice")}</span><input aria-label={t("search.maxPrice")} inputMode="numeric" onChange={(event) => setDraft("maxPrice", Number(event.target.value.replace(/\D/g, "")) || undefined)} placeholder={t("search.anyPrice")} type="text" value={draftFilters.maxPrice ? formatNumericInput(String(draftFilters.maxPrice)) : ""} /></label>
       <div className="catalog-search__sheet-actions"><button className="catalog-search__secondary-button" onClick={resetFilters} type="button">{t("common.reset")}</button><button className="catalog-search__primary-button" onClick={applyFilters} type="button">{t("common.apply")}</button></div>
@@ -191,7 +205,9 @@ function buildActiveChips(filters: BrandFaceCatalogFilters, t: Translate) {
   const chips: Array<{ key: FilterKey; label: string }> = [];
   if (filters.category) chips.push({ key: "category", label: categoryLabel(filters.category) });
   if (filters.city) chips.push({ key: "city", label: cityLabel(filters.city) });
-  if (filters.language) chips.push({ key: "language", label: filters.language });
+  if (filters.gender) chips.push({ key: "gender", label: t(`brandFace.gender.${filters.gender}`) });
+  if (ageRangeKey(filters)) chips.push({ key: "age", label: `${t("brandFace.filterAge")} ${filters.minAge}–${filters.maxAge}` });
+  if (filters.language) chips.push({ key: "language", label: spokenLanguageLabelKey(filters.language) ? t(spokenLanguageLabelKey(filters.language)!) : filters.language });
   if (filters.minPrice) chips.push({ key: "minPrice", label: t("search.priceFrom", { amount: formatCurrency(filters.minPrice) }) });
   if (filters.maxPrice) chips.push({ key: "maxPrice", label: t("search.priceUpTo", { amount: formatCurrency(filters.maxPrice) }) });
   if (filters.sort && filters.sort !== defaultFilters.sort) chips.push({ key: "sort", label: sortOptions(t).find(([value]) => value === filters.sort)?.[1] ?? t("search.sortPromoted") });

@@ -119,6 +119,9 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         brandFace.HasIndex(entity => entity.IsDeleted);
         brandFace.Property(entity => entity.Languages).HasColumnType("text[]");
         brandFace.Property(entity => entity.Categories).HasColumnType("text[]");
+        brandFace.Property(entity => entity.Formats).HasColumnType("text[]");
+        brandFace.Property(entity => entity.PhotoUrls).HasColumnType("text[]");
+        brandFace.Property(entity => entity.ShowreelUrl).HasMaxLength(2048);
         brandFace.HasIndex(entity => entity.TelegramUserId).IsUnique();
         brandFace.HasIndex(entity => new { entity.City, entity.IsPromoted });
         brandFace.HasIndex(entity => entity.Name).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_brand_face_profiles_name_trgm");

@@ -14,7 +14,10 @@ public sealed record SearchBrandFaceCatalogQuery(
     int? MaxPrice,
     string? Sort = "promoted",
     int Page = 1,
-    int PageSize = 20) : IRequest<BrandFaceCatalogResult>;
+    int PageSize = 20,
+    string? Gender = null,
+    int? MinAge = null,
+    int? MaxAge = null) : IRequest<BrandFaceCatalogResult>;
 
 public sealed record BrandFaceCatalogItemDto(
     Guid Id,
@@ -25,7 +28,9 @@ public sealed record BrandFaceCatalogItemDto(
     int? CollaborationPrice,
     string? AvatarUrl,
     bool IsPromoted,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    int? Age = null,
+    string? Gender = null);
 
 public sealed record BrandFaceCatalogResult(
     IReadOnlyList<BrandFaceCatalogItemDto> Items,
@@ -43,7 +48,10 @@ public sealed record BrandFaceCatalogSearch(
     int? MaxPrice,
     string Sort,
     int Page,
-    int PageSize);
+    int PageSize,
+    string? Gender = null,
+    int? MinAge = null,
+    int? MaxAge = null);
 
 public sealed class SearchBrandFaceCatalogValidator : AbstractValidator<SearchBrandFaceCatalogQuery>
 {
@@ -61,6 +69,11 @@ public sealed class SearchBrandFaceCatalogValidator : AbstractValidator<SearchBr
         RuleFor(query => query.MaxPrice).GreaterThanOrEqualTo(0).When(query => query.MaxPrice.HasValue);
         RuleFor(query => query).Must(query => !query.MinPrice.HasValue || !query.MaxPrice.HasValue || query.MinPrice <= query.MaxPrice)
             .WithMessage("Minimum price must not exceed maximum price.");
+        RuleFor(query => query.Gender).Must(gender => BrandFaceGenders.All.Contains(gender!)).When(query => query.Gender is not null);
+        RuleFor(query => query.MinAge).InclusiveBetween(BrandFaceAge.Min, BrandFaceAge.Max).When(query => query.MinAge.HasValue);
+        RuleFor(query => query.MaxAge).InclusiveBetween(BrandFaceAge.Min, BrandFaceAge.Max).When(query => query.MaxAge.HasValue);
+        RuleFor(query => query).Must(query => !query.MinAge.HasValue || !query.MaxAge.HasValue || query.MinAge <= query.MaxAge)
+            .WithMessage("Minimum age must not exceed maximum age.");
         RuleFor(query => query.Sort)
             .Must(sort => !string.IsNullOrWhiteSpace(sort) && Sorts.Contains(sort.Trim(), StringComparer.OrdinalIgnoreCase))
             .WithMessage("Sort must be one of: promoted, newest, price_asc, price_desc.");
@@ -76,7 +89,7 @@ public sealed class SearchBrandFaceCatalogHandler(IBrandFaceCatalogReadModel cat
     {
         var search = Normalize(query);
         var namespaceVersion = await cache.GetNamespaceVersionAsync(cancellationToken);
-        var key = $"catalog:{namespaceVersion}:brand-faces:{search.Query}:{search.City}:{search.Category}:{search.Language}:{search.MinPrice}:{search.MaxPrice}:{search.Sort}:{search.Page}:{search.PageSize}";
+        var key = $"catalog:{namespaceVersion}:brand-faces:{search.Query}:{search.City}:{search.Category}:{search.Language}:{search.MinPrice}:{search.MaxPrice}:{search.Sort}:{search.Page}:{search.PageSize}:{search.Gender}:{search.MinAge}:{search.MaxAge}";
         var cached = await cache.GetAsync<BrandFaceCatalogResult>(key, cancellationToken);
         if (cached is not null)
         {
@@ -97,7 +110,10 @@ public sealed class SearchBrandFaceCatalogHandler(IBrandFaceCatalogReadModel cat
         query.MaxPrice,
         query.Sort?.Trim().ToLowerInvariant() ?? "promoted",
         query.Page,
-        query.PageSize);
+        query.PageSize,
+        string.IsNullOrWhiteSpace(query.Gender) ? null : query.Gender.Trim(),
+        query.MinAge,
+        query.MaxAge);
 
     private static string? NormalizeText(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
     private static string? NormalizeIdentifier(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();

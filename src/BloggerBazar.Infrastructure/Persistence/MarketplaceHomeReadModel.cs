@@ -80,7 +80,12 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
                 profile.Description,
                 profile.AvatarUrl,
                 profile.IsPromoted,
-                profile.CreatedAtUtc))
+                profile.CreatedAtUtc,
+                profile.Age,
+                profile.Gender,
+                profile.Formats,
+                profile.ShowreelUrl,
+                profile.PhotoUrls))
             .ToArrayAsync(cancellationToken);
 
         var popularBusinesses = await businesses

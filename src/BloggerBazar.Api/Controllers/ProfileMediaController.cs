@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Features.BrandFaces;
 using BloggerBazar.Api.Contracts.ProfileMedia;
 using BloggerBazar.Application.Abstractions.Media;
 using BloggerBazar.Application.Abstractions.Security;
@@ -43,6 +44,36 @@ public sealed class ProfileMediaController(ISender sender, ITelegramWebAppValida
             file.FileName,
             file.ContentType), cancellationToken);
         return Ok(result);
+    }
+
+    // The brand face gallery besides the avatar (QA Q20): up to four photos, same limits and processing as the avatar.
+    [HttpPost("brand-face/photos")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ProfileMediaOptions.DefaultMaxFileSizeBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ProfileMediaOptions.DefaultMaxFileSizeBytes)]
+    [ProducesResponseType<BrandFacePhotosDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<BrandFacePhotosDto>> AddBrandFacePhoto([FromForm] UploadProfileMediaRequest request, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        var file = request.File;
+        if (file is null || file.Length == 0 || file.Length > ProfileMediaOptions.DefaultMaxFileSizeBytes)
+        {
+            throw new ProfileMediaValidationException();
+        }
+
+        await using var content = new MemoryStream((int)file.Length);
+        await file.CopyToAsync(content, cancellationToken);
+        return Ok(await sender.Send(new AddBrandFacePhotoCommand(actor.Id, content.ToArray(), file.FileName, file.ContentType), cancellationToken));
+    }
+
+    [HttpDelete("brand-face/photos")]
+    [ProducesResponseType<BrandFacePhotosDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<BrandFacePhotosDto>> RemoveBrandFacePhoto([FromQuery] string url, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new RemoveBrandFacePhotoCommand(actor.Id, url ?? string.Empty), cancellationToken));
     }
 
     [HttpDelete("{target}")]

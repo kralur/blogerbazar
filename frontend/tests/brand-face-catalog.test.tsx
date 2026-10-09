@@ -126,6 +126,25 @@ describe("Brand Face catalog in Search", () => {
     await waitFor(() => expect(screen.queryByRole("group", { name: translate("search.activeFilters", undefined, "ru") })).not.toBeInTheDocument());
   });
 
+  it("filters Brand Faces by gender and an age range and removes the age chip as one filter (QA Q20)", async () => {
+    const user = userEvent.setup();
+    renderSearch("#/search?type=brand-face");
+    await screen.findByText("Dilnoza");
+    await user.click(screen.getByRole("button", { name: translate("search.filters", undefined, "ru") }));
+    fireEvent.change(screen.getByLabelText(translate("brandFace.filterGender", undefined, "ru")), { target: { value: "female" } });
+    fireEvent.change(screen.getByLabelText(translate("brandFace.filterAge", undefined, "ru")), { target: { value: "21-25" } });
+    await user.click(screen.getByRole("button", { name: translate("common.apply", undefined, "ru") }));
+    await waitFor(() => expect(api.getBrandFaceCatalog.mock.calls.some(([filters]) => filters.gender === "female" && filters.minAge === 21 && filters.maxAge === 25)).toBe(true));
+    const ageChip = `${translate("brandFace.filterAge", undefined, "ru")} 21–25`;
+    await user.click(screen.getByRole("button", { name: translate("search.removeFilterAria", { filter: ageChip }, "ru") }));
+    await waitFor(() => {
+      const last = api.getBrandFaceCatalog.mock.calls.at(-1)?.[0];
+      expect(last?.gender).toBe("female");
+      expect(last?.minAge).toBeUndefined();
+      expect(last?.maxAge).toBeUndefined();
+    });
+  });
+
   it("applies an explicit Home category only to Brand Face and deduplicates appended pages", async () => {
     api.getBrandFaceCatalog.mockResolvedValueOnce({ ...brandFacePage, total: 40, hasMore: true }).mockResolvedValueOnce({ ...brandFacePage, items: [...brandFacePage.items, { ...brandFacePage.items[0], id: "face-b", name: "Madina" }], total: 40, page: 2, hasMore: false });
     renderSearch("#/search?type=brand-face&category=beauty");

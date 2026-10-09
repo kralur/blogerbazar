@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Domain.Enums;
 using MediatR;
 
 namespace BloggerBazar.Application.Features.Campaigns;
@@ -24,13 +25,17 @@ public sealed class GetMyCampaignApplicationsHandler(
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
     IMarketplaceCatalogReadModel catalog,
-    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetMyCampaignApplicationsQuery, IReadOnlyList<MyCampaignApplicationDto>>
+    IBrandFaceProfileRepository? brandFaces = null,
+    IPlatformUserRepository? users = null) : IRequestHandler<GetMyCampaignApplicationsQuery, IReadOnlyList<MyCampaignApplicationDto>>
 {
+    // Only the selected role's side: an account with a brand face (or blogger) and a business profile must not
+    // see its own outgoing applications in the business inbox as if someone had applied (QA Q15).
     public async Task<IReadOnlyList<MyCampaignApplicationDto>> Handle(GetMyCampaignApplicationsQuery query, CancellationToken cancellationToken)
     {
-        var blogger = await bloggers.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
-        var business = await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
-        var brandFace = brandFaces is null ? null : await brandFaces.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
+        var role = users is null ? null : (await users.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken))?.SelectedMarketplaceRole;
+        var blogger = role is null or MarketplaceRole.Blogger ? await bloggers.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;
+        var business = role is null or MarketplaceRole.Business ? await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;
+        var brandFace = brandFaces is not null && role == MarketplaceRole.BrandFace ? await brandFaces.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;
         return await catalog.GetCampaignApplicationsAsync(blogger?.Id, business?.Id, cancellationToken, brandFace?.Id);
     }
 }

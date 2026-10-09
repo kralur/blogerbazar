@@ -236,7 +236,14 @@ export type MyBrandFaceProfile = {
   description?: string | null;
   avatarUrl?: string | null;
   isPromoted: boolean;
+  formats?: BrandFaceFormat[];
+  showreelUrl?: string | null;
+  photoUrls?: string[];
 };
+// Fixed values from the server (QA Q20); labels come from i18n.
+export type BrandFaceGender = "female" | "male";
+export type BrandFaceFormat = "photoShoot" | "video" | "ugc" | "event" | "ambassador";
+export const brandFaceFormats: BrandFaceFormat[] = ["photoShoot", "video", "ugc", "event", "ambassador"];
 export type MarketplaceBusiness = {
   id: string;
   name: string;
@@ -246,7 +253,7 @@ export type MarketplaceBusiness = {
   completedDealsCount: number;
   rating?: number | null;
 };
-export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; instagram?: string | null; telegram?: string | null; portfolioUrl?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean };
+export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; instagram?: string | null; telegram?: string | null; portfolioUrl?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean; age?: number | null; gender?: string | null; formats?: BrandFaceFormat[]; showreelUrl?: string | null; photoUrls?: string[] };
 export type BrandFaceDetails = BrandFaceCard;
 export type BrandFaceCatalogSort = "promoted" | "newest" | "price_asc" | "price_desc";
 export type BrandFaceCatalogFilters = {
@@ -256,6 +263,9 @@ export type BrandFaceCatalogFilters = {
   language?: string;
   minPrice?: number;
   maxPrice?: number;
+  gender?: BrandFaceGender;
+  minAge?: number;
+  maxAge?: number;
   sort?: BrandFaceCatalogSort;
   page?: number;
   pageSize?: number;
@@ -270,6 +280,8 @@ export type BrandFaceCatalogItem = {
   avatarUrl?: string | null;
   isPromoted: boolean;
   createdAtUtc: string;
+  age?: number | null;
+  gender?: string | null;
 };
 export type BrandFaceCatalogResult = {
   items: BrandFaceCatalogItem[];
@@ -651,11 +663,14 @@ export type DealDetails = {
 };
 export type DealOffer = { format?: OfferFormat | null; offeredBudget?: number | null; deadline?: string | null; message: string };
 
-export type OfferFormat = "stories" | "reels" | "post" | "integration";
+// Blogger content formats, then brand face formats (D48).
+export type OfferFormat = "stories" | "reels" | "post" | "integration" | BrandFaceFormat;
 export type OfferState = "pending" | "accepted" | "declined" | "expired";
 export type Offer = {
   id: string;
-  bloggerId: string;
+  bloggerId?: string | null;
+  brandFaceId?: string | null;
+  counterpartyRole?: "business" | "blogger" | "brandFace" | null;
   counterpartyName: string;
   counterpartyImageUrl?: string | null;
   format?: OfferFormat | null;
@@ -670,7 +685,7 @@ export type Offer = {
   businessId?: string | null;
 };
 export type OfferDecision = { id: string; state: OfferState; dealId?: string | null };
-export type CreateOfferInput = { bloggerId: string; format: OfferFormat; offeredBudget?: number | null; deadline?: string | null; message: string };
+export type CreateOfferInput = { bloggerId?: string; brandFaceId?: string; format: OfferFormat; offeredBudget?: number | null; deadline?: string | null; message: string };
 
 export async function createOffer(input: CreateOfferInput) {
   return api<Offer>("/api/offers", { method: "POST", body: JSON.stringify(input) });
@@ -823,7 +838,17 @@ export async function getBrandFaceCatalog(filters: BrandFaceCatalogFilters = {},
   return api<BrandFaceCatalogResult>(`/api/brand-faces/catalog?${params.toString()}`, { signal });
 }
 
-export async function upsertBrandFaceProfile(input: Omit<MyBrandFaceProfile, "id" | "isPromoted">) {
+export async function addBrandFacePhoto(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api<{ photoUrls: string[] }>("/api/profile-media/brand-face/photos", { method: "POST", body: formData });
+}
+
+export async function removeBrandFacePhoto(url: string) {
+  return api<{ photoUrls: string[] }>(`/api/profile-media/brand-face/photos?url=${encodeURIComponent(url)}`, { method: "DELETE" });
+}
+
+export async function upsertBrandFaceProfile(input: Omit<MyBrandFaceProfile, "id" | "isPromoted" | "photoUrls">) {
   return api<MyBrandFaceProfile>("/api/brand-faces/me", { method: "PUT", body: JSON.stringify(input) });
 }
 

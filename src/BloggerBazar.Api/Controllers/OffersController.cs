@@ -15,7 +15,7 @@ public sealed class OffersController(ISender sender, ITelegramWebAppValidator te
     public async Task<ActionResult<OfferDto>> Create(CreateOfferRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
-        var offer = await sender.Send(new CreateOfferCommand(actor.Id, request.BloggerId, request.Format, request.OfferedBudget, request.Deadline, request.Message ?? string.Empty), cancellationToken);
+        var offer = await sender.Send(new CreateOfferCommand(actor.Id, request.BloggerId, request.Format, request.OfferedBudget, request.Deadline, request.Message ?? string.Empty, request.BrandFaceId), cancellationToken);
         return StatusCode(StatusCodes.Status201Created, offer);
     }
 

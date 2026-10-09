@@ -54,6 +54,11 @@ internal static class BotMessages
         CollaborationFormat.Reels => "в формате Reels",
         CollaborationFormat.Post => "в формате «Пост»",
         CollaborationFormat.Integration => "в формате «Интеграция»",
+        CollaborationFormat.PhotoShoot => "в формате «Фотосъёмка»",
+        CollaborationFormat.Video => "в формате «Видеореклама»",
+        CollaborationFormat.Ugc => "в формате UGC",
+        CollaborationFormat.Event => "в формате «Мероприятие»",
+        CollaborationFormat.Ambassador => "в формате «Амбассадор»",
         _ => null
     };
 
@@ -63,6 +68,11 @@ internal static class BotMessages
         CollaborationFormat.Reels => "Reels",
         CollaborationFormat.Post => "«Post»",
         CollaborationFormat.Integration => "«Integratsiya»",
+        CollaborationFormat.PhotoShoot => "«Fotosessiya»",
+        CollaborationFormat.Video => "«Videoreklama»",
+        CollaborationFormat.Ugc => "UGC",
+        CollaborationFormat.Event => "«Tadbir»",
+        CollaborationFormat.Ambassador => "«Ambassador»",
         _ => null
     };
 

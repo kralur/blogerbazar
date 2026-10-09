@@ -16,11 +16,16 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
 }));
 vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => ({ haptic: { success: vi.fn() } }) }));
 vi.mock("../src/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => <span>language</span> }));
+vi.mock("../src/components/OfferForm", () => ({ OfferForm: () => null }));
 vi.mock("../src/components/ContactList", () => ({ ContactList: () => null, hasContacts: () => false }));
 vi.mock("../src/hooks/useProfileDataRefresh", () => ({ useProfileDataRefresh: vi.fn() }));
 vi.mock("../src/components/ui", () => ({
   Avatar: ({ name }: { name: string }) => <span>{name}</span>,
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
+  FixedActionBar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Modal: () => null,
+  Rating: () => null,
   BottomNav: () => <nav aria-label="bottom-nav" />,
   Card: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
   ErrorState: ({ title }: { title: string }) => <div>{title}</div>,

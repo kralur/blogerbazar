@@ -23,8 +23,11 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
         [FromQuery] string? sort = "promoted",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] string? gender = null,
+        [FromQuery] int? minAge = null,
+        [FromQuery] int? maxAge = null,
         CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new SearchBrandFaceCatalogQuery(query, city, category, language, minPrice, maxPrice, sort, page, pageSize), cancellationToken));
+        Ok(await sender.Send(new SearchBrandFaceCatalogQuery(query, city, category, language, minPrice, maxPrice, sort, page, pageSize, gender, minAge, maxAge), cancellationToken));
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<BrandFacePublicDto>>> Search([FromQuery] string? query, [FromQuery] string? city, [FromQuery] string? category, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default) =>
@@ -53,6 +56,6 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
     public async Task<ActionResult<BrandFaceProfileDto>> Upsert(UpsertBrandFaceProfileRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
-        return Ok(await sender.Send(new UpsertBrandFaceProfileCommand(actor.Id, request.Name, request.City, request.Age, request.Gender, request.Languages, request.Categories, request.Experience, request.Instagram, ContactValidation.TelegramHandle(actor.Username), request.PortfolioUrl, request.CollaborationPrice, request.Description, request.AvatarUrl), cancellationToken));
+        return Ok(await sender.Send(new UpsertBrandFaceProfileCommand(actor.Id, request.Name, request.City, request.Age, request.Gender, request.Languages, request.Categories, request.Experience, request.Instagram, ContactValidation.TelegramHandle(actor.Username), request.PortfolioUrl, request.CollaborationPrice, request.Description, request.AvatarUrl, request.Formats, request.ShowreelUrl), cancellationToken));
     }
 }

@@ -220,6 +220,109 @@ public sealed class OfferHandlersTests
         Assert.Equal(5, migrationBuilder.Operations.Count);
     }
 
+    // D48: a business sends a brand face an offer in a brand face format; the brand face accepts or declines it.
+    [Fact]
+    public async Task Business_sends_a_brand_face_an_offer_in_a_brand_face_format()
+    {
+        var brandFace = BrandFaceProfile.Create(33, "Dilnoza", "tashkent", ["beauty"]);
+        var business = Business(22, "Lumi");
+        var offers = new FakeOffers();
+        var bot = new SpyBotClient();
+        var handler = new CreateOfferHandler(new FakeUsers(User(22, MarketplaceRole.Business)), new FakeBloggers(), new FakeBusinesses(business), offers, new SpyUnitOfWork(), bot, brandFaces: new FakeBrandFaces(brandFace));
+
+        var result = await handler.Handle(BrandFaceCommand(22, brandFace.Id), CancellationToken.None);
+
+        var offer = Assert.Single(offers.Items);
+        Assert.Equal(brandFace.Id, offer.BrandFaceId);
+        Assert.Null(offer.BloggerId);
+        Assert.Equal(CollaborationFormat.PhotoShoot, offer.Format);
+        Assert.Equal("Dilnoza", result.CounterpartyName);
+        Assert.Equal("brandFace", result.CounterpartyRole);
+        Assert.Equal([33L], bot.NotifiedChats);
+    }
+
+    [Fact]
+    public async Task A_second_active_offer_to_the_same_brand_face_is_a_conflict()
+    {
+        var brandFace = BrandFaceProfile.Create(33, "Dilnoza", "tashkent", ["beauty"]);
+        var business = Business(22);
+        var offers = new FakeOffers();
+        var handler = new CreateOfferHandler(new FakeUsers(User(22, MarketplaceRole.Business)), new FakeBloggers(), new FakeBusinesses(business), offers, new SpyUnitOfWork(), brandFaces: new FakeBrandFaces(brandFace));
+        await handler.Handle(BrandFaceCommand(22, brandFace.Id), CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(BrandFaceCommand(22, brandFace.Id), CancellationToken.None));
+
+        Assert.Equal("offer_already_active", exception.Code);
+    }
+
+    [Theory]
+    [InlineData(true, OfferFormats.Reels)]
+    [InlineData(false, "photoShoot")]
+    [InlineData(true, "dancing")]
+    public void Offer_format_must_fit_the_recipient(bool toBrandFace, string format)
+    {
+        var command = toBrandFace ? BrandFaceCommand(22, Guid.NewGuid()) with { Format = format } : Command(22, Guid.NewGuid()) with { Format = format };
+
+        var result = new CreateOfferValidator().Validate(command);
+
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(CreateOfferCommand.Format));
+    }
+
+    [Fact]
+    public void An_offer_has_exactly_one_recipient()
+    {
+        var validator = new CreateOfferValidator();
+
+        Assert.False(validator.Validate(Command(22, Guid.NewGuid()) with { BrandFaceId = Guid.NewGuid() }).IsValid);
+        Assert.False(validator.Validate(new CreateOfferCommand(22, null, "photoShoot", null, null, "Hi")).IsValid);
+        Assert.True(validator.Validate(BrandFaceCommand(22, Guid.NewGuid())).IsValid);
+    }
+
+    [Fact]
+    public async Task Offer_to_a_missing_brand_face_is_not_found()
+    {
+        var handler = new CreateOfferHandler(new FakeUsers(User(22, MarketplaceRole.Business)), new FakeBloggers(), new FakeBusinesses(Business(22)), new FakeOffers(), new SpyUnitOfWork(), brandFaces: new FakeBrandFaces());
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(BrandFaceCommand(22, Guid.NewGuid()), CancellationToken.None));
+
+        Assert.Contains("not found", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Brand_face_accepts_its_offer_and_gets_a_deal()
+    {
+        var brandFace = BrandFaceProfile.Create(33, "Dilnoza", "tashkent", ["beauty"]);
+        var business = Business(22, "Lumi");
+        var offer = CollaborationRequest.CreateOfferForBrandFace(brandFace.Id, business.Id, "Shoot", CollaborationFormat.PhotoShoot, 500_000, null);
+        Set(offer, nameof(CollaborationRequest.Business), business);
+        Set(offer, nameof(CollaborationRequest.BrandFace), brandFace);
+        var deals = new FakeDeals();
+        var handler = new AcceptOfferHandler(new FakeUsers(User(33, MarketplaceRole.BrandFace)), new FakeBloggers(), new FakeBusinesses(business), new FakeOffers(offer), deals, new SpyUnitOfWork(), brandFaces: new FakeBrandFaces(brandFace));
+
+        var result = await handler.Handle(new AcceptOfferCommand(33, offer.Id), CancellationToken.None);
+
+        var deal = Assert.Single(deals.Added);
+        Assert.Equal(OfferStates.Accepted, result.State);
+        Assert.Equal(brandFace.Id, deal.BrandFaceId);
+        Assert.Null(deal.BloggerId);
+    }
+
+    [Fact]
+    public async Task A_blogger_profile_of_the_same_account_cannot_answer_a_brand_face_offer()
+    {
+        var brandFace = BrandFaceProfile.Create(33, "Dilnoza", "tashkent", ["beauty"]);
+        var blogger = ApprovedBlogger(33);
+        var business = Business(22);
+        var offer = CollaborationRequest.CreateOfferForBrandFace(brandFace.Id, business.Id, "Shoot", CollaborationFormat.PhotoShoot, null, null);
+        var handler = new DeclineOfferHandler(new FakeUsers(User(33, MarketplaceRole.Blogger)), new FakeBloggers(blogger), new FakeBusinesses(business), new FakeOffers(offer), new SpyUnitOfWork(), brandFaces: new FakeBrandFaces(brandFace));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new DeclineOfferCommand(33, offer.Id), CancellationToken.None));
+        Assert.True(offer.IsPending);
+    }
+
+    private static CreateOfferCommand BrandFaceCommand(long telegramUserId, Guid brandFaceId) =>
+        new(telegramUserId, null, "photoShoot", 500_000, null, "Photo shoot for our spring line", brandFaceId);
+
     private static CreateOfferCommand Command(long telegramUserId, Guid bloggerId) =>
         new(telegramUserId, bloggerId, OfferFormats.Reels, 1_500_000, null, "One reel about our launch");
 
@@ -261,8 +364,8 @@ public sealed class OfferHandlersTests
         public Task<IReadOnlyList<CollaborationRequest>> ListOffersForParticipantAsync(MarketplaceRole role, Guid profileId, int take, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<CollaborationRequest>>(Items.Where(item => Matches(item, role, profileId)).Take(take).ToArray());
 
-        public Task<CollaborationRequest?> GetPendingOfferAsync(Guid businessId, Guid bloggerId, CancellationToken cancellationToken) =>
-            Task.FromResult(Items.SingleOrDefault(item => item.BusinessId == businessId && item.BloggerId == bloggerId && item.IsOffer && item.IsPending));
+        public Task<CollaborationRequest?> GetPendingOfferAsync(Guid businessId, MarketplaceRole creatorRole, Guid creatorId, CancellationToken cancellationToken) =>
+            Task.FromResult(Items.SingleOrDefault(item => item.BusinessId == businessId && item.CreatorRole == creatorRole && item.CreatorId == creatorId && item.IsOffer && item.IsPending));
 
         public Task<int> CountOffersSinceAsync(Guid businessId, DateTime sinceUtc, CancellationToken cancellationToken) =>
             Task.FromResult(SentToday + Items.Count(item => item.BusinessId == businessId && item.CreatedAtUtc >= sinceUtc));
@@ -272,6 +375,7 @@ public sealed class OfferHandlersTests
         private static bool Matches(CollaborationRequest item, MarketplaceRole role, Guid profileId) => role switch
         {
             MarketplaceRole.Blogger => item.BloggerId == profileId,
+            MarketplaceRole.BrandFace => item.BrandFaceId == profileId,
             MarketplaceRole.Business => item.BusinessId == profileId,
             _ => false
         };

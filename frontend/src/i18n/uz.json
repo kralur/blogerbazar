@@ -54,8 +54,7 @@
 ,
   "brandFace.languages": "Tillar",
   "brandFace.languagesPlaceholder": "Ruscha, O‘zbekcha",
-  "brandFace.experience": "Tajriba (ixtiyoriy)",
-  "brandFace.instagram": "Instagram (ixtiyoriy)",
+  "brandFace.instagram": "Instagram",
   "brandFace.portfolio": "Portfolio havolasi (ixtiyoriy)",
   "brandFace.price": "Hamkorlik narxi, so‘m (ixtiyoriy)",
   "brandFace.description": "O‘zingiz haqingizda (ixtiyoriy)",
@@ -72,7 +71,7 @@
   "common.connectionRetry": "Ulanishni tekshirib, qayta urinib ko‘ring.",
   "form.businessProfileConflict": "Kompaniya profili allaqachon mavjud yoki bu Telegram nik band.",
   "brandFace.languagesRequired": "Kamida bitta tilni kiriting.",
-  "brandFace.languagesHelper": "1 dan 5 tagacha tilni vergul orqali kiriting.",
+  "brandFace.languagesHelper": "Ro‘yxatdan 1 tadan 5 tagacha til tanlang.",
   "brandFace.languagesLimit": "1 dan 5 tagacha tilni kiriting.",
   "brandFace.languageTooLong": "Til nomi 32 belgidan oshmasligi kerak.",
   "brandFace.categoriesLimit": "1 dan 5 tagacha kategoriyani tanlang.",
@@ -143,7 +142,6 @@
   ,"categorySelect.otherPlaceholder": "Masalan, Avto"
   ,"categorySelect.remove": "{category} kategoriyasini o‘chirish"
   ,"form.companyDescriptionPlaceholder": "Kompaniya haqida qisqacha yozing..."
-  ,"brandFace.experiencePlaceholder": "Ish tajribangiz haqida yozing..."
   ,"brandFace.descriptionPlaceholder": "O‘zingiz haqingizda qisqacha yozing..."
   ,"campaigns.filtersTitle": "Reklama filtrlari"
   ,"campaigns.deadlineWeek": "Bir hafta ichida"
@@ -628,7 +626,6 @@
   ,"common.deletedAccount": "Akkaunt o‘chirilgan"
   ,"deals.partnerDeletedNote": "Hamkor akkauntini o‘chirdi. Bitim va fikrlar saqlanadi, lekin u bilan bog‘lanish va bitimni yakunlash endi mumkin emas."
   ,"campaign.blockedNoBrandFaceProfile": "Kampaniyalarga javob berish uchun brend-yuz anketasini to‘ldiring."
-  ,"brandFace.offersSoon": "Brend-yuzlar uchun hamkorlik takliflari tez orada qo‘shiladi. Hozircha quyidagi kontaktlar orqali to‘g‘ridan-to‘g‘ri yozing."
   ,"deals.blessing": "Barakasini bersin!"
   ,"deals.newDealRow": "Yangi bitim"
   ,"roleSwitch.hint": "Ehtimol, bu boshqa anketangiz uchun. Rolni almashtiring, biz bu sahifani qayta ochamiz."
@@ -640,4 +637,61 @@
   ,"error.contact_phone_missing": "Hamkorning telefon raqami ko‘rsatilmagan."
   ,"error.contact_share_failed": "Bot sizga yoza olmadi. Bot bilan chatni oching, «Start» tugmasini bosing va qayta urinib ko‘ring."
   ,"offers.counterpartyBrandFace": "Brend-yuz"
+  ,"brandFace.instagramRequired": "Instagram'ni kiriting: biznes suratlaringizni shu yerda ko‘radi"
+  ,"brandFace.gender": "Jinsi"
+  ,"brandFace.gender.female": "Ayol"
+  ,"brandFace.gender.male": "Erkak"
+  ,"brandFace.genderRequired": "Jinsni tanlang"
+  ,"brandFace.age": "Yosh"
+  ,"brandFace.ageInvalid": "Yosh {min} dan {max} gacha"
+  ,"brandFace.ageYears": "{count} yosh"
+  ,"brandFace.ageYears_one": "{count} yosh"
+  ,"brandFace.ageYears_few": "{count} yosh"
+  ,"brandFace.formats": "Hamkorlik formatlari"
+  ,"brandFace.formatsHelper": "Qatnashishga tayyor bo‘lgan barcha formatlarni tanlang."
+  ,"brandFace.formatsRequired": "Kamida bitta formatni tanlang"
+  ,"brandFace.format.photoShoot": "Fotosessiya"
+  ,"brandFace.format.video": "Videoreklama"
+  ,"brandFace.format.ugc": "UGC roliklar"
+  ,"brandFace.format.event": "Tadbirlar"
+  ,"brandFace.format.ambassador": "Ambassador"
+  ,"brandFace.showreel": "Video-vizitka (ixtiyoriy)"
+  ,"brandFace.showreelHelper": "Reels, YouTube yoki Telegram havolasi: videoning o‘zi o‘sha yerda saqlanadi."
+  ,"brandFace.galleryTitle": "Suratlar"
+  ,"brandFace.galleryHelper": "{count} tagacha surat: yuz yaqindan, to‘liq bo‘y, turli obrazlarda."
+  ,"brandFace.galleryAdd": "Surat qo‘shish"
+  ,"brandFace.galleryRemove": "{index}-suratni o‘chirish"
+  ,"brandFace.galleryCount": "{count} ta surat"
+  ,"brandFace.openInstagram": "Instagram’ni ko‘rish"
+  ,"brandFace.watchShowreel": "Video-vizitkani ko‘rish"
+  ,"brandFace.filterGender": "Jinsi"
+  ,"brandFace.filterAge": "Yosh"
+  ,"brandFace.filterAny": "Har qanday"
+  ,"brandFace.completeHint": "Biznes brend-yuzni surat, Instagram, jins va yosh bo‘yicha tanlaydi. Sizni topishlari uchun anketani to‘ldiring."
+  ,"brandFace.completeAction": "Anketani to‘ldirish"
+  ,"brandFace.person.female": "Ayol"
+  ,"brandFace.person.male": "Erkak"
+  ,"language.uz": "O‘zbekcha"
+  ,"language.ru": "Ruscha"
+  ,"language.en": "Inglizcha"
+  ,"language.kaa": "Qoraqalpoqcha"
+  ,"language.tg": "Tojikcha"
+  ,"language.kk": "Qozoqcha"
+  ,"language.ky": "Qirg‘izcha"
+  ,"language.tk": "Turkmancha"
+  ,"language.tr": "Turkcha"
+  ,"language.fa": "Forscha"
+  ,"language.ar": "Arabcha"
+  ,"language.zh": "Xitoycha"
+  ,"language.ko": "Koreyscha"
+  ,"language.ja": "Yaponcha"
+  ,"language.de": "Nemischa"
+  ,"language.fr": "Fransuzcha"
+  ,"language.es": "Ispancha"
+  ,"language.it": "Italyancha"
+  ,"language.hi": "Hindcha"
+  ,"languageSelect.searchAria": "Tilni qidirish"
+  ,"languageSelect.searchPlaceholder": "Tilni toping"
+  ,"languageSelect.nothingFound": "Bunday til ro‘yxatda yo‘q"
+  ,"languageSelect.remove": "{language} tilini olib tashlash"
 }

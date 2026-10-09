@@ -400,6 +400,54 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal(brandFaceId, aboutBusiness.GetProperty("reviewerProfileId").GetGuid());
     }
 
+    // D48: a business offers a brand face a photo shoot; the brand face accepts and both see the deal.
+    [IntegrationFact]
+    public async Task Business_offer_to_a_brand_face_opens_a_deal_after_acceptance()
+    {
+        const long brandFaceTelegramUserId = 1_100_321;
+        const long businessTelegramUserId = 1_100_322;
+        Guid brandFaceId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var brandFaceUser = PlatformUser.Create(brandFaceTelegramUserId, "Brand face", null);
+            brandFaceUser.SelectMarketplaceRole(MarketplaceRole.BrandFace);
+            var businessUser = PlatformUser.Create(businessTelegramUserId, "Business", null);
+            businessUser.SelectMarketplaceRole(MarketplaceRole.Business);
+            var brandFace = BrandFaceProfile.Create(brandFaceTelegramUserId, "Offer brand face", "tashkent", ["beauty"]);
+            var business = BusinessProfile.Create(businessTelegramUserId, "Offer business for face", "tashkent");
+            business.Approve();
+            dbContext.AddRange(brandFaceUser, businessUser, brandFace, business);
+            await dbContext.SaveChangesAsync();
+            brandFaceId = brandFace.Id;
+        }
+
+        using var businessClient = CreateClient(businessTelegramUserId);
+        using var brandFaceClient = CreateClient(brandFaceTelegramUserId);
+
+        var wrongFormat = await businessClient.PostAsJsonAsync("/api/offers", new { brandFaceId, format = "reels", message = "Reel" });
+        var sent = await businessClient.PostAsJsonAsync("/api/offers", new { brandFaceId, format = "photoShoot", offeredBudget = 500000, message = "Spring shoot" });
+        var duplicate = await businessClient.PostAsJsonAsync("/api/offers", new { brandFaceId, format = "video", message = "Again" });
+        Assert.Equal((HttpStatusCode)422, wrongFormat.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, sent.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        var offerId = (await sent.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var inbox = await brandFaceClient.GetFromJsonAsync<JsonElement>("/api/offers/mine");
+        var received = Assert.Single(inbox.EnumerateArray());
+        Assert.True(received.GetProperty("canRespond").GetBoolean());
+        Assert.Equal("photoShoot", received.GetProperty("format").GetString());
+        Assert.Equal("Offer business for face", received.GetProperty("counterpartyName").GetString());
+
+        var accepted = await brandFaceClient.PostAsync($"/api/offers/mine/{offerId}/accept", null);
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        var dealId = (await accepted.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("dealId").GetGuid();
+        var businessDeal = await businessClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{dealId}");
+        Assert.Equal("brandFace", businessDeal.GetProperty("counterpartyRole").GetString());
+        Assert.Equal(brandFaceId, businessDeal.GetProperty("counterpartyProfileId").GetGuid());
+        Assert.Equal("photoShoot", businessDeal.GetProperty("offer").GetProperty("format").GetString());
+    }
+
     [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {

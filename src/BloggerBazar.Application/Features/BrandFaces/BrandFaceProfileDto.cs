@@ -17,10 +17,14 @@ public sealed record BrandFaceProfileDto(
     int? CollaborationPrice,
     string? Description,
     string? AvatarUrl,
-    bool IsPromoted)
+    bool IsPromoted,
+    IReadOnlyCollection<string>? Formats = null,
+    string? ShowreelUrl = null,
+    IReadOnlyCollection<string>? PhotoUrls = null)
 {
     public static BrandFaceProfileDto From(BrandFaceProfile profile) => new(
         profile.Id, profile.Name, profile.City, profile.Age, profile.Gender, profile.Languages,
         profile.Categories, profile.Experience, profile.Instagram, profile.Telegram,
-        profile.PortfolioUrl, profile.CollaborationPrice, profile.Description, profile.AvatarUrl, profile.IsPromoted);
+        profile.PortfolioUrl, profile.CollaborationPrice, profile.Description, profile.AvatarUrl, profile.IsPromoted,
+        profile.Formats, profile.ShowreelUrl, profile.PhotoUrls);
 }

@@ -55,6 +55,21 @@ internal sealed class BrandFaceCatalogReadModel(BloggerBazarDbContext dbContext)
             query = query.Where(profile => profile.CollaborationPrice != null && profile.CollaborationPrice <= search.MaxPrice.Value);
         }
 
+        if (search.Gender is not null)
+        {
+            query = query.Where(profile => profile.Gender == search.Gender);
+        }
+
+        if (search.MinAge.HasValue)
+        {
+            query = query.Where(profile => profile.Age != null && profile.Age >= search.MinAge.Value);
+        }
+
+        if (search.MaxAge.HasValue)
+        {
+            query = query.Where(profile => profile.Age != null && profile.Age <= search.MaxAge.Value);
+        }
+
         var total = await query.CountAsync(cancellationToken);
         var ordered = BrandFaceCatalogSorting.Apply(query, search.Sort);
 
@@ -70,7 +85,9 @@ internal sealed class BrandFaceCatalogReadModel(BloggerBazarDbContext dbContext)
                 profile.CollaborationPrice,
                 profile.AvatarUrl,
                 profile.IsPromoted,
-                profile.CreatedAtUtc))
+                profile.CreatedAtUtc,
+                profile.Age,
+                profile.Gender))
             .ToArrayAsync(cancellationToken);
 
         return new BrandFaceCatalogResult(items, total, search.Page, search.PageSize, BrandFaceCatalogPagination.HasMore(total, search.Page, search.PageSize));

@@ -13,4 +13,6 @@ public sealed record UpsertBrandFaceProfileRequest(
     string? PortfolioUrl,
     int? CollaborationPrice,
     string? Description,
-    string? AvatarUrl);
+    string? AvatarUrl,
+    IReadOnlyCollection<string>? Formats = null,
+    string? ShowreelUrl = null);

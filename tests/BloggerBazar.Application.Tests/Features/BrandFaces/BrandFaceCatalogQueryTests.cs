@@ -99,7 +99,8 @@ public sealed class BrandFaceCatalogQueryTests
     {
         var properties = typeof(BrandFaceCatalogItemDto).GetProperties().Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
 
-        Assert.Equal(["AvatarUrl", "Categories", "City", "CollaborationPrice", "CreatedAtUtc", "Id", "IsPromoted", "Languages", "Name"], properties.OrderBy(name => name));
+        // Age and gender are what a business filters by (QA Q20); contacts stay out of the catalog.
+        Assert.Equal(["Age", "AvatarUrl", "Categories", "City", "CollaborationPrice", "CreatedAtUtc", "Gender", "Id", "IsPromoted", "Languages", "Name"], properties.OrderBy(name => name));
         Assert.DoesNotContain("Telegram", properties);
         Assert.DoesNotContain("Instagram", properties);
         Assert.DoesNotContain("PortfolioUrl", properties);

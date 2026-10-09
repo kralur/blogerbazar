@@ -1,8 +1,11 @@
 import type { OfferFormat, OfferState } from "../api/marketplace";
 
 export const offerFormats: OfferFormat[] = ["stories", "reels", "post", "integration"];
+// A brand face is offered its own formats (D48).
+export const brandFaceOfferFormats: OfferFormat[] = ["photoShoot", "video", "ugc", "event", "ambassador"];
 
 export function offerFormatLabelKey(format: OfferFormat | null | undefined) {
+  if (format && brandFaceOfferFormats.includes(format)) return `brandFace.format.${format}`;
   if (format === "stories") return "card.stories";
   if (format === "reels") return "card.reels";
   if (format === "post") return "card.post";

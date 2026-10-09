@@ -24,10 +24,19 @@ public static class OfferFormats
         [Stories] = CollaborationFormat.Stories,
         [Reels] = CollaborationFormat.Reels,
         [Post] = CollaborationFormat.Post,
-        [Integration] = CollaborationFormat.Integration
+        [Integration] = CollaborationFormat.Integration,
+        [BrandFaces.BrandFaceFormats.PhotoShoot] = CollaborationFormat.PhotoShoot,
+        [BrandFaces.BrandFaceFormats.Video] = CollaborationFormat.Video,
+        [BrandFaces.BrandFaceFormats.Ugc] = CollaborationFormat.Ugc,
+        [BrandFaces.BrandFaceFormats.Event] = CollaborationFormat.Event,
+        [BrandFaces.BrandFaceFormats.Ambassador] = CollaborationFormat.Ambassador
     };
 
     public static bool IsKnown(string? value) => value is not null && ByName.ContainsKey(value);
+
+    // A blogger is offered content formats, a brand face its own formats (D48).
+    public static bool FitsCreator(string? value, bool brandFace) =>
+        IsKnown(value) && (brandFace ? BrandFaces.BrandFaceFormats.All.Contains(value!) : !BrandFaces.BrandFaceFormats.All.Contains(value!));
 
     public static CollaborationFormat Parse(string value) => ByName[value];
 
@@ -42,6 +51,7 @@ public static class OfferStates
     public const string Expired = "expired";
 }
 
+// CounterpartyRole: "business", "blogger" or "brandFace", the kind of profile the counterparty link opens (D48).
 public sealed record OfferDto(
     Guid Id,
     Guid? BloggerId,
@@ -56,15 +66,17 @@ public sealed record OfferDto(
     DateTime? ExpiresAtUtc,
     Guid? DealId,
     bool CanRespond,
-    Guid? BusinessId = null)
+    Guid? BusinessId = null,
+    Guid? BrandFaceId = null,
+    string? CounterpartyRole = null)
 {
     internal static OfferDto From(CollaborationRequest offer, MarketplaceRole viewerRole, DateTime utcNow) =>
-        viewerRole == MarketplaceRole.Blogger
+        viewerRole is MarketplaceRole.Blogger or MarketplaceRole.BrandFace
             ? Build(offer, true, offer.Business.Name, offer.Business.LogoUrl, utcNow)
             : Build(offer, false, offer.Blogger?.Name ?? offer.BrandFace?.Name ?? string.Empty, offer.Blogger?.AvatarUrl ?? offer.BrandFace?.AvatarUrl, utcNow);
 
-    internal static OfferDto ForBusiness(CollaborationRequest offer, BloggerProfile blogger, DateTime utcNow) =>
-        Build(offer, false, blogger.Name, blogger.AvatarUrl, utcNow);
+    internal static OfferDto ForBusiness(CollaborationRequest offer, string creatorName, string? creatorImageUrl, DateTime utcNow) =>
+        Build(offer, false, creatorName, creatorImageUrl, utcNow);
 
     private static OfferDto Build(CollaborationRequest offer, bool viewerIsBlogger, string counterpartyName, string? counterpartyImageUrl, DateTime utcNow)
     {
@@ -83,7 +95,9 @@ public sealed record OfferDto(
             offer.ExpiresAtUtc,
             offer.Deal?.Id,
             viewerIsBlogger && state == OfferStates.Pending,
-            offer.BusinessId);
+            offer.BusinessId,
+            offer.BrandFaceId,
+            viewerIsBlogger ? "business" : Campaigns.CreatorRoles.Of(offer.CreatorRole));
     }
 
     internal static string StateOf(CollaborationRequest offer, DateTime utcNow) => offer.Status switch
@@ -110,19 +124,24 @@ internal static class OfferAccess
         IBloggerProfileRepository bloggers,
         IBusinessProfileRepository businesses,
         long telegramUserId,
-        CancellationToken cancellationToken) =>
-        await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, telegramUserId, cancellationToken) ?? throw NotFound();
+        CancellationToken cancellationToken,
+        IBrandFaceProfileRepository? brandFaces = null) =>
+        await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, telegramUserId, cancellationToken, brandFaces) ?? throw NotFound();
 }
 
-public sealed record CreateOfferCommand(long TelegramUserId, Guid BloggerId, string Format, int? OfferedBudget, DateTime? Deadline, string Message) : IRequest<OfferDto>;
+public sealed record CreateOfferCommand(long TelegramUserId, Guid? BloggerId, string Format, int? OfferedBudget, DateTime? Deadline, string Message, Guid? BrandFaceId = null) : IRequest<OfferDto>;
 
 public sealed class CreateOfferValidator : AbstractValidator<CreateOfferCommand>
 {
+    private static bool HasId(Guid? id) => id is { } value && value != Guid.Empty;
+
     public CreateOfferValidator()
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
-        RuleFor(command => command.BloggerId).NotEmpty();
-        RuleFor(command => command.Format).Must(OfferFormats.IsKnown);
+        // Exactly one recipient: a blogger or a brand face (D48).
+        RuleFor(command => command).Must(command => HasId(command.BloggerId) != HasId(command.BrandFaceId))
+            .WithName(nameof(CreateOfferCommand.BloggerId)).WithMessage("Exactly one recipient is required.");
+        RuleFor(command => command.Format).Must((command, format) => OfferFormats.FitsCreator(format, command.BrandFaceId.HasValue));
         RuleFor(command => command.OfferedBudget).InclusiveBetween(0, InputLimits.MaxMoney).When(command => command.OfferedBudget.HasValue);
         RuleFor(command => command.Deadline).GreaterThan(_ => DateTime.UtcNow.AddDays(-1)).When(command => command.Deadline.HasValue);
         RuleFor(command => command.Message).NotEmpty().MaximumLength(1000);
@@ -136,19 +155,20 @@ public sealed class CreateOfferHandler(
     ICollaborationRequestRepository offers,
     IUnitOfWork unitOfWork,
     ITelegramBotClient? botClient = null,
-    ILogger<CreateOfferHandler>? logger = null) : IRequestHandler<CreateOfferCommand, OfferDto>
+    ILogger<CreateOfferHandler>? logger = null,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<CreateOfferCommand, OfferDto>
 {
     public async Task<OfferDto> Handle(CreateOfferCommand command, CancellationToken cancellationToken)
     {
         var business = await DealAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
-        var blogger = await bloggers.GetByIdAsync(command.BloggerId, cancellationToken);
-        if (blogger is null || blogger.Status != BloggerStatus.Approved
-            || await users.GetByTelegramUserIdAsync(blogger.TelegramUserId, cancellationToken) is { IsBlocked: true } or { IsDeleted: true })
+        var recipient = await FindRecipientAsync(command, cancellationToken);
+        if (recipient is null
+            || await users.GetByTelegramUserIdAsync(recipient.TelegramUserId, cancellationToken) is { IsBlocked: true } or { IsDeleted: true })
         {
             throw new InvalidOperationException("Blogger profile was not found.");
         }
 
-        if (blogger.TelegramUserId == business.TelegramUserId)
+        if (recipient.TelegramUserId == business.TelegramUserId)
         {
             throw new InvalidOperationException("You cannot send an offer to your own profile.");
         }
@@ -159,7 +179,7 @@ public sealed class CreateOfferHandler(
             throw new BusinessRuleConflictException(OfferAccess.DailyLimitCode, "Daily offer limit reached.");
         }
 
-        var pending = await offers.GetPendingOfferAsync(business.Id, blogger.Id, cancellationToken);
+        var pending = await offers.GetPendingOfferAsync(business.Id, recipient.Role, recipient.Id, cancellationToken);
         if (pending is not null)
         {
             if (!pending.IsExpiredAt(now))
@@ -170,7 +190,9 @@ public sealed class CreateOfferHandler(
             pending.Expire();
         }
 
-        var offer = CollaborationRequest.CreateOffer(blogger.Id, business.Id, command.Message.Trim(), OfferFormats.Parse(command.Format), command.OfferedBudget, command.Deadline);
+        var offer = recipient.Role == MarketplaceRole.BrandFace
+            ? CollaborationRequest.CreateOfferForBrandFace(recipient.Id, business.Id, command.Message.Trim(), OfferFormats.Parse(command.Format), command.OfferedBudget, command.Deadline)
+            : CollaborationRequest.CreateOffer(recipient.Id, business.Id, command.Message.Trim(), OfferFormats.Parse(command.Format), command.OfferedBudget, command.Deadline);
         await offers.AddAsync(offer, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
         {
@@ -180,12 +202,29 @@ public sealed class CreateOfferHandler(
         await BestEffortTelegramNotification.SendAsync(
             botClient,
             logger,
-            blogger.TelegramUserId,
+            recipient.TelegramUserId,
             BotMessages.OfferReceived(business.Name),
             $"/offer/{offer.Id}",
             cancellationToken);
-        return OfferDto.ForBusiness(offer, blogger, now);
+        return OfferDto.ForBusiness(offer, recipient.Name, recipient.ImageUrl, now);
     }
+
+    // A blogger must be approved; a brand face has no moderation (D46). Both must be publicly visible.
+    private async Task<Recipient?> FindRecipientAsync(CreateOfferCommand command, CancellationToken cancellationToken)
+    {
+        if (command.BrandFaceId is { } brandFaceId)
+        {
+            return brandFaces is not null && await brandFaces.GetByIdAsync(brandFaceId, cancellationToken) is { } brandFace
+                ? new Recipient(MarketplaceRole.BrandFace, brandFace.Id, brandFace.TelegramUserId, brandFace.Name, brandFace.AvatarUrl)
+                : null;
+        }
+
+        return command.BloggerId is { } bloggerId && await bloggers.GetByIdAsync(bloggerId, cancellationToken) is { Status: BloggerStatus.Approved } blogger
+            ? new Recipient(MarketplaceRole.Blogger, blogger.Id, blogger.TelegramUserId, blogger.Name, blogger.AvatarUrl)
+            : null;
+    }
+
+    private sealed record Recipient(MarketplaceRole Role, Guid Id, long TelegramUserId, string Name, string? ImageUrl);
 }
 
 public sealed record GetMyOffersQuery(long TelegramUserId) : IRequest<IReadOnlyList<OfferDto>>;
@@ -194,11 +233,12 @@ public sealed class GetMyOffersHandler(
     IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
-    ICollaborationRequestRepository offers) : IRequestHandler<GetMyOffersQuery, IReadOnlyList<OfferDto>>
+    ICollaborationRequestRepository offers,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetMyOffersQuery, IReadOnlyList<OfferDto>>
 {
     public async Task<IReadOnlyList<OfferDto>> Handle(GetMyOffersQuery query, CancellationToken cancellationToken)
     {
-        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken);
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken, brandFaces);
         if (participant is null)
         {
             return [];
@@ -216,11 +256,12 @@ public sealed class GetMyOfferHandler(
     IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
-    ICollaborationRequestRepository offers) : IRequestHandler<GetMyOfferQuery, OfferDto>
+    ICollaborationRequestRepository offers,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetMyOfferQuery, OfferDto>
 {
     public async Task<OfferDto> Handle(GetMyOfferQuery query, CancellationToken cancellationToken)
     {
-        var participant = await OfferAccess.RequireParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken);
+        var participant = await OfferAccess.RequireParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken, brandFaces);
         var offer = await offers.GetOfferForParticipantAsync(query.OfferId, participant.Role, participant.ProfileId, cancellationToken)
             ?? throw OfferAccess.NotFound();
         return OfferDto.From(offer, participant.Role, DateTime.UtcNow);
@@ -237,12 +278,14 @@ public sealed class AcceptOfferHandler(
     IDealRepository deals,
     IUnitOfWork unitOfWork,
     ITelegramBotClient? botClient = null,
-    ILogger<AcceptOfferHandler>? logger = null) : IRequestHandler<AcceptOfferCommand, OfferDecisionDto>
+    ILogger<AcceptOfferHandler>? logger = null,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<AcceptOfferCommand, OfferDecisionDto>
 {
     public async Task<OfferDecisionDto> Handle(AcceptOfferCommand command, CancellationToken cancellationToken)
     {
-        var participant = await OfferAccess.RequireParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken);
-        if (participant.Role != MarketplaceRole.Blogger)
+        var participant = await OfferAccess.RequireParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken, brandFaces);
+        // Only the creator side (blogger or brand face) answers an offer.
+        if (!participant.IsCreator)
         {
             throw OfferAccess.NotFound();
         }
@@ -286,12 +329,13 @@ public sealed class DeclineOfferHandler(
     ICollaborationRequestRepository offers,
     IUnitOfWork unitOfWork,
     ITelegramBotClient? botClient = null,
-    ILogger<DeclineOfferHandler>? logger = null) : IRequestHandler<DeclineOfferCommand, OfferDecisionDto>
+    ILogger<DeclineOfferHandler>? logger = null,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<DeclineOfferCommand, OfferDecisionDto>
 {
     public async Task<OfferDecisionDto> Handle(DeclineOfferCommand command, CancellationToken cancellationToken)
     {
-        var participant = await OfferAccess.RequireParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken);
-        if (participant.Role != MarketplaceRole.Blogger)
+        var participant = await OfferAccess.RequireParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken, brandFaces);
+        if (!participant.IsCreator)
         {
             throw OfferAccess.NotFound();
         }

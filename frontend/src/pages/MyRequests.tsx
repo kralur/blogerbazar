@@ -29,6 +29,11 @@ import { ActionBadge, useActionCounts } from "../features/actionCounts/ActionCou
 
 const formatDate = (value: string, language: Language) => formatShortDate(value, language);
 
+// canAccept only says the viewer is the business side; the application waits for an answer while it is still pending (QA Q19).
+function awaitsAnswer(request: MyCampaignApplication) {
+  return request.canAccept && canAcceptCampaignApplication(request.status);
+}
+
 export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
   useScrollRestoration("requests");
@@ -60,6 +65,12 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     return () => window.removeEventListener(seenDealsChangedEvent, onSeen);
   }, []);
   const [selectedRequest, setSelectedRequest] = useState<MyCampaignApplication | null>(null);
+  // The requests screen stays mounted under other screens: leaving it (e.g. the applicant's profile link) closes the sheet (QA Q18).
+  useEffect(() => {
+    const close = () => setSelectedRequest(null);
+    window.addEventListener("hashchange", close);
+    return () => window.removeEventListener("hashchange", close);
+  }, []);
   // A brand face applies to campaigns like a blogger (D46); the business sees the inbox list instead.
   const isCreator = activeMarketplaceRole === "Blogger" || activeMarketplaceRole === "BrandFace";
   const [requestsLoading, setRequestsLoading] = useState(!isCreator);
@@ -165,8 +176,8 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
         requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} title={t("requests.loadFailed")} /></div> :
         !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="request-list">
-            {waitingFirst(visibleRequests, (request) => request.canAccept).map((request) => (
-              <RequestRow action={request.canAccept ? t("requests.awaitingYourAnswer") : null} imageUrl={request.counterpartyImageUrl} key={request.id} meta={formatDate(request.createdAtUtc, language)} name={request.counterpartyName} onClick={() => setSelectedRequest(request)} status={<Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge>} title={request.campaignTitle} />
+            {waitingFirst(visibleRequests, awaitsAnswer).map((request) => (
+              <RequestRow action={awaitsAnswer(request) ? t("requests.awaitingYourAnswer") : null} imageUrl={request.counterpartyImageUrl} key={request.id} meta={formatDate(request.createdAtUtc, language)} name={request.counterpartyName} onClick={() => setSelectedRequest(request)} status={<Badge tone={campaignApplicationStatusTone(request.status)}>{applicationStatusLabels[request.status]}</Badge>} title={request.campaignTitle} />
             ))}
           </div>
         )

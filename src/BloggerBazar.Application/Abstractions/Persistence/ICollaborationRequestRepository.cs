@@ -12,7 +12,7 @@ public interface ICollaborationRequestRepository
         Task.FromResult<CollaborationRequest?>(null);
     Task<IReadOnlyList<CollaborationRequest>> ListOffersForParticipantAsync(MarketplaceRole role, Guid profileId, int take, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<CollaborationRequest>>([]);
-    Task<CollaborationRequest?> GetPendingOfferAsync(Guid businessId, Guid bloggerId, CancellationToken cancellationToken) =>
+    Task<CollaborationRequest?> GetPendingOfferAsync(Guid businessId, MarketplaceRole creatorRole, Guid creatorId, CancellationToken cancellationToken) =>
         Task.FromResult<CollaborationRequest?>(null);
     Task<int> CountOffersSinceAsync(Guid businessId, DateTime sinceUtc, CancellationToken cancellationToken) => Task.FromResult(0);
 }

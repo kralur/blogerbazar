@@ -32,9 +32,9 @@ internal sealed class CollaborationRequestRepository(BloggerBazarDbContext dbCon
             .Take(take)
             .ToArrayAsync(cancellationToken);
 
-    public Task<CollaborationRequest?> GetPendingOfferAsync(Guid businessId, Guid bloggerId, CancellationToken cancellationToken) =>
+    public Task<CollaborationRequest?> GetPendingOfferAsync(Guid businessId, MarketplaceRole creatorRole, Guid creatorId, CancellationToken cancellationToken) =>
         dbContext.CollaborationRequests.SingleOrDefaultAsync(request => request.BusinessId == businessId
-            && request.BloggerId == bloggerId
+            && (creatorRole == MarketplaceRole.BrandFace ? request.BrandFaceId == creatorId : request.BloggerId == creatorId)
             && request.ExpiresAtUtc != null
             && (request.Status == CollaborationRequestStatus.Sent || request.Status == CollaborationRequestStatus.Viewed), cancellationToken);
 
@@ -46,13 +46,16 @@ internal sealed class CollaborationRequestRepository(BloggerBazarDbContext dbCon
     private IQueryable<CollaborationRequest> Offers() =>
         dbContext.CollaborationRequests
             .Include(request => request.Blogger)
+            .Include(request => request.BrandFace)
             .Include(request => request.Business)
             .Include(request => request.Deal)
-            .Where(request => request.ExpiresAtUtc != null && !request.Blogger!.IsDeleted && !request.Business.IsDeleted);
+            .Where(request => request.ExpiresAtUtc != null && !request.Business.IsDeleted
+                && (request.BloggerId != null ? !request.Blogger!.IsDeleted : !request.BrandFace!.IsDeleted));
 
     private static Expression<Func<CollaborationRequest, bool>> ParticipantFilter(MarketplaceRole role, Guid profileId) => role switch
     {
         MarketplaceRole.Blogger => request => request.BloggerId == profileId,
+        MarketplaceRole.BrandFace => request => request.BrandFaceId == profileId,
         MarketplaceRole.Business => request => request.BusinessId == profileId,
         _ => request => false
     };

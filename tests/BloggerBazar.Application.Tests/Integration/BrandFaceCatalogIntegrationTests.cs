@@ -44,6 +44,36 @@ public sealed class BrandFaceCatalogIntegrationTests(BloggerBazarApiFactory fact
         Assert.Empty(nullPriceExcluded.GetProperty("items").EnumerateArray());
     }
 
+    // QA Q20: a business filters faces by gender and age; the public page shows formats, showreel and the gallery.
+    [IntegrationFact]
+    public async Task Catalog_filters_by_gender_and_age_and_details_show_presentation()
+    {
+        var young = await AddProfileAsync(2_100_041, "Gender Filter Lola", "bukhara", ["beauty"], ["uz"], null, profile =>
+        {
+            profile.Update(profile.Name, profile.City, 22, "female", ["uz"], ["beauty"], null, "@lola", "@lola", null, null, null, null);
+            profile.SetPresentation(["photoShoot", "video"], "https://instagram.com/reel/lola");
+            profile.AddPhoto("https://cdn.example/lola-1.webp");
+        });
+        await AddProfileAsync(2_100_042, "Gender Filter Bek", "bukhara", ["beauty"], ["uz"], null, profile =>
+            profile.Update(profile.Name, profile.City, 35, "male", ["uz"], ["beauty"], null, "@bek", "@bek", null, null, null, null));
+        using var client = factory.CreateClient();
+
+        var women = await client.GetFromJsonAsync<JsonElement>("/api/brand-faces/catalog?city=bukhara&gender=female");
+        var twenties = await client.GetFromJsonAsync<JsonElement>("/api/brand-faces/catalog?city=bukhara&minAge=18&maxAge=30");
+        var badGender = await client.GetAsync("/api/brand-faces/catalog?gender=robot");
+        var details = await client.GetFromJsonAsync<JsonElement>($"/api/brand-faces/{young.Id}");
+
+        var woman = Assert.Single(women.GetProperty("items").EnumerateArray());
+        Assert.Equal("Gender Filter Lola", woman.GetProperty("name").GetString());
+        Assert.Equal(22, woman.GetProperty("age").GetInt32());
+        Assert.Equal("female", woman.GetProperty("gender").GetString());
+        Assert.Equal("Gender Filter Lola", Assert.Single(twenties.GetProperty("items").EnumerateArray()).GetProperty("name").GetString());
+        Assert.Equal((HttpStatusCode)422, badGender.StatusCode);
+        Assert.Equal(["photoShoot", "video"], details.GetProperty("formats").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal("https://instagram.com/reel/lola", details.GetProperty("showreelUrl").GetString());
+        Assert.Equal("https://cdn.example/lola-1.webp", Assert.Single(details.GetProperty("photoUrls").EnumerateArray()).GetString());
+    }
+
     [IntegrationFact]
     public async Task Catalog_sorts_prices_with_nulls_last_and_stable_pagination()
     {

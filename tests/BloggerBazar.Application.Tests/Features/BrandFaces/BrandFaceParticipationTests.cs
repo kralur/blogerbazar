@@ -170,6 +170,26 @@ public sealed class BrandFaceParticipationTests
         Assert.Null(deal.BloggerId);
     }
 
+    [Theory]
+    [InlineData(MarketplaceRole.Business, false, true, false)]
+    [InlineData(MarketplaceRole.BrandFace, false, false, true)]
+    [InlineData(MarketplaceRole.Blogger, true, false, false)]
+    public async Task Legacy_application_list_shows_only_the_selected_role_side(MarketplaceRole role, bool blogger, bool business, bool brandFace)
+    {
+        var bloggerProfile = Blogger(12);
+        var businessProfile = Business(12, "Abba");
+        var brandFaceProfile = BrandFace(12);
+        var catalog = new CapturingCatalog();
+        var handler = new GetMyCampaignApplicationsHandler(new FakeBloggers(bloggerProfile), new FakeBusinesses(businessProfile), catalog,
+            new FakeBrandFaces(brandFaceProfile), new FakeUsers(User(12, role)));
+
+        await handler.Handle(new GetMyCampaignApplicationsQuery(12), CancellationToken.None);
+
+        Assert.Equal(blogger ? bloggerProfile.Id : null, catalog.BloggerId);
+        Assert.Equal(business ? businessProfile.Id : null, catalog.BusinessId);
+        Assert.Equal(brandFace ? brandFaceProfile.Id : null, catalog.BrandFaceId);
+    }
+
     private static BrandFaceProfile BrandFace(long telegramUserId, string name = "Brand face") => BrandFaceProfile.Create(telegramUserId, name, "tashkent", ["beauty"]);
 
     private static BusinessProfile ApprovedBusiness(long telegramUserId)
@@ -234,6 +254,24 @@ public sealed class BrandFaceParticipationTests
             Task.FromResult<MyCampaignApplicationDetailsDto?>(null);
         public Task<CampaignApplicationInboxResult> SearchForBusinessAsync(Guid businessId, Guid campaignId, CampaignApplicationSearch search, CancellationToken cancellationToken) =>
             Task.FromResult(new CampaignApplicationInboxResult([], 0, search.Page, search.PageSize, false));
+    }
+
+    private sealed class CapturingCatalog : IMarketplaceCatalogReadModel
+    {
+        public Guid? BloggerId { get; private set; }
+        public Guid? BusinessId { get; private set; }
+        public Guid? BrandFaceId { get; private set; }
+        public Task<IReadOnlyList<MyCampaignApplicationDto>> GetCampaignApplicationsAsync(Guid? bloggerId, Guid? businessId, CancellationToken cancellationToken, Guid? brandFaceId = null)
+        {
+            (BloggerId, BusinessId, BrandFaceId) = (bloggerId, businessId, brandFaceId);
+            return Task.FromResult<IReadOnlyList<MyCampaignApplicationDto>>([]);
+        }
+        public Task<Application.Features.Bloggers.SearchBloggersResult> SearchBloggersAsync(BloggerCatalogSearch search, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Application.Features.Bloggers.BloggerProfileDto?> GetBloggerAsync(Guid id, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Application.Features.Bloggers.MyBloggerProfileDto?> GetMyBloggerAsync(long telegramUserId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<IReadOnlyList<CampaignDto>> SearchCampaignsAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<CampaignDto?> GetCampaignAsync(Guid id, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Application.Features.CollaborationRequests.CollaborationRequestDto>> GetCollaborationRequestsAsync(Guid? bloggerId, Guid? businessId, int take, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class Reviews : IReviewRepository

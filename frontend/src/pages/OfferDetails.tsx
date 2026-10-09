@@ -6,6 +6,7 @@ import { useI18n } from "../i18n";
 import { formatShortDate, formatCurrency } from "../lib/currency";
 import { dealRoute } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
+import { profileRoute } from "../lib/profileRoutes";
 import { SwitchRoleHint } from "../components/SwitchRoleHint";
 import { PageHeader } from "../components/PageHeader";
 import { DetailSection, FactGrid } from "../components/details/DetailBlocks";
@@ -85,7 +86,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
     <PageHeader actions={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t("offers.title")}</p>
     <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{t(offerFormatLabelKey(offer.format))}</h1>
-    <CounterpartyRow href={viewerRole === "Business" ? `#/blogger/${offer.bloggerId}` : viewerRole === "Blogger" && offer.businessId ? `#/company/${offer.businessId}` : null} imageUrl={offer.counterpartyImageUrl} label={t(viewerRole === "Business" ? "offers.counterpartyBlogger" : viewerRole === "Blogger" ? "offers.counterpartyBusiness" : "offers.counterparty")} name={offer.counterpartyName} />
+    <CounterpartyRow href={viewerRole === "Business" ? (offer.brandFaceId ? profileRoute("brandFace", offer.brandFaceId) : offer.bloggerId ? profileRoute("blogger", offer.bloggerId) : null) : (viewerRole === "Blogger" || viewerRole === "BrandFace") && offer.businessId ? `#/company/${offer.businessId}` : null} imageUrl={offer.counterpartyImageUrl} label={t(viewerRole === "Business" ? (offer.brandFaceId ? "offers.counterpartyBrandFace" : "offers.counterpartyBlogger") : viewerRole === "Blogger" || viewerRole === "BrandFace" ? "offers.counterpartyBusiness" : "offers.counterparty")} name={offer.counterpartyName} />
     <FactGrid className="mt-4" facts={[
       { label: t("offers.budget"), value: offer.offeredBudget != null ? formatCurrency(offer.offeredBudget) : t("offers.budgetNegotiable") },
       { label: t("offers.deadline"), value: offer.deadline ? formatDate(offer.deadline) : null },

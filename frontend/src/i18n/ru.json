@@ -55,8 +55,7 @@
 ,
   "brandFace.languages": "Языки",
   "brandFace.languagesPlaceholder": "Русский, O‘zbekcha",
-  "brandFace.experience": "Опыт (необязательно)",
-  "brandFace.instagram": "Instagram (необязательно)",
+  "brandFace.instagram": "Instagram",
   "brandFace.portfolio": "Ссылка на портфолио (необязательно)",
   "brandFace.price": "Стоимость сотрудничества, сум (необязательно)",
   "brandFace.description": "О себе (необязательно)",
@@ -73,7 +72,7 @@
   "common.connectionRetry": "Проверьте подключение и повторите попытку.",
   "form.businessProfileConflict": "Профиль компании уже существует или этот ник Telegram занят.",
   "brandFace.languagesRequired": "Укажите хотя бы один язык.",
-  "brandFace.languagesHelper": "Укажите от 1 до 5 языков через запятую.",
+  "brandFace.languagesHelper": "Выберите от 1 до 5 языков из списка.",
   "brandFace.languagesLimit": "Укажите от 1 до 5 языков.",
   "brandFace.languageTooLong": "Название языка не должно быть длиннее 32 символов.",
   "brandFace.categoriesLimit": "Выберите от 1 до 5 категорий.",
@@ -144,7 +143,6 @@
   ,"categorySelect.otherPlaceholder": "Например, Авто"
   ,"categorySelect.remove": "Удалить категорию {category}"
   ,"form.companyDescriptionPlaceholder": "Расскажите немного о компании..."
-  ,"brandFace.experiencePlaceholder": "Расскажите об опыте работы..."
   ,"brandFace.descriptionPlaceholder": "Расскажите немного о себе..."
   ,"campaigns.filtersTitle": "Фильтры рекламы"
   ,"campaigns.deadlineWeek": "В течение недели"
@@ -629,7 +627,6 @@
   ,"common.deletedAccount": "Аккаунт удалён"
   ,"deals.partnerDeletedNote": "Партнёр удалил аккаунт. Сделка и отзывы сохранены, но связаться с ним и завершить сделку уже нельзя."
   ,"campaign.blockedNoBrandFaceProfile": "Заполните анкету бренд-фейса, чтобы откликаться на кампании."
-  ,"brandFace.offersSoon": "Предложения о сотрудничестве для бренд-фейсов появятся совсем скоро. А пока напишите напрямую по контактам ниже."
   ,"deals.blessing": "Barakasini bersin!"
   ,"deals.newDealRow": "Новая сделка"
   ,"roleSwitch.hint": "Возможно, это для другой вашей анкеты. Переключите роль, и мы откроем эту страницу снова."
@@ -641,4 +638,61 @@
   ,"error.contact_phone_missing": "У партнёра не указан номер телефона."
   ,"error.contact_share_failed": "Бот не смог написать вам. Откройте чат с ботом, нажмите «Старт» и попробуйте снова."
   ,"offers.counterpartyBrandFace": "Бренд-фейс"
+  ,"brandFace.instagramRequired": "Укажите Instagram: по нему бизнес смотрит ваши фото"
+  ,"brandFace.gender": "Пол"
+  ,"brandFace.gender.female": "Женский"
+  ,"brandFace.gender.male": "Мужской"
+  ,"brandFace.genderRequired": "Выберите пол"
+  ,"brandFace.age": "Возраст"
+  ,"brandFace.ageInvalid": "Возраст от {min} до {max} лет"
+  ,"brandFace.ageYears": "{count} лет"
+  ,"brandFace.ageYears_one": "{count} год"
+  ,"brandFace.ageYears_few": "{count} года"
+  ,"brandFace.formats": "Форматы сотрудничества"
+  ,"brandFace.formatsHelper": "Выберите всё, в чём готовы участвовать."
+  ,"brandFace.formatsRequired": "Выберите хотя бы один формат"
+  ,"brandFace.format.photoShoot": "Фотосъёмка"
+  ,"brandFace.format.video": "Видеореклама"
+  ,"brandFace.format.ugc": "UGC-ролики"
+  ,"brandFace.format.event": "Мероприятия"
+  ,"brandFace.format.ambassador": "Амбассадор"
+  ,"brandFace.showreel": "Видео-визитка (необязательно)"
+  ,"brandFace.showreelHelper": "Ссылка на Reels, YouTube или Telegram: само видео хранится там."
+  ,"brandFace.galleryTitle": "Фото"
+  ,"brandFace.galleryHelper": "До {count} фото: лицо крупно, в полный рост, в разных образах."
+  ,"brandFace.galleryAdd": "Добавить фото"
+  ,"brandFace.galleryRemove": "Удалить фото {index}"
+  ,"brandFace.galleryCount": "{count} фото"
+  ,"brandFace.openInstagram": "Смотреть Instagram"
+  ,"brandFace.watchShowreel": "Смотреть видео-визитку"
+  ,"brandFace.filterGender": "Пол"
+  ,"brandFace.filterAge": "Возраст"
+  ,"brandFace.filterAny": "Любой"
+  ,"brandFace.completeHint": "Бизнес выбирает бренд-фейса по фото, Instagram, полу и возрасту. Заполните анкету, чтобы вас находили."
+  ,"brandFace.completeAction": "Дополнить анкету"
+  ,"brandFace.person.female": "Женщина"
+  ,"brandFace.person.male": "Мужчина"
+  ,"language.uz": "Узбекский"
+  ,"language.ru": "Русский"
+  ,"language.en": "Английский"
+  ,"language.kaa": "Каракалпакский"
+  ,"language.tg": "Таджикский"
+  ,"language.kk": "Казахский"
+  ,"language.ky": "Киргизский"
+  ,"language.tk": "Туркменский"
+  ,"language.tr": "Турецкий"
+  ,"language.fa": "Персидский"
+  ,"language.ar": "Арабский"
+  ,"language.zh": "Китайский"
+  ,"language.ko": "Корейский"
+  ,"language.ja": "Японский"
+  ,"language.de": "Немецкий"
+  ,"language.fr": "Французский"
+  ,"language.es": "Испанский"
+  ,"language.it": "Итальянский"
+  ,"language.hi": "Хинди"
+  ,"languageSelect.searchAria": "Поиск языка"
+  ,"languageSelect.searchPlaceholder": "Найти язык"
+  ,"languageSelect.nothingFound": "Такого языка нет в списке"
+  ,"languageSelect.remove": "Убрать язык {language}"
 }

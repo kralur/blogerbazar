@@ -3,16 +3,18 @@ import { ApiError, getApiErrorMessage } from "../api/client";
 import { createOffer, getMyCampaign, getMyCampaigns, type MyCampaign, type Offer, type OfferFormat } from "../api/marketplace";
 import { useI18n } from "../i18n";
 import { formatNumericInput, isPastDay, localDay } from "../lib/currency";
-import { offerFormatLabelKey, offerFormats } from "../lib/offerStatus";
+import { brandFaceOfferFormats, offerFormatLabelKey, offerFormats } from "../lib/offerStatus";
 import { FilterSelect } from "./catalog/CatalogShared";
 import { Button, Input, Modal, Textarea } from "./ui";
 
 const MessageLimit = 1000;
 
 // initialFormat and initialBudget prefill the form when it opens from a price tile; both stay editable.
-export function OfferForm({ bloggerId, open, onClose, onSent, initialFormat, initialBudget }: { bloggerId: string; open: boolean; onClose: () => void; onSent: (offer: Offer) => void; initialFormat?: OfferFormat; initialBudget?: number | null }) {
+// The recipient is a blogger or a brand face (D48); each is offered its own formats.
+export function OfferForm({ bloggerId, brandFaceId, open, onClose, onSent, initialFormat, initialBudget }: { bloggerId?: string; brandFaceId?: string; open: boolean; onClose: () => void; onSent: (offer: Offer) => void; initialFormat?: OfferFormat; initialBudget?: number | null }) {
   const { t } = useI18n();
-  const [format, setFormat] = useState<OfferFormat>("reels");
+  const formats = brandFaceId ? brandFaceOfferFormats : offerFormats;
+  const [format, setFormat] = useState<OfferFormat>(brandFaceId ? "photoShoot" : "reels");
   const [budget, setBudget] = useState("");
   const [messageError, setMessageError] = useState("");
   const [deadline, setDeadline] = useState(() => localDay(7));
@@ -67,7 +69,7 @@ export function OfferForm({ bloggerId, open, onClose, onSent, initialFormat, ini
     setError("");
     try {
       const offer = await createOffer({
-        bloggerId,
+        ...(brandFaceId ? { brandFaceId } : { bloggerId }),
         format,
         offeredBudget: budget.trim() ? Number(budget) : null,
         deadline: deadline ? new Date(`${deadline}T00:00:00Z`).toISOString() : null,
@@ -93,7 +95,7 @@ export function OfferForm({ bloggerId, open, onClose, onSent, initialFormat, ini
       {campaigns.length > 0 && <FilterSelect label={t("offers.fromCampaign")} onChange={(value) => void fillFromCampaign(value)} options={[["", t("offers.fromCampaignNone")], ...campaigns.map((campaign) => [campaign.id, campaign.title])]} value={campaignId} />}
       <div>
         <p className="mb-2 text-sm font-bold">{t("offers.format")}</p>
-        <div className="grid grid-cols-2 gap-2">{offerFormats.map((value) => <button aria-pressed={format === value} className={`rounded-2xl border px-3 py-2.5 text-sm font-bold ${format === value ? "choice-selected" : "border-brand-line"}`} key={value} onClick={() => setFormat(value)} type="button">{t(offerFormatLabelKey(value))}</button>)}</div>
+        <div className="grid grid-cols-2 gap-2">{formats.map((value) => <button aria-pressed={format === value} className={`rounded-2xl border px-3 py-2.5 text-sm font-bold ${format === value ? "choice-selected" : "border-brand-line"}`} key={value} onClick={() => setFormat(value)} type="button">{t(offerFormatLabelKey(value))}</button>)}</div>
       </div>
       <Input inputMode="numeric" label={t("offers.budget")} onChange={(event) => setBudget(event.target.value.replace(/\D/g, ""))} placeholder={t("offers.budgetPlaceholder")} value={formatNumericInput(budget)} />
       <Input label={t("offers.deadline")} min={localDay(0)} onChange={(event) => setDeadline(event.target.value)} type="date" value={deadline} />

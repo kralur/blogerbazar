@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 
@@ -26,7 +26,7 @@ vi.mock("../src/components/ui", () => ({
   Icon: () => null,
   Input: () => null,
   LoadingState: ({ title }: { title: string }) => <p>{title}</p>,
-  Modal: () => null,
+  Modal: ({ children, open }: { children: React.ReactNode; open: boolean }) => open ? <div role="dialog">{children}</div> : null,
   Textarea: () => null,
   Toast: () => null
 }));
@@ -64,6 +64,37 @@ describe("My Requests role-aware loading", () => {
     expect(screen.getByRole("button", { name: translate("requests.applications", undefined, "ru") })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(deals);
     expect(deals).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("shows 'awaiting your answer' only on applications still pending (QA Q19)", async () => {
+    api.getMyDeals.mockResolvedValue([]);
+    api.getMyCampaignApplications.mockResolvedValue([
+      { id: "app-pending", campaignId: "c", campaignTitle: "Pending campaign", counterpartyName: "Aziza", status: 0, canAccept: true, createdAtUtc: "2026-10-09T00:00:00Z" },
+      { id: "app-accepted", campaignId: "c", campaignTitle: "Accepted campaign", counterpartyName: "Umidjon", status: 2, canAccept: true, createdAtUtc: "2026-10-09T00:00:00Z" }
+    ]);
+    window.location.hash = "#/requests";
+    render(<I18nProvider><MyRequests activeMarketplaceRole="Business" /></I18nProvider>);
+
+    await screen.findByText("Umidjon");
+    expect(screen.getAllByText(translate("requests.awaitingYourAnswer", undefined, "ru"))).toHaveLength(1);
+  });
+
+  it("closes the application sheet when the applicant's profile opens (QA Q18)", async () => {
+    api.getMyDeals.mockResolvedValue([]);
+    api.getMyCampaignApplications.mockResolvedValue([{ id: "app-a", campaignId: "c", campaignTitle: "Запуск ресторана", counterpartyName: "Umidjon", message: "Hi", status: 0, canAccept: true, createdAtUtc: "2026-10-09T00:00:00Z", counterpartyProfileId: "bf-1", counterpartyRole: "brandFace" }]);
+    window.location.hash = "#/requests";
+    render(<I18nProvider><MyRequests activeMarketplaceRole="Business" /></I18nProvider>);
+    fireEvent.click(await screen.findByText("Umidjon"));
+    const profileLink = await screen.findByRole("link", { name: /Umidjon/ });
+    expect(profileLink).toHaveAttribute("href", "#/brand-face-detail/bf-1");
+
+    await act(async () => {
+      window.location.hash = "#/brand-face-detail/bf-1";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    window.location.hash = "#/requests";
   });
 
   it("opens the tab named in a Home link", async () => {
