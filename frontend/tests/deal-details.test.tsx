@@ -12,6 +12,7 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   completeDeal: api.completeDeal,
   createDealReview: api.createDealReview
 }));
+vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => ({ haptic: { impact: vi.fn(), success: vi.fn(), selection: vi.fn(), error: vi.fn(), warning: vi.fn() } }) }));
 vi.mock("../src/components/ManagementBackLink", () => ({ ManagementBackLink: () => null }));
 vi.mock("../src/components/ContactList", () => ({
   hasContacts: (items: Array<{ value: string }>) => items.some((item) => item.value),

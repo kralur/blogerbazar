@@ -9,6 +9,7 @@ import { formatShortDate, formatBudgetRange, formatCurrency } from "../lib/curre
 import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey } from "../lib/offerStatus";
 import { markDealSeen } from "../data/seenDeals";
+import { BlessingButton } from "../components/BlessingButton";
 import { SwitchRoleHint } from "../components/SwitchRoleHint";
 import { PageHeader } from "../components/PageHeader";
 import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
@@ -124,7 +125,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t(dealSourceLabelKey(deal.sourceType))}</p>
     <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{terms?.title ?? (deal.offer ? t(offerFormatLabelKey(deal.offer.format)) : t("deals.source.collaborationRequest"))}</h1>
     <CounterpartyRow href={deal.counterpartyProfileId ? (viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
-    {deal.status === DealStatus.Active && !deal.counterpartyDeleted && <p className="deal-blessing"><span aria-hidden="true" className="deal-blessing__icon">🤝</span>{t("deals.blessing")}</p>}
+    {deal.status === DealStatus.Active && !deal.counterpartyDeleted && <BlessingButton />}
     {deal.counterpartyDeleted && <p className="mt-3 text-sm leading-6 text-brand-muted" role="status">{t("deals.partnerDeletedNote")}</p>}
     {deal.termsSource === "liveCampaignFallback" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.termsFallbackNote")}</p>}
     {deal.termsSource === "collaboration" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.collaborationNote")}</p>}

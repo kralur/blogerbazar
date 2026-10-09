@@ -1477,11 +1477,24 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .campaign-hero__business-chevron { width: 1rem; height: 1rem; flex: none; color: var(--bb-text-secondary); transform: rotate(180deg); }
 .switch-role-hint { display: grid; gap: .75rem; margin-top: 1rem; }
 .switch-role-hint p { margin: 0; color: var(--bb-text-secondary); font-size: .875rem; line-height: 1.45; text-align: center; }
-/* A new deal is a small celebration: the brand lime card, not a grey note. */
-.deal-blessing { display: flex; align-items: center; justify-content: center; gap: .5rem; margin: 1rem 0 0; padding: 1rem; border-radius: var(--bb-radius-card, 1rem); background: var(--bb-accent); color: var(--bb-accent-text); font-size: 1.125rem; font-weight: 900; letter-spacing: -.01em; text-align: center; animation: deal-blessing-in 420ms cubic-bezier(.2, .9, .3, 1.2) both; }
+/* A new deal is a small celebration: the brand lime card, tappable for a buzz, a bounce and (3 quick taps) a firework. */
+.deal-blessing { position: relative; display: flex; width: 100%; align-items: center; justify-content: center; gap: .5rem; margin: 1rem 0 0; padding: 1rem; border: 0; border-radius: var(--bb-radius-card, 1rem); background: var(--bb-accent); color: var(--bb-accent-text); font: inherit; font-size: 1.125rem; font-weight: 900; letter-spacing: -.01em; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; animation: deal-blessing-in 420ms cubic-bezier(.2, .9, .3, 1.2) both; }
+/* Two identical keyframes, alternated per tap, so every tap restarts the bounce. */
+.deal-blessing[data-bounce="a"] { animation: deal-blessing-bounce 260ms ease-out; }
+.deal-blessing[data-bounce="b"] { animation: deal-blessing-bounce-alt 260ms ease-out; }
+.deal-blessing:focus-visible { outline: 2px solid var(--bb-text); outline-offset: 2px; }
 .deal-blessing__icon { font-size: 1.375rem; line-height: 1; }
+.deal-blessing__fireworks { position: absolute; inset: 50% auto auto 50%; z-index: 5; pointer-events: none; }
+.deal-blessing__particle { position: absolute; left: 0; top: 0; font-size: 1.5rem; line-height: 1; opacity: 0; transform: translate(-50%, -50%); animation: deal-blessing-particle 1100ms cubic-bezier(.15, .8, .3, 1) forwards; }
 @keyframes deal-blessing-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .deal-blessing { animation: none; } }
+@keyframes deal-blessing-bounce { 0% { transform: scale(1); } 40% { transform: scale(.95); } 100% { transform: scale(1); } }
+@keyframes deal-blessing-bounce-alt { 0% { transform: scale(1); } 40% { transform: scale(.95); } 100% { transform: scale(1); } }
+@keyframes deal-blessing-particle {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 60px)) rotate(var(--rotate)) scale(1.1); }
+}
+@media (prefers-reduced-motion: reduce) { .deal-blessing, .deal-blessing[data-bounce] { animation: none; } .deal-blessing__fireworks { display: none; } }
 .brand-face-soon { margin: 1.5rem 0 0; padding: .875rem 1rem; border: 1px dashed var(--bb-border); border-radius: var(--bb-radius-card, 1rem); color: var(--bb-text-secondary); font-size: .875rem; line-height: 1.45; }
 .review-author { display: flex; min-height: 2.75rem; align-items: center; gap: .625rem; margin-top: .5rem; color: var(--bb-text); font-size: .875rem; font-weight: 800; text-decoration: none; }
 .review-author--deleted { color: var(--bb-text-secondary); font-style: italic; }
