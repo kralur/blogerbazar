@@ -36,6 +36,17 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
         return Ok(await sender.Send(new GetMyDealContactQuery(dealId, actor.Id), cancellationToken));
     }
 
+    [HttpPost("me/{dealId:guid}/contact/share")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ShareMineContact(Guid dealId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        await sender.Send(new ShareDealContactCommand(dealId, actor.Id), cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("{dealId:guid}/complete")]
     [ProducesResponseType<DealDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<DealDto>> Complete(Guid dealId, CancellationToken cancellationToken)

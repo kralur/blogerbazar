@@ -11,6 +11,9 @@ public interface ITelegramBotClient
     Task SendPhoneNotSavedAsync(long chatId, CancellationToken cancellationToken) => Task.CompletedTask;
     Task SendNotificationAsync(long chatId, string text, CancellationToken cancellationToken) => Task.CompletedTask;
 
+    // A Telegram contact card (name and phone) in the person's chat with the bot.
+    Task SendContactAsync(long chatId, string phone, string name, CancellationToken cancellationToken) => Task.CompletedTask;
+
     // miniAppRoute is a hash route such as "/deal/{id}"; the message gets a button that opens it.
     Task SendNotificationAsync(long chatId, string text, string miniAppRoute, CancellationToken cancellationToken) =>
         SendNotificationAsync(chatId, text, cancellationToken);

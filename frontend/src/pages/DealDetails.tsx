@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
-import { completeDeal, createDealReview, getDealContact, getMyDeal, type ContactDetails, type DealDetails as Deal, type MarketplaceRole } from "../api/marketplace";
+import { completeDeal, createDealReview, getDealContact, getMyDeal, shareDealContact, type ContactDetails, type DealDetails as Deal, type MarketplaceRole } from "../api/marketplace";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Modal, Textarea, Toast } from "../components/ui";
@@ -146,7 +146,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       ]} />
       <Card className="mt-2"><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p></Card>
     </DetailSection>}
-    {contactItems.length > 0 && hasContacts(contactItems) && <DetailSection title={t("deals.contacts")}><ContactList items={contactItems} /></DetailSection>}
+    {contactItems.length > 0 && hasContacts(contactItems) && <DetailSection title={t("deals.contacts")}><ContactList items={contactItems} onSendToChat={async () => { try { await shareDealContact(deal.id); return t("contacts.sentToChat"); } catch (error) { throw new Error(getApiErrorMessage(error, t("contacts.sendToChatFailed"))); } }} /></DetailSection>}
     <FactGrid className="mt-4" facts={[
       { label: t("deals.startedAt"), value: formatDate(deal.createdAtUtc) },
       { label: t("deals.completedAt"), value: deal.completedAtUtc ? formatDate(deal.completedAtUtc) : null }

@@ -124,6 +124,15 @@ internal sealed class SpyBotClient : ITelegramBotClient
     public List<string> Texts { get; } = [];
     public List<string?> Routes { get; } = [];
     public List<string?> Buttons { get; } = [];
+    public List<(long ChatId, string Phone, string Name)> Contacts { get; } = [];
+    public bool FailContacts { get; init; }
+
+    public Task SendContactAsync(long chatId, string phone, string name, CancellationToken cancellationToken)
+    {
+        if (FailContacts) throw new HttpRequestException("Forbidden: bot was blocked by the user");
+        Contacts.Add((chatId, phone, name));
+        return Task.CompletedTask;
+    }
     public Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task SendNotificationAsync(long chatId, string text, CancellationToken cancellationToken) => Record(chatId, text, null);

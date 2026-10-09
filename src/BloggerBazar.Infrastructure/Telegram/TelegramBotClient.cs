@@ -93,6 +93,21 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
         await SendMessageAsync(new { chat_id = chatId, text = PhoneNotSavedText.For(language), reply_markup = new { remove_keyboard = true } }, cancellationToken);
     }
 
+    // The app name after the person's name, so the saved phone contact shows where it came from.
+    public async Task SendContactAsync(long chatId, string phone, string name, CancellationToken cancellationToken)
+    {
+        var botToken = options.Value.BotToken;
+        if (string.IsNullOrWhiteSpace(botToken)) throw new InvalidOperationException("Telegram:BotToken must be configured to send bot messages.");
+        using var response = await httpClient.PostAsJsonAsync(TelegramBotApi.MethodUri(botToken, "sendContact"), new
+        {
+            chat_id = chatId,
+            phone_number = phone,
+            first_name = name.Length > 64 ? name[..64] : name,
+            last_name = "(BloggerBazar)"
+        }, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     private async Task SendMessageAsync(object payload, CancellationToken cancellationToken)
     {
         var botToken = options.Value.BotToken;

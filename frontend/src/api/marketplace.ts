@@ -697,6 +697,11 @@ export async function getDealContact(id: string, signal?: AbortSignal) {
   return api<ContactDetails>(`/api/deals/me/${id}/contact`, { signal });
 }
 
+// The bot sends the partner's contact card (name and phone) to the person's own chat with the bot.
+export async function shareDealContact(id: string) {
+  return api<void>(`/api/deals/me/${id}/contact/share`, { method: "POST" });
+}
+
 export async function completeDeal(id: string) {
   return api(`/api/deals/${id}/complete`, { method: "POST" });
 }
