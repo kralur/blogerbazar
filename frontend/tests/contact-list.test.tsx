@@ -16,9 +16,10 @@ describe("contact list", () => {
     fireEvent.click(screen.getByRole("button", { name: ru("contacts.writeInTelegram") }));
     expect(openLink).toHaveBeenLastCalledWith("https://t.me/+998901234567");
 
-    // Calling is a real tel: link the user taps: Telegram's WebViews drop a call started from script.
+    // Telegram blocks tel: inside the Mini App, so the call opens our call page in the browser.
     fireEvent.click(screen.getByText("+998 90 123 45 67"));
-    expect(screen.getByRole("link", { name: ru("contacts.call") })).toHaveAttribute("href", "tel:+998901234567");
+    fireEvent.click(screen.getByRole("button", { name: ru("contacts.call") }));
+    expect(openLink).toHaveBeenLastCalledWith(`${window.location.origin}/call.html?n=%2B998901234567&lang=ru`);
   });
 
   it("does not offer a call in desktop Telegram, which has no phone", () => {
@@ -26,7 +27,7 @@ describe("contact list", () => {
     render(<I18nProvider><ContactList items={[{ kind: "phone", value: "+998 90 123 45 67" }]} /></I18nProvider>);
 
     fireEvent.click(screen.getByText("+998 90 123 45 67"));
-    expect(screen.queryByRole("link", { name: ru("contacts.call") })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: ru("contacts.call") })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: ru("contacts.copyNumber") })).toBeInTheDocument();
     window.Telegram = undefined;
   });

@@ -12,7 +12,7 @@ export function hasContacts(items: ContactItem[]) {
 }
 
 export function ContactList({ items }: { items: ContactItem[] }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const { haptic, openLink } = useTelegram();
   const [toast, setToast] = useState("");
   const [phoneActions, setPhoneActions] = useState<string | null>(null);
@@ -46,8 +46,9 @@ export function ContactList({ items }: { items: ContactItem[] }) {
   return <><Card className="divide-y divide-brand-line p-0">{visibleItems.map((item) => <div className="flex items-center gap-3 p-3" key={`${item.kind}-${item.value}`}><span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink"><Icon name={iconByKind[item.kind]} /></span><a className="min-w-0 flex-1" href={item.href!} onClick={(event) => { event.preventDefault(); openContact(item); }}><span className="block text-xs font-semibold text-brand-muted">{t(`contacts.${item.kind}`)}</span><span className="contact-list__value mt-0.5 block text-sm font-bold [overflow-wrap:anywhere] [text-wrap:balance]">{displayContact(item)}</span></a><button aria-label={t("contacts.copyAria", { value: displayContact(item) })} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-brand-muted transition hover:bg-brand-soft active:scale-95" onClick={() => void copy(displayContact(item))} type="button"><Icon name="copy" /></button></div>)}</Card><Toast message={toast} tone="copied" />
     <BottomSheet onClose={() => setPhoneActions(null)} open={phoneActions !== null} title={phoneActions ?? ""} variant="neutral">
       <div className="grid gap-2">
-        {/* A real tel: link tapped by the user: Telegram's WebViews drop a call started from script. Desktop has no phone to call with. */}
-        {canCall && <a className="ds-button ds-button--primary tap-target inline-flex items-center justify-center gap-2 px-5" href={`tel:${phoneDigits}`} onClick={() => window.setTimeout(() => setPhoneActions(null), 0)}><Icon name="phone" />{t("contacts.call")}</a>}
+        {/* Telegram blocks tel: inside a Mini App (iPhone ignores even a tapped link), so the call goes through
+            our small call page opened in the browser, where the phone offers to dial. Desktop has no phone to call with. */}
+        {canCall && <Button onClick={() => { setPhoneActions(null); openLink(`${window.location.origin}/call.html?n=${encodeURIComponent(phoneDigits)}&lang=${language}`); }} type="button"><Icon name="phone" />{t("contacts.call")}</Button>}
         <Button onClick={() => { setPhoneActions(null); openLink(`https://t.me/${phoneDigits}`); }} type="button" variant="secondary"><Icon name="send" />{t("contacts.writeInTelegram")}</Button>
         <Button onClick={() => { const value = phoneActions ?? ""; setPhoneActions(null); void copy(value); }} type="button" variant="secondary"><Icon name="copy" />{t("contacts.copyNumber")}</Button>
         {canCall && <p className="text-xs leading-5 text-brand-muted">{t("contacts.callHint")}</p>}

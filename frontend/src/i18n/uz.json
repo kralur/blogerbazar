@@ -608,7 +608,7 @@
   ,"contacts.call": "Qo‘ng‘iroq qilish"
   ,"contacts.writeInTelegram": "Telegram’da yozish"
   ,"contacts.copyNumber": "Raqamni nusxalash"
-  ,"contacts.callHint": "Qo‘ng‘iroq boshlanmasa, Telegram uni ilovadan ruxsat bermagan. Telegram’da yozing yoki raqamni nusxalang."
+  ,"contacts.callHint": "Telegram ilovadan to‘g‘ridan-to‘g‘ri qo‘ng‘iroq qilishga ruxsat bermaydi, shuning uchun brauzerda sahifa ochiladi: u yerda «Qo‘ng‘iroq qilish» tugmasini bosing."
   ,"phone.title": "Raqamni tasdiqlang"
   ,"phone.subtitle": "Raqam Telegram’ingizdan olinadi, uni qo‘lda kiritib bo‘lmaydi. Shunda hamkor haqiqiy odam bilan bog‘lanayotganini biladi."
   ,"phone.privacy": "Raqamni faqat bitim bo‘yicha hamkorlar ko‘radi."
