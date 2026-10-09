@@ -9,6 +9,7 @@ import { formatShortDate, formatBudgetRange, formatCurrency } from "../lib/curre
 import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey } from "../lib/offerStatus";
 import { markDealSeen } from "../data/seenDeals";
+import { SwitchRoleHint } from "../components/SwitchRoleHint";
 import { PageHeader } from "../components/PageHeader";
 import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
@@ -105,7 +106,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
   if (!deal || state !== "ready") {
     const title = state === "denied" ? t("deals.deniedTitle") : state === "not-found" ? t("deals.notFoundTitle") : t("deals.errorTitle");
     const subtitle = state === "denied" ? t("deals.deniedSubtitle") : state === "not-found" ? t("deals.notFoundSubtitle") : t("deals.errorSubtitle");
-    return <div className="screen screen--with-nav"><ErrorState onRetry={state === "error" ? load : undefined} subtitle={subtitle} title={title} /><BottomNav /></div>;
+    return <div className="screen screen--with-nav"><ErrorState onRetry={state === "error" ? load : undefined} subtitle={subtitle} title={title} />{(state === "not-found" || state === "denied") && <SwitchRoleHint />}<BottomNav /></div>;
   }
 
   const formatDate = (value: string) => formatShortDate(value, language, { year: true });

@@ -6,6 +6,7 @@ import { useI18n } from "../i18n";
 import { formatShortDate, formatCurrency } from "../lib/currency";
 import { dealRoute } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
+import { SwitchRoleHint } from "../components/SwitchRoleHint";
 import { PageHeader } from "../components/PageHeader";
 import { DetailSection, FactGrid } from "../components/details/DetailBlocks";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
@@ -75,7 +76,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
 
   if (state === "loading") return <div className="screen screen--with-nav"><LoadingState title={t("offers.loading")} /><BottomNav /></div>;
   if (!offer || state !== "ready") {
-    return <div className="screen screen--with-nav"><ErrorState onRetry={state === "error" ? load : undefined} subtitle={state === "not-found" ? t("offers.notFoundSubtitle") : t("offers.errorSubtitle")} title={state === "not-found" ? t("offers.notFoundTitle") : t("offers.errorTitle")} /><BottomNav /></div>;
+    return <div className="screen screen--with-nav"><ErrorState onRetry={state === "error" ? load : undefined} subtitle={state === "not-found" ? t("offers.notFoundSubtitle") : t("offers.errorSubtitle")} title={state === "not-found" ? t("offers.notFoundTitle") : t("offers.errorTitle")} />{state === "not-found" && <SwitchRoleHint />}<BottomNav /></div>;
   }
 
   const formatDate = (value: string, withTime = false) => formatShortDate(value, language, withTime ? { time: true } : { year: true });

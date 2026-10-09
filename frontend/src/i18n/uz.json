@@ -633,4 +633,6 @@
   ,"brandFace.offersSoon": "Brend-yuzlar uchun hamkorlik takliflari tez orada qo‘shiladi. Hozircha quyidagi kontaktlar orqali to‘g‘ridan-to‘g‘ri yozing."
   ,"deals.blessing": "Barakasini bersin!"
   ,"deals.newDealRow": "Yangi bitim"
+  ,"roleSwitch.hint": "Ehtimol, bu boshqa anketangiz uchun. Rolni almashtiring, biz bu sahifani qayta ochamiz."
+  ,"roleSwitch.action": "«{role}» roliga o‘tish"
 }
