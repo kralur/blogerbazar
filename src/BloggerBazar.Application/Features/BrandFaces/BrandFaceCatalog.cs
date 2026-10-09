@@ -7,12 +7,12 @@ public sealed record BrandFacePublicDto(
     Guid Id, string Name, string City, IReadOnlyCollection<string> Languages, IReadOnlyCollection<string> Categories,
     string? Experience, string? Instagram, string? Telegram, string? PortfolioUrl, int? CollaborationPrice, string? Description,
     string? AvatarUrl, bool IsPromoted, DateTime CreatedAtUtc,
-    int? Age = null, string? Gender = null, IReadOnlyCollection<string>? Formats = null, string? ShowreelUrl = null, IReadOnlyCollection<string>? PhotoUrls = null)
+    int? Age = null, string? Gender = null, IReadOnlyCollection<string>? Formats = null, string? ShowreelUrl = null, IReadOnlyCollection<string>? PhotoUrls = null, bool IsHidden = false)
 {
     public static BrandFacePublicDto From(BloggerBazar.Domain.Entities.BrandFaceProfile profile) => new(
         profile.Id, profile.Name, profile.City, profile.Languages, profile.Categories, profile.Experience,
         profile.Instagram, profile.Telegram, profile.PortfolioUrl, profile.CollaborationPrice, profile.Description, profile.AvatarUrl,
-        profile.IsPromoted, profile.CreatedAtUtc, profile.Age, profile.Gender, profile.Formats, profile.ShowreelUrl, profile.PhotoUrls);
+        profile.IsPromoted, profile.CreatedAtUtc, profile.Age, profile.Gender, profile.Formats, profile.ShowreelUrl, profile.PhotoUrls, profile.IsHidden);
 }
 
 public sealed record SearchBrandFacesQuery(string? Query, string? City, string? Category, int Page = 1, int PageSize = 20) : IRequest<IReadOnlyList<BrandFacePublicDto>>;

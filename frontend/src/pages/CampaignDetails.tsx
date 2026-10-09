@@ -106,11 +106,12 @@ export function CampaignDetails({ id }: { id: string }) {
       // D46: a brand face applies like a blogger; it has no moderation, an existing profile is enough.
       const brandFaceExists = brandFaceResult.status === "fulfilled" && Boolean(brandFaceResult.value);
       const creatorReady = activeRole === "Blogger" ? bloggerIsApproved : activeRole === "BrandFace" && brandFaceExists;
-      const eligible = creatorReady && campaign.status === 1 && !isOwnCampaign;
+      const eligible = creatorReady && campaign.status === 1 && !isOwnCampaign && !campaign.businessHidden;
       setCanApply(eligible);
       setBlockedReason(eligible || userResult.status !== "fulfilled" ? null
         : isOwnCampaign ? "own"
         : campaign.status !== 1 ? "closed"
+        : campaign.businessHidden ? "businessHidden"
         : activeRole === "BrandFace" ? "noBrandFaceProfile"
         : activeRole !== "Blogger" ? "role"
         : bloggerResult.status === "rejected" && bloggerResult.reason instanceof ApiError && bloggerResult.reason.status === 404 ? "noProfile"
@@ -233,7 +234,7 @@ export function CampaignDetails({ id }: { id: string }) {
   );
 }
 
-type ApplyBlockedReason = "own" | "closed" | "role" | "noProfile" | "noBrandFaceProfile";
+type ApplyBlockedReason = "own" | "closed" | "role" | "noProfile" | "noBrandFaceProfile" | "businessHidden";
 
 // Explains why there is no apply button instead of leaving an empty space.
 function ApplyBlockedNote({ campaignId, reason }: { campaignId: string; reason: ApplyBlockedReason }) {
@@ -243,6 +244,6 @@ function ApplyBlockedNote({ campaignId, reason }: { campaignId: string; reason: 
     : reason === "noProfile" ? { href: "#/blogger-form", label: t("campaign.blockedNoProfileAction") }
     : reason === "noBrandFaceProfile" ? { href: "#/brand-face", label: t("campaign.blockedNoProfileAction") }
     : null;
-  const text = reason === "own" ? t("campaign.blockedOwn") : reason === "noBrandFaceProfile" ? t("campaign.blockedNoBrandFaceProfile") : reason === "role" ? t("campaign.blockedRole") : reason === "noProfile" ? t("campaign.blockedNoProfile") : t("campaign.blockedClosed");
+  const text = reason === "own" ? t("campaign.blockedOwn") : reason === "noBrandFaceProfile" ? t("campaign.blockedNoBrandFaceProfile") : reason === "businessHidden" ? t("campaign.blockedBusinessHidden") : reason === "role" ? t("campaign.blockedRole") : reason === "noProfile" ? t("campaign.blockedNoProfile") : t("campaign.blockedClosed");
   return <div className="campaign-details__expired" role="status"><p>{text}</p>{action && <a className="campaign-details__blocked-action" href={action.href}>{action.label}</a>}</div>;
 }

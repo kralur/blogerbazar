@@ -2,6 +2,7 @@ using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Abstractions.Caching;
+using BloggerBazar.Application.Features.Users;
 using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -54,6 +55,17 @@ public sealed class ApplyToCampaignHandler(
             || owner.IsDeleted)
         {
             throw new InvalidOperationException("Campaign was not found.");
+        }
+
+        // D50: a paused profile neither applies nor receives new applications.
+        if (creator.IsHidden)
+        {
+            throw new BusinessRuleConflictException(ProfileVisibilityCodes.ProfileHidden, "The profile is hidden.");
+        }
+
+        if (campaign.Business.IsHidden)
+        {
+            throw new BusinessRuleConflictException(ProfileVisibilityCodes.BusinessHidden, "The business has paused its campaigns.");
         }
 
         if (campaign.IsExpired(DateTime.UtcNow))

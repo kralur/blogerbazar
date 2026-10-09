@@ -30,7 +30,7 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
     public async Task<IReadOnlyList<BloggerProfile>> SearchApprovedAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
         var query = dbContext.BloggerProfiles.AsNoTracking()
-            .Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
+            .Where(profile => !profile.IsDeleted && !profile.IsHidden && profile.Status == BloggerStatus.Approved);
 
         if (!string.IsNullOrWhiteSpace(city))
         {
@@ -51,7 +51,7 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
 
     public async Task<BloggerCatalogPage> SearchApprovedPageAsync(BloggerCatalogSearch search, CancellationToken cancellationToken)
     {
-        var query = dbContext.BloggerProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
+        var query = dbContext.BloggerProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && !profile.IsHidden && profile.Status == BloggerStatus.Approved);
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
             var pattern = PostgresSearchPattern.Contains(search.Query.Trim());

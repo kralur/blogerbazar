@@ -9,10 +9,10 @@ internal sealed class CampaignCatalogReadModel(BloggerBazarDbContext dbContext) 
 {
     public async Task<CampaignCatalogResult> SearchAsync(CampaignCatalogSearch search, CancellationToken cancellationToken)
     {
-        var query = MarketplaceCatalogVisibility.PublicCampaigns(
+        var query = MarketplaceCatalogVisibility.Listed(MarketplaceCatalogVisibility.PublicCampaigns(
             dbContext.Campaigns.AsNoTracking(),
             dbContext.BusinessProfiles.AsNoTracking(),
-            dbContext.PlatformUsers.AsNoTracking());
+            dbContext.PlatformUsers.AsNoTracking()));
 
         query = MarketplaceCatalogVisibility.OpenForApplications(query, DateTime.UtcNow);
         query = CampaignCatalogFiltering.Apply(query, search);

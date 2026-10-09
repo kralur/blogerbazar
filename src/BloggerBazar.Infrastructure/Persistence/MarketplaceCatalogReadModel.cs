@@ -27,6 +27,10 @@ internal static class MarketplaceCatalogVisibility
 
     // Listings show only campaigns still taking applications; the details page stays reachable by link.
     // Same rule as Campaign.IsExpired, written as a translatable predicate.
+    // D50: a paused profile leaves listings; its page stays reachable by link.
+    internal static IQueryable<BloggerProfile> Listed(IQueryable<BloggerProfile> query) => query.Where(profile => !profile.IsHidden);
+    internal static IQueryable<Campaign> Listed(IQueryable<Campaign> query) => query.Where(campaign => !campaign.Business.IsHidden);
+
     internal static IQueryable<Campaign> OpenForApplications(IQueryable<Campaign> campaigns, DateTime utcNow)
     {
         var today = utcNow.Date;
@@ -38,7 +42,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
 {
     public async Task<SearchBloggersResult> SearchBloggersAsync(BloggerCatalogSearch search, CancellationToken cancellationToken)
     {
-        var query = MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking());
+        var query = MarketplaceCatalogVisibility.Listed(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking()));
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
             var pattern = PostgresSearchPattern.Contains(search.Query.Trim());
@@ -102,7 +106,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             .Where(item => item.TelegramUserId == telegramUserId && !item.IsDeleted)
             .Select(item => new MyBloggerRow(item.Id, item.Name, item.LastName, item.Username, item.City, item.Categories, item.Bio,
                 item.AvatarUrl, item.Phone, item.Email, item.TotalFollowers, item.AverageReach, item.EngagementRate, item.StoriesPrice,
-                item.ReelsPrice, item.PostPrice, item.IntegrationPrice, item.BarterEnabled, (int)item.Status))
+                item.ReelsPrice, item.PostPrice, item.IntegrationPrice, item.BarterEnabled, (int)item.Status, item.IsHidden))
             .SingleOrDefaultAsync(cancellationToken);
         if (profile is null) return null;
 
@@ -113,15 +117,15 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             .Select(item => new SocialPlatformDto(item.Id, item.Type, item.Url, item.Followers, item.ScreenshotUrl, item.AverageReach, item.EngagementRate)).ToArrayAsync(cancellationToken);
         return new MyBloggerProfileDto(profile.Id, profile.Name, profile.LastName, profile.Username, profile.City, profile.Categories,
             profile.Bio, profile.AvatarUrl, profile.Phone, profile.Email, profile.TotalFollowers, profile.AverageReach, profile.EngagementRate,
-            profile.StoriesPrice, profile.ReelsPrice, profile.PostPrice, profile.IntegrationPrice, profile.BarterEnabled, profile.Status, portfolioItems, platforms);
+            profile.StoriesPrice, profile.ReelsPrice, profile.PostPrice, profile.IntegrationPrice, profile.BarterEnabled, profile.Status, portfolioItems, platforms, profile.IsHidden);
     }
 
     public async Task<IReadOnlyList<CampaignDto>> SearchCampaignsAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
-        var query = MarketplaceCatalogVisibility.PublicCampaigns(
+        var query = MarketplaceCatalogVisibility.Listed(MarketplaceCatalogVisibility.PublicCampaigns(
             dbContext.Campaigns.AsNoTracking(),
             dbContext.BusinessProfiles.AsNoTracking(),
-            dbContext.PlatformUsers.AsNoTracking());
+            dbContext.PlatformUsers.AsNoTracking()));
         query = MarketplaceCatalogVisibility.OpenForApplications(query, DateTime.UtcNow);
         if (!string.IsNullOrWhiteSpace(city)) query = query.Where(campaign => campaign.City == city.Trim());
         if (!string.IsNullOrWhiteSpace(category)) query = query.Where(campaign => campaign.Categories.Contains(category.Trim()));
@@ -190,7 +194,8 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
     private IQueryable<CampaignDto> ProjectCampaigns(IQueryable<Campaign> query) =>
         query.Select(campaign => new CampaignDto(campaign.Id, campaign.BusinessId, campaign.Business.Name, campaign.Title,
             campaign.Description, campaign.City, campaign.Categories, campaign.Requirements, campaign.BudgetFrom, campaign.BudgetTo,
-            campaign.Deadline, campaign.IsPromoted, (int)campaign.Status, campaign.Applications.Count(application => application.BloggerId != null ? !application.Blogger!.IsDeleted : !application.BrandFace!.IsDeleted), campaign.CreatedAtUtc));
+            campaign.Deadline, campaign.IsPromoted, (int)campaign.Status, campaign.Applications.Count(application => application.BloggerId != null ? !application.Blogger!.IsDeleted : !application.BrandFace!.IsDeleted), campaign.CreatedAtUtc,
+            campaign.Business.IsHidden));
 
     private IQueryable<CollaborationRequestDto> ProjectCollaborationRequests(IQueryable<CollaborationRequest> query) =>
         query.OrderByDescending(request => request.CreatedAtUtc).Select(request => new CollaborationRequestDto(request.Id, request.BloggerId,
@@ -203,7 +208,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
                 profile.AvatarUrl, profile.CoverUrl, profile.TotalFollowers, profile.AverageReach, profile.EngagementRate, profile.StoriesPrice,
                 profile.ReelsPrice, profile.PostPrice, profile.IntegrationPrice, profile.BarterEnabled, profile.IsVerified, profile.IsPromoted,
                 (int)profile.Status, profile.Reviews.Average(review => (decimal?)review.Rating), profile.Reviews.Count,
-                profile.Deals.Count(deal => deal.Status == DealStatus.Completed)))
+                profile.Deals.Count(deal => deal.Status == DealStatus.Completed), profile.IsHidden))
             .ToArrayAsync(cancellationToken);
         if (profiles.Length == 0) return [];
 
@@ -222,7 +227,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             profile.AvatarUrl, profile.CoverUrl, profile.TotalFollowers, CreatorLevel(profile.TotalFollowers), profile.AverageReach,
             profile.EngagementRate, profile.StoriesPrice, profile.ReelsPrice, profile.PostPrice, profile.IntegrationPrice, profile.BarterEnabled,
             profile.IsVerified, profile.IsPromoted, profile.Status, profile.Rating, profile.ReviewsCount, profile.CompletedDealsCount,
-            portfoliosByBlogger.GetValueOrDefault(profile.Id, []), platformsByBlogger.GetValueOrDefault(profile.Id, []))).ToArray();
+            portfoliosByBlogger.GetValueOrDefault(profile.Id, []), platformsByBlogger.GetValueOrDefault(profile.Id, []), profile.IsHidden)).ToArray();
     }
 
     private static int CreatorLevel(int totalFollowers) => totalFollowers switch { < 5_000 => 0, < 50_000 => 1, < 500_000 => 2, _ => 3 };
@@ -230,10 +235,10 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
     private sealed record BloggerRow(Guid Id, string Name, string City, IReadOnlyCollection<string> Categories, string? Bio, string? AvatarUrl,
         string? CoverUrl, int TotalFollowers, int? AverageReach, decimal? EngagementRate, int? StoriesPrice, int? ReelsPrice,
         int? PostPrice, int? IntegrationPrice, bool BarterEnabled, bool IsVerified, bool IsPromoted, int Status, decimal? Rating,
-        int ReviewsCount, int CompletedDealsCount);
+        int ReviewsCount, int CompletedDealsCount, bool IsHidden);
     private sealed record MyBloggerRow(Guid Id, string Name, string? LastName, string? Username, string City, IReadOnlyCollection<string> Categories,
         string? Bio, string? AvatarUrl, string? Phone, string? Email, int TotalFollowers, int? AverageReach, decimal? EngagementRate,
-        int? StoriesPrice, int? ReelsPrice, int? PostPrice, int? IntegrationPrice, bool BarterEnabled, int Status);
+        int? StoriesPrice, int? ReelsPrice, int? PostPrice, int? IntegrationPrice, bool BarterEnabled, int Status, bool IsHidden);
     private sealed record PortfolioItemRow(Guid BloggerId, PortfolioItemDto Item);
     private sealed record SocialPlatformRow(Guid BloggerId, SocialPlatformDto Platform);
 }

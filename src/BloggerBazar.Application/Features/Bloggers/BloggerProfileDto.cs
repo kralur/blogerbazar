@@ -27,7 +27,8 @@ public sealed record BloggerProfileDto(
     int ReviewsCount,
     int CompletedDealsCount,
     IReadOnlyCollection<PortfolioItemDto> PortfolioItems,
-    IReadOnlyCollection<SocialPlatformDto> Platforms)
+    IReadOnlyCollection<SocialPlatformDto> Platforms,
+    bool IsHidden = false)
 {
     public static BloggerProfileDto From(BloggerProfile profile) => new(
         profile.Id,

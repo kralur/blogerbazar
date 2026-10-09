@@ -92,7 +92,7 @@ export function BloggerDetails({ id }: { id: string }) {
   const priceFact = (label: string, format: OfferFormat, price?: number | null): Fact => ({
     label,
     value: positiveCurrency(price),
-    onSelect: role === "Business" && price && price > 0 ? () => { setOfferPreset({ format, budget: price }); setOfferOpen(true); } : undefined,
+    onSelect: role === "Business" && !blogger.isHidden && price && price > 0 ? () => { setOfferPreset({ format, budget: price }); setOfferOpen(true); } : undefined,
     selectLabel: t("offers.proposeFormat", { format: label })
   });
   const prices: Fact[] = [
@@ -120,7 +120,8 @@ export function BloggerDetails({ id }: { id: string }) {
     {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <a className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-brand-soft" href={item.url} key={item.id} onClick={(event) => { event.preventDefault(); openLink(item.url); }}><img alt={item.title} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" src={item.url} />{item.type === "VIDEO" && <span aria-label={t("details.video")} className="absolute inset-0 grid place-items-center bg-slate-950/30 text-white">▶</span>}</a>)}</div></DetailSection>}
     <ReviewsSection allHref={`#/blogger-reviews/${blogger.id}`} count={blogger.reviewsCount} emptyText={t("details.noReviews")} rating={blogger.reviewsCount > 0 ? blogger.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews} title={t("details.reviews")} />
     {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
-    {role === "Business" && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
+    {blogger.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
+    {role === "Business" && !blogger.isHidden && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm bloggerId={blogger.id} initialBudget={offerPreset?.budget} initialFormat={offerPreset?.format} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} /><BottomNav />
   </div>;

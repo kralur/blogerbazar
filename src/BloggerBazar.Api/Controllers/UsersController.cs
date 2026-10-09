@@ -36,6 +36,23 @@ public sealed class UsersController(ISender sender, ITelegramWebAppValidator tel
         return Ok(await sender.Send(new SetInterfaceLanguageCommand(telegramUser.Id, request.Language), cancellationToken));
     }
 
+    // D50: pause or resume one of the account's role profiles; role is "blogger", "brand-face" or "business".
+    [HttpPut("roles/{role}/visibility")]
+    [ProducesResponseType<ProfileVisibilityDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ProfileVisibilityDto>> SetProfileVisibility(string role, SetProfileVisibilityRequest request, CancellationToken cancellationToken)
+    {
+        var telegramUser = GetTelegramUser();
+        var marketplaceRole = role.ToLowerInvariant() switch
+        {
+            "blogger" => MarketplaceRole.Blogger,
+            "brand-face" => MarketplaceRole.BrandFace,
+            "business" => MarketplaceRole.Business,
+            _ => throw new InvalidOperationException("Profile was not found.")
+        };
+        return Ok(await sender.Send(new SetProfileVisibilityCommand(telegramUser.Id, marketplaceRole, request.Hidden), cancellationToken));
+    }
+
     [HttpPut("selected-role")]
     public async Task<ActionResult<CurrentPlatformUserDto>> SelectRole(SelectMarketplaceRoleRequest request, CancellationToken cancellationToken)
     {

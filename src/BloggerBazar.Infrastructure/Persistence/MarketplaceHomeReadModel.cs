@@ -16,11 +16,11 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
     public async Task<MarketplaceHomeDto> GetAsync(CancellationToken cancellationToken)
     {
         var approvedBloggers = dbContext.BloggerProfiles.AsNoTracking()
-            .Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
+            .Where(profile => !profile.IsDeleted && !profile.IsHidden && profile.Status == BloggerStatus.Approved);
         var publishedCampaigns = MarketplaceCatalogVisibility.OpenForApplications(dbContext.Campaigns.AsNoTracking()
-            .Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted), DateTime.UtcNow);
-        var businesses = dbContext.BusinessProfiles.AsNoTracking().Where(profile => !profile.IsDeleted);
-        var brandFaces = dbContext.BrandFaceProfiles.AsNoTracking().Where(profile => !profile.IsDeleted);
+            .Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted && !campaign.Business.IsHidden), DateTime.UtcNow);
+        var businesses = dbContext.BusinessProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && !profile.IsHidden);
+        var brandFaces = dbContext.BrandFaceProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && !profile.IsHidden);
 
         var promotedBloggers = await ProjectBloggers(approvedBloggers
                 .Where(profile => profile.IsPromoted)
@@ -47,7 +47,8 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
                 campaign.IsPromoted,
                 (int)campaign.Status,
                 campaign.Applications.Count(application => application.BloggerId != null ? !application.Blogger!.IsDeleted : !application.BrandFace!.IsDeleted),
-                campaign.CreatedAtUtc))
+                campaign.CreatedAtUtc,
+                campaign.Business.IsHidden))
             .ToArrayAsync(cancellationToken);
 
         var topRatedBloggers = await ProjectBloggers(approvedBloggers
@@ -85,7 +86,8 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
                 profile.Gender,
                 profile.Formats,
                 profile.ShowreelUrl,
-                profile.PhotoUrls))
+                profile.PhotoUrls,
+                profile.IsHidden))
             .ToArrayAsync(cancellationToken);
 
         var popularBusinesses = await businesses
@@ -163,5 +165,6 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
             profile.Reviews.Count,
             profile.Deals.Count(deal => deal.Status == DealStatus.Completed),
             profile.PortfolioItems.Select(item => new PortfolioItemDto(item.Id, item.Title, (int)item.Type, item.Url)).ToArray(),
-            profile.Platforms.Select(platform => new SocialPlatformDto(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate)).ToArray()));
+            profile.Platforms.Select(platform => new SocialPlatformDto(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate)).ToArray(),
+            profile.IsHidden));
 }

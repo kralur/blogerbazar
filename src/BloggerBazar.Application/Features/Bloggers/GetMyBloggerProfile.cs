@@ -10,13 +10,14 @@ public sealed record MyBloggerProfileDto(
     Guid Id, string Name, string? LastName, string? Username, string City, IReadOnlyCollection<string> Categories,
     string? Bio, string? AvatarUrl, string? Phone, string? Email, int TotalFollowers, int? AverageReach,
     decimal? EngagementRate, int? StoriesPrice, int? ReelsPrice, int? PostPrice, int? IntegrationPrice,
-    bool BarterEnabled, int Status, IReadOnlyCollection<PortfolioItemDto> PortfolioItems, IReadOnlyCollection<SocialPlatformDto> Platforms)
+    bool BarterEnabled, int Status, IReadOnlyCollection<PortfolioItemDto> PortfolioItems, IReadOnlyCollection<SocialPlatformDto> Platforms,
+    bool IsHidden = false)
 {
     public static MyBloggerProfileDto From(BloggerProfile profile) => new(
         profile.Id, profile.Name, profile.LastName, profile.Username, profile.City, profile.Categories, profile.Bio,
         profile.AvatarUrl, profile.Phone, profile.Email, profile.TotalFollowers, profile.AverageReach, profile.EngagementRate,
         profile.StoriesPrice, profile.ReelsPrice, profile.PostPrice, profile.IntegrationPrice, profile.BarterEnabled,
-        (int)profile.Status, profile.PortfolioItems.Select(PortfolioItemDto.From).ToArray(), profile.Platforms.Select(SocialPlatformDto.From).ToArray());
+        (int)profile.Status, profile.PortfolioItems.Select(PortfolioItemDto.From).ToArray(), profile.Platforms.Select(SocialPlatformDto.From).ToArray(), profile.IsHidden);
 }
 
 public sealed class GetMyBloggerProfileHandler(IMarketplaceCatalogReadModel catalog)

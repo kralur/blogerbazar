@@ -179,6 +179,14 @@ describe("Campaign safety foundation", () => {
     await waitFor(() => expect(screen.queryByRole("link", { name: translate("applications.applyState", undefined, "ru") })).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: translate("campaign.apply", undefined, "ru") })).toBeInTheDocument();
   });
+  it("explains that a paused business takes no applications (D50)", async () => {
+    api.getCampaign.mockResolvedValue({ ...campaign, businessHidden: true });
+    renderDetails();
+
+    expect(await screen.findByText(translate("campaign.blockedBusinessHidden", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: translate("campaign.apply", undefined, "ru") })).not.toBeInTheDocument();
+  });
+
   it("lets a brand face with a profile apply like a blogger (D46)", async () => {
     api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace" });
     api.getMyBloggerProfile.mockRejectedValue(new Error("no blogger profile"));

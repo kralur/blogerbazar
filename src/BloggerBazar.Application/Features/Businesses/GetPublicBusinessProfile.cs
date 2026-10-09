@@ -22,7 +22,8 @@ public sealed record PublicBusinessProfileDto(
     IReadOnlyList<PublicBusinessCampaignDto> OpenCampaigns,
     decimal? Rating = null,
     int ReviewsCount = 0,
-    IReadOnlyList<ReviewDto>? Reviews = null);
+    IReadOnlyList<ReviewDto>? Reviews = null,
+    bool IsHidden = false);
 
 public sealed class GetPublicBusinessProfileHandler(IPublicBusinessReadModel businesses, IReviewReadModel reviews)
     : IRequestHandler<GetPublicBusinessProfileQuery, PublicBusinessProfileDto?>

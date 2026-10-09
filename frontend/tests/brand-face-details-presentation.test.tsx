@@ -52,6 +52,15 @@ describe("Brand face public page", () => {
     expect(api.createOffer.mock.calls[0][0]).not.toHaveProperty("bloggerId");
   });
 
+  it("says a hidden brand face is paused and offers nothing to a business (D50)", async () => {
+    api.getBrandFace.mockResolvedValue({ ...profile, isHidden: true });
+    render(<I18nProvider><BrandFaceDetails id="face-a" /></I18nProvider>);
+
+    expect(await screen.findByText(translate("public.hiddenNote", undefined, "ru"))).toBeInTheDocument();
+    await waitFor(() => expect(api.getCurrentPlatformUser).toHaveBeenCalled());
+    expect(screen.queryByRole("button", { name: translate("offers.propose", undefined, "ru") })).not.toBeInTheDocument();
+  });
+
   it.each(["Blogger", "BrandFace"])("shows no offer button for the %s role", async (role) => {
     api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: role });
     render(<I18nProvider><BrandFaceDetails id="face-a" /></I18nProvider>);

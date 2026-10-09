@@ -20,7 +20,8 @@ internal sealed class BrandFaceCatalogReadModel(BloggerBazarDbContext dbContext)
     {
         var query = BrandFaceCatalogVisibility.PublicBrandFaces(
             dbContext.BrandFaceProfiles.AsNoTracking(),
-            dbContext.PlatformUsers.AsNoTracking());
+            dbContext.PlatformUsers.AsNoTracking())
+            .Where(profile => !profile.IsHidden);
 
         if (!string.IsNullOrWhiteSpace(search.Query))
         {

@@ -324,7 +324,7 @@ public sealed class DecideCampaignApplicationHandler(
 }
 
 // The creator side of the marketplace: a blogger or a brand face, by the selected role only (D46).
-internal sealed record CreatorContext(MarketplaceRole Role, Guid ProfileId, long TelegramUserId, string Name)
+internal sealed record CreatorContext(MarketplaceRole Role, Guid ProfileId, long TelegramUserId, string Name, bool IsHidden = false)
 {
     public bool Owns(CampaignApplication application) => application.CreatorRole == Role && application.CreatorId == ProfileId;
 }
@@ -357,11 +357,11 @@ internal static class CampaignApplicationAccess
         {
             var brandFace = await brandFaces.GetByTelegramUserIdAsync(telegramUserId, cancellationToken)
                 ?? throw new UnauthorizedAccessException("A brand face profile is required.");
-            return new CreatorContext(MarketplaceRole.BrandFace, brandFace.Id, brandFace.TelegramUserId, brandFace.Name);
+            return new CreatorContext(MarketplaceRole.BrandFace, brandFace.Id, brandFace.TelegramUserId, brandFace.Name, brandFace.IsHidden);
         }
 
         var blogger = await RequireBloggerAsync(users, bloggers, telegramUserId, cancellationToken);
-        return new CreatorContext(MarketplaceRole.Blogger, blogger.Id, blogger.TelegramUserId, blogger.Name);
+        return new CreatorContext(MarketplaceRole.Blogger, blogger.Id, blogger.TelegramUserId, blogger.Name, blogger.IsHidden);
     }
 
     internal static async Task<long?> FindCreatorTelegramUserIdAsync(

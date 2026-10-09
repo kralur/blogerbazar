@@ -27,6 +27,8 @@ export type BloggerDetails = BloggerCardData & {
   bio?: string | null;
   platforms: PlatformDetails[];
   portfolioItems: PortfolioDetails[];
+  // Paused by the owner (D50): no new offers, the page stays reachable.
+  isHidden?: boolean;
 };
 
 export type CampaignDetails = CampaignCardData & {
@@ -36,6 +38,7 @@ export type CampaignDetails = CampaignCardData & {
   budgetFrom?: number | null;
   budgetTo?: number | null;
   requirements: string[];
+  businessHidden?: boolean;
 };
 
 export type CampaignCatalogSort = "promoted" | "newest" | "deadline_asc" | "budget_asc" | "budget_desc";
@@ -127,6 +130,7 @@ export type CampaignMutationResponse = {
 };
 
 type ApiBlogger = {
+  isHidden?: boolean;
   id: string;
   name: string;
   username?: string | null;
@@ -153,6 +157,7 @@ type ApiBlogger = {
 };
 
 type ApiCampaign = {
+  businessHidden?: boolean;
   id: string;
   businessId: string;
   businessName: string;
@@ -239,6 +244,7 @@ export type MyBrandFaceProfile = {
   formats?: BrandFaceFormat[];
   showreelUrl?: string | null;
   photoUrls?: string[];
+  isHidden?: boolean;
 };
 // Fixed values from the server (QA Q20); labels come from i18n.
 export type BrandFaceGender = "female" | "male";
@@ -253,7 +259,7 @@ export type MarketplaceBusiness = {
   completedDealsCount: number;
   rating?: number | null;
 };
-export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; instagram?: string | null; telegram?: string | null; portfolioUrl?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean; age?: number | null; gender?: string | null; formats?: BrandFaceFormat[]; showreelUrl?: string | null; photoUrls?: string[] };
+export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; instagram?: string | null; telegram?: string | null; portfolioUrl?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean; age?: number | null; gender?: string | null; formats?: BrandFaceFormat[]; showreelUrl?: string | null; photoUrls?: string[]; isHidden?: boolean };
 export type BrandFaceDetails = BrandFaceCard;
 export type BrandFaceCatalogSort = "promoted" | "newest" | "price_asc" | "price_desc";
 export type BrandFaceCatalogFilters = {
@@ -302,6 +308,7 @@ export type MarketplaceHome = {
 };
 export type BloggerReview = { id: string; rating: number; comment?: string | null; reviewerName?: string | null; createdAtUtc: string; reviewerProfileId?: string | null; reviewerImageUrl?: string | null; reviewerDeleted?: boolean; reviewerRole?: "business" | "blogger" | "brandFace" | null };
 export type MyBusinessProfile = {
+  isHidden?: boolean;
   id: string;
   name: string;
   username?: string | null;
@@ -315,6 +322,7 @@ export type MyBusinessProfile = {
   moderationStatus: number;
 };
 export type MyBloggerProfile = {
+  isHidden?: boolean;
   id: string;
   name: string;
   lastName?: string | null;
@@ -421,7 +429,8 @@ const asBloggerDetails = (blogger: ApiBlogger): BloggerDetails => ({
     const type = platform.type.toLowerCase();
     return isDisplayPlatformType(type) ? [{ id: platform.id, type, url: platform.url, followers: platform.followers ?? 0, averageReach: platform.averageReach ?? null, engagementRate: platform.engagementRate ?? null }] : [];
   }),
-  portfolioItems: (blogger.portfolioItems ?? []).map((item) => ({ id: item.id, title: item.title, type: item.type === 1 ? "VIDEO" : "IMAGE", url: item.url }))
+  portfolioItems: (blogger.portfolioItems ?? []).map((item) => ({ id: item.id, title: item.title, type: item.type === 1 ? "VIDEO" : "IMAGE", url: item.url })),
+  isHidden: blogger.isHidden ?? false
 });
 
 const asCampaignCard = (campaign: ApiCampaign): CampaignCardData => ({
@@ -450,7 +459,8 @@ const asCampaignDetails = (campaign: ApiCampaign): CampaignDetails => ({
   ...asCampaignCard(campaign),
   businessId: campaign.businessId,
   company: campaign.businessName,
-  requirements: campaign.requirements
+  requirements: campaign.requirements,
+  businessHidden: campaign.businessHidden ?? false
 });
 
 export type BloggerSearchFilters = { query?: string; city?: string; category?: string; platform?: string; minFollowers?: number; minEr?: number; maxEr?: number; minPrice?: number; maxPrice?: number; sort?: "popular" | "rating" | "er" | "price" | "newest"; page?: number; pageSize?: number };
@@ -807,6 +817,7 @@ export async function getMyBrandFaceProfile() {
 
 export type PublicBusinessCampaign = { id: string; title: string; city?: string | null; budgetFrom?: number | null; budgetTo?: number | null; deadline?: string | null };
 export type PublicBusinessProfile = {
+  isHidden?: boolean;
   id: string;
   name: string;
   city?: string | null;
@@ -836,6 +847,11 @@ export async function getBrandFaceCatalog(filters: BrandFaceCatalogFilters = {},
     if (value !== undefined && value !== "") params.set(key, String(value));
   });
   return api<BrandFaceCatalogResult>(`/api/brand-faces/catalog?${params.toString()}`, { signal });
+}
+
+// D50: pause or resume one of the account's role profiles.
+export async function setProfileVisibility(target: ProfileMediaTarget, hidden: boolean) {
+  return api<{ role: number; isHidden: boolean }>(`/api/users/me/roles/${target}/visibility`, { method: "PUT", body: JSON.stringify({ hidden }) });
 }
 
 export async function addBrandFacePhoto(file: File) {

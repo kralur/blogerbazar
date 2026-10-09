@@ -65,6 +65,7 @@ export function BusinessDetails({ id }: { id: string }) {
           <Icon className="company-campaign__chevron" name="back" />
         </a>)}</div>}
     </DetailSection>
+    {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
     <ReviewsSection allHref={`#/company-reviews/${profile.id}`} count={profile.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={profile.rating} reviewerRoute={(profileId, role) => profileRoute(role ?? "blogger", profileId)} reviews={profile.reviews ?? []} title={t("campaign.businessReviews")} />
     {website.length > 0 && <DetailSection title={t("company.website")}><ContactList items={website} /></DetailSection>}
     <BottomNav />

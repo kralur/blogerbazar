@@ -24,6 +24,7 @@ internal sealed class PublicBusinessReadModel(BloggerBazarDbContext dbContext) :
                 profile.Description,
                 profile.IsVerified,
                 profile.CreatedAtUtc,
+                profile.IsHidden,
                 CompletedDeals = profile.Deals.Count(deal => deal.Status == DealStatus.Completed)
             })
             .SingleOrDefaultAsync(cancellationToken);
@@ -39,6 +40,6 @@ internal sealed class PublicBusinessReadModel(BloggerBazarDbContext dbContext) :
             .ToArrayAsync(cancellationToken);
 
         return new PublicBusinessProfileDto(business.Id, business.Name, business.City, business.LogoUrl, business.WebsiteUrl, business.Description,
-            business.IsVerified, business.CompletedDeals, business.CreatedAtUtc, openCampaigns);
+            business.IsVerified, business.CompletedDeals, business.CreatedAtUtc, business.IsHidden ? [] : openCampaigns, IsHidden: business.IsHidden);
     }
 }

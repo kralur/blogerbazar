@@ -30,6 +30,9 @@ public sealed class BrandFaceProfile
     public const int MaxPhotos = 4;
     public bool IsPromoted { get; private set; }
     public bool IsDeleted { get; private set; }
+    // Paused by the owner (D50): out of listings and new offers/applications; deals, reviews and the page by link stay.
+    public bool IsHidden { get; private set; }
+    public void SetHidden(bool hidden) { IsHidden = hidden; UpdatedAtUtc = DateTime.UtcNow; }
     public DateTime? DeletedAtUtc { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }

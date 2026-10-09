@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   getMyDeals: vi.fn(),
   normalizeMarketplaceRole: (role: string | null) => role,
   selectMarketplaceRole: vi.fn(),
+  setProfileVisibility: vi.fn(),
   uploadProfileImage: vi.fn()
 }));
 const telegram = vi.hoisted(() => ({
@@ -77,6 +78,57 @@ describe("Profile dashboard account flows", () => {
     renderDashboard();
     await screen.findByText("Lumi Beauty");
     expect(screen.queryByRole("link", { name: translate("profile.viewPublic", undefined, "ru") })).not.toBeInTheDocument();
+  });
+
+  // The Telegram photo shown on top is only a stand-in: others see a letter until the profile has its own image.
+  it("tells a business without a logo that others see only a letter, and hides the hint once a logo exists", async () => {
+    const { unmount } = render(<I18nProvider><ProfileDashboard /></I18nProvider>);
+    expect(await screen.findByText(translate("profile.logoMissingHint", undefined, "ru"))).toBeInTheDocument();
+    unmount();
+
+    api.getMyBusinessProfile.mockResolvedValue({ id: "business-a", name: "Lumi Beauty", city: "tashkent-city", logoUrl: "https://cdn.example/logo.webp", moderationStatus: 1 });
+    renderDashboard();
+    await screen.findByText("Lumi Beauty");
+    expect(screen.queryByText(translate("profile.logoMissingHint", undefined, "ru"))).not.toBeInTheDocument();
+  });
+
+  // D50 and the role header: the top card shows the selected role as others see it, and the role can be paused.
+  it("shows the selected role's name on top instead of the Telegram name, without the Telegram photo", async () => {
+    renderDashboard();
+    expect(await screen.findByText("Lumi Beauty")).toBeInTheDocument();
+    expect(screen.queryByText("Umid")).not.toBeInTheDocument();
+    expect(document.querySelector('img[src="https://telegram.example/avatar.jpg"]')).toBeNull();
+  });
+
+  it("hides the role profile after confirmation and shows it again in one tap", async () => {
+    const user = userEvent.setup();
+    // Like the server: the reload after a change returns the new state.
+    let hidden = false;
+    api.getMyBusinessProfile.mockImplementation(async () => ({ id: "business-a", name: "Lumi Beauty", city: "tashkent-city", logoUrl: "https://cdn.example/logo.webp", moderationStatus: 1, isHidden: hidden }));
+    api.setProfileVisibility.mockImplementation(async (_target: string, next: boolean) => { hidden = next; return { role: 2, isHidden: next }; });
+    renderDashboard();
+    await user.click(await screen.findByRole("button", { name: translate("profile.hide", undefined, "ru") }));
+    expect(api.setProfileVisibility).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: translate("profile.hideConfirm", undefined, "ru") }));
+
+    await waitFor(() => expect(api.setProfileVisibility).toHaveBeenCalledWith("business", true));
+    expect(await screen.findByText(translate("profile.hidden", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText(translate("profile.hiddenDescription", undefined, "ru"))).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: translate("profile.show", undefined, "ru") }));
+    await waitFor(() => expect(api.setProfileVisibility).toHaveBeenLastCalledWith("business", false));
+    expect(await screen.findByText(translate("profile.approved", undefined, "ru"))).toBeInTheDocument();
+  });
+
+  it("keeps the profile visible and explains when hiding fails", async () => {
+    const user = userEvent.setup();
+    api.setProfileVisibility.mockRejectedValue(new ApiError(500));
+    renderDashboard();
+    await user.click(await screen.findByRole("button", { name: translate("profile.hide", undefined, "ru") }));
+    await user.click(screen.getByRole("button", { name: translate("profile.hideConfirm", undefined, "ru") }));
+
+    await waitFor(() => expect(api.setProfileVisibility).toHaveBeenCalled());
+    expect(screen.queryByText(translate("profile.hidden", undefined, "ru"))).not.toBeInTheDocument();
   });
 
   it("groups shortcuts and links to settings instead of holding the language switcher", async () => {

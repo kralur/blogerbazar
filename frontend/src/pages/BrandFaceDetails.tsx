@@ -95,7 +95,8 @@ export function BrandFaceDetails({ id }: { id: string }) {
     {(profile.description || profile.experience) && <DetailSection title={t("brandFace.aboutTitle")}><Card>{profile.description && <p className="text-sm leading-6 text-brand-muted">{profile.description}</p>}{profile.experience && <><h3 className={`${profile.description ? "mt-4 " : ""}text-sm font-extrabold`}>{t("brandFace.experienceTitle")}</h3><p className="mt-1 text-sm leading-6 text-brand-muted">{profile.experience}</p></>}</Card></DetailSection>}
     {reviews && <ReviewsSection allHref={`#/brand-face-reviews/${profile.id}`} count={reviews.reviewsCount} emptyText={t("details.noReviews")} rating={reviews.reviewsCount > 0 ? reviews.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews.items} title={t("details.reviews")} />}
     {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
-    {role === "Business" && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
+    {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
+    {role === "Business" && !profile.isHidden && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm brandFaceId={profile.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} />
     <BottomNav />

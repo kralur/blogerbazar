@@ -18,11 +18,13 @@ internal sealed class BrandFaceProfileRepository(BloggerBazarDbContext dbContext
 
     public async Task<IReadOnlyList<BrandFaceProfile>> GetAllAsync(int take, CancellationToken cancellationToken) =>
         await BrandFaceCatalogVisibility.PublicBrandFaces(dbContext.BrandFaceProfiles.AsNoTracking(), dbContext.PlatformUsers.AsNoTracking())
+            .Where(profile => !profile.IsHidden)
             .OrderByDescending(profile => profile.IsPromoted).ThenByDescending(profile => profile.UpdatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BrandFaceProfile>> SearchAsync(string? query, string? city, string? category, int skip, int take, CancellationToken cancellationToken)
     {
-        var profiles = BrandFaceCatalogVisibility.PublicBrandFaces(dbContext.BrandFaceProfiles.AsNoTracking(), dbContext.PlatformUsers.AsNoTracking());
+        var profiles = BrandFaceCatalogVisibility.PublicBrandFaces(dbContext.BrandFaceProfiles.AsNoTracking(), dbContext.PlatformUsers.AsNoTracking())
+            .Where(profile => !profile.IsHidden);
         if (!string.IsNullOrWhiteSpace(query))
         {
             var pattern = PostgresSearchPattern.Contains(query.Trim());

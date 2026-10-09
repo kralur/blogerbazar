@@ -161,6 +161,11 @@ public sealed class CreateOfferHandler(
     public async Task<OfferDto> Handle(CreateOfferCommand command, CancellationToken cancellationToken)
     {
         var business = await DealAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
+        if (business.IsHidden)
+        {
+            throw new BusinessRuleConflictException(Users.ProfileVisibilityCodes.ProfileHidden, "The profile is hidden.");
+        }
+
         var recipient = await FindRecipientAsync(command, cancellationToken);
         if (recipient is null
             || await users.GetByTelegramUserIdAsync(recipient.TelegramUserId, cancellationToken) is { IsBlocked: true } or { IsDeleted: true })
@@ -214,12 +219,13 @@ public sealed class CreateOfferHandler(
     {
         if (command.BrandFaceId is { } brandFaceId)
         {
-            return brandFaces is not null && await brandFaces.GetByIdAsync(brandFaceId, cancellationToken) is { } brandFace
+            // D50: a paused profile receives no new offers and reads as missing.
+            return brandFaces is not null && await brandFaces.GetByIdAsync(brandFaceId, cancellationToken) is { IsHidden: false } brandFace
                 ? new Recipient(MarketplaceRole.BrandFace, brandFace.Id, brandFace.TelegramUserId, brandFace.Name, brandFace.AvatarUrl)
                 : null;
         }
 
-        return command.BloggerId is { } bloggerId && await bloggers.GetByIdAsync(bloggerId, cancellationToken) is { Status: BloggerStatus.Approved } blogger
+        return command.BloggerId is { } bloggerId && await bloggers.GetByIdAsync(bloggerId, cancellationToken) is { Status: BloggerStatus.Approved, IsHidden: false } blogger
             ? new Recipient(MarketplaceRole.Blogger, blogger.Id, blogger.TelegramUserId, blogger.Name, blogger.AvatarUrl)
             : null;
     }

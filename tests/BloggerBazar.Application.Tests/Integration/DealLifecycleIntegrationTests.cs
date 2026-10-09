@@ -448,6 +448,36 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal("photoShoot", businessDeal.GetProperty("offer").GetProperty("format").GetString());
     }
 
+    // D50: a paused blogger leaves the catalog, keeps the page by link and receives no new offers; resuming brings it back.
+    [IntegrationFact]
+    public async Task Hidden_blogger_leaves_the_catalog_but_keeps_its_page_and_deals()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_331, 1_100_332);
+        using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+
+        var hide = await bloggerClient.PutAsJsonAsync("/api/users/me/roles/blogger/visibility", new { hidden = true });
+        var notMine = await bloggerClient.PutAsJsonAsync("/api/users/me/roles/brand-face/visibility", new { hidden = true });
+        Assert.Equal(HttpStatusCode.OK, hide.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, notMine.StatusCode);
+
+        var catalog = await businessClient.GetFromJsonAsync<JsonElement>("/api/bloggers?query=Integration%20blogger&pageSize=50");
+        var page = await businessClient.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}");
+        var offer = await businessClient.PostAsJsonAsync("/api/offers", new { bloggerId = seed.BloggerId, format = "reels", message = "Reel" });
+        var deal = await bloggerClient.GetAsync($"/api/deals/me/{seed.DealId}");
+        var mine = await bloggerClient.GetFromJsonAsync<JsonElement>("/api/bloggers/me");
+
+        Assert.DoesNotContain(catalog.GetProperty("bloggers").EnumerateArray(), item => item.GetProperty("id").GetGuid() == seed.BloggerId);
+        Assert.True(page.GetProperty("isHidden").GetBoolean());
+        Assert.Equal(HttpStatusCode.NotFound, offer.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, deal.StatusCode);
+        Assert.True(mine.GetProperty("isHidden").GetBoolean());
+
+        Assert.Equal(HttpStatusCode.OK, (await bloggerClient.PutAsJsonAsync("/api/users/me/roles/blogger/visibility", new { hidden = false })).StatusCode);
+        var back = await businessClient.GetFromJsonAsync<JsonElement>("/api/bloggers?query=Integration%20blogger&pageSize=50");
+        Assert.Contains(back.GetProperty("bloggers").EnumerateArray(), item => item.GetProperty("id").GetGuid() == seed.BloggerId);
+    }
+
     [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {
