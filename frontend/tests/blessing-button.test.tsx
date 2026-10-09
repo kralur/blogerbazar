@@ -13,27 +13,37 @@ describe("Blessing button", () => {
   beforeEach(() => { vi.clearAllMocks(); vi.useFakeTimers(); });
   afterEach(() => vi.useRealTimers());
 
-  it("buzzes on a tap and launches a short emoji firework on three quick taps", () => {
+  it("sends emoji floating up on every tap and a firework on five quick taps", () => {
     const { container } = render(<I18nProvider><BlessingButton /></I18nProvider>);
 
-    fireEvent.click(button());
+    fireEvent.pointerDown(button());
     expect(haptic.impact).toHaveBeenCalledTimes(1);
-    expect(container.querySelector(".deal-blessing__particle")).toBeNull();
+    expect(container.querySelectorAll(".deal-blessing__particle--float")).toHaveLength(2);
+    expect(container.querySelector(".deal-blessing__particle--burst")).toBeNull();
 
-    fireEvent.click(button());
-    fireEvent.click(button());
+    for (let tap = 0; tap < 4; tap += 1) fireEvent.pointerDown(button());
+    expect(haptic.impact).toHaveBeenCalledTimes(5);
     expect(haptic.success).toHaveBeenCalledTimes(1);
-    expect(container.querySelectorAll(".deal-blessing__particle").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".deal-blessing__particle--burst").length).toBeGreaterThan(0);
 
-    act(() => { vi.advanceTimersByTime(1500); });
+    act(() => { vi.advanceTimersByTime(1700); });
     expect(container.querySelector(".deal-blessing__particle")).toBeNull();
   });
 
   it("keeps the number of flying emoji capped however fast it is tapped", () => {
     const { container } = render(<I18nProvider><BlessingButton /></I18nProvider>);
 
-    for (let tap = 0; tap < 30; tap += 1) fireEvent.click(button());
+    for (let tap = 0; tap < 60; tap += 1) fireEvent.pointerDown(button());
 
-    expect(container.querySelectorAll(".deal-blessing__particle").length).toBeLessThanOrEqual(42);
+    expect(container.querySelectorAll(".deal-blessing__particle").length).toBeLessThanOrEqual(60);
+  });
+
+  it("works from the keyboard too", () => {
+    const { container } = render(<I18nProvider><BlessingButton /></I18nProvider>);
+
+    fireEvent.keyDown(button(), { key: "Enter" });
+
+    expect(haptic.impact).toHaveBeenCalledTimes(1);
+    expect(container.querySelectorAll(".deal-blessing__particle--float")).toHaveLength(2);
   });
 });
