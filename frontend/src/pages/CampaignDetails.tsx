@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { applyToCampaign, getBusinessReviews, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type BusinessReviews, type CampaignDetails, type ContactDetails } from "../api/marketplace";
+import { applyToCampaign, getBusinessReviews, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type BusinessReviews, type CampaignDetails, type ContactDetails } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatBudgetRange, formatDate, isPastDay } from "../lib/currency";
@@ -11,6 +11,7 @@ import { getCachedCampaignApplication, setCachedCampaignApplication } from "../d
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
+import { profileRoute } from "../lib/profileRoutes";
 
 export function CampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
@@ -97,18 +98,20 @@ export function CampaignDetails({ id }: { id: string }) {
     const requestId = ++applicationRequestRef.current;
     const lookupController = new AbortController();
     let cancelled = false;
-    Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBusinessProfile()]).then(([userResult, bloggerResult, businessResult]) => {
+    Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBusinessProfile(), getMyBrandFaceProfile()]).then(([userResult, bloggerResult, businessResult, brandFaceResult]) => {
       if (cancelled || requestId !== applicationRequestRef.current || currentCampaignIdRef.current !== campaignId) return;
       const activeRole = userResult.status === "fulfilled" ? normalizeMarketplaceRole(userResult.value.selectedMarketplaceRole) : undefined;
       const bloggerIsApproved = bloggerResult.status === "fulfilled" && bloggerResult.value.status === 1;
       const isOwnCampaign = businessResult.status === "fulfilled" && businessResult.value.id === campaign.businessId;
-      const eligible = activeRole === "Blogger" && bloggerIsApproved && campaign.status === 1 && !isOwnCampaign;
+      // D46: a brand face applies like a blogger; it has no moderation, an existing profile is enough.
+      const brandFaceExists = brandFaceResult.status === "fulfilled" && Boolean(brandFaceResult.value);
+      const creatorReady = activeRole === "Blogger" ? bloggerIsApproved : activeRole === "BrandFace" && brandFaceExists;
+      const eligible = creatorReady && campaign.status === 1 && !isOwnCampaign;
       setCanApply(eligible);
       setBlockedReason(eligible || userResult.status !== "fulfilled" ? null
         : isOwnCampaign ? "own"
         : campaign.status !== 1 ? "closed"
-        // Brand faces cannot apply yet (D19/D34): say it plainly instead of sending them to switch roles.
-        : activeRole === "BrandFace" ? "brandFace"
+        : activeRole === "BrandFace" ? "noBrandFaceProfile"
         : activeRole !== "Blogger" ? "role"
         : bloggerResult.status === "rejected" && bloggerResult.reason instanceof ApiError && bloggerResult.reason.status === 404 ? "noProfile"
         : null);
@@ -220,7 +223,7 @@ export function CampaignDetails({ id }: { id: string }) {
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       {campaign.categories.length > 0 && <DetailSection title={t("campaign.suitable")}><ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
       <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></DetailSection>
-      {businessReviews && campaign.businessId && <ReviewsSection allHref={`#/company-reviews/${campaign.businessId}`} count={businessReviews.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={businessReviews.rating} reviewerRoute={(profileId) => `#/blogger/${profileId}`} reviews={businessReviews.items} title={t("campaign.businessReviews")} />}
+      {businessReviews && campaign.businessId && <ReviewsSection allHref={`#/company-reviews/${campaign.businessId}`} count={businessReviews.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={businessReviews.rating} reviewerRoute={(profileId, role) => profileRoute(role ?? "blogger", profileId)} reviews={businessReviews.items} title={t("campaign.businessReviews")} />}
       {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
       {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary w-full" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}
@@ -230,7 +233,7 @@ export function CampaignDetails({ id }: { id: string }) {
   );
 }
 
-type ApplyBlockedReason = "own" | "closed" | "role" | "noProfile" | "brandFace";
+type ApplyBlockedReason = "own" | "closed" | "role" | "noProfile" | "noBrandFaceProfile";
 
 // Explains why there is no apply button instead of leaving an empty space.
 function ApplyBlockedNote({ campaignId, reason }: { campaignId: string; reason: ApplyBlockedReason }) {
@@ -238,7 +241,8 @@ function ApplyBlockedNote({ campaignId, reason }: { campaignId: string; reason: 
   const action = reason === "own" ? { href: `#/my-campaign-applications/${campaignId}`, label: t("campaign.blockedOwnAction") }
     : reason === "role" ? { href: "#/profile", label: t("campaign.blockedRoleAction") }
     : reason === "noProfile" ? { href: "#/blogger-form", label: t("campaign.blockedNoProfileAction") }
+    : reason === "noBrandFaceProfile" ? { href: "#/brand-face", label: t("campaign.blockedNoProfileAction") }
     : null;
-  const text = reason === "own" ? t("campaign.blockedOwn") : reason === "brandFace" ? t("campaign.blockedBrandFace") : reason === "role" ? t("campaign.blockedRole") : reason === "noProfile" ? t("campaign.blockedNoProfile") : t("campaign.blockedClosed");
+  const text = reason === "own" ? t("campaign.blockedOwn") : reason === "noBrandFaceProfile" ? t("campaign.blockedNoBrandFaceProfile") : reason === "role" ? t("campaign.blockedRole") : reason === "noProfile" ? t("campaign.blockedNoProfile") : t("campaign.blockedClosed");
   return <div className="campaign-details__expired" role="status"><p>{text}</p>{action && <a className="campaign-details__blocked-action" href={action.href}>{action.label}</a>}</div>;
 }

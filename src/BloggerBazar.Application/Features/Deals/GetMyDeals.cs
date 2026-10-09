@@ -52,11 +52,12 @@ public sealed class GetMyDealsHandler(
     IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
-    IDealReadModel deals) : IRequestHandler<GetMyDealsQuery, IReadOnlyList<MyDealDto>>
+    IDealReadModel deals,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetMyDealsQuery, IReadOnlyList<MyDealDto>>
 {
     public async Task<IReadOnlyList<MyDealDto>> Handle(GetMyDealsQuery query, CancellationToken cancellationToken)
     {
-        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken);
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken, brandFaces);
         if (participant is null)
         {
             return [];

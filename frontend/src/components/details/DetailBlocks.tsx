@@ -28,18 +28,18 @@ export function DetailSection({ title, aside, children }: { title: string; aside
 }
 
 // reviewerRoute links the reviewer to their profile: a business reviews a blogger and the other way round.
-export function ReviewList({ reviews, emptyText, reviewerRoute }: { reviews: BloggerReview[]; emptyText: string; reviewerRoute?: (profileId: string) => string }) {
+export function ReviewList({ reviews, emptyText, reviewerRoute }: { reviews: BloggerReview[]; emptyText: string; reviewerRoute?: (profileId: string, reviewerRole?: string | null) => string }) {
   if (reviews.length === 0) return <Card><p className="text-sm text-brand-muted">{emptyText}</p></Card>;
   return <div className="grid gap-2">{reviews.map((review) => <ReviewCard key={review.id} review={review} reviewerRoute={reviewerRoute} />)}</div>;
 }
 
-function ReviewCard({ review, reviewerRoute, compact = false }: { review: BloggerReview; reviewerRoute?: (profileId: string) => string; compact?: boolean }) {
+function ReviewCard({ review, reviewerRoute, compact = false }: { review: BloggerReview; reviewerRoute?: (profileId: string, reviewerRole?: string | null) => string; compact?: boolean }) {
   const { language, t } = useI18n();
   return <Card className={`p-3${compact ? " review-card--compact" : ""}`}>
     <div className="flex items-center justify-between"><Rating value={review.rating} /><span className="text-xs text-brand-muted">{formatShortDate(review.createdAtUtc, language, { year: true })}</span></div>
     {review.reviewerDeleted && <p className="review-author review-author--deleted">{t("common.deletedAccount")}</p>}
     {!review.reviewerDeleted && review.reviewerName && (review.reviewerProfileId && reviewerRoute
-      ? <a className="review-author" href={reviewerRoute(review.reviewerProfileId)}><Avatar name={review.reviewerName} size="sm" src={review.reviewerImageUrl} variant="catalog" /><span>{review.reviewerName}</span></a>
+      ? <a className="review-author" href={reviewerRoute(review.reviewerProfileId, review.reviewerRole)}><Avatar name={review.reviewerName} size="sm" src={review.reviewerImageUrl} variant="catalog" /><span>{review.reviewerName}</span></a>
       : <p className="mt-2 text-sm font-bold">{review.reviewerName}</p>)}
     {review.comment && <p className="review-card__comment mt-1 text-sm leading-5 text-brand-muted">{review.comment}</p>}
   </Card>;
@@ -49,7 +49,7 @@ export const reviewCarouselLimit = 10;
 
 // The latest reviews side by side, so a popular profile does not turn into an endless page;
 // "Show all" opens every review with the full text.
-export function ReviewsSection({ title, reviews, count, rating, allHref, emptyText, reviewerRoute }: { title: string; reviews: BloggerReview[]; count: number; rating?: number | null; allHref: string; emptyText: string; reviewerRoute?: (profileId: string) => string }) {
+export function ReviewsSection({ title, reviews, count, rating, allHref, emptyText, reviewerRoute }: { title: string; reviews: BloggerReview[]; count: number; rating?: number | null; allHref: string; emptyText: string; reviewerRoute?: (profileId: string, reviewerRole?: string | null) => string }) {
   const { t } = useI18n();
   const shown = reviews.slice(0, reviewCarouselLimit);
   const total = Math.max(count, reviews.length);

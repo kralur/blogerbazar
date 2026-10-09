@@ -9,6 +9,10 @@ const api = vi.hoisted(() => ({
   getMyBloggerProfile: vi.fn(),
   getMyBrandFaceProfile: vi.fn(),
   getMyBusinessProfile: vi.fn(),
+  // A brand face now has deals and offers like a blogger (D46): the action counts ask for them.
+  getMyDeals: vi.fn(() => Promise.resolve([])),
+  getMyOffers: vi.fn(() => Promise.resolve([])),
+  getMyCampaigns: vi.fn(() => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 50, hasMore: false })),
   normalizeMarketplaceRole: vi.fn((role: string | null | undefined) => role ?? undefined),
   selectMarketplaceRole: vi.fn(),
   updateInterfaceLanguage: vi.fn(() => Promise.resolve())

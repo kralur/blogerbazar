@@ -6,12 +6,14 @@ public sealed class Deal
 {
     private Deal() { }
 
-    private Deal(Guid? campaignApplicationId, Guid? collaborationRequestId, Guid bloggerId, Guid businessId, CampaignTermsSnapshot? campaignTermsSnapshot = null)
+    private Deal(Guid? campaignApplicationId, Guid? collaborationRequestId, MarketplaceRole creatorRole, Guid creatorId, Guid businessId, CampaignTermsSnapshot? campaignTermsSnapshot = null)
     {
         Id = Guid.NewGuid();
         CampaignApplicationId = campaignApplicationId;
         CollaborationRequestId = collaborationRequestId;
-        BloggerId = bloggerId;
+        if (creatorRole == MarketplaceRole.BrandFace) BrandFaceId = creatorId;
+        else if (creatorRole == MarketplaceRole.Blogger) BloggerId = creatorId;
+        else throw new ArgumentOutOfRangeException(nameof(creatorRole), "A deal creator is a blogger or a brand face.");
         BusinessId = businessId;
         Status = DealStatus.Active;
         CreatedAtUtc = DateTime.UtcNow;
@@ -35,8 +37,11 @@ public sealed class Deal
     public CampaignApplication? CampaignApplication { get; private set; }
     public Guid? CollaborationRequestId { get; private set; }
     public CollaborationRequest? CollaborationRequest { get; private set; }
-    public Guid BloggerId { get; private set; }
-    public BloggerProfile Blogger { get; private set; } = null!;
+    // Exactly one creator side: a blogger or a brand face (D46).
+    public Guid? BloggerId { get; private set; }
+    public BloggerProfile? Blogger { get; private set; }
+    public Guid? BrandFaceId { get; private set; }
+    public BrandFaceProfile? BrandFace { get; private set; }
     public Guid BusinessId { get; private set; }
     public BusinessProfile Business { get; private set; } = null!;
     public DealStatus Status { get; private set; }
@@ -53,13 +58,24 @@ public sealed class Deal
     public DateTime? CampaignDeadlineSnapshot { get; private set; }
     public IReadOnlyCollection<Review> Reviews { get; private set; } = new List<Review>();
 
-    public static Deal Create(Guid campaignApplicationId, Guid bloggerId, Guid businessId) => new(campaignApplicationId, null, bloggerId, businessId);
+    public MarketplaceRole CreatorRole => BrandFaceId.HasValue ? MarketplaceRole.BrandFace : MarketplaceRole.Blogger;
+    public Guid CreatorId => BloggerId ?? BrandFaceId ?? Guid.Empty;
+    public string CreatorName => Blogger?.Name ?? BrandFace?.Name ?? string.Empty;
+    public long CreatorTelegramUserId => Blogger?.TelegramUserId ?? BrandFace?.TelegramUserId ?? 0;
+
+    public static Deal Create(Guid campaignApplicationId, Guid bloggerId, Guid businessId) => new(campaignApplicationId, null, MarketplaceRole.Blogger, bloggerId, businessId);
 
     public static Deal Create(Guid campaignApplicationId, Guid bloggerId, Guid businessId, CampaignTermsSnapshot campaignTermsSnapshot) =>
-        new(campaignApplicationId, null, bloggerId, businessId, campaignTermsSnapshot ?? throw new ArgumentNullException(nameof(campaignTermsSnapshot)));
+        Create(campaignApplicationId, MarketplaceRole.Blogger, bloggerId, businessId, campaignTermsSnapshot);
+
+    public static Deal Create(Guid campaignApplicationId, MarketplaceRole creatorRole, Guid creatorId, Guid businessId, CampaignTermsSnapshot campaignTermsSnapshot) =>
+        new(campaignApplicationId, null, creatorRole, creatorId, businessId, campaignTermsSnapshot ?? throw new ArgumentNullException(nameof(campaignTermsSnapshot)));
 
     public static Deal CreateFromCollaborationRequest(Guid collaborationRequestId, Guid bloggerId, Guid businessId) =>
-        new(null, collaborationRequestId, bloggerId, businessId);
+        new(null, collaborationRequestId, MarketplaceRole.Blogger, bloggerId, businessId);
+
+    public static Deal CreateFromCollaborationRequest(Guid collaborationRequestId, MarketplaceRole creatorRole, Guid creatorId, Guid businessId) =>
+        new(null, collaborationRequestId, creatorRole, creatorId, businessId);
 
     public void Complete()
     {

@@ -44,7 +44,7 @@ public static class OfferStates
 
 public sealed record OfferDto(
     Guid Id,
-    Guid BloggerId,
+    Guid? BloggerId,
     string CounterpartyName,
     string? CounterpartyImageUrl,
     string? Format,
@@ -61,7 +61,7 @@ public sealed record OfferDto(
     internal static OfferDto From(CollaborationRequest offer, MarketplaceRole viewerRole, DateTime utcNow) =>
         viewerRole == MarketplaceRole.Blogger
             ? Build(offer, true, offer.Business.Name, offer.Business.LogoUrl, utcNow)
-            : Build(offer, false, offer.Blogger.Name, offer.Blogger.AvatarUrl, utcNow);
+            : Build(offer, false, offer.Blogger?.Name ?? offer.BrandFace?.Name ?? string.Empty, offer.Blogger?.AvatarUrl ?? offer.BrandFace?.AvatarUrl, utcNow);
 
     internal static OfferDto ForBusiness(CollaborationRequest offer, BloggerProfile blogger, DateTime utcNow) =>
         Build(offer, false, blogger.Name, blogger.AvatarUrl, utcNow);
@@ -257,7 +257,7 @@ public sealed class AcceptOfferHandler(
 
         await OfferDecision.EnsurePendingAsync(offer, unitOfWork, cancellationToken);
         offer.Accept();
-        var deal = Deal.CreateFromCollaborationRequest(offer.Id, offer.BloggerId, offer.BusinessId);
+        var deal = Deal.CreateFromCollaborationRequest(offer.Id, offer.CreatorRole, offer.CreatorId, offer.BusinessId);
         await deals.AddAsync(deal, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
         {
@@ -270,7 +270,7 @@ public sealed class AcceptOfferHandler(
             botClient,
             logger,
             offer.Business.TelegramUserId,
-            BotMessages.OfferAccepted(offer.Blogger.Name),
+            BotMessages.OfferAccepted(offer.Blogger?.Name ?? offer.BrandFace?.Name ?? string.Empty),
             $"/deal/{deal.Id}",
             cancellationToken);
         return new(offer.Id, OfferStates.Accepted, deal.Id);
@@ -310,7 +310,7 @@ public sealed class DeclineOfferHandler(
             botClient,
             logger,
             offer.Business.TelegramUserId,
-            BotMessages.OfferDeclined(offer.Blogger.Name),
+            BotMessages.OfferDeclined(offer.Blogger?.Name ?? offer.BrandFace?.Name ?? string.Empty),
             $"/offer/{offer.Id}",
             cancellationToken);
         return new(offer.Id, OfferStates.Declined, null);

@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
   getMyBloggerProfile: vi.fn(),
   getMyCampaignApplicationsPage: vi.fn(),
   getMyBusinessProfile: vi.fn(),
+  getMyBrandFaceProfile: vi.fn(),
   getPublicContact: vi.fn(),
   getBusinessReviews: vi.fn()
 }));
@@ -22,6 +23,7 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getMyBloggerProfile: api.getMyBloggerProfile,
   getMyCampaignApplicationsPage: api.getMyCampaignApplicationsPage,
   getMyBusinessProfile: api.getMyBusinessProfile,
+  getMyBrandFaceProfile: api.getMyBrandFaceProfile,
   getPublicContact: api.getPublicContact,
   getBusinessReviews: api.getBusinessReviews
 }));
@@ -72,6 +74,7 @@ describe("Campaign safety foundation", () => {
     api.getPublicContact.mockResolvedValue({});
     api.getBusinessReviews.mockResolvedValue({ rating: null, reviewsCount: 0, items: [] });
     api.getMyBusinessProfile.mockRejectedValue(new Error("no business profile"));
+    api.getMyBrandFaceProfile.mockRejectedValue(new Error("no brand face profile"));
     api.getMyBloggerProfile.mockResolvedValue({ id: "blogger-a", status: 1 });
     api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "Blogger" });
     api.getMyCampaignApplicationsPage.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 1, hasMore: false });
@@ -176,11 +179,22 @@ describe("Campaign safety foundation", () => {
     await waitFor(() => expect(screen.queryByRole("link", { name: translate("applications.applyState", undefined, "ru") })).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: translate("campaign.apply", undefined, "ru") })).toBeInTheDocument();
   });
-  it("tells a brand face that applying is coming instead of sending it to switch roles", async () => {
+  it("lets a brand face with a profile apply like a blogger (D46)", async () => {
+    api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace" });
+    api.getMyBloggerProfile.mockRejectedValue(new Error("no blogger profile"));
+    api.getMyBrandFaceProfile.mockResolvedValue({ id: "brand-face-a", name: "Dilnoza" });
+    renderDetails();
+
+    expect(await screen.findByRole("button", { name: translate("campaign.apply", undefined, "ru") })).toBeInTheDocument();
+    expect(api.getMyCampaignApplicationsPage).toHaveBeenCalled();
+  });
+
+  it("asks a brand face without a profile to fill it in instead of sending it to switch roles", async () => {
     api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace" });
     renderDetails();
 
-    expect(await screen.findByText(translate("campaign.blockedBrandFace", undefined, "ru"))).toBeInTheDocument();
+    expect(await screen.findByText(translate("campaign.blockedNoBrandFaceProfile", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: translate("campaign.blockedNoProfileAction", undefined, "ru") })).toHaveAttribute("href", "#/brand-face");
     expect(screen.queryByRole("button", { name: translate("campaign.apply", undefined, "ru") })).not.toBeInTheDocument();
     expect(screen.queryByText(translate("campaign.blockedRole", undefined, "ru"))).not.toBeInTheDocument();
   });

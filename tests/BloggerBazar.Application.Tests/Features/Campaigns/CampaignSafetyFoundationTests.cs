@@ -296,7 +296,7 @@ public sealed class CampaignSafetyFoundationTests
     private sealed class InMemoryApplicationRepository(CampaignApplication application) : ICampaignApplicationRepository
     {
         public Task AddAsync(CampaignApplication value, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task<bool> ExistsAsync(Guid campaignId, Guid bloggerId, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> ExistsAsync(Guid campaignId, MarketplaceRole creatorRole, Guid bloggerId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<CampaignApplication?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<CampaignApplication?>(id == application.Id ? application : null);
     }
 
@@ -304,8 +304,8 @@ public sealed class CampaignSafetyFoundationTests
     {
         public List<CampaignApplication> Applications { get; } = [];
         public Task AddAsync(CampaignApplication application, CancellationToken cancellationToken) { Applications.Add(application); return Task.CompletedTask; }
-        public Task<bool> ExistsAsync(Guid campaignId, Guid bloggerId, CancellationToken cancellationToken) =>
-            Task.FromResult(Applications.Any(application => application.CampaignId == campaignId && application.BloggerId == bloggerId));
+        public Task<bool> ExistsAsync(Guid campaignId, MarketplaceRole creatorRole, Guid bloggerId, CancellationToken cancellationToken) =>
+            Task.FromResult(Applications.Any(application => application.CampaignId == campaignId && application.CreatorRole == creatorRole && application.CreatorId == bloggerId));
         public Task<CampaignApplication?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
             Task.FromResult<CampaignApplication?>(Applications.SingleOrDefault(application => application.Id == id));
     }

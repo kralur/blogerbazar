@@ -25,12 +25,13 @@ public sealed class CompleteDealHandler(
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
     ITelegramBotClient? botClient = null,
-    ILogger<CompleteDealHandler>? logger = null)
+    ILogger<CompleteDealHandler>? logger = null,
+    IBrandFaceProfileRepository? brandFaces = null)
     : IRequestHandler<CompleteDealCommand, DealDto>
 {
     public async Task<DealDto> Handle(CompleteDealCommand command, CancellationToken cancellationToken)
     {
-        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken)
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken, brandFaces)
             ?? throw DealAccess.DealNotFound();
         var deal = await deals.GetForParticipantAsync(command.DealId, participant.Role, participant.ProfileId, cancellationToken)
             ?? throw DealAccess.DealNotFound();
@@ -43,8 +44,8 @@ public sealed class CompleteDealHandler(
 
             if (completedByThisRequest && deal.Status == DealStatus.Completed)
             {
-                var targetChatId = participant.Role == MarketplaceRole.Blogger ? deal.Business.TelegramUserId : deal.Blogger.TelegramUserId;
-                await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, BotMessages.DealCompleted(participant.Role == MarketplaceRole.Blogger ? deal.Blogger.Name : deal.Business.Name, DealTopic.Of(deal)), $"/deal/{deal.Id}", cancellationToken);
+                var targetChatId = participant.IsCreator ? deal.Business.TelegramUserId : deal.CreatorTelegramUserId;
+                await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, BotMessages.DealCompleted(participant.IsCreator ? deal.CreatorName : deal.Business.Name, DealTopic.Of(deal)), $"/deal/{deal.Id}", cancellationToken);
             }
         }
 

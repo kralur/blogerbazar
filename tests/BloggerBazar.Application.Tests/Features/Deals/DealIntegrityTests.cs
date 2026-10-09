@@ -317,7 +317,7 @@ public sealed class DealIntegrityTests
     private sealed class Applications(CampaignApplication application) : ICampaignApplicationRepository
     {
         public Task<CampaignApplication?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<CampaignApplication?>(id == application.Id ? application : null);
-        public Task<bool> ExistsAsync(Guid campaignId, Guid bloggerId, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> ExistsAsync(Guid campaignId, MarketplaceRole creatorRole, Guid bloggerId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task AddAsync(CampaignApplication value, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 

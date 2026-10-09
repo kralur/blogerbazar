@@ -28,7 +28,8 @@ public sealed class UpdateCampaignApplicationStatusHandler(
     IUnitOfWork unitOfWork,
     IBloggerProfileRepository bloggers,
     ITelegramBotClient? botClient = null,
-    ILogger<UpdateCampaignApplicationStatusHandler>? logger = null) : IRequestHandler<UpdateCampaignApplicationStatusCommand, MyCampaignApplicationDto>
+    ILogger<UpdateCampaignApplicationStatusHandler>? logger = null,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<UpdateCampaignApplicationStatusCommand, MyCampaignApplicationDto>
 {
     public async Task<MyCampaignApplicationDto> Handle(UpdateCampaignApplicationStatusCommand command, CancellationToken cancellationToken)
     {
@@ -40,7 +41,7 @@ public sealed class UpdateCampaignApplicationStatusHandler(
         {
             throw new UnauthorizedAccessException("You cannot update an application for another business.");
         }
-        var blogger = await bloggers.GetByIdAsync(application.BloggerId, cancellationToken)
+        var applicant = await FindApplicantAsync(application, cancellationToken)
             ?? throw new InvalidOperationException("Blogger profile was not found.");
 
         if (command.Status == CampaignApplicationStatus.Viewed)
@@ -66,8 +67,24 @@ public sealed class UpdateCampaignApplicationStatusHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (command.Status == CampaignApplicationStatus.Rejected)
         {
-            await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, BotMessages.CampaignApplicationRejected(application.Campaign.Title), $"/my-application/{application.Id}", cancellationToken);
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, applicant.TelegramUserId, BotMessages.CampaignApplicationRejected(application.Campaign.Title), $"/my-application/{application.Id}", cancellationToken);
         }
-        return MyCampaignApplicationDto.ForBusiness(application, blogger);
+        return MyCampaignApplicationDto.ForBusiness(application, applicant.Id, applicant.Name, applicant.ImageUrl);
     }
+
+    private async Task<Applicant?> FindApplicantAsync(Domain.Entities.CampaignApplication application, CancellationToken cancellationToken)
+    {
+        if (application.BrandFaceId is { } brandFaceId)
+        {
+            return brandFaces is not null && await brandFaces.GetByIdAsync(brandFaceId, cancellationToken) is { } brandFace
+                ? new Applicant(brandFace.Id, brandFace.TelegramUserId, brandFace.Name, brandFace.AvatarUrl)
+                : null;
+        }
+
+        return application.BloggerId is { } bloggerId && await bloggers.GetByIdAsync(bloggerId, cancellationToken) is { } blogger
+            ? new Applicant(blogger.Id, blogger.TelegramUserId, blogger.Name, blogger.AvatarUrl)
+            : null;
+    }
+
+    private sealed record Applicant(Guid Id, long TelegramUserId, string Name, string? ImageUrl);
 }

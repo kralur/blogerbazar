@@ -26,7 +26,8 @@ public sealed record DealDetailsDto(
     DateTime? ReviewDeadlineUtc = null,
     Guid? CounterpartyProfileId = null,
     bool PartnerHasReviewed = false,
-    bool CounterpartyDeleted = false)
+    bool CounterpartyDeleted = false,
+    string? CounterpartyRole = null)
 {
     internal static DealDetailsDto From(DealReadRow row, MarketplaceRole viewerRole)
     {
@@ -48,9 +49,10 @@ public sealed record DealDetailsDto(
             view.HasReviewed,
             view.Offer,
             view.ReviewDeadlineUtc,
-            view.CounterpartyDeleted ? (Guid?)null : viewerRole == MarketplaceRole.Blogger ? row.BusinessId : row.BloggerId,
+            view.CounterpartyProfileId,
             view.PartnerHasReviewed,
-            view.CounterpartyDeleted);
+            view.CounterpartyDeleted,
+            view.CounterpartyRole);
     }
 }
 
@@ -67,11 +69,12 @@ public sealed class GetMyDealHandler(
     IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
-    IDealReadModel deals) : IRequestHandler<GetMyDealQuery, DealDetailsDto>
+    IDealReadModel deals,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetMyDealQuery, DealDetailsDto>
 {
     public async Task<DealDetailsDto> Handle(GetMyDealQuery query, CancellationToken cancellationToken)
     {
-        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken)
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.TelegramUserId, cancellationToken, brandFaces)
             ?? throw DealAccess.DealNotFound();
         var row = await deals.FindForParticipantAsync(query.DealId, participant.Role, participant.ProfileId, cancellationToken)
             ?? throw DealAccess.DealNotFound();

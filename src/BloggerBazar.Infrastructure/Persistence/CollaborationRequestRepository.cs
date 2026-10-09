@@ -48,7 +48,7 @@ internal sealed class CollaborationRequestRepository(BloggerBazarDbContext dbCon
             .Include(request => request.Blogger)
             .Include(request => request.Business)
             .Include(request => request.Deal)
-            .Where(request => request.ExpiresAtUtc != null && !request.Blogger.IsDeleted && !request.Business.IsDeleted);
+            .Where(request => request.ExpiresAtUtc != null && !request.Blogger!.IsDeleted && !request.Business.IsDeleted);
 
     private static Expression<Func<CollaborationRequest, bool>> ParticipantFilter(MarketplaceRole role, Guid profileId) => role switch
     {

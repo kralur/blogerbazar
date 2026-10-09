@@ -288,7 +288,7 @@ export type MarketplaceHome = {
   categories: string[];
   statistics: { approvedBloggers: number; companies: number; activeCampaigns: number; completedDeals: number; averageRating?: number | null };
 };
-export type BloggerReview = { id: string; rating: number; comment?: string | null; reviewerName?: string | null; createdAtUtc: string; reviewerProfileId?: string | null; reviewerImageUrl?: string | null; reviewerDeleted?: boolean };
+export type BloggerReview = { id: string; rating: number; comment?: string | null; reviewerName?: string | null; createdAtUtc: string; reviewerProfileId?: string | null; reviewerImageUrl?: string | null; reviewerDeleted?: boolean; reviewerRole?: "business" | "blogger" | "brandFace" | null };
 export type MyBusinessProfile = {
   id: string;
   name: string;
@@ -476,6 +476,10 @@ export async function getBloggerReviews(id: string, { skip = 0, take = 20 }: { s
 
 export type BusinessReviews = { rating?: number | null; reviewsCount: number; items: BloggerReview[] };
 
+export async function getBrandFaceReviews(id: string, signal?: AbortSignal, { skip = 0, take = 10 }: { skip?: number; take?: number } = {}): Promise<BusinessReviews> {
+  return api<BusinessReviews>(`/api/brand-faces/${id}/reviews?take=${take}${skip > 0 ? `&skip=${skip}` : ""}`, { signal });
+}
+
 export async function getBusinessReviews(id: string, signal?: AbortSignal, { skip = 0, take = 10 }: { skip?: number; take?: number } = {}): Promise<BusinessReviews> {
   return api<BusinessReviews>(`/api/businesses/${id}/reviews?take=${take}${skip > 0 ? `&skip=${skip}` : ""}`, { signal });
 }
@@ -526,7 +530,8 @@ export type MyCampaignApplicationItem = { id: string; campaignId: string; campai
 export type MyCampaignApplicationDetails = MyCampaignApplicationItem & { campaignDescription: string; requirements: string[]; businessId?: string | null };
 export type MyCampaignApplicationsQuery = { campaignId?: string; status?: CampaignApplicationStatus; page?: number; pageSize?: number };
 export type MyCampaignApplicationsPage = { items: MyCampaignApplicationItem[]; total: number; page: number; pageSize: number; hasMore: boolean };
-export type CampaignApplicationInboxItem = { id: string; bloggerId: string; bloggerName: string; bloggerAvatarUrl?: string | null; city: string; categories: string[]; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string; dealId?: string | null };
+// The applicant is a blogger or a brand face (D46): creatorRole says which, the blogger* fields carry either.
+export type CampaignApplicationInboxItem = { id: string; bloggerId?: string | null; brandFaceId?: string | null; creatorRole?: "blogger" | "brandFace"; bloggerName: string; bloggerAvatarUrl?: string | null; city: string; categories: string[]; message?: string | null; status: CampaignApplicationStatus; createdAtUtc: string; dealId?: string | null };
 export type CampaignApplicationInboxPage = { items: CampaignApplicationInboxItem[]; total: number; page: number; pageSize: number; hasMore: boolean };
 export type CampaignApplicationDecision = { id: string; status: CampaignApplicationStatus; dealId?: string | null };
 
@@ -577,6 +582,7 @@ export type MyCampaignApplication = {
   canAccept: boolean;
   createdAtUtc: string;
   counterpartyProfileId?: string | null;
+  counterpartyRole?: "business" | "blogger" | "brandFace" | null;
 };
 
 export async function getMyCampaignApplications() {
@@ -638,6 +644,7 @@ export type DealDetails = {
   reviewDeadlineUtc?: string | null;
   // The other side's blogger or business profile id; absent from an older API.
   counterpartyProfileId?: string | null;
+  counterpartyRole?: "business" | "blogger" | "brandFace" | null;
   partnerHasReviewed?: boolean;
   // The partner deleted the account: the deal stays, the name and every action are gone.
   counterpartyDeleted?: boolean;

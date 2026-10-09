@@ -136,21 +136,31 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             dbContext.PlatformUsers.AsNoTracking()).Where(campaign => campaign.Id == id))
             .SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<MyCampaignApplicationDto>> GetCampaignApplicationsAsync(Guid? bloggerId, Guid? businessId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<MyCampaignApplicationDto>> GetCampaignApplicationsAsync(Guid? bloggerId, Guid? businessId, CancellationToken cancellationToken, Guid? brandFaceId = null)
     {
         var response = new List<MyCampaignApplicationDto>();
         if (bloggerId.HasValue)
         {
-            response.AddRange(await dbContext.CampaignApplications.AsNoTracking().Where(application => application.BloggerId == bloggerId && !application.Campaign.Business.IsDeleted)
-                .Select(application => new MyCampaignApplicationDto(application.Id, application.CampaignId, application.Campaign.Title,
-                    application.Campaign.Business.Name, application.Campaign.Business.LogoUrl, application.Message, (int)application.Status, false, application.CreatedAtUtc, application.Campaign.BusinessId))
+            response.AddRange(await ProjectOwnApplications(dbContext.CampaignApplications.AsNoTracking().Where(application => application.BloggerId == bloggerId && !application.Campaign.Business.IsDeleted))
+                .ToArrayAsync(cancellationToken));
+        }
+        if (brandFaceId.HasValue)
+        {
+            response.AddRange(await ProjectOwnApplications(dbContext.CampaignApplications.AsNoTracking().Where(application => application.BrandFaceId == brandFaceId && !application.Campaign.Business.IsDeleted))
                 .ToArrayAsync(cancellationToken));
         }
         if (businessId.HasValue)
         {
-            response.AddRange(await dbContext.CampaignApplications.AsNoTracking().Where(application => application.Campaign.BusinessId == businessId && !application.Blogger.IsDeleted)
+            // Applicants of either creator kind (D46); CounterpartyRole tells the client which profile to open.
+            response.AddRange(await dbContext.CampaignApplications.AsNoTracking()
+                .Where(application => application.Campaign.BusinessId == businessId
+                    && (application.BloggerId != null ? !application.Blogger!.IsDeleted : !application.BrandFace!.IsDeleted))
                 .Select(application => new MyCampaignApplicationDto(application.Id, application.CampaignId, application.Campaign.Title,
-                    application.Blogger.Name, application.Blogger.AvatarUrl, application.Message, (int)application.Status, true, application.CreatedAtUtc, application.BloggerId))
+                    application.BloggerId != null ? application.Blogger!.Name : application.BrandFace!.Name,
+                    application.BloggerId != null ? application.Blogger!.AvatarUrl : application.BrandFace!.AvatarUrl,
+                    application.Message, (int)application.Status, true, application.CreatedAtUtc,
+                    application.BloggerId ?? application.BrandFaceId,
+                    application.BrandFaceId != null ? CreatorRoles.BrandFace : CreatorRoles.Blogger))
                 .ToArrayAsync(cancellationToken));
         }
         return response.OrderByDescending(application => application.CreatedAtUtc).ToArray();
@@ -166,21 +176,26 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
         }
         if (businessId.HasValue)
         {
-            response.AddRange(await ProjectCollaborationRequests(dbContext.CollaborationRequests.AsNoTracking().Where(request => request.BusinessId == businessId && !request.Blogger.IsDeleted).Take(take))
+            response.AddRange(await ProjectCollaborationRequests(dbContext.CollaborationRequests.AsNoTracking().Where(request => request.BusinessId == businessId && (request.BloggerId != null ? !request.Blogger!.IsDeleted : !request.BrandFace!.IsDeleted)).Take(take))
                 .ToArrayAsync(cancellationToken));
         }
         return response.OrderByDescending(request => request.CreatedAtUtc).ToArray();
     }
 
+    private static IQueryable<MyCampaignApplicationDto> ProjectOwnApplications(IQueryable<CampaignApplication> query) =>
+        query.Select(application => new MyCampaignApplicationDto(application.Id, application.CampaignId, application.Campaign.Title,
+            application.Campaign.Business.Name, application.Campaign.Business.LogoUrl, application.Message, (int)application.Status, false, application.CreatedAtUtc, application.Campaign.BusinessId,
+            MyCampaignApplicationDto.BusinessCounterparty));
+
     private IQueryable<CampaignDto> ProjectCampaigns(IQueryable<Campaign> query) =>
         query.Select(campaign => new CampaignDto(campaign.Id, campaign.BusinessId, campaign.Business.Name, campaign.Title,
             campaign.Description, campaign.City, campaign.Categories, campaign.Requirements, campaign.BudgetFrom, campaign.BudgetTo,
-            campaign.Deadline, campaign.IsPromoted, (int)campaign.Status, campaign.Applications.Count(application => !application.Blogger.IsDeleted), campaign.CreatedAtUtc));
+            campaign.Deadline, campaign.IsPromoted, (int)campaign.Status, campaign.Applications.Count(application => application.BloggerId != null ? !application.Blogger!.IsDeleted : !application.BrandFace!.IsDeleted), campaign.CreatedAtUtc));
 
     private IQueryable<CollaborationRequestDto> ProjectCollaborationRequests(IQueryable<CollaborationRequest> query) =>
         query.OrderByDescending(request => request.CreatedAtUtc).Select(request => new CollaborationRequestDto(request.Id, request.BloggerId,
-            request.Blogger.Name, request.BusinessId, request.Business.Name, request.Message, (int)request.Status,
-            request.Deal == null ? null : request.Deal.Id, request.CreatedAtUtc));
+            request.BloggerId != null ? request.Blogger!.Name : request.BrandFace!.Name, request.BusinessId, request.Business.Name, request.Message, (int)request.Status,
+            request.Deal == null ? null : request.Deal.Id, request.CreatedAtUtc, request.BrandFaceId));
 
     private async Task<IReadOnlyList<BloggerProfileDto>> ProjectBloggersAsync(IQueryable<BloggerProfile> query, CancellationToken cancellationToken)
     {

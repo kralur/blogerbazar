@@ -22,8 +22,8 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
 
     public async Task<IReadOnlyList<CollaborationRequestDto>> GetCollaborationRequestsAsync(int take, CancellationToken cancellationToken) =>
         await dbContext.CollaborationRequests.AsNoTracking().OrderByDescending(request => request.CreatedAtUtc).Take(take)
-            .Select(request => new CollaborationRequestDto(request.Id, request.BloggerId, request.Blogger.Name, request.BusinessId,
-                request.Business.Name, request.Message, (int)request.Status, request.Deal == null ? null : request.Deal.Id, request.CreatedAtUtc))
+            .Select(request => new CollaborationRequestDto(request.Id, request.BloggerId, request.BloggerId != null ? request.Blogger!.Name : request.BrandFace!.Name, request.BusinessId,
+                request.Business.Name, request.Message, (int)request.Status, request.Deal == null ? null : request.Deal.Id, request.CreatedAtUtc, request.BrandFaceId))
             .ToArrayAsync(cancellationToken);
 
     public async Task<AdminDashboardDto> GetDashboardAsync(CancellationToken cancellationToken)

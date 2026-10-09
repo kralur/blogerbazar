@@ -30,8 +30,8 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
             deal.Status,
             deal.CreatedAtUtc,
             deal.CompletedAtUtc,
-            deal.Blogger.Name,
-            deal.Blogger.AvatarUrl,
+            deal.BloggerId != null ? deal.Blogger!.Name : deal.BrandFace!.Name,
+            deal.BloggerId != null ? deal.Blogger!.AvatarUrl : deal.BrandFace!.AvatarUrl,
             deal.Business.Name,
             deal.Business.LogoUrl,
             deal.CampaignTermsSnapshotVersion,
@@ -52,13 +52,14 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
             deal.CampaignApplication == null ? null : deal.CampaignApplication.Campaign.BudgetTo,
             deal.CampaignApplication == null ? null : deal.CampaignApplication.Campaign.Deadline,
             deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Business),
-            deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Blogger),
+            deal.Reviews.Any(review => review.TargetType != ReviewTargetType.Business),
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Format,
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.OfferedBudget,
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Deadline,
             deal.CollaborationRequest == null ? null : deal.CollaborationRequest.Message,
             deal.BloggerId,
             deal.BusinessId,
-            deal.Blogger.IsDeleted,
-            deal.Business.IsDeleted));
+            deal.BloggerId != null ? deal.Blogger!.IsDeleted : deal.BrandFace!.IsDeleted,
+            deal.Business.IsDeleted,
+            deal.BrandFaceId));
 }

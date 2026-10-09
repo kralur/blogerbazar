@@ -69,7 +69,7 @@ public sealed class UpdateCollaborationRequestStatusHandler(
     {
         var request = await requests.GetByIdAsync(command.RequestId, cancellationToken)
             ?? throw new InvalidOperationException("Collaboration request was not found.");
-        if (request.Blogger.TelegramUserId != command.TelegramUserId)
+        if (request.Blogger?.TelegramUserId != command.TelegramUserId)
         {
             throw new UnauthorizedAccessException("Only the blogger can change the status of a collaboration request.");
         }

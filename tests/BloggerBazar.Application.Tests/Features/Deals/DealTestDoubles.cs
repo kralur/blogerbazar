@@ -41,6 +41,15 @@ internal static class DealTestData
         target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!.SetValue(target, value);
 }
 
+internal sealed class FakeBrandFaces(params BrandFaceProfile[] brandFaces) : IBrandFaceProfileRepository
+{
+    public Task<BrandFaceProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(brandFaces.SingleOrDefault(profile => profile.Id == id));
+    public Task<BrandFaceProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult(brandFaces.SingleOrDefault(profile => profile.TelegramUserId == telegramUserId));
+    public Task<IReadOnlyList<BrandFaceProfile>> GetAllAsync(int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BrandFaceProfile>>(brandFaces);
+    public Task<IReadOnlyList<BrandFaceProfile>> SearchAsync(string? query, string? city, string? category, int skip, int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BrandFaceProfile>>(brandFaces);
+    public Task AddAsync(BrandFaceProfile profile, CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
 internal sealed class FakeUsers(params PlatformUser[] users) : IPlatformUserRepository
 {
     public Task<PlatformUser?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult(users.SingleOrDefault(user => user.TelegramUserId == telegramUserId));
@@ -77,6 +86,7 @@ internal sealed class FakeDeals(params Deal[] deals) : IDealRepository
         {
             MarketplaceRole.Blogger => deal.BloggerId == profileId,
             MarketplaceRole.Business => deal.BusinessId == profileId,
+            MarketplaceRole.BrandFace => deal.BrandFaceId == profileId,
             _ => false
         }));
 

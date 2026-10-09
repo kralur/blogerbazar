@@ -90,6 +90,7 @@ public static class DealReminderSchedule
     }
 
     // The recipient sees the other side's name: a blogger is reminded about the business and vice versa.
+    // MarketplaceRole.Blogger stands for the creator side here, a brand face included (D46): it is only the reminder key.
     internal static BotText Text(DealReminderKind kind, DealReminderCandidate deal, MarketplaceRole recipientRole)
     {
         var partner = recipientRole == MarketplaceRole.Blogger ? deal.BusinessName : deal.BloggerName;

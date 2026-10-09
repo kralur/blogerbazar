@@ -326,6 +326,96 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.True(otherSide);
     }
 
+    // D46: a brand face goes through the same cycle as a blogger: apply, accept, deal, complete, reviews.
+    [IntegrationFact]
+    public async Task Brand_face_applies_gets_a_deal_and_reviews_like_a_blogger()
+    {
+        const long brandFaceTelegramUserId = 1_100_301;
+        const long businessTelegramUserId = 1_100_302;
+        Guid brandFaceId, businessId, campaignId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var brandFaceUser = PlatformUser.Create(brandFaceTelegramUserId, "Brand face", null);
+            brandFaceUser.SelectMarketplaceRole(MarketplaceRole.BrandFace);
+            var businessUser = PlatformUser.Create(businessTelegramUserId, "Business", null);
+            businessUser.SelectMarketplaceRole(MarketplaceRole.Business);
+            var brandFace = BrandFaceProfile.Create(brandFaceTelegramUserId, "Integration brand face", "tashkent", ["beauty"]);
+            var business = BusinessProfile.Create(businessTelegramUserId, "Brand face business", "tashkent");
+            business.Approve();
+            var campaign = Campaign.Create(business.Id, "Brand face campaign", "Description", ["beauty"], ["One reel"], 100, 200, "tashkent", null);
+            campaign.Publish();
+            dbContext.AddRange(brandFaceUser, businessUser, brandFace, business, campaign);
+            await dbContext.SaveChangesAsync();
+            (brandFaceId, businessId, campaignId) = (brandFace.Id, business.Id, campaign.Id);
+        }
+
+        using var brandFaceClient = CreateClient(brandFaceTelegramUserId);
+        using var businessClient = CreateClient(businessTelegramUserId);
+        using var anonymous = factory.CreateClient();
+
+        var applied = await brandFaceClient.PostAsJsonAsync($"/api/campaigns/{campaignId}/applications", new { message = "Hello" });
+        var duplicate = await brandFaceClient.PostAsJsonAsync($"/api/campaigns/{campaignId}/applications", new { message = "Again" });
+        Assert.Equal(HttpStatusCode.Created, applied.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        var applicationId = (await applied.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var mine = await brandFaceClient.GetFromJsonAsync<JsonElement>("/api/campaign-applications/mine");
+        Assert.Equal(applicationId, Assert.Single(mine.GetProperty("items").EnumerateArray()).GetProperty("id").GetGuid());
+        var inbox = await businessClient.GetFromJsonAsync<JsonElement>($"/api/campaigns/mine/{campaignId}/applications");
+        var inboxItem = Assert.Single(inbox.GetProperty("items").EnumerateArray());
+        Assert.Equal("brandFace", inboxItem.GetProperty("creatorRole").GetString());
+        Assert.Equal(brandFaceId, inboxItem.GetProperty("brandFaceId").GetGuid());
+        Assert.Equal("Integration brand face", inboxItem.GetProperty("bloggerName").GetString());
+        var campaignView = await brandFaceClient.GetFromJsonAsync<JsonElement>($"/api/campaigns/{campaignId}");
+        Assert.Equal(1, campaignView.GetProperty("applicationsCount").GetInt32());
+
+        var accepted = await businessClient.PostAsync($"/api/campaigns/mine/{campaignId}/applications/{applicationId}/accept", null);
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        var dealId = (await accepted.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("dealId").GetGuid();
+
+        var deals = await brandFaceClient.GetFromJsonAsync<JsonElement>("/api/deals/me");
+        Assert.Equal(dealId, Assert.Single(deals.EnumerateArray()).GetProperty("id").GetGuid());
+        var businessDeal = await businessClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{dealId}");
+        Assert.Equal("Integration brand face", businessDeal.GetProperty("counterpartyName").GetString());
+        Assert.Equal("brandFace", businessDeal.GetProperty("counterpartyRole").GetString());
+        Assert.Equal(brandFaceId, businessDeal.GetProperty("counterpartyProfileId").GetGuid());
+        Assert.Equal(HttpStatusCode.OK, (await businessClient.GetAsync($"/api/deals/me/{dealId}/contact")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await brandFaceClient.GetAsync($"/api/deals/me/{dealId}/contact")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await brandFaceClient.PostAsync($"/api/deals/{dealId}/complete", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await brandFaceClient.PostAsJsonAsync($"/api/deals/{dealId}/reviews", new { rating = 4, comment = "Clear brief" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await businessClient.PostAsJsonAsync($"/api/deals/{dealId}/reviews", new { rating = 5, comment = "Great face" })).StatusCode);
+
+        var brandFaceReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/brand-faces/{brandFaceId}/reviews");
+        Assert.Equal(1, brandFaceReviews.GetProperty("reviewsCount").GetInt32());
+        Assert.Equal(5m, brandFaceReviews.GetProperty("rating").GetDecimal());
+        var aboutBrandFace = Assert.Single(brandFaceReviews.GetProperty("items").EnumerateArray());
+        Assert.Equal("Brand face business", aboutBrandFace.GetProperty("reviewerName").GetString());
+        Assert.Equal("business", aboutBrandFace.GetProperty("reviewerRole").GetString());
+        var businessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{businessId}/reviews");
+        var aboutBusiness = Assert.Single(businessReviews.GetProperty("items").EnumerateArray());
+        Assert.Equal("Integration brand face", aboutBusiness.GetProperty("reviewerName").GetString());
+        Assert.Equal("brandFace", aboutBusiness.GetProperty("reviewerRole").GetString());
+        Assert.Equal(brandFaceId, aboutBusiness.GetProperty("reviewerProfileId").GetGuid());
+    }
+
+    [IntegrationFact]
+    public async Task Database_rejects_a_deal_without_exactly_one_creator()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_311, 1_100_312);
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        var brandFace = BrandFaceProfile.Create(1_100_313, "Second creator", "tashkent", ["beauty"]);
+        dbContext.Add(brandFace);
+        await dbContext.SaveChangesAsync();
+
+        await Assert.ThrowsAnyAsync<Exception>(() => dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE deals SET \"BrandFaceId\" = {brandFace.Id} WHERE \"Id\" = {seed.DealId}"));
+        await Assert.ThrowsAnyAsync<Exception>(() => dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE deals SET \"BloggerId\" = NULL WHERE \"Id\" = {seed.DealId}"));
+    }
+
     private async Task<(Guid BloggerId, long BloggerTelegramUserId, long BusinessTelegramUserId)> SeedParticipantsAsync(long bloggerTelegramUserId, long businessTelegramUserId)
     {
         using var scope = factory.Services.CreateScope();

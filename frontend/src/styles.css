@@ -790,7 +790,8 @@
     scroll-behavior: smooth;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
+    /* Both directions: a vertical swipe that starts on a card must still scroll the page. */
+    touch-action: pan-x pan-y;
   }
 
   .home { background: var(--bb-background); }

@@ -15,6 +15,7 @@ import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { CampaignApplicationStatus, campaignApplicationStatusTone, canAcceptCampaignApplication } from "../lib/campaignApplicationStatus";
 import { BloggerApplications } from "./BloggerApplications";
+import { profileRoute } from "../lib/profileRoutes";
 import { subscribeDealCache } from "../data/dealCache";
 import { seenDealsChangedEvent, unseenActiveDealIds } from "../data/seenDeals";
 import { dealRoute, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
@@ -59,7 +60,9 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
     return () => window.removeEventListener(seenDealsChangedEvent, onSeen);
   }, []);
   const [selectedRequest, setSelectedRequest] = useState<MyCampaignApplication | null>(null);
-  const [requestsLoading, setRequestsLoading] = useState(activeMarketplaceRole !== "Blogger");
+  // A brand face applies to campaigns like a blogger (D46); the business sees the inbox list instead.
+  const isCreator = activeMarketplaceRole === "Blogger" || activeMarketplaceRole === "BrandFace";
+  const [requestsLoading, setRequestsLoading] = useState(!isCreator);
   const [requestsFailed, setRequestsFailed] = useState(false);
   const [dealsLoading, setDealsLoading] = useState(true);
   const [dealsFailed, setDealsFailed] = useState(false);
@@ -80,7 +83,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
   }, [t]);
 
   const loadRequests = useCallback(() => {
-    if (activeMarketplaceRole === "Blogger") {
+    if (isCreator) {
       setRequests([]);
       setRequestsFailed(false);
       setRequestsLoading(false);
@@ -92,7 +95,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       .then(setRequests)
       .catch(() => setRequestsFailed(true))
       .finally(() => setRequestsLoading(false));
-  }, [activeMarketplaceRole, t]);
+  }, [isCreator, t]);
 
   const loadOffers = useCallback(() => {
     setOffersLoading(true);
@@ -151,14 +154,14 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       </div>
 
       {view === "offers" ? (
-        offersLoading ? <div className="mt-5"><LoadingState title={t("offers.loading")} /></div> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(activeMarketplaceRole === "Blogger" ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
+        offersLoading ? <div className="mt-5"><LoadingState title={t("offers.loading")} /></div> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(isCreator ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
           <div className="request-list">
             {waitingFirst(offers, (offer) => offer.canRespond).map((offer) => (
               <RequestRow action={offer.canRespond ? t("requests.awaitingYourAnswer") : null} href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, language)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} title={`${t(offerFormatLabelKey(offer.format))}${offer.offeredBudget != null ? ` · ${formatCurrency(offer.offeredBudget)}` : ""}`} />
             ))}
           </div>
         )
-      ) : view === "applications" && activeMarketplaceRole === "Blogger" ? <BloggerApplications activeMarketplaceRole={activeMarketplaceRole} /> : view === "applications" ? (
+      ) : view === "applications" && isCreator ? <BloggerApplications activeMarketplaceRole={activeMarketplaceRole} /> : view === "applications" ? (
         requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} title={t("requests.loadFailed")} /></div> :
         !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="request-list">
@@ -178,7 +181,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       )}
 
       <Modal onClose={() => setSelectedRequest(null)} open={Boolean(selectedRequest)} title={selectedRequest?.campaignTitle ?? t("requests.title")}>
-        {selectedRequest && <><CounterpartyRow href={selectedRequest.counterpartyProfileId ? `#/blogger/${selectedRequest.counterpartyProfileId}` : null} imageUrl={selectedRequest.counterpartyImageUrl} label={t("offers.counterpartyBlogger")} name={selectedRequest.counterpartyName} /><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status) ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}</>}
+        {selectedRequest && <><CounterpartyRow href={selectedRequest.counterpartyProfileId ? profileRoute(selectedRequest.counterpartyRole ?? "blogger", selectedRequest.counterpartyProfileId) : null} imageUrl={selectedRequest.counterpartyImageUrl} label={t(selectedRequest.counterpartyRole === "brandFace" ? "offers.counterpartyBrandFace" : "offers.counterpartyBlogger")} name={selectedRequest.counterpartyName} /><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status) ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}</>}
       </Modal>
 
       <BottomSheet onClose={() => setDateFilterOpen(false)} open={dateFilterOpen} title={t("requests.dateFilter")}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">{(["today", "week", "month", "custom"] as const).map((range) => <button className={`rounded-2xl border px-3 py-3 text-sm font-bold ${dateRange === range ? "choice-selected" : "border-brand-line bg-brand-surface"}`} key={range} onClick={() => setDateRange(range)} type="button">{t(`requests.range.${range}`)}</button>)}</div>{dateRange === "custom" && <div className="grid grid-cols-2 gap-3"><Input label={t("requests.fromDate")} onChange={(event) => setFromDate(event.target.value)} type="date" value={fromDate} /><Input label={t("requests.toDate")} onChange={(event) => setToDate(event.target.value)} type="date" value={toDate} /></div>}<Button className="w-full" onClick={() => setDateFilterOpen(false)} type="button">{t("common.apply")}</Button><Button className="w-full" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setDateFilterOpen(false); }} type="button" variant="secondary">{t("common.reset")}</Button></div></BottomSheet>

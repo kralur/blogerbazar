@@ -8,6 +8,7 @@ import { ContactList } from "../components/ContactList";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
+import { profileRoute } from "../lib/profileRoutes";
 
 // Public business profile: who placed a campaign or sent an offer, its rating and open campaigns.
 export function BusinessDetails({ id }: { id: string }) {
@@ -64,7 +65,7 @@ export function BusinessDetails({ id }: { id: string }) {
           <Icon className="company-campaign__chevron" name="back" />
         </a>)}</div>}
     </DetailSection>
-    <ReviewsSection allHref={`#/company-reviews/${profile.id}`} count={profile.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={profile.rating} reviewerRoute={(profileId) => `#/blogger/${profileId}`} reviews={profile.reviews ?? []} title={t("campaign.businessReviews")} />
+    <ReviewsSection allHref={`#/company-reviews/${profile.id}`} count={profile.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={profile.rating} reviewerRoute={(profileId, role) => profileRoute(role ?? "blogger", profileId)} reviews={profile.reviews ?? []} title={t("campaign.businessReviews")} />
     {website.length > 0 && <DetailSection title={t("company.website")}><ContactList items={website} /></DetailSection>}
     <BottomNav />
   </div>;

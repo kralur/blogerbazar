@@ -14,6 +14,8 @@ public sealed record ContactDetailsDto(string? Phone, string? Email, string? Tel
     public static ContactDetailsDto From(BloggerProfile blogger) => new(blogger.Phone, blogger.Email, blogger.Username, null);
 
     public static ContactDetailsDto From(BusinessProfile business) => new(business.Phone, business.Email, business.Username, business.WebsiteUrl);
+
+    public static ContactDetailsDto From(BrandFaceProfile brandFace, string? verifiedPhone) => new(verifiedPhone, null, brandFace.Telegram, null);
 }
 
 public sealed class GetUnlockedContactValidator : AbstractValidator<GetUnlockedContactQuery>

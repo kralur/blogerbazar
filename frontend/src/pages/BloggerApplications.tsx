@@ -20,7 +20,8 @@ export function BloggerApplications({ activeMarketplaceRole }: { activeMarketpla
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const request = useMemo(() => ({ status, pageSize }), [status]);
   const fetchPage = useCallback((page: number, signal: AbortSignal) => getMyCampaignApplicationsPage({ ...request, page }, signal), [request]);
-  const allowed = activeMarketplaceRole === "Blogger";
+  // Own applications of the creator side: a blogger or a brand face (D46).
+  const allowed = activeMarketplaceRole === "Blogger" || activeMarketplaceRole === "BrandFace";
   const catalog = usePaginatedCatalog<MyCampaignApplicationItem>({ active: visible && allowed, fetchPage });
 
   useEffect(() => {

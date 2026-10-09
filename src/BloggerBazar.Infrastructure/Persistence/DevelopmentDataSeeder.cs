@@ -375,7 +375,7 @@ public static class DevelopmentDataSeeder
             var campaign = campaigns[index % campaigns.Count];
             var deal = Deal.Create(
                 applications[index].Id,
-                applications[index].BloggerId,
+                applications[index].BloggerId!.Value,
                 campaign.BusinessId,
                 CampaignTermsSnapshot.FromCampaign(campaign));
             deal.Complete();
@@ -393,7 +393,7 @@ public static class DevelopmentDataSeeder
         for (var index = 0; index < deals.Count; index++)
         {
             var deal = deals[index];
-            var blogger = bloggerById[deal.BloggerId];
+            var blogger = bloggerById[deal.BloggerId!.Value];
             var business = businessById[deal.BusinessId];
             var bloggerRating = index % 19 == 0 ? 3 : index % 7 == 0 ? 4 : 5;
             var businessRating = index % 23 == 0 ? 3 : index % 6 == 0 ? 4 : 5;

@@ -4,20 +4,21 @@ namespace BloggerBazar.Application.Features.CollaborationRequests;
 
 public sealed record CollaborationRequestDto(
     Guid Id,
-    Guid BloggerId,
+    Guid? BloggerId,
     string BloggerName,
     Guid BusinessId,
     string BusinessName,
     string Message,
     int Status,
     Guid? DealId,
-    DateTime CreatedAtUtc)
+    DateTime CreatedAtUtc,
+    Guid? BrandFaceId = null)
 {
     public static CollaborationRequestDto From(CollaborationRequest request) =>
-        new(request.Id, request.BloggerId, request.Blogger.Name, request.BusinessId, request.Business.Name,
-            request.Message, (int)request.Status, request.Deal?.Id, request.CreatedAtUtc);
+        new(request.Id, request.BloggerId, request.Blogger?.Name ?? request.BrandFace?.Name ?? string.Empty, request.BusinessId, request.Business.Name,
+            request.Message, (int)request.Status, request.Deal?.Id, request.CreatedAtUtc, request.BrandFaceId);
 
     public static CollaborationRequestDto From(CollaborationRequest request, string bloggerName, string businessName) =>
         new(request.Id, request.BloggerId, bloggerName, request.BusinessId, businessName,
-            request.Message, (int)request.Status, request.Deal?.Id, request.CreatedAtUtc);
+            request.Message, (int)request.Status, request.Deal?.Id, request.CreatedAtUtc, request.BrandFaceId);
 }

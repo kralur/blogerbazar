@@ -25,18 +25,21 @@ public sealed class ShareDealContactHandler(
     IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
-    ITelegramBotClient botClient) : IRequestHandler<ShareDealContactCommand, Unit>
+    ITelegramBotClient botClient,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<ShareDealContactCommand, Unit>
 {
     public async Task<Unit> Handle(ShareDealContactCommand command, CancellationToken cancellationToken)
     {
         // Same access as the contacts block: the selected role's own deal, both sides still existing.
-        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken)
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken, brandFaces)
             ?? throw DealAccess.DealNotFound();
         var deal = await deals.GetForParticipantAsync(command.DealId, participant.Role, participant.ProfileId, cancellationToken)
             ?? throw DealAccess.DealNotFound();
-        var (name, phone) = participant.Role == MarketplaceRole.Blogger
+        var (name, phone) = participant.IsCreator
             ? (deal.Business.Name, deal.Business.Phone)
-            : (deal.Blogger.Name, deal.Blogger.Phone);
+            : deal.Blogger is not null
+                ? (deal.Blogger.Name, deal.Blogger.Phone)
+                : (deal.CreatorName, (await users.GetByTelegramUserIdAsync(deal.CreatorTelegramUserId, cancellationToken))?.VerifiedPhone);
         if (string.IsNullOrWhiteSpace(phone))
         {
             throw new BusinessRuleConflictException("contact_phone_missing", "The partner has no phone number.");

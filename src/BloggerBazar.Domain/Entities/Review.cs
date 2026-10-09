@@ -6,7 +6,7 @@ public sealed class Review
 {
     private Review() { }
 
-    private Review(Guid dealId, long reviewerTelegramUserId, ReviewTargetType targetType, Guid? bloggerId, Guid? businessId, int rating, string? comment)
+    private Review(Guid dealId, long reviewerTelegramUserId, ReviewTargetType targetType, Guid? bloggerId, Guid? businessId, int rating, string? comment, Guid? brandFaceId = null)
     {
         Id = Guid.NewGuid();
         DealId = dealId;
@@ -14,6 +14,7 @@ public sealed class Review
         TargetType = targetType;
         BloggerId = bloggerId;
         BusinessId = businessId;
+        BrandFaceId = brandFaceId;
         Rating = rating;
         Comment = comment;
         CreatedAtUtc = DateTime.UtcNow;
@@ -28,6 +29,8 @@ public sealed class Review
     public BloggerProfile? Blogger { get; private set; }
     public Guid? BusinessId { get; private set; }
     public BusinessProfile? Business { get; private set; }
+    public Guid? BrandFaceId { get; private set; }
+    public BrandFaceProfile? BrandFace { get; private set; }
     public int Rating { get; private set; }
     public string? Comment { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
@@ -40,6 +43,15 @@ public sealed class Review
 
     public static Review ForBusiness(Guid dealId, long reviewerTelegramUserId, Guid businessId, int rating, string? comment) =>
         new(dealId, reviewerTelegramUserId, ReviewTargetType.Business, null, businessId, rating, comment);
+
+    public static Review ForBrandFace(Guid dealId, long reviewerTelegramUserId, Guid brandFaceId, int rating, string? comment) =>
+        new(dealId, reviewerTelegramUserId, ReviewTargetType.BrandFace, null, null, rating, comment, brandFaceId);
+
+    // The review a business leaves on the creator side of a deal, whichever kind of creator it is.
+    public static Review ForCreator(Guid dealId, long reviewerTelegramUserId, MarketplaceRole creatorRole, Guid creatorId, int rating, string? comment) =>
+        creatorRole == MarketplaceRole.BrandFace
+            ? ForBrandFace(dealId, reviewerTelegramUserId, creatorId, rating, comment)
+            : ForBlogger(dealId, reviewerTelegramUserId, creatorId, rating, comment);
 
     public void Publish(DateTime publishedAtUtc) => PublishedAtUtc ??= publishedAtUtc;
 }

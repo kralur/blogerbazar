@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCurrentPlatformUser, getMyBloggerProfile, getMyBusinessProfile, normalizeMarketplaceRole, selectMarketplaceRole, type MarketplaceRole } from "../api/marketplace";
+import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, selectMarketplaceRole, type MarketplaceRole } from "../api/marketplace";
 import { useI18n } from "../i18n";
 import { Button } from "./ui";
 
@@ -12,12 +12,13 @@ export function SwitchRoleHint() {
 
   useEffect(() => {
     let active = true;
-    Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBusinessProfile()]).then(([user, blogger, business]) => {
+    Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBusinessProfile(), getMyBrandFaceProfile()]).then(([user, blogger, business, brandFace]) => {
       if (!active || user.status !== "fulfilled") return;
       const current = normalizeMarketplaceRole(user.value.selectedMarketplaceRole);
       const owned: MarketplaceRole[] = [];
       if (blogger.status === "fulfilled" && blogger.value) owned.push("Blogger");
       if (business.status === "fulfilled" && business.value) owned.push("Business");
+      if (brandFace.status === "fulfilled" && brandFace.value) owned.push("BrandFace");
       setRoles(owned.filter((role) => role !== current));
     });
     return () => { active = false; };
@@ -38,6 +39,6 @@ export function SwitchRoleHint() {
   if (roles.length === 0) return null;
   return <div className="switch-role-hint">
     <p>{t("roleSwitch.hint")}</p>
-    {roles.map((role) => <Button aria-busy={switching} className="w-full" disabled={switching} key={role} onClick={() => void switchTo(role)} type="button" variant="secondary">{t("roleSwitch.action", { role: t(role === "Blogger" ? "profile.blogger" : "profile.business") })}</Button>)}
+    {roles.map((role) => <Button aria-busy={switching} className="w-full" disabled={switching} key={role} onClick={() => void switchTo(role)} type="button" variant="secondary">{t("roleSwitch.action", { role: t(role === "Blogger" ? "profile.blogger" : role === "BrandFace" ? "onboarding.brandFace" : "profile.business") })}</Button>)}
   </div>;
 }

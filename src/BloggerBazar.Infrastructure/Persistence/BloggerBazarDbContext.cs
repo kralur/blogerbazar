@@ -57,6 +57,9 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         }
     }
 
+    // D46: an application, a collaboration request and a deal belong to exactly one creator, a blogger or a brand face.
+    private const string SingleCreatorCheck = "(\"BloggerId\" IS NULL) <> (\"BrandFaceId\" IS NULL)";
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("pg_trgm");
@@ -198,16 +201,19 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         campaign.HasIndex(entity => new { entity.Status, entity.IsPromoted });
 
         var application = modelBuilder.Entity<CampaignApplication>();
-        application.ToTable("campaign_applications");
+        application.ToTable("campaign_applications", table => table.HasCheckConstraint("CK_campaign_applications_single_creator", SingleCreatorCheck));
         application.HasKey(entity => entity.Id);
         application.Property(entity => entity.Message).HasMaxLength(1000);
         application.HasOne(entity => entity.Campaign).WithMany(entity => entity.Applications).HasForeignKey(entity => entity.CampaignId).OnDelete(DeleteBehavior.Cascade);
         application.HasOne(entity => entity.Blogger).WithMany(entity => entity.CampaignApplications).HasForeignKey(entity => entity.BloggerId).OnDelete(DeleteBehavior.Cascade);
         application.HasIndex(entity => new { entity.CampaignId, entity.BloggerId }).IsUnique();
         application.HasIndex(entity => new { entity.BloggerId, entity.Status });
+        application.HasOne(entity => entity.BrandFace).WithMany().HasForeignKey(entity => entity.BrandFaceId).OnDelete(DeleteBehavior.Cascade);
+        application.HasIndex(entity => new { entity.CampaignId, entity.BrandFaceId }).IsUnique();
+        application.HasIndex(entity => new { entity.BrandFaceId, entity.Status });
 
         var collaborationRequest = modelBuilder.Entity<CollaborationRequest>();
-        collaborationRequest.ToTable("collaboration_requests");
+        collaborationRequest.ToTable("collaboration_requests", table => table.HasCheckConstraint("CK_collaboration_requests_single_creator", SingleCreatorCheck));
         collaborationRequest.HasKey(entity => entity.Id);
         collaborationRequest.Property(entity => entity.Message).HasMaxLength(1000).IsRequired();
         collaborationRequest.HasOne(entity => entity.Blogger).WithMany(entity => entity.IncomingRequests).HasForeignKey(entity => entity.BloggerId).OnDelete(DeleteBehavior.Cascade);
@@ -217,9 +223,14 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         collaborationRequest.HasIndex(entity => new { entity.BusinessId, entity.BloggerId })
             .IsUnique()
             .HasFilter("\"ExpiresAtUtc\" IS NOT NULL AND \"Status\" IN (0, 1)");
+        collaborationRequest.HasOne(entity => entity.BrandFace).WithMany().HasForeignKey(entity => entity.BrandFaceId).OnDelete(DeleteBehavior.Cascade);
+        collaborationRequest.HasIndex(entity => new { entity.BrandFaceId, entity.Status });
+        collaborationRequest.HasIndex(entity => new { entity.BusinessId, entity.BrandFaceId })
+            .IsUnique()
+            .HasFilter("\"ExpiresAtUtc\" IS NOT NULL AND \"Status\" IN (0, 1)");
 
         var deal = modelBuilder.Entity<Deal>();
-        deal.ToTable("deals");
+        deal.ToTable("deals", table => table.HasCheckConstraint("CK_deals_single_creator", SingleCreatorCheck));
         deal.HasKey(entity => entity.Id);
         deal.Property(entity => entity.CampaignTermsSnapshotVersion).HasColumnType("smallint");
         deal.Property(entity => entity.CampaignTitleSnapshot).HasMaxLength(160);
@@ -235,6 +246,8 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         deal.HasOne(entity => entity.Blogger).WithMany(entity => entity.Deals).HasForeignKey(entity => entity.BloggerId).OnDelete(DeleteBehavior.Restrict);
         deal.HasOne(entity => entity.Business).WithMany(entity => entity.Deals).HasForeignKey(entity => entity.BusinessId).OnDelete(DeleteBehavior.Restrict);
         deal.HasIndex(entity => new { entity.BloggerId, entity.Status });
+        deal.HasOne(entity => entity.BrandFace).WithMany().HasForeignKey(entity => entity.BrandFaceId).OnDelete(DeleteBehavior.Restrict);
+        deal.HasIndex(entity => new { entity.BrandFaceId, entity.Status });
         deal.HasIndex(entity => new { entity.BusinessId, entity.Status });
 
         var review = modelBuilder.Entity<Review>();
@@ -247,6 +260,8 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         review.HasIndex(entity => new { entity.DealId, entity.ReviewerTelegramUserId }).IsUnique();
         review.HasIndex(entity => entity.BloggerId);
         review.HasIndex(entity => entity.BusinessId);
+        review.HasOne(entity => entity.BrandFace).WithMany().HasForeignKey(entity => entity.BrandFaceId).OnDelete(DeleteBehavior.Restrict);
+        review.HasIndex(entity => entity.BrandFaceId);
         // Hidden reviews never reach ratings or lists; code that must see them (own "already reviewed" checks) uses IgnoreQueryFilters.
         review.HasQueryFilter(entity => entity.PublishedAtUtc != null);
 

@@ -49,7 +49,7 @@ public sealed class CreateDealFromCollaborationRequestHandler(
 
             request.Accept();
         }
-        var deal = Domain.Entities.Deal.CreateFromCollaborationRequest(request.Id, request.BloggerId, request.BusinessId);
+        var deal = Domain.Entities.Deal.CreateFromCollaborationRequest(request.Id, request.CreatorRole, request.CreatorId, request.BusinessId);
         await deals.AddAsync(deal, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
         {

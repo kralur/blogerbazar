@@ -3,5 +3,6 @@ namespace BloggerBazar.Domain.Enums;
 public enum ReviewTargetType
 {
     Blogger = 0,
-    Business = 1
+    Business = 1,
+    BrandFace = 2
 }

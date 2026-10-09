@@ -46,7 +46,7 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
                 campaign.Deadline,
                 campaign.IsPromoted,
                 (int)campaign.Status,
-                campaign.Applications.Count(application => !application.Blogger.IsDeleted),
+                campaign.Applications.Count(application => application.BloggerId != null ? !application.Blogger!.IsDeleted : !application.BrandFace!.IsDeleted),
                 campaign.CreatedAtUtc))
             .ToArrayAsync(cancellationToken);
 
@@ -115,7 +115,8 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
             await businesses.CountAsync(cancellationToken),
             await publishedCampaigns.CountAsync(cancellationToken),
             await dbContext.Deals.AsNoTracking()
-                .CountAsync(deal => deal.Status == DealStatus.Completed && !deal.Blogger.IsDeleted && !deal.Business.IsDeleted && deal.Blogger.Status == BloggerStatus.Approved, cancellationToken),
+                .CountAsync(deal => deal.Status == DealStatus.Completed && !deal.Business.IsDeleted
+                    && (deal.BloggerId != null ? !deal.Blogger!.IsDeleted && deal.Blogger.Status == BloggerStatus.Approved : !deal.BrandFace!.IsDeleted), cancellationToken),
             averageRating.HasValue ? decimal.Round(averageRating.Value, 1) : null);
 
         return new MarketplaceHomeDto(

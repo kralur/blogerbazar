@@ -18,7 +18,8 @@ export function ActionCountsProvider({ role, enabled, children }: { role?: Marke
   const load = useCallback(async () => {
     const requestId = ++requestRef.current;
     lastLoadRef.current = Date.now();
-    if (!enabled || (role !== "Blogger" && role !== "Business")) { setCounts(noActions); return; }
+    // A brand face is a creator like a blogger (D46).
+    if (!enabled || (role !== "Blogger" && role !== "BrandFace" && role !== "Business")) { setCounts(noActions); return; }
     const [deals, roleData] = await Promise.allSettled([getMyDeals(), role === "Business" ? getMyCampaigns({ pageSize: 50 }) : getMyOffers()]);
     if (requestId !== requestRef.current) return;
     const reviews = deals.status === "fulfilled" ? deals.value.filter((deal) => deal.canReview).length : 0;

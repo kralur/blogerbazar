@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Application.Features.Reviews;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -13,7 +14,7 @@ internal sealed class ReviewReadModel(BloggerBazarDbContext dbContext) : IReview
     public async Task<IReadOnlyList<ReviewDto>> GetBloggerReviewsAsync(Guid bloggerId, int skip, int take, CancellationToken cancellationToken) =>
         await Latest(dbContext.Reviews.AsNoTracking().Where(review => review.BloggerId == bloggerId
                 && review.TargetType == ReviewTargetType.Blogger
-                && !review.Deal.Blogger.IsDeleted), skip, take)
+                && !review.Deal.Blogger!.IsDeleted), skip, take)
             .ToArrayAsync(cancellationToken);
 
     public async Task<BusinessReviewsDto> GetBusinessReviewsAsync(Guid businessId, int skip, int take, CancellationToken cancellationToken)
@@ -27,17 +28,42 @@ internal sealed class ReviewReadModel(BloggerBazarDbContext dbContext) : IReview
         return new BusinessReviewsDto(average.HasValue ? decimal.Round(average.Value, 1) : null, count, items);
     }
 
+    // D46: a brand face is reviewed by the business of a completed deal, like a blogger.
+    public async Task<BusinessReviewsDto> GetBrandFaceReviewsAsync(Guid brandFaceId, int skip, int take, CancellationToken cancellationToken)
+    {
+        var reviews = dbContext.Reviews.AsNoTracking().Where(review => review.BrandFaceId == brandFaceId
+            && review.TargetType == ReviewTargetType.BrandFace
+            && !review.Deal.BrandFace!.IsDeleted);
+        var count = await reviews.CountAsync(cancellationToken);
+        var average = await reviews.AverageAsync(review => (decimal?)review.Rating, cancellationToken);
+        var items = await Latest(reviews, skip, take).ToArrayAsync(cancellationToken);
+        return new BusinessReviewsDto(average.HasValue ? decimal.Round(average.Value, 1) : null, count, items);
+    }
+
+    // The author is the business when a creator is reviewed, and the deal's creator (blogger or brand face) when a business is.
     private static IQueryable<ReviewDto> Latest(IQueryable<Review> reviews, int skip, int take) =>
         reviews.OrderByDescending(review => review.CreatedAtUtc).ThenByDescending(review => review.Id).Skip(skip).Take(take)
             .Select(review => new
             {
                 Review = review,
-                AuthorDeleted = review.TargetType == ReviewTargetType.Blogger ? review.Deal.Business.IsDeleted : review.Deal.Blogger.IsDeleted
+                AuthorIsBusiness = review.TargetType != ReviewTargetType.Business,
+                AuthorIsBrandFace = review.Deal.BrandFaceId != null,
+                AuthorDeleted = review.TargetType != ReviewTargetType.Business
+                    ? review.Deal.Business.IsDeleted
+                    : review.Deal.BloggerId != null ? review.Deal.Blogger!.IsDeleted : review.Deal.BrandFace!.IsDeleted
             })
             .Select(item => new ReviewDto(item.Review.Id, item.Review.DealId, (int)item.Review.TargetType, item.Review.Rating, item.Review.Comment,
-                item.AuthorDeleted ? (string?)null : item.Review.TargetType == ReviewTargetType.Blogger ? item.Review.Deal.Business.Name : item.Review.Deal.Blogger.Name,
+                item.AuthorDeleted ? (string?)null
+                    : item.AuthorIsBusiness ? item.Review.Deal.Business.Name
+                    : item.AuthorIsBrandFace ? item.Review.Deal.BrandFace!.Name : item.Review.Deal.Blogger!.Name,
                 item.Review.CreatedAtUtc,
-                item.AuthorDeleted ? (Guid?)null : item.Review.TargetType == ReviewTargetType.Blogger ? item.Review.Deal.BusinessId : item.Review.Deal.BloggerId,
-                item.AuthorDeleted ? (string?)null : item.Review.TargetType == ReviewTargetType.Blogger ? item.Review.Deal.Business.LogoUrl : item.Review.Deal.Blogger.AvatarUrl,
-                item.AuthorDeleted));
+                item.AuthorDeleted ? (Guid?)null
+                    : item.AuthorIsBusiness ? item.Review.Deal.BusinessId
+                    : item.AuthorIsBrandFace ? item.Review.Deal.BrandFaceId : item.Review.Deal.BloggerId,
+                item.AuthorDeleted ? (string?)null
+                    : item.AuthorIsBusiness ? item.Review.Deal.Business.LogoUrl
+                    : item.AuthorIsBrandFace ? item.Review.Deal.BrandFace!.AvatarUrl : item.Review.Deal.Blogger!.AvatarUrl,
+                item.AuthorDeleted,
+                item.AuthorIsBusiness ? ReviewDto.BusinessReviewer
+                    : item.AuthorIsBrandFace ? CreatorRoles.BrandFace : CreatorRoles.Blogger));
 }

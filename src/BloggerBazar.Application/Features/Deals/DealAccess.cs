@@ -4,7 +4,11 @@ using BloggerBazar.Domain.Enums;
 
 namespace BloggerBazar.Application.Features.Deals;
 
-internal sealed record DealParticipantContext(MarketplaceRole Role, Guid ProfileId);
+internal sealed record DealParticipantContext(MarketplaceRole Role, Guid ProfileId)
+{
+    // The creator side of a deal: a blogger or a brand face (D46).
+    public bool IsCreator => Role is MarketplaceRole.Blogger or MarketplaceRole.BrandFace;
+}
 
 internal static class DealAccess
 {
@@ -47,7 +51,8 @@ internal static class DealAccess
         IBloggerProfileRepository bloggers,
         IBusinessProfileRepository businesses,
         long telegramUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IBrandFaceProfileRepository? brandFaces = null)
     {
         var user = await users.GetByTelegramUserIdAsync(telegramUserId, cancellationToken);
         if (user is null || user.IsBlocked || user.IsDeleted)
@@ -62,6 +67,10 @@ internal static class DealAccess
                 : null,
             MarketplaceRole.Business => await businesses.GetByTelegramUserIdAsync(telegramUserId, cancellationToken) is { } business
                 ? new DealParticipantContext(MarketplaceRole.Business, business.Id)
+                : null,
+            // D46: a brand face is a deal's creator side exactly like a blogger.
+            MarketplaceRole.BrandFace => brandFaces is not null && await brandFaces.GetByTelegramUserIdAsync(telegramUserId, cancellationToken) is { } brandFace
+                ? new DealParticipantContext(MarketplaceRole.BrandFace, brandFace.Id)
                 : null,
             _ => null
         };

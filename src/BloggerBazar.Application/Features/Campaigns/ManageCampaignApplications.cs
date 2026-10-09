@@ -61,9 +61,11 @@ public sealed record CampaignApplicationInboxResult(
     int PageSize,
     bool HasMore);
 
+// The applicant is a blogger or a brand face (D46): BloggerId or BrandFaceId is set and CreatorRole names which.
+// The "Blogger*" field names stay for the existing frontend and carry the applicant of either kind.
 public sealed record CampaignApplicationInboxItemDto(
     Guid Id,
-    Guid BloggerId,
+    Guid? BloggerId,
     string BloggerName,
     string? BloggerAvatarUrl,
     string City,
@@ -71,7 +73,9 @@ public sealed record CampaignApplicationInboxItemDto(
     string? Message,
     int Status,
     DateTime CreatedAtUtc,
-    Guid? DealId);
+    Guid? DealId,
+    Guid? BrandFaceId = null,
+    string CreatorRole = CreatorRoles.Blogger);
 
 public sealed record CampaignApplicationDecisionDto(Guid Id, int Status, Guid? DealId);
 
@@ -157,24 +161,26 @@ public sealed class DecideCampaignApplicationValidator : AbstractValidator<Decid
 public sealed class GetMyCampaignApplicationsPageHandler(
     IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
-    ICampaignApplicationReadModel applications) : IRequestHandler<GetMyCampaignApplicationsPageQuery, MyCampaignApplicationsResult>
+    ICampaignApplicationReadModel applications,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetMyCampaignApplicationsPageQuery, MyCampaignApplicationsResult>
 {
     public async Task<MyCampaignApplicationsResult> Handle(GetMyCampaignApplicationsPageQuery query, CancellationToken cancellationToken)
     {
-        var blogger = await CampaignApplicationAccess.RequireBloggerAsync(users, bloggers, query.TelegramUserId, cancellationToken);
-        return await applications.SearchForBloggerAsync(blogger.Id, new CampaignApplicationSearch(query.Status, query.Page, query.PageSize, query.CampaignId), cancellationToken);
+        var creator = await CampaignApplicationAccess.RequireCreatorAsync(users, bloggers, brandFaces, query.TelegramUserId, cancellationToken);
+        return await applications.SearchForCreatorAsync(creator.Role, creator.ProfileId, new CampaignApplicationSearch(query.Status, query.Page, query.PageSize, query.CampaignId), cancellationToken);
     }
 }
 
 public sealed class GetMyCampaignApplicationDetailsHandler(
     IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
-    ICampaignApplicationReadModel applications) : IRequestHandler<GetMyCampaignApplicationDetailsQuery, MyCampaignApplicationDetailsDto?>
+    ICampaignApplicationReadModel applications,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetMyCampaignApplicationDetailsQuery, MyCampaignApplicationDetailsDto?>
 {
     public async Task<MyCampaignApplicationDetailsDto?> Handle(GetMyCampaignApplicationDetailsQuery query, CancellationToken cancellationToken)
     {
-        var blogger = await CampaignApplicationAccess.RequireBloggerAsync(users, bloggers, query.TelegramUserId, cancellationToken);
-        return await applications.GetForBloggerAsync(blogger.Id, query.ApplicationId, cancellationToken);
+        var creator = await CampaignApplicationAccess.RequireCreatorAsync(users, bloggers, brandFaces, query.TelegramUserId, cancellationToken);
+        return await applications.GetForCreatorAsync(creator.Role, creator.ProfileId, query.ApplicationId, cancellationToken);
     }
 }
 
@@ -197,13 +203,14 @@ public sealed class WithdrawMyCampaignApplicationHandler(
     IPlatformUserRepository users,
     IBloggerProfileRepository bloggers,
     ICampaignApplicationRepository applications,
-    IUnitOfWork unitOfWork) : IRequestHandler<WithdrawMyCampaignApplicationCommand, CampaignApplicationDecisionDto>
+    IUnitOfWork unitOfWork,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<WithdrawMyCampaignApplicationCommand, CampaignApplicationDecisionDto>
 {
     public async Task<CampaignApplicationDecisionDto> Handle(WithdrawMyCampaignApplicationCommand command, CancellationToken cancellationToken)
     {
-        var blogger = await CampaignApplicationAccess.RequireBloggerAsync(users, bloggers, command.TelegramUserId, cancellationToken);
+        var creator = await CampaignApplicationAccess.RequireCreatorAsync(users, bloggers, brandFaces, command.TelegramUserId, cancellationToken);
         var application = await applications.GetByIdAsync(command.ApplicationId, cancellationToken);
-        if (application is null || application.BloggerId != blogger.Id)
+        if (application is null || !creator.Owns(application))
         {
             throw new InvalidOperationException("Campaign application was not found.");
         }
@@ -233,7 +240,8 @@ public sealed class DecideCampaignApplicationHandler(
     IUnitOfWork unitOfWork,
     IBloggerProfileRepository bloggers,
     ITelegramBotClient? botClient = null,
-    ILogger<DecideCampaignApplicationHandler>? logger = null) : IRequestHandler<DecideCampaignApplicationCommand, CampaignApplicationDecisionDto>
+    ILogger<DecideCampaignApplicationHandler>? logger = null,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<DecideCampaignApplicationCommand, CampaignApplicationDecisionDto>
 {
     public async Task<CampaignApplicationDecisionDto> Handle(DecideCampaignApplicationCommand command, CancellationToken cancellationToken)
     {
@@ -275,7 +283,7 @@ public sealed class DecideCampaignApplicationHandler(
         }
 
         application.Accept();
-        var deal = Deal.Create(application.Id, application.BloggerId, business.Id, CampaignTermsSnapshot.FromCampaign(application.Campaign));
+        var deal = Deal.Create(application.Id, application.CreatorRole, application.CreatorId, business.Id, CampaignTermsSnapshot.FromCampaign(application.Campaign));
         await deals.AddAsync(deal, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
         {
@@ -288,10 +296,10 @@ public sealed class DecideCampaignApplicationHandler(
             throw new InvalidOperationException("Campaign application decision conflicts with an existing deal.");
         }
 
-        var blogger = await bloggers.GetByIdAsync(application.BloggerId, cancellationToken);
-        if (blogger is not null)
+        var creatorChatId = await CampaignApplicationAccess.FindCreatorTelegramUserIdAsync(bloggers, brandFaces, application, cancellationToken);
+        if (creatorChatId is not null)
         {
-            await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId,
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, creatorChatId.Value,
                 BotMessages.CampaignApplicationAccepted(application.Campaign.Title), $"/deal/{deal.Id}", cancellationToken);
         }
         return new CampaignApplicationDecisionDto(application.Id, (int)application.Status, deal.Id);
@@ -315,8 +323,61 @@ public sealed class DecideCampaignApplicationHandler(
     }
 }
 
+// The creator side of the marketplace: a blogger or a brand face, by the selected role only (D46).
+internal sealed record CreatorContext(MarketplaceRole Role, Guid ProfileId, long TelegramUserId, string Name)
+{
+    public bool Owns(CampaignApplication application) => application.CreatorRole == Role && application.CreatorId == ProfileId;
+}
+
+public static class CreatorRoles
+{
+    public const string Blogger = "blogger";
+    public const string BrandFace = "brandFace";
+
+    public static string Of(MarketplaceRole role) => role == MarketplaceRole.BrandFace ? BrandFace : Blogger;
+}
+
 internal static class CampaignApplicationAccess
 {
+    // A blogger needs an approved profile; a brand face has no moderation (D46), only an existing profile.
+    internal static async Task<CreatorContext> RequireCreatorAsync(
+        IPlatformUserRepository users,
+        IBloggerProfileRepository bloggers,
+        IBrandFaceProfileRepository? brandFaces,
+        long telegramUserId,
+        CancellationToken cancellationToken)
+    {
+        var user = await users.GetByTelegramUserIdAsync(telegramUserId, cancellationToken);
+        if (user is null || user.IsBlocked || user.IsDeleted)
+        {
+            throw new UnauthorizedAccessException("An active creator marketplace role is required.");
+        }
+
+        if (user.SelectedMarketplaceRole == MarketplaceRole.BrandFace && brandFaces is not null)
+        {
+            var brandFace = await brandFaces.GetByTelegramUserIdAsync(telegramUserId, cancellationToken)
+                ?? throw new UnauthorizedAccessException("A brand face profile is required.");
+            return new CreatorContext(MarketplaceRole.BrandFace, brandFace.Id, brandFace.TelegramUserId, brandFace.Name);
+        }
+
+        var blogger = await RequireBloggerAsync(users, bloggers, telegramUserId, cancellationToken);
+        return new CreatorContext(MarketplaceRole.Blogger, blogger.Id, blogger.TelegramUserId, blogger.Name);
+    }
+
+    internal static async Task<long?> FindCreatorTelegramUserIdAsync(
+        IBloggerProfileRepository bloggers,
+        IBrandFaceProfileRepository? brandFaces,
+        CampaignApplication application,
+        CancellationToken cancellationToken)
+    {
+        if (application.BrandFaceId is { } brandFaceId)
+        {
+            return brandFaces is null ? null : (await brandFaces.GetByIdAsync(brandFaceId, cancellationToken))?.TelegramUserId;
+        }
+
+        return application.BloggerId is { } bloggerId ? (await bloggers.GetByIdAsync(bloggerId, cancellationToken))?.TelegramUserId : null;
+    }
+
     internal static async Task<BloggerProfile> RequireBloggerAsync(
         IPlatformUserRepository users,
         IBloggerProfileRepository bloggers,

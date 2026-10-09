@@ -461,7 +461,7 @@ public sealed class ManageCampaignApplicationsTests
     private sealed class Applications(params CampaignApplication[] values) : ICampaignApplicationRepository
     {
         public Task AddAsync(CampaignApplication application, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task<bool> ExistsAsync(Guid campaignId, Guid bloggerId, CancellationToken cancellationToken) => Task.FromResult(values.Any(application => application.CampaignId == campaignId && application.BloggerId == bloggerId));
+        public Task<bool> ExistsAsync(Guid campaignId, MarketplaceRole creatorRole, Guid bloggerId, CancellationToken cancellationToken) => Task.FromResult(values.Any(application => application.CampaignId == campaignId && application.CreatorRole == creatorRole && application.CreatorId == bloggerId));
         public Task<CampaignApplication?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(values.SingleOrDefault(application => application.Id == id));
     }
 
@@ -497,7 +497,7 @@ public sealed class ManageCampaignApplicationsTests
         public Guid? BusinessId { get; private set; }
         public Guid? CampaignId { get; private set; }
         public CampaignApplicationSearch? Search { get; private set; }
-        public Task<MyCampaignApplicationDetailsDto?> GetForBloggerAsync(Guid bloggerId, Guid applicationId, CancellationToken cancellationToken)
+        public Task<MyCampaignApplicationDetailsDto?> GetForCreatorAsync(MarketplaceRole creatorRole, Guid bloggerId, Guid applicationId, CancellationToken cancellationToken)
         {
             DetailsBloggerId = bloggerId;
             return Task.FromResult<MyCampaignApplicationDetailsDto?>(null);
@@ -510,7 +510,7 @@ public sealed class ManageCampaignApplicationsTests
             Search = search;
             return Task.FromResult(new CampaignApplicationInboxResult([], 0, search.Page, search.PageSize, false));
         }
-        public Task<MyCampaignApplicationsResult> SearchForBloggerAsync(Guid bloggerId, CampaignApplicationSearch search, CancellationToken cancellationToken)
+        public Task<MyCampaignApplicationsResult> SearchForCreatorAsync(MarketplaceRole creatorRole, Guid bloggerId, CampaignApplicationSearch search, CancellationToken cancellationToken)
         {
             BloggerId = bloggerId;
             Search = search;

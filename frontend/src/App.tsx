@@ -255,12 +255,12 @@ export function App() {
   useTelegramBackHandler(goBackFromNestedRoute, onboardingStep === "complete" && !rootRoutes.includes(route.path));
 
   useEffect(() => {
-    if (["/blogger", "/blogger-reviews", "/brand-face-detail", "/company", "/company-reviews", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications", "/deal", "/offer"].includes(route.path)) {
+    if (["/blogger", "/blogger-reviews", "/brand-face-detail", "/brand-face-reviews", "/company", "/company-reviews", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications", "/deal", "/offer"].includes(route.path)) {
       window.scrollTo(0, 0);
     }
   }, [route.id, route.path]);
 
-  const knownRoutes = ["/", "/profile", "/settings", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/company", "/company-reviews", "/search", "/blogger", "/blogger-reviews", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
+  const knownRoutes = ["/", "/profile", "/settings", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/brand-face-reviews", "/company", "/company-reviews", "/search", "/blogger", "/blogger-reviews", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
@@ -287,6 +287,7 @@ export function App() {
       {route.path === "/company" && route.id && <BusinessDetails id={route.id} />}
       {route.path === "/company-reviews" && route.id && <AllReviews id={route.id} key={`business-${route.id}`} target="business" />}
       {route.path === "/blogger-reviews" && route.id && <AllReviews id={route.id} key={`blogger-${route.id}`} target="blogger" />}
+      {route.path === "/brand-face-reviews" && route.id && <AllReviews id={route.id} key={`brand-face-${route.id}`} target="brandFace" />}
       {(visitedRootRoutes.has("/search") || route.path === "/search") && <RootScreenVisibility active={route.path === "/search"}><CachedSearch /></RootScreenVisibility>}
       {route.path === "/blogger" && route.id && <BloggerDetails id={route.id} />}
       {(visitedRootRoutes.has("/campaigns") || route.path === "/campaigns") && <RootScreenVisibility active={route.path === "/campaigns"}><CachedCampaigns key={selectedRole ?? "none"} /></RootScreenVisibility>}

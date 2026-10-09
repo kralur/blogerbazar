@@ -8,11 +8,10 @@ namespace BloggerBazar.Infrastructure.Persistence;
 
 internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbContext) : ICampaignApplicationReadModel
 {
-    public async Task<MyCampaignApplicationsResult> SearchForBloggerAsync(Guid bloggerId, CampaignApplicationSearch search, CancellationToken cancellationToken)
+    public async Task<MyCampaignApplicationsResult> SearchForCreatorAsync(MarketplaceRole creatorRole, Guid creatorId, CampaignApplicationSearch search, CancellationToken cancellationToken)
     {
-        var query = ApplyStatus(dbContext.CampaignApplications.AsNoTracking()
-            .Where(application => application.BloggerId == bloggerId
-                && (!search.CampaignId.HasValue || application.CampaignId == search.CampaignId.Value)
+        var query = ApplyStatus(OwnedBy(dbContext.CampaignApplications.AsNoTracking(), creatorRole, creatorId)
+            .Where(application => (!search.CampaignId.HasValue || application.CampaignId == search.CampaignId.Value)
                 && !application.Campaign.Business.IsDeleted
                 && application.Campaign.Business.ModerationStatus == BloggerStatus.Approved
                 && !dbContext.PlatformUsers.Any(user => user.TelegramUserId == application.Campaign.Business.TelegramUserId && (user.IsBlocked || user.IsDeleted))), search.Status);
@@ -40,10 +39,9 @@ internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbConte
         return new MyCampaignApplicationsResult(items, total, search.Page, search.PageSize, CampaignCatalogPagination.HasMore(total, search.Page, search.PageSize));
     }
 
-    public Task<MyCampaignApplicationDetailsDto?> GetForBloggerAsync(Guid bloggerId, Guid applicationId, CancellationToken cancellationToken) =>
-        dbContext.CampaignApplications.AsNoTracking()
+    public Task<MyCampaignApplicationDetailsDto?> GetForCreatorAsync(MarketplaceRole creatorRole, Guid creatorId, Guid applicationId, CancellationToken cancellationToken) =>
+        OwnedBy(dbContext.CampaignApplications.AsNoTracking(), creatorRole, creatorId)
             .Where(application => application.Id == applicationId
-                && application.BloggerId == bloggerId
                 && !application.Campaign.Business.IsDeleted
                 && application.Campaign.Business.ModerationStatus == BloggerStatus.Approved
                 && !dbContext.PlatformUsers.Any(user => user.TelegramUserId == application.Campaign.Business.TelegramUserId && (user.IsBlocked || user.IsDeleted)))
@@ -72,9 +70,13 @@ internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbConte
         var query = ApplyStatus(dbContext.CampaignApplications.AsNoTracking()
             .Where(application => application.CampaignId == campaignId
                 && application.Campaign.BusinessId == businessId
-                && !application.Blogger.IsDeleted
-                && application.Blogger.Status == BloggerStatus.Approved
-                && !dbContext.PlatformUsers.Any(user => user.TelegramUserId == application.Blogger.TelegramUserId && (user.IsBlocked || user.IsDeleted))), search.Status);
+                // A blogger applicant needs an approved profile; a brand face has no moderation (D46).
+                && (application.BloggerId != null
+                    ? !application.Blogger!.IsDeleted
+                        && application.Blogger.Status == BloggerStatus.Approved
+                        && !dbContext.PlatformUsers.Any(user => user.TelegramUserId == application.Blogger.TelegramUserId && (user.IsBlocked || user.IsDeleted))
+                    : !application.BrandFace!.IsDeleted
+                        && !dbContext.PlatformUsers.Any(user => user.TelegramUserId == application.BrandFace.TelegramUserId && (user.IsBlocked || user.IsDeleted)))), search.Status);
         var total = await query.CountAsync(cancellationToken);
         var items = await query.OrderByDescending(application => application.CreatedAtUtc).ThenByDescending(application => application.Id)
             .Skip((search.Page - 1) * search.PageSize)
@@ -82,18 +84,25 @@ internal sealed class CampaignApplicationReadModel(BloggerBazarDbContext dbConte
             .Select(application => new CampaignApplicationInboxItemDto(
                 application.Id,
                 application.BloggerId,
-                application.Blogger.Name,
-                application.Blogger.AvatarUrl,
-                application.Blogger.City,
-                application.Blogger.Categories,
+                application.BloggerId != null ? application.Blogger!.Name : application.BrandFace!.Name,
+                application.BloggerId != null ? application.Blogger!.AvatarUrl : application.BrandFace!.AvatarUrl,
+                application.BloggerId != null ? application.Blogger!.City : application.BrandFace!.City,
+                application.BloggerId != null ? application.Blogger!.Categories : application.BrandFace!.Categories,
                 application.Message,
                 (int)application.Status,
                 application.CreatedAtUtc,
-                application.Deal == null ? null : application.Deal.Id))
+                application.Deal == null ? null : application.Deal.Id,
+                application.BrandFaceId,
+                application.BrandFaceId != null ? CreatorRoles.BrandFace : CreatorRoles.Blogger))
             .ToArrayAsync(cancellationToken);
 
         return new CampaignApplicationInboxResult(items, total, search.Page, search.PageSize, CampaignCatalogPagination.HasMore(total, search.Page, search.PageSize));
     }
+
+    private static IQueryable<CampaignApplication> OwnedBy(IQueryable<CampaignApplication> query, MarketplaceRole creatorRole, Guid creatorId) =>
+        creatorRole == MarketplaceRole.BrandFace
+            ? query.Where(application => application.BrandFaceId == creatorId)
+            : query.Where(application => application.BloggerId == creatorId);
 
     private static IQueryable<CampaignApplication> ApplyStatus(IQueryable<CampaignApplication> query, int? status) =>
         status.HasValue ? query.Where(application => application.Status == (CampaignApplicationStatus)status.Value) : query;

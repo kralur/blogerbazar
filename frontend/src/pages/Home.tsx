@@ -80,7 +80,8 @@ function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
   const { t } = useI18n();
   const [items, setItems] = useState<ActivityItem[] | null>(null);
   useEffect(() => {
-    if (!enabled || role === "BrandFace") { setItems([]); return; }
+    // A brand face has deals and reviews like a blogger (D46).
+    if (!enabled) { setItems([]); return; }
     let cancelled = false;
     const dealsRequest = getMyDeals();
     const roleRequest = role === "Business" ? getMyCampaigns({ pageSize: 20 }) : getMyOffers();

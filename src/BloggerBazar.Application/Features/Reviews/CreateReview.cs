@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Telegram;
+using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Application.Features.Deals;
 using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
@@ -12,26 +13,32 @@ namespace BloggerBazar.Application.Features.Reviews;
 
 public sealed record CreateReviewCommand(Guid DealId, long TelegramUserId, int Rating, string? Comment) : IRequest<ReviewDto>;
 
-// The reviewer is the other side of the deal: a business reviews a blogger, a blogger reviews a business.
-public sealed record ReviewDto(Guid Id, Guid DealId, int TargetType, int Rating, string? Comment, string? ReviewerName, DateTime CreatedAtUtc, Guid? ReviewerProfileId = null, string? ReviewerImageUrl = null, bool ReviewerDeleted = false)
+// The reviewer is the other side of the deal: a business reviews a creator (blogger or brand face), a creator reviews a business.
+// ReviewerRole names the reviewer's profile kind for the link: "business", "blogger" or "brandFace" (D46).
+public sealed record ReviewDto(Guid Id, Guid DealId, int TargetType, int Rating, string? Comment, string? ReviewerName, DateTime CreatedAtUtc, Guid? ReviewerProfileId = null, string? ReviewerImageUrl = null, bool ReviewerDeleted = false, string? ReviewerRole = null)
 {
+    public const string BusinessReviewer = "business";
+
     public static ReviewDto From(Review review)
     {
         var reviewerName = review.TargetType switch
         {
-            ReviewTargetType.Blogger => review.Deal?.Business?.Name,
-            ReviewTargetType.Business => review.Deal?.Blogger?.Name,
+            ReviewTargetType.Blogger or ReviewTargetType.BrandFace => review.Deal?.Business?.Name,
+            ReviewTargetType.Business => review.Deal?.Blogger?.Name ?? review.Deal?.BrandFace?.Name,
             _ => null
         };
 
         var (reviewerId, reviewerImage) = review.TargetType switch
         {
-            ReviewTargetType.Blogger => ((Guid?)review.Deal?.BusinessId, review.Deal?.Business?.LogoUrl),
-            ReviewTargetType.Business => ((Guid?)review.Deal?.BloggerId, review.Deal?.Blogger?.AvatarUrl),
+            ReviewTargetType.Blogger or ReviewTargetType.BrandFace => ((Guid?)review.Deal?.BusinessId, review.Deal?.Business?.LogoUrl),
+            ReviewTargetType.Business => (review.Deal?.BloggerId ?? review.Deal?.BrandFaceId, review.Deal?.Blogger?.AvatarUrl ?? review.Deal?.BrandFace?.AvatarUrl),
             _ => ((Guid?)null, (string?)null)
         };
 
-        return new(review.Id, review.DealId, (int)review.TargetType, review.Rating, review.Comment, reviewerName, review.CreatedAtUtc, reviewerId, reviewerImage);
+        var reviewerRole = review.TargetType == ReviewTargetType.Business
+            ? review.Deal is null ? null : CreatorRoles.Of(review.Deal.CreatorRole)
+            : BusinessReviewer;
+        return new(review.Id, review.DealId, (int)review.TargetType, review.Rating, review.Comment, reviewerName, review.CreatedAtUtc, reviewerId, reviewerImage, false, reviewerRole);
     }
 }
 
@@ -54,11 +61,12 @@ public sealed class CreateReviewHandler(
     IReviewRepository reviews,
     IUnitOfWork unitOfWork,
     ITelegramBotClient? botClient = null,
-    ILogger<CreateReviewHandler>? logger = null) : IRequestHandler<CreateReviewCommand, ReviewDto>
+    ILogger<CreateReviewHandler>? logger = null,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<CreateReviewCommand, ReviewDto>
 {
     public async Task<ReviewDto> Handle(CreateReviewCommand command, CancellationToken cancellationToken)
     {
-        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken)
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken, brandFaces)
             ?? throw DealAccess.DealNotFound();
         var deal = await deals.GetForParticipantAsync(command.DealId, participant.Role, participant.ProfileId, cancellationToken)
             ?? throw DealAccess.DealNotFound();
@@ -78,11 +86,11 @@ public sealed class CreateReviewHandler(
             throw AlreadyReviewed();
         }
 
-        var reviewerIsBlogger = participant.Role == MarketplaceRole.Blogger;
+        var reviewerIsCreator = participant.IsCreator;
         var comment = command.Comment?.Trim();
-        var review = reviewerIsBlogger
+        var review = reviewerIsCreator
             ? Review.ForBusiness(deal.Id, command.TelegramUserId, deal.BusinessId, command.Rating, comment)
-            : Review.ForBlogger(deal.Id, command.TelegramUserId, deal.BloggerId, command.Rating, comment);
+            : Review.ForCreator(deal.Id, command.TelegramUserId, deal.CreatorRole, deal.CreatorId, command.Rating, comment);
 
         await reviews.AddAsync(review, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
@@ -92,13 +100,13 @@ public sealed class CreateReviewHandler(
 
         // Blind reviews: this one stays hidden until the partner reviews too or the window ends.
         var revealed = await reviews.PublishRevealedAsync(deal.Id, nowUtc, cancellationToken) > 0;
-        var targetChatId = reviewerIsBlogger ? deal.Business.TelegramUserId : deal.Blogger.TelegramUserId;
-        var reviewerName = reviewerIsBlogger ? deal.Blogger.Name : deal.Business.Name;
+        var targetChatId = reviewerIsCreator ? deal.Business.TelegramUserId : deal.CreatorTelegramUserId;
+        var reviewerName = reviewerIsCreator ? deal.CreatorName : deal.Business.Name;
         var text = revealed
             ? BotMessages.ReviewsPublished(reviewerName, DealTopic.Of(deal))
             : BotMessages.PartnerReviewed(reviewerName, DealTopic.Of(deal));
         await BestEffortTelegramNotification.SendAsync(botClient, logger, targetChatId, text, $"/deal/{deal.Id}", cancellationToken);
-        return ReviewDto.From(review) with { ReviewerName = reviewerIsBlogger ? deal.Blogger.Name : deal.Business.Name };
+        return ReviewDto.From(review) with { ReviewerName = reviewerName };
     }
 
     private static InvalidOperationException AlreadyReviewed() => new("You have already reviewed this deal.");

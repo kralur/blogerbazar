@@ -19,6 +19,7 @@ internal sealed class DealRepository(BloggerBazarDbContext dbContext) : IDealRep
     public Task<Deal?> GetForParticipantAsync(Guid dealId, MarketplaceRole role, Guid profileId, CancellationToken cancellationToken) =>
         dbContext.Deals.AsNoTracking()
             .Include(deal => deal.Blogger)
+            .Include(deal => deal.BrandFace)
             .Include(deal => deal.Business)
             .Include(deal => deal.CollaborationRequest)
             .Where(deal => deal.Id == dealId)
@@ -27,7 +28,7 @@ internal sealed class DealRepository(BloggerBazarDbContext dbContext) : IDealRep
 
     public Task<bool> ExistsBetweenAsync(Guid bloggerId, Guid businessId, CancellationToken cancellationToken) =>
         dbContext.Deals.AnyAsync(deal => deal.BloggerId == bloggerId && deal.BusinessId == businessId
-            && !deal.Blogger.IsDeleted && !deal.Business.IsDeleted, cancellationToken);
+            && !deal.Blogger!.IsDeleted && !deal.Business.IsDeleted, cancellationToken);
 
     public async Task<bool> TryCompleteAsync(Guid dealId, DateTime completedAtUtc, CancellationToken cancellationToken) =>
         await dbContext.Deals

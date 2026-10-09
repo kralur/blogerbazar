@@ -28,7 +28,8 @@ public sealed class AcceptCampaignApplicationHandler(
     IUnitOfWork unitOfWork,
     IBloggerProfileRepository? bloggers = null,
     ITelegramBotClient? botClient = null,
-    ILogger<AcceptCampaignApplicationHandler>? logger = null) : IRequestHandler<AcceptCampaignApplicationCommand, DealDto>
+    ILogger<AcceptCampaignApplicationHandler>? logger = null,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<AcceptCampaignApplicationCommand, DealDto>
 {
     public async Task<DealDto> Handle(AcceptCampaignApplicationCommand command, CancellationToken cancellationToken)
     {
@@ -59,7 +60,7 @@ public sealed class AcceptCampaignApplicationHandler(
         }
 
         application.Accept();
-        var deal = Deal.Create(application.Id, application.BloggerId, business.Id, CampaignTermsSnapshot.FromCampaign(application.Campaign));
+        var deal = Deal.Create(application.Id, application.CreatorRole, application.CreatorId, business.Id, CampaignTermsSnapshot.FromCampaign(application.Campaign));
         await deals.AddAsync(deal, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
         {
@@ -71,8 +72,8 @@ public sealed class AcceptCampaignApplicationHandler(
 
             throw new InvalidOperationException("Campaign application decision conflicts with an existing deal.");
         }
-        var blogger = bloggers is null ? null : await bloggers.GetByIdAsync(application.BloggerId, cancellationToken);
-        if (blogger is not null) await BestEffortTelegramNotification.SendAsync(botClient, logger, blogger.TelegramUserId, BotMessages.CampaignApplicationAccepted(application.Campaign.Title), $"/deal/{deal.Id}", cancellationToken);
+        var creatorChatId = bloggers is null ? null : await Campaigns.CampaignApplicationAccess.FindCreatorTelegramUserIdAsync(bloggers, brandFaces, application, cancellationToken);
+        if (creatorChatId is not null) await BestEffortTelegramNotification.SendAsync(botClient, logger, creatorChatId.Value, BotMessages.CampaignApplicationAccepted(application.Campaign.Title), $"/deal/{deal.Id}", cancellationToken);
         return DealDto.From(deal);
     }
 }

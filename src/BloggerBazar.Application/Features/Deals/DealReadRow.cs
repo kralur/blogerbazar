@@ -62,7 +62,13 @@ public sealed record DealReadRow(
     Guid? BloggerId = null,
     Guid? BusinessId = null,
     bool BloggerDeleted = false,
-    bool BusinessDeleted = false);
+    bool BusinessDeleted = false,
+    Guid? BrandFaceId = null)
+{
+    // The "Blogger*" fields carry the creator side, a blogger or a brand face (D46).
+    public MarketplaceRole CreatorRole => BrandFaceId.HasValue ? MarketplaceRole.BrandFace : MarketplaceRole.Blogger;
+    public Guid? CreatorId => BloggerId ?? BrandFaceId;
+}
 
 public sealed record DealOfferDto(string? Format, int? OfferedBudget, DateTime? Deadline, string Message);
 
@@ -78,13 +84,17 @@ internal sealed record DealView(
     DealOfferDto? Offer,
     DateTime? ReviewDeadlineUtc,
     bool PartnerHasReviewed,
-    bool CounterpartyDeleted)
+    bool CounterpartyDeleted,
+    Guid? CounterpartyProfileId,
+    string CounterpartyRole)
 {
+    public const string BusinessCounterparty = "business";
+
     public static DealView From(DealReadRow row, MarketplaceRole viewerRole) => From(row, viewerRole, DateTime.UtcNow);
 
     public static DealView From(DealReadRow row, MarketplaceRole viewerRole, DateTime nowUtc)
     {
-        var viewerIsBlogger = viewerRole == MarketplaceRole.Blogger;
+        var viewerIsBlogger = viewerRole is MarketplaceRole.Blogger or MarketplaceRole.BrandFace;
         var hasReviewed = viewerIsBlogger ? row.BloggerHasReviewed : row.BusinessHasReviewed;
         // A deleted partner: the deal and its terms stay, the partner's identity and every action go.
         var partnerDeleted = viewerIsBlogger ? row.BusinessDeleted : row.BloggerDeleted;
@@ -105,7 +115,9 @@ internal sealed record DealView(
             row.Status == DealStatus.Completed ? Reviews.ReviewWindow.EndsAtUtc(row.CompletedAtUtc) : null,
             // Only that a review exists, never its rating: the blind rule still hides the content.
             viewerIsBlogger ? row.BusinessHasReviewed : row.BloggerHasReviewed,
-            partnerDeleted);
+            partnerDeleted,
+            partnerDeleted ? null : viewerIsBlogger ? row.BusinessId : row.CreatorId,
+            viewerIsBlogger ? BusinessCounterparty : Campaigns.CreatorRoles.Of(row.CreatorRole));
     }
 
     private static (string SourceType, string TermsSource, DealTermsDto? Terms) ResolveTerms(DealReadRow row)

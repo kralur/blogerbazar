@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Features.Reviews;
 using BloggerBazar.Application.Validation;
 using BloggerBazar.Api.Contracts.BrandFaces;
 using BloggerBazar.Application.Abstractions.Security;
@@ -35,6 +36,10 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
         var profile = await sender.Send(new GetBrandFaceQuery(id), cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
     }
+
+    [HttpGet("{id:guid}/reviews")]
+    public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default) =>
+        Ok(await sender.Send(new GetBrandFaceReviewsQuery(id, take, skip), cancellationToken));
 
     [HttpGet("me")]
     public async Task<ActionResult<BrandFaceProfileDto>> GetMine(CancellationToken cancellationToken)

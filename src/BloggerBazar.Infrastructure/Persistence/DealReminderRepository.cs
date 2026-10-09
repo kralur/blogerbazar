@@ -18,7 +18,7 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
 
         // IgnoreQueryFilters: hidden reviews still mean the side has already reviewed.
         return await dbContext.Deals.AsNoTracking().IgnoreQueryFilters()
-            .Where(deal => !deal.Blogger.IsDeleted && !deal.Business.IsDeleted)
+            .Where(deal => (deal.BloggerId != null ? !deal.Blogger!.IsDeleted : !deal.BrandFace!.IsDeleted) && !deal.Business.IsDeleted)
             .Where(deal =>
                 (deal.Status == DealStatus.Active && deal.CreatedAtUtc <= staleCreatedBefore
                     && dbContext.DealReminders.Count(reminder => reminder.DealId == deal.Id && reminder.Kind == DealReminderKind.CompleteDay14) < 2)
@@ -32,11 +32,11 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
                 deal.Status,
                 deal.CreatedAtUtc,
                 deal.CompletedAtUtc,
-                deal.Blogger.TelegramUserId,
+                deal.BloggerId != null ? deal.Blogger!.TelegramUserId : deal.BrandFace!.TelegramUserId,
                 deal.Business.TelegramUserId,
                 deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Business),
-                deal.Reviews.Any(review => review.TargetType == ReviewTargetType.Blogger),
-                deal.Blogger.Name,
+                deal.Reviews.Any(review => review.TargetType != ReviewTargetType.Business),
+                deal.BloggerId != null ? deal.Blogger!.Name : deal.BrandFace!.Name,
                 deal.Business.Name,
                 deal.CampaignTitleSnapshot,
                 deal.CollaborationRequest != null ? deal.CollaborationRequest.Format : null))
