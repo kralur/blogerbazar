@@ -40,6 +40,24 @@ public sealed class GetUnlockedContactHandlerTests
     }
 
     [Fact]
+    public async Task Brand_face_in_a_deal_sees_the_business_contact_and_nobody_else_does()
+    {
+        var business = Business(303);
+        business.Update("Lumi", "@lumi", "tashkent", null, null, null, "+998911112233", null);
+        var brandFace = BrandFaceProfile.Create(606, "Face", "tashkent", ["beauty"]);
+        var stranger = BrandFaceProfile.Create(707, "Other face", "tashkent", ["beauty"]);
+        var deal = Deal.CreateFromCollaborationRequest(Guid.NewGuid(), MarketplaceRole.BrandFace, brandFace.Id, business.Id);
+        GetUnlockedContactHandler For(long viewer) => new(new FakeBloggers(), new FakeBusinesses(business),
+            new FakeUsers(User(606, MarketplaceRole.BrandFace), User(707, MarketplaceRole.BrandFace)), new SharedDeals(deal), new Unlocks(), new FakeBrandFaces(brandFace, stranger));
+
+        var result = await For(606).Handle(new GetUnlockedContactQuery(ContactTargetType.Business, business.Id, 606), CancellationToken.None);
+
+        Assert.Equal("@lumi", result.Telegram);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            For(707).Handle(new GetUnlockedContactQuery(ContactTargetType.Business, business.Id, 707), CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Contact_is_hidden_without_a_shared_deal()
     {
         var blogger = BloggerWithContact();
@@ -137,6 +155,8 @@ public sealed class GetUnlockedContactHandlerTests
         public Task<Deal?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(deals.SingleOrDefault(deal => deal.Id == id));
         public Task<bool> ExistsBetweenAsync(Guid bloggerId, Guid businessId, CancellationToken cancellationToken) =>
             Task.FromResult(deals.Any(deal => deal.BloggerId == bloggerId && deal.BusinessId == businessId));
+        public Task<bool> ExistsBetweenBrandFaceAsync(Guid brandFaceId, Guid businessId, CancellationToken cancellationToken) =>
+            Task.FromResult(deals.Any(deal => deal.BrandFaceId == brandFaceId && deal.BusinessId == businessId));
         public Task<bool> ExistsForApplicationAsync(Guid campaignApplicationId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task AddAsync(Deal deal, CancellationToken cancellationToken) => Task.CompletedTask;
     }

@@ -3,13 +3,13 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-07, старт MVP Release Candidate QA._
+_Последнее обновление: 2026-10-10, D51 (данные сделки) в review._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | `c9e5e9e` MVP QA, раунд 4 (предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Published `main` / `origin/main` | `46b6320` D50 пауза профиля роли (до этого `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
 | CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 · R2b: https://github.com/kralur/blogerbazar/pull/7 · R3: https://github.com/kralur/blogerbazar/pull/8 · R4: https://github.com/kralur/blogerbazar/pull/9 · R5: https://github.com/kralur/blogerbazar/pull/10 |
 
@@ -32,6 +32,15 @@ _Последнее обновление: 2026-10-07, старт MVP Release Can
   2026-10-07); то же в платёжном шлюзе. Webhook отвечал 500 и блокировал очередь Telegram. Плюс: формат суммы
   в оффере и фильтрах бренд-фейсов, поле даты на iOS, обязательное «Сообщение» в оффере.
   В Railway нужен `ApplyMigrationsOnStartup` (8.19).
+- **RC QA 8–9 окт** (опубликовано, `2db7833`…`92e7ec6`): тексты без тире, безопасность 1–2 (D40, D41), D42–D45,
+  удалённый партнёр (D43), смена роли по ссылке из бота.
+- **Бренд-фейсы D46–D49** (опубликовано, `3d8d1c8`, `aa5c4dd`): отклики, офферы, сделки, отзывы, живая анкета,
+  галерея, языки из списка. CI зелёный (458 тестов с integration).
+- **D50 — пауза профиля роли** (опубликовано, `46b6320`, миграция `AddProfileVisibility`): CI зелёный.
+- **D51 — данные сделки, лёгкая версия** (в review, не закоммичено): цена сделки, ссылки на публикации с
+  просмотрами и подтверждением бизнеса, поля в окне завершения. Миграция `AddDealResults` (одобрена владельцем
+  вместе с этапом). Плюс: правило 1 в `GetMyCampaignApplications`, контакты бизнеса для бренд-фейса со сделкой.
+- **Рабочие пространства бизнеса**: аудит этапа 0 сделан (roadmap, п. 8), реализация ждёт подтверждения спроса.
 
 ## Последние результаты gates
 

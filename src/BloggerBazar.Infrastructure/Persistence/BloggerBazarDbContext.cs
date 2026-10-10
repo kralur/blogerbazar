@@ -12,6 +12,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignApplication> CampaignApplications => Set<CampaignApplication>();
     public DbSet<Deal> Deals => Set<Deal>();
+    public DbSet<DealPublication> DealPublications => Set<DealPublication>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<DealReminder> DealReminders => Set<DealReminder>();
     public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
@@ -251,6 +252,15 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         deal.HasIndex(entity => new { entity.BloggerId, entity.Status });
         deal.HasOne(entity => entity.BrandFace).WithMany().HasForeignKey(entity => entity.BrandFaceId).OnDelete(DeleteBehavior.Restrict);
         deal.HasIndex(entity => new { entity.BrandFaceId, entity.Status });
+
+        var publication = modelBuilder.Entity<DealPublication>();
+        publication.ToTable("deal_publications");
+        publication.HasKey(entity => entity.Id);
+        publication.Property(entity => entity.Url).HasMaxLength(500).IsRequired();
+        publication.Ignore(entity => entity.IsConfirmed);
+        publication.HasOne(entity => entity.Deal).WithMany(entity => entity.Publications).HasForeignKey(entity => entity.DealId).OnDelete(DeleteBehavior.Cascade);
+        // One link counts once per deal, so the same post never doubles the views (D51).
+        publication.HasIndex(entity => new { entity.DealId, entity.Url }).IsUnique();
         deal.HasIndex(entity => new { entity.BusinessId, entity.Status });
 
         var review = modelBuilder.Entity<Review>();

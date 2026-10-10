@@ -190,6 +190,20 @@ public sealed class BrandFaceParticipationTests
         Assert.Equal(brandFace ? brandFaceProfile.Id : null, catalog.BrandFaceId);
     }
 
+    [Fact]
+    public async Task Application_list_is_empty_without_a_selected_role()
+    {
+        var catalog = new CapturingCatalog();
+        var handler = new GetMyCampaignApplicationsHandler(new FakeBloggers(Blogger(12)), new FakeBusinesses(Business(12, "Abba")), catalog,
+            new FakeBrandFaces(BrandFace(12)), new FakeUsers(User(12, null)));
+
+        var result = await handler.Handle(new GetMyCampaignApplicationsQuery(12), CancellationToken.None);
+
+        Assert.Empty(result);
+        Assert.Null(catalog.BloggerId);
+        Assert.Null(catalog.BusinessId);
+    }
+
     private static BrandFaceProfile BrandFace(long telegramUserId, string name = "Brand face") => BrandFaceProfile.Create(telegramUserId, name, "tashkent", ["beauty"]);
 
     private static BusinessProfile ApprovedBusiness(long telegramUserId)

@@ -670,7 +670,15 @@ export type DealDetails = {
   partnerHasReviewed?: boolean;
   // The partner deleted the account: the deal stays, the name and every action are gone.
   counterpartyDeleted?: boolean;
+  // D51: the agreed price (an offer's budget, or what the business entered) and links to the published ads.
+  agreedPrice?: number | null;
+  canSetPrice?: boolean;
+  publications?: DealPublication[];
+  canAddPublication?: boolean;
+  canConfirmPublications?: boolean;
 };
+// Views are what the blogger or brand face reported; confirmed means the business checked them.
+export type DealPublication = { id: string; url: string; views?: number | null; confirmed: boolean; createdAtUtc: string; confirmedAtUtc?: string | null };
 export type DealOffer = { format?: OfferFormat | null; offeredBudget?: number | null; deadline?: string | null; message: string };
 
 // Blogger content formats, then brand face formats (D48).
@@ -732,6 +740,26 @@ export async function getDealContact(id: string, signal?: AbortSignal) {
 // The bot sends the partner's contact card (name and phone) to the person's own chat with the bot.
 export async function shareDealContact(id: string) {
   return api<void>(`/api/deals/me/${id}/contact/share`, { method: "POST" });
+}
+
+export async function setDealPrice(id: string, price: number) {
+  return api<{ agreedPrice?: number | null }>(`/api/deals/me/${id}/price`, { method: "PUT", body: JSON.stringify({ price }) });
+}
+
+export async function addDealPublication(id: string, url: string, views?: number | null) {
+  return api<DealPublication>(`/api/deals/me/${id}/publications`, { method: "POST", body: JSON.stringify({ url: url.trim(), views: views ?? null }) });
+}
+
+export async function updateDealPublicationViews(id: string, publicationId: string, views: number | null) {
+  return api<DealPublication>(`/api/deals/me/${id}/publications/${publicationId}`, { method: "PUT", body: JSON.stringify({ views }) });
+}
+
+export async function deleteDealPublication(id: string, publicationId: string) {
+  return api<void>(`/api/deals/me/${id}/publications/${publicationId}`, { method: "DELETE" });
+}
+
+export async function confirmDealPublication(id: string, publicationId: string) {
+  return api<DealPublication>(`/api/deals/me/${id}/publications/${publicationId}/confirm`, { method: "POST" });
 }
 
 export async function completeDeal(id: string) {

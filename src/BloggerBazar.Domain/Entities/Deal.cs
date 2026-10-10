@@ -57,6 +57,10 @@ public sealed class Deal
     public int? CampaignBudgetToSnapshot { get; private set; }
     public DateTime? CampaignDeadlineSnapshot { get; private set; }
     public IReadOnlyCollection<Review> Reviews { get; private set; } = new List<Review>();
+    // The price the business entered for a deal without an offer budget (D51); an offer's budget is already agreed.
+    public int? AgreedPrice { get; private set; }
+    public DateTime? AgreedPriceSetAtUtc { get; private set; }
+    public IReadOnlyCollection<DealPublication> Publications { get; private set; } = new List<DealPublication>();
 
     public MarketplaceRole CreatorRole => BrandFaceId.HasValue ? MarketplaceRole.BrandFace : MarketplaceRole.Blogger;
     public Guid CreatorId => BloggerId ?? BrandFaceId ?? Guid.Empty;
@@ -76,6 +80,13 @@ public sealed class Deal
 
     public static Deal CreateFromCollaborationRequest(Guid collaborationRequestId, MarketplaceRole creatorRole, Guid creatorId, Guid businessId) =>
         new(null, collaborationRequestId, creatorRole, creatorId, businessId);
+
+    public void SetAgreedPrice(int price, DateTime utcNow)
+    {
+        if (price < 0) throw new ArgumentOutOfRangeException(nameof(price), "A price cannot be negative.");
+        AgreedPrice = price;
+        AgreedPriceSetAtUtc = utcNow;
+    }
 
     public void Complete()
     {

@@ -33,6 +33,12 @@ public sealed class GetMyCampaignApplicationsHandler(
     public async Task<IReadOnlyList<MyCampaignApplicationDto>> Handle(GetMyCampaignApplicationsQuery query, CancellationToken cancellationToken)
     {
         var role = users is null ? null : (await users.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken))?.SelectedMarketplaceRole;
+        // No selected role means no side at all, never the union of every profile (selected-role rule).
+        if (users is not null && role is null)
+        {
+            return [];
+        }
+
         var blogger = role is null or MarketplaceRole.Blogger ? await bloggers.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;
         var business = role is null or MarketplaceRole.Business ? await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;
         var brandFace = brandFaces is not null && role == MarketplaceRole.BrandFace ? await brandFaces.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;

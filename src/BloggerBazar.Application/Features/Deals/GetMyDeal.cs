@@ -27,11 +27,19 @@ public sealed record DealDetailsDto(
     Guid? CounterpartyProfileId = null,
     bool PartnerHasReviewed = false,
     bool CounterpartyDeleted = false,
-    string? CounterpartyRole = null)
+    string? CounterpartyRole = null,
+    int? AgreedPrice = null,
+    bool CanSetPrice = false,
+    IReadOnlyList<DealPublicationDto>? Publications = null,
+    bool CanAddPublication = false,
+    bool CanConfirmPublications = false)
 {
-    internal static DealDetailsDto From(DealReadRow row, MarketplaceRole viewerRole)
+    internal static DealDetailsDto From(DealReadRow row, MarketplaceRole viewerRole, IReadOnlyList<DealPublicationDto>? publications = null)
     {
         var view = DealView.From(row, viewerRole);
+        // D51: an offer's budget is the agreed price; otherwise the business may enter one. Results close with the deal's partner.
+        var resultsOpen = !view.CounterpartyDeleted && row.Status != DealStatus.Cancelled;
+        var viewerIsBusiness = viewerRole == MarketplaceRole.Business;
         return new(
             row.Id,
             (int)row.Status,
@@ -52,7 +60,12 @@ public sealed record DealDetailsDto(
             view.CounterpartyProfileId,
             view.PartnerHasReviewed,
             view.CounterpartyDeleted,
-            view.CounterpartyRole);
+            view.CounterpartyRole,
+            row.OfferedBudget ?? row.AgreedPrice,
+            resultsOpen && viewerIsBusiness && row.OfferedBudget is null,
+            publications ?? [],
+            resultsOpen && !viewerIsBusiness,
+            resultsOpen && viewerIsBusiness);
     }
 }
 
@@ -70,7 +83,8 @@ public sealed class GetMyDealHandler(
     IBloggerProfileRepository bloggers,
     IBusinessProfileRepository businesses,
     IDealReadModel deals,
-    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetMyDealQuery, DealDetailsDto>
+    IBrandFaceProfileRepository? brandFaces = null,
+    IDealPublicationRepository? publications = null) : IRequestHandler<GetMyDealQuery, DealDetailsDto>
 {
     public async Task<DealDetailsDto> Handle(GetMyDealQuery query, CancellationToken cancellationToken)
     {
@@ -78,6 +92,7 @@ public sealed class GetMyDealHandler(
             ?? throw DealAccess.DealNotFound();
         var row = await deals.FindForParticipantAsync(query.DealId, participant.Role, participant.ProfileId, cancellationToken)
             ?? throw DealAccess.DealNotFound();
-        return DealDetailsDto.From(row, participant.Role);
+        var items = publications is null ? [] : (await publications.ListForDealAsync(row.Id, cancellationToken)).Select(DealPublicationDto.From).ToArray();
+        return DealDetailsDto.From(row, participant.Role, items);
     }
 }

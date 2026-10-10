@@ -34,7 +34,8 @@ public sealed class GetUnlockedContactHandler(
     IBusinessProfileRepository businesses,
     IPlatformUserRepository users,
     IDealRepository deals,
-    IContactUnlockRepository unlocks) : IRequestHandler<GetUnlockedContactQuery, ContactDetailsDto>
+    IContactUnlockRepository unlocks,
+    IBrandFaceProfileRepository? brandFaces = null) : IRequestHandler<GetUnlockedContactQuery, ContactDetailsDto>
 {
     public async Task<ContactDetailsDto> Handle(GetUnlockedContactQuery query, CancellationToken cancellationToken)
     {
@@ -56,7 +57,7 @@ public sealed class GetUnlockedContactHandler(
 
     private async Task<bool> SharesDealAsync(GetUnlockedContactQuery query, CancellationToken cancellationToken)
     {
-        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.ViewerTelegramUserId, cancellationToken);
+        var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, query.ViewerTelegramUserId, cancellationToken, brandFaces);
         if (participant is null)
         {
             return false;
@@ -66,6 +67,8 @@ public sealed class GetUnlockedContactHandler(
         {
             (MarketplaceRole.Business, ContactTargetType.Blogger) => await deals.ExistsBetweenAsync(query.TargetId, participant.ProfileId, cancellationToken),
             (MarketplaceRole.Blogger, ContactTargetType.Business) => await deals.ExistsBetweenAsync(participant.ProfileId, query.TargetId, cancellationToken),
+            // D46: a brand face in a deal sees the business contact exactly like a blogger.
+            (MarketplaceRole.BrandFace, ContactTargetType.Business) => await deals.ExistsBetweenBrandFaceAsync(participant.ProfileId, query.TargetId, cancellationToken),
             _ => false
         };
     }

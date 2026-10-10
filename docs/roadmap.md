@@ -163,6 +163,26 @@ Railway. Код меняется только для исправления на
 5. **Сайт-лендинг:** что это, как работает, «Открыть в Telegram»; доверие, реклама, поиск.
 6. **Веб-дашборд для владельца:** регистрации по ролям, кампании, отклики, сделки, конверсия по шагам, модерация.
 7. **Веб-кабинет бизнеса:** вместе с командой менеджеров (Q1); тот же backend и данные, вход через Telegram.
+8. **Рабочие пространства бизнеса (2026-10-10, ждёт подтверждения спроса):** бизнес = пространство, роли
+   Owner (ровно один) / Admin / Manager / Viewer, вход только по одноразовой ссылке-приглашению, подписка у
+   пространства в модели D32. Аудит этапа 0: ~25 мест берут бизнес по `TelegramUserId` (`DealAccess`,
+   `CampaignManagementAccess`, кампании, офферы, отклики, медиа); уникальный индекс `business_profiles.TelegramUserId`;
+   видимость компании привязана к статусу владельца; уведомления только владельцу; отзыв уникален по
+   `(DealId, ReviewerTelegramUserId)`; удаление аккаунта владельца гасит компанию. План: этап 1 — `business_members`
+   + перенос владельцев + `SelectedBusinessId` + `BusinessAccess`, без видимых изменений; этап 2 — приглашения,
+   переключатель, удаление сотрудника, передача владения.
+9. **Мёртвый код оплаты контактов:** фича убрана из продукта, фронтенд её не вызывает. План (ждёт разрешения
+   владельца, т.к. затрагивает webhook бота и `appsettings`):
+   - удалить `PaymentsController`, `WalletController`, `AdminCreditsController`, `Features/Payments/*`
+     (кроме `GetUnlockedContact` — его использует `/api/contacts` на страницах блогера и кампании),
+     `Features/Wallet`, `TelegramPaymentGateway`, `ContactUnlockPricing`, тесты оплаты;
+   - в `TelegramPaymentsWebhookController` (это **основной** webhook бота: `/start`, `/phone`, контакт) убрать
+     только ветки `PreCheckoutQuery`/`SuccessfulPayment`; маршрут и остальное не трогать;
+   - секции `Click`/`Payments` в `appsettings*.json` — только с разрешения (правило 5);
+   - таблицы `payment_orders`, `contact_unlocks`, `credit_accounts`, `credit_ledger_entries` оставить (история,
+     `GetUnlockedContact` читает старые разблокировки); удаление таблиц — отдельная миграция с одобрением.
+10. ~~**Найдено в аудите (LOW):** `GetMyCampaignApplications` при `SelectedMarketplaceRole == null` читает профили
+   двух ролей (правило 1)~~ — исправлено 2026-10-10: без выбранной роли список пуст.
 
 ## Известный техдолг, legacy и баги
 
@@ -188,7 +208,7 @@ Railway. Код меняется только для исправления на
 | 8.18 | 13 integration tests skipped | ИСПРАВЛЕНО (`7722609`): CI запускает все integration-тесты | 13 × `[IntegrationFact]`, skip без `RUN_INTEGRATION_TESTS=true`. ⚠ Уточнение: skip только в локальных прогонах; CI (`ci.yml`) запускает их с Testcontainers |
 | 8.19 | Применена ли snapshot migration в production | ОБСУЖДАЛОСЬ, НЕ ПОДТВЕРЖДЕНО | `appsettings.json`: `ApplyMigrationsOnStartup=false`; Development: `true`; Railway env не проверялся |
 | 8.20 | Публичный список отзывов блогера всегда пуст: фильтр требовал `review.Business` у отзыва о блогере (там `BusinessId = null`) | ИСПРАВЛЕНО в 4C (фильтр через `review.Deal`) | `ReviewReadModel.GetBloggerReviewsAsync` |
-| 8.21 | Напоминание/уведомление ведёт на `/deal/{id}`; если у получателя выбрана другая роль, сделка откроется как 404 | ИЗВЕСТНО, не blocker MVP | selected-role authorization (D-правило 1) |
+| 8.21 | Напоминание/уведомление ведёт на `/deal/{id}`; если у получателя выбрана другая роль, сделка откроется как 404 | ИСПРАВЛЕНО: на 404 сделки/оффера `SwitchRoleHint` предлагает переключиться на другую свою роль одной кнопкой | selected-role authorization (D-правило 1) |
 
 Дополнительно найдено в Phase 0 (классификация утверждена, см. `docs/decisions.md`):
 - **P0-1.** `CreateReviewHandler` проверяет `Status != Completed` (→ 409) и `ExistsAsync` (→ 409) **до** проверки

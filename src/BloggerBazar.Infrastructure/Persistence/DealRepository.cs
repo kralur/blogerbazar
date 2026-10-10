@@ -30,6 +30,10 @@ internal sealed class DealRepository(BloggerBazarDbContext dbContext) : IDealRep
         dbContext.Deals.AnyAsync(deal => deal.BloggerId == bloggerId && deal.BusinessId == businessId
             && !deal.Blogger!.IsDeleted && !deal.Business.IsDeleted, cancellationToken);
 
+    public Task<bool> ExistsBetweenBrandFaceAsync(Guid brandFaceId, Guid businessId, CancellationToken cancellationToken) =>
+        dbContext.Deals.AnyAsync(deal => deal.BrandFaceId == brandFaceId && deal.BusinessId == businessId
+            && !deal.BrandFace!.IsDeleted && !deal.Business.IsDeleted, cancellationToken);
+
     public async Task<bool> TryCompleteAsync(Guid dealId, DateTime completedAtUtc, CancellationToken cancellationToken) =>
         await dbContext.Deals
             .Where(deal => deal.Id == dealId && deal.Status == DealStatus.Active)

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
-import { completeDeal, createDealReview, getDealContact, getMyDeal, shareDealContact, type ContactDetails, type DealDetails as Deal, type MarketplaceRole } from "../api/marketplace";
+import { addDealPublication, completeDeal, createDealReview, setDealPrice, getDealContact, getMyDeal, shareDealContact, type ContactDetails, type DealDetails as Deal, type MarketplaceRole } from "../api/marketplace";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { DealResults, digitsToNumber, isHttpsLink } from "../components/DealResults";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatShortDate, formatBudgetRange, formatCurrency } from "../lib/currency";
+import { formatShortDate, formatBudgetRange, formatCurrency, formatNumericInput } from "../lib/currency";
 import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey } from "../lib/offerStatus";
 import { profileRoute } from "../lib/profileRoutes";
@@ -29,6 +30,10 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
   const [busy, setBusy] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  // Optional results asked right at completion, where both sides already are (D51).
+  const [completeLink, setCompleteLink] = useState("");
+  const [completePrice, setCompletePrice] = useState("");
+  const [completeError, setCompleteError] = useState("");
   const [contact, setContact] = useState<ContactDetails | null>(null);
   const [toast, setToast] = useState("");
   const [tone, setTone] = useState<"success" | "error">("success");
@@ -101,7 +106,20 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     }
   };
 
-  const complete = () => runAction(() => completeDeal(id), "requests.completedToast", "requests.completeFailed");
+  const askLink = Boolean(deal?.canAddPublication && (deal.publications?.length ?? 0) === 0);
+  const askPrice = Boolean(deal?.canSetPrice && deal.agreedPrice == null);
+  const openComplete = () => { setCompleteLink(""); setCompletePrice(""); setCompleteError(""); setCompleteOpen(true); };
+  const complete = () => {
+    const link = askLink ? completeLink.trim() : "";
+    const price = askPrice ? digitsToNumber(completePrice) : null;
+    if (link && !isHttpsLink(link)) { setCompleteError(t("deals.publicationLinkInvalid")); return; }
+    return runAction(async () => {
+      // A retry after a failed completion finds the link already saved; that is fine, go on to complete.
+      if (link) await addDealPublication(id, link).catch((error) => { if (!(error instanceof ApiError && error.code === "publication_duplicate")) throw error; });
+      if (price != null) await setDealPrice(id, price);
+      await completeDeal(id);
+    }, "requests.completedToast", "requests.completeFailed");
+  };
   const review = () => runAction(() => createDealReview(id, rating, comment), "requests.reviewPublished", "requests.reviewFailed");
 
   if (state === "loading") return <div className="screen screen--with-nav"><LoadingState title={t("deals.loading")} /><BottomNav /></div>;
@@ -153,7 +171,8 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       { label: t("deals.startedAt"), value: formatDate(deal.createdAtUtc) },
       { label: t("deals.completedAt"), value: deal.completedAtUtc ? formatDate(deal.completedAtUtc) : null }
     ]} />
-    {deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={() => setCompleteOpen(true)} type="button">{t("requests.complete")}</Button>}
+    <DealResults deal={deal} onChanged={load} onMessage={(message, nextTone) => { setTone(nextTone); setToast(message); }} />
+    {deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={openComplete} type="button">{t("requests.complete")}</Button>}
     {deal.canReview && <Card className="mt-5"><h2 className="font-extrabold">{t("requests.reviewTitle")}</h2>
       {deal.partnerHasReviewed && <p className="deal-review__partner" role="status"><span aria-hidden="true" className="request-row__action-dot" />{t("deals.partnerReviewedHint", { partner: deal.counterpartyName })}</p>}
       <div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${t("requests.rating")} ${value}`} aria-pressed={value === rating} className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${value <= rating ? "bg-brand-soft text-brand-warning" : "bg-brand-soft text-brand-muted opacity-50"}`} key={value} onClick={() => setRating(value)} type="button">★</button>)}</div>
@@ -164,7 +183,14 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     </Card>}
     {deal.hasReviewed && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewSent")}</p>}
     {deal.status === DealStatus.Completed && !deal.canReview && !deal.hasReviewed && deal.reviewDeadlineUtc && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewClosed")}</p>}
-    <Modal onClose={() => !busy && setCompleteOpen(false)} open={completeOpen} title={t("deals.completeTitle")}><p className="text-sm leading-6 text-brand-muted">{t("deals.completeDescription")}</p><div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => setCompleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={complete} type="button">{busy ? t("deals.completing") : t("requests.complete")}</Button></div></Modal>
+    <Modal onClose={() => !busy && setCompleteOpen(false)} open={completeOpen} title={t("deals.completeTitle")}><p className="text-sm leading-6 text-brand-muted">{t("deals.completeDescription")}</p>
+      {(askLink || askPrice) && <div className="mt-4 grid gap-3">
+        {askLink && <Input inputMode="url" label={t("deals.completeLinkLabel")} onChange={(event) => { setCompleteLink(event.target.value); setCompleteError(""); }} placeholder="https://" type="url" value={completeLink} />}
+        {askPrice && <Input inputMode="numeric" label={t("deals.completePriceLabel")} onChange={(event) => setCompletePrice(formatNumericInput(event.target.value))} suffix={t("currency.uzs")} value={completePrice} />}
+        <p className="text-xs leading-5 text-brand-muted">{t("deals.completeResultsHint")}</p>
+        {completeError && <p className="text-sm font-semibold text-brand-danger" role="alert">{completeError}</p>}
+      </div>}
+      <div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => setCompleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={complete} type="button">{busy ? t("deals.completing") : t("requests.complete")}</Button></div></Modal>
     <Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;

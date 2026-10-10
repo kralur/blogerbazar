@@ -88,6 +88,10 @@ internal static class BotMessages
         $"{partner} отметил(а) сделку{Spaced(TopicRussian(topic))} завершённой. Оставьте отзыв о сотрудничестве.",
         $"{partner} {DealUzbek(topic, "ini", "ni")} yakunlangan deb belgiladi. Hamkorlik haqida fikr qoldiring.") with { Button = ReviewButton };
 
+    public static BotText DealPublicationAdded(string partner, DealTopic topic) => Bilingual(
+        $"{partner} добавил(а) ссылку на публикацию по сделке{Spaced(TopicRussian(topic))}. Проверьте и подтвердите просмотры.",
+        $"{partner} {DealUzbek(topic, "i", "")} bo‘yicha e’lon havolasini qo‘shdi. Tekshirib, ko‘rishlar sonini tasdiqlang.") with { Button = OpenDealButton };
+
     public static BotText PartnerReviewed(string partner, DealTopic topic) => Bilingual(
         $"{partner} оставил(а) отзыв о сделке{Spaced(TopicRussian(topic))}. Оставьте и свой отзыв: вы увидите отзывы друг друга, когда оба оцените сделку.",
         $"{partner} {DealUzbek(topic, "i", "")} haqida fikr qoldirdi. Siz ham fikr qoldiring: ikkalangiz baholaganingizda bir-biringizning fikrlarini ko‘rasiz.") with { Button = ReviewButton };

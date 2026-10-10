@@ -479,6 +479,40 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task Deal_results_price_and_publications_round_trip_with_role_checks()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_341, 1_100_342);
+        using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await bloggerClient.PutAsJsonAsync($"/api/deals/me/{seed.DealId}/price", new { price = 1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await businessClient.PutAsJsonAsync($"/api/deals/me/{seed.DealId}/price", new { price = 1_500_000 })).StatusCode);
+
+        var added = await bloggerClient.PostAsJsonAsync($"/api/deals/me/{seed.DealId}/publications", new { url = "https://instagram.com/p/integration", views = 4000 });
+        Assert.Equal(HttpStatusCode.Created, added.StatusCode);
+        var publicationId = (await added.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var duplicate = await bloggerClient.PostAsJsonAsync($"/api/deals/me/{seed.DealId}/publications", new { url = "https://instagram.com/p/integration" });
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await businessClient.PostAsJsonAsync($"/api/deals/me/{seed.DealId}/publications", new { url = "https://instagram.com/p/other" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await bloggerClient.PostAsync($"/api/deals/me/{seed.DealId}/publications/{publicationId}/confirm", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await businessClient.PostAsync($"/api/deals/me/{seed.DealId}/publications/{publicationId}/confirm", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await bloggerClient.DeleteAsync($"/api/deals/me/{seed.DealId}/publications/{publicationId}")).StatusCode);
+
+        var forBusiness = await businessClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{seed.DealId}");
+        Assert.Equal(1_500_000, forBusiness.GetProperty("agreedPrice").GetInt32());
+        Assert.True(forBusiness.GetProperty("canSetPrice").GetBoolean());
+        var publication = Assert.Single(forBusiness.GetProperty("publications").EnumerateArray());
+        Assert.Equal(4000, publication.GetProperty("views").GetInt32());
+        Assert.True(publication.GetProperty("confirmed").GetBoolean());
+
+        // A stranger's lookup of the same deal and publication reads as missing.
+        var stranger = await SeedParticipantsAsync(1_100_343, 1_100_344);
+        using var strangerClient = CreateClient(stranger.BusinessTelegramUserId);
+        Assert.Equal(HttpStatusCode.NotFound, (await strangerClient.PostAsync($"/api/deals/me/{seed.DealId}/publications/{publicationId}/confirm", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await strangerClient.PutAsJsonAsync($"/api/deals/me/{seed.DealId}/price", new { price = 1 })).StatusCode);
+    }
+
+    [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {
         var seed = await SeedCampaignDealAsync(1_100_311, 1_100_312);
