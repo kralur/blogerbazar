@@ -21,6 +21,20 @@ public sealed class GetAdminBloggersHandler(IAdminMarketplaceReadModel marketpla
     }
 }
 
+// Every company for the admin list, newest first; moderation status as the number the app already uses.
+public sealed record AdminBusinessDto(Guid Id, string Name, string? City, string? LogoUrl, int ModerationStatus, bool IsHidden, bool IsDeleted, int CampaignsCount, int CompletedDealsCount, DateTime CreatedAtUtc);
+
+public sealed record GetAdminBusinessesQuery(long TelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AdminBusinessDto>>;
+
+public sealed class GetAdminBusinessesHandler(IAdminMarketplaceReadModel marketplace, IAdminAccessPolicy access) : IRequestHandler<GetAdminBusinessesQuery, IReadOnlyList<AdminBusinessDto>>
+{
+    public async Task<IReadOnlyList<AdminBusinessDto>> Handle(GetAdminBusinessesQuery query, CancellationToken cancellationToken)
+    {
+        access.EnsureAllowed(query.TelegramUserId);
+        return await marketplace.GetBusinessesAsync(Math.Clamp(query.Take, 1, 100), cancellationToken);
+    }
+}
+
 public sealed record GetAdminCollaborationRequestsQuery(long TelegramUserId, int Take = 100) : IRequest<IReadOnlyList<CollaborationRequestDto>>;
 
 public sealed class GetAdminCollaborationRequestsHandler(IAdminMarketplaceReadModel marketplace, IAdminAccessPolicy access) : IRequestHandler<GetAdminCollaborationRequestsQuery, IReadOnlyList<CollaborationRequestDto>>

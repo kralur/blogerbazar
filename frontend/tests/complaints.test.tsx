@@ -5,7 +5,7 @@ import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({
   createComplaint: vi.fn(), getAdminComplaints: vi.fn(), closeAdminComplaint: vi.fn(),
-  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn()
+  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), getAdminCampaigns: vi.fn()
 }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({ ...(await importOriginal<typeof import("../src/api/marketplace")>()), ...api }));
@@ -18,6 +18,7 @@ vi.mock("../src/components/ui", () => ({
   Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
   Card: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
   ErrorState: ({ title }: { title: string }) => <h1>{title}</h1>,
+  Icon: () => <svg />,
   LoadingState: () => <p>loading</p>,
   Modal: ({ children, open, title }: { children: React.ReactNode; open: boolean; title: string }) => open ? <section aria-label={title}>{children}</section> : null,
   StatsCard: ({ label, value }: { label: string; value: string }) => <p>{label}: {value}</p>,
@@ -91,7 +92,7 @@ describe("Complaints (D52)", () => {
     api.getAdminBloggers.mockResolvedValue([]);
     api.getAdminComplaints.mockResolvedValue([{ id: "c1", targetType: "blogger", targetId: "b1", targetName: "Madina", reason: "fake", comment: "Bought followers", status: "open", reporterTelegramUserId: 22, reporterName: "Lumi", reporterRole: 1, createdAtUtc: "2026-10-12T08:00:00Z" }]);
     api.closeAdminComplaint.mockResolvedValue({ id: "c1", status: "resolved", alreadyReported: false });
-    render(<I18nProvider><Admin /></I18nProvider>);
+    render(<I18nProvider><Admin section="complaints" /></I18nProvider>);
 
     expect(await screen.findByText("Madina")).toBeInTheDocument();
     expect(screen.getByText("Bought followers")).toBeInTheDocument();
@@ -115,5 +116,25 @@ describe("Complaints (D52)", () => {
     render(<I18nProvider><Admin /></I18nProvider>);
     expect(await screen.findByText(ru("common.openFailed"))).toBeInTheDocument();
     expect(screen.queryByText(ru("ui.accessDenied"))).not.toBeInTheDocument();
+  });
+
+  it("shows tiles that open their own lists, with open complaints highlighted", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 8, bloggers: 5, businesses: 7, publishedCampaigns: 4, completedDeals: 6, promotedBloggers: 0, promotedCampaigns: 0, openComplaints: 2 });
+    render(<I18nProvider><Admin /></I18nProvider>);
+
+    expect(await screen.findByRole("link", { name: new RegExp(ru("admin.users")) })).toHaveAttribute("href", "#/admin/users");
+    expect(screen.getByRole("link", { name: new RegExp(ru("admin.complaints")) })).toHaveAttribute("href", "#/admin/complaints");
+    expect(screen.getByRole("link", { name: new RegExp(ru("admin.logTitle")) })).toHaveAttribute("href", "#/admin/log");
+    expect(api.getAdminUsers).not.toHaveBeenCalled();
+  });
+
+  it("writes the journal in words with the person's name instead of raw ids", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
+    api.getAdminUsers.mockResolvedValue([{ telegramUserId: 7, firstName: "Umid", role: 4, isBlocked: false, isDeleted: false, createdAtUtc: "2026-10-01T00:00:00Z" }, { telegramUserId: 9, firstName: "Ali", role: 0, isBlocked: true, isDeleted: false, createdAtUtc: "2026-10-01T00:00:00Z" }]);
+    api.getAdminAuditLogs.mockResolvedValue([{ id: "l1", actorTelegramUserId: 7, action: "platform-user.blocked", targetType: "PlatformUser", targetId: "9", createdAtUtc: "2026-10-12T08:00:00Z" }]);
+    render(<I18nProvider><Admin section="log" /></I18nProvider>);
+
+    expect(await screen.findByText(ru("admin.log.platform-user.blocked"))).toBeInTheDocument();
+    expect(screen.getByText(/Umid → Ali/)).toBeInTheDocument();
   });
 });

@@ -1572,3 +1572,18 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .brand-face-photos__item { flex: 0 0 min(44vw, 12rem); aspect-ratio: 3 / 4; overflow: hidden; border-radius: 1rem; background: var(--bb-surface-secondary); scroll-snap-align: start; }
 .brand-face-photos__item img { width: 100%; height: 100%; object-fit: cover; }
 .brand-face-instagram { display: flex; width: 100%; align-items: center; justify-content: center; gap: .5rem; margin-top: 1rem; }
+
+/* Admin home: tiles that open their own list (#/admin/<section>). */
+.admin-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.admin-tile { display: grid; justify-items: center; gap: .25rem; padding: 1rem .75rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); text-align: center; text-decoration: none; }
+.admin-tile--link:active { background: var(--bb-surface-secondary); }
+.admin-tile--alert { border-color: var(--bb-error); }
+.admin-tile--alert .admin-tile__value { color: var(--bb-error-text); }
+.admin-tile__icon { color: var(--bb-text-secondary); }
+.admin-tile__value { font-size: 1.375rem; font-weight: 800; letter-spacing: -.01em; }
+.admin-tile__label { color: var(--bb-text-secondary); font-size: .8125rem; }
+.admin-log-link, .admin-row { display: flex; min-height: 3.5rem; align-items: center; gap: .75rem; padding: .75rem 1rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); text-decoration: none; }
+.admin-log-link { justify-content: space-between; }
+.admin-log-link > span:first-child, .admin-row__text { display: grid; min-width: 0; flex: 1 1 auto; gap: .125rem; }
+.admin-log-link span span, .admin-row__text span { overflow: hidden; color: var(--bb-text-secondary); font-size: .8125rem; text-overflow: ellipsis; }
+.admin-row__text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

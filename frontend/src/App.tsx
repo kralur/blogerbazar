@@ -300,7 +300,7 @@ export function App() {
       {route.path === "/my-application" && route.id && <MyApplicationDetails id={route.id} />}
       {route.path === "/deal" && route.id && <DealDetails id={route.id} viewerRole={selectedRole} />}
       {route.path === "/offer" && route.id && <OfferDetails id={route.id} viewerRole={selectedRole} />}
-      {route.path === "/admin" && <Admin />}
+      {route.path === "/admin" && <Admin section={route.id} />}
       {!knownRoutes.includes(route.path) && <Home />}
     </>}
   </Suspense></main></ActionCountsProvider></FavoritesProvider>;

@@ -21,6 +21,12 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
                 campaign.IsPromoted, campaign.Applications.Count, campaign.CreatedAtUtc))
             .ToArrayAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<AdminBusinessDto>> GetBusinessesAsync(int take, CancellationToken cancellationToken) =>
+        await dbContext.BusinessProfiles.AsNoTracking().OrderByDescending(profile => profile.CreatedAtUtc).Take(take)
+            .Select(profile => new AdminBusinessDto(profile.Id, profile.Name, profile.City, profile.LogoUrl, (int)profile.ModerationStatus,
+                profile.IsHidden, profile.IsDeleted, profile.Campaigns.Count, profile.Deals.Count(deal => deal.Status == DealStatus.Completed), profile.CreatedAtUtc))
+            .ToArrayAsync(cancellationToken);
+
     public async Task<IReadOnlyList<CollaborationRequestDto>> GetCollaborationRequestsAsync(int take, CancellationToken cancellationToken) =>
         await dbContext.CollaborationRequests.AsNoTracking().OrderByDescending(request => request.CreatedAtUtc).Take(take)
             .Select(request => new CollaborationRequestDto(request.Id, request.BloggerId, request.BloggerId != null ? request.Blogger!.Name : request.BrandFace!.Name, request.BusinessId,

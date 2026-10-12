@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, getApiErrorMessage } from "../src/api/client";
 import { translate } from "../src/i18n";
-import { getAdminAuditLogs, getAdminBloggers, getAdminComplaints, getAdminDashboard, getAdminUsers } from "../src/api/marketplace";
+import { getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminDashboard, getAdminUsers } from "../src/api/marketplace";
 import { acceptMyCampaignApplication, applyToCampaign, closeMyCampaign, getBrandFaceCatalog, getBrandFaceFavorites, getCampaignApplicationInbox, getCampaignCatalog, getMyCampaign, getMyCampaignApplication, getMyCampaignApplicationsPage, getMyCampaigns, rejectMyCampaignApplication, removeBrandFaceFavorite, saveBrandFaceFavorite, updateMyCampaign, withdrawMyCampaignApplication } from "../src/api/marketplace";
 
 describe("API client", () => {
@@ -24,9 +24,9 @@ describe("API client", () => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response("[]", { status: 200 })));
     vi.stubGlobal("fetch", fetchMock);
 
-    await Promise.all([getAdminDashboard(), getAdminUsers(), getAdminAuditLogs(), getAdminBloggers(), getAdminComplaints()]);
+    await Promise.all([getAdminDashboard(), getAdminUsers(), getAdminAuditLogs(), getAdminBloggers(), getAdminBusinesses(), getAdminCampaigns(), getAdminComplaints()]);
 
-    expect(fetchMock.mock.calls.map(([url]) => String(url).split("?")[0]).sort()).toEqual(["/api/admin/audit-logs", "/api/admin/bloggers", "/api/admin/complaints", "/api/admin/dashboard", "/api/admin/users"]);
+    expect(fetchMock.mock.calls.map(([url]) => String(url).split("?")[0]).sort()).toEqual(["/api/admin/audit-logs", "/api/admin/bloggers", "/api/admin/businesses", "/api/admin/campaigns", "/api/admin/complaints", "/api/admin/dashboard", "/api/admin/users"]);
   });
 
   it("maps safe API errors to localized messages", async () => {

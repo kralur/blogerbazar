@@ -545,6 +545,10 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal("Integration blogger", item.GetProperty("targetName").GetString());
         var dashboard = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/dashboard");
         Assert.True(dashboard.GetProperty("openComplaints").GetInt32() >= 1);
+        var businesses = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/businesses");
+        Assert.Contains(businesses.EnumerateArray(), entry => entry.GetProperty("id").GetGuid() == seed.BusinessId);
+        Assert.Equal(HttpStatusCode.OK, (await adminClient.GetAsync("/api/admin/bloggers")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await businessClient.GetAsync("/api/admin/businesses")).StatusCode);
 
         var close = await adminClient.PatchAsJsonAsync($"/api/admin/complaints/{item.GetProperty("id").GetGuid()}", new { status = "resolved", note = "Checked" });
         Assert.Equal(HttpStatusCode.OK, close.StatusCode);

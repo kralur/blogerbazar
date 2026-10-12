@@ -188,6 +188,8 @@ export type AdminComplaint = {
 };
 export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; isDeleted: boolean; deletedAtUtc?: string | null; deletedByTelegramUserId?: number | null; createdAtUtc: string };
 export type AdminBloggerProfile = { id: string; name: string; city: string; categories: string[]; avatarUrl?: string | null; totalFollowers: number; status: number; createdAtUtc: string };
+export type AdminBusiness = { id: string; name: string; city?: string | null; logoUrl?: string | null; moderationStatus: number; isHidden: boolean; isDeleted: boolean; campaignsCount: number; completedDealsCount: number; createdAtUtc: string };
+export type AdminCampaign = { id: string; title: string; businessName: string; status: number; isPromoted: boolean; applicationsCount: number; createdAtUtc: string };
 export type AdminAuditLog = { id: string; actorTelegramUserId: number; action: string; targetType: string; targetId: string; details?: string | null; correlationId?: string | null; createdAtUtc: string };
 export type MarketplaceRole = "Blogger" | "BrandFace" | "Business";
 type MarketplaceRoleValue = MarketplaceRole | number;
@@ -839,6 +841,14 @@ export async function getAdminDashboard() {
 
 export async function getAdminBloggers() {
   return api<AdminBloggerProfile[]>("/api/admin/bloggers");
+}
+
+export async function getAdminBusinesses() {
+  return api<AdminBusiness[]>("/api/admin/businesses");
+}
+
+export async function getAdminCampaigns() {
+  return api<AdminCampaign[]>("/api/admin/campaigns");
 }
 
 export async function getAdminUsers() {

@@ -10,6 +10,13 @@ namespace BloggerBazar.Api.Controllers;
 [Route("api/admin/businesses")]
 public sealed class AdminBusinessesController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<AdminBusinessDto>>> GetAll([FromQuery] int take = 100, CancellationToken cancellationToken = default)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new GetAdminBusinessesQuery(actor.Id, take), cancellationToken));
+    }
+
     [HttpGet("pending")]
     public async Task<ActionResult<IReadOnlyList<BusinessProfileDto>>> GetPending(CancellationToken cancellationToken)
     {
