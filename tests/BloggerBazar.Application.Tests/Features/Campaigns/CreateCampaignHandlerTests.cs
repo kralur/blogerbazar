@@ -1,7 +1,9 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Campaigns;
+using BloggerBazar.Application.Tests.Features.Deals;
 using BloggerBazar.Domain.Entities;
+using BloggerBazar.Domain.Enums;
 
 namespace BloggerBazar.Application.Tests.Features.Campaigns;
 
@@ -22,6 +24,30 @@ public sealed class CreateCampaignHandlerTests
         Assert.Equal(1, result.Status);
         Assert.Single(campaigns.Campaigns);
         Assert.Equal(1, unitOfWork.SaveCallCount);
+    }
+
+    // Selected-role rule: owning a business profile is not enough while the account works as a blogger.
+    [Theory]
+    [InlineData(MarketplaceRole.Blogger, false)]
+    [InlineData(MarketplaceRole.BrandFace, false)]
+    [InlineData(MarketplaceRole.Business, true)]
+    public async Task Only_the_business_role_creates_a_campaign(MarketplaceRole role, bool allowed)
+    {
+        var business = BusinessProfile.Create(123, "Lumi Beauty", "Ташкент");
+        var user = PlatformUser.Create(123, "Umid", null);
+        user.SelectMarketplaceRole(role);
+        var campaigns = new InMemoryCampaignRepository();
+        var handler = new CreateCampaignHandler(new InMemoryBusinessRepository(business), campaigns, new SpyUnitOfWork(), users: new FakeUsers(user));
+
+        if (allowed)
+        {
+            await handler.Handle(CreateCommand(), CancellationToken.None);
+            Assert.Single(campaigns.Campaigns);
+            return;
+        }
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => handler.Handle(CreateCommand(), CancellationToken.None));
+        Assert.Empty(campaigns.Campaigns);
     }
 
     [Fact]

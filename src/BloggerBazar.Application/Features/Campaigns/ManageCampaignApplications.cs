@@ -220,7 +220,9 @@ public sealed class WithdrawMyCampaignApplicationHandler(
             return new CampaignApplicationDecisionDto(application.Id, (int)application.Status, null);
         }
 
-        if (!CampaignApplicationLifecycle.IsPending(application.Status))
+        // Conditional, so a withdrawal that loses the race to an accept fails instead of hiding the deal.
+        if (!CampaignApplicationLifecycle.IsPending(application.Status)
+            || !await applications.TryDecidePendingAsync(application.Id, CampaignApplicationStatus.Withdrawn, cancellationToken))
         {
             throw new InvalidOperationException("Only pending campaign applications can be withdrawn.");
         }
@@ -282,10 +284,8 @@ public sealed class DecideCampaignApplicationHandler(
             throw new InvalidOperationException("Campaign application decision conflicts with an existing deal.");
         }
 
-        application.Accept();
-        var deal = Deal.Create(application.Id, application.CreatorRole, application.CreatorId, business.Id, CampaignTermsSnapshot.FromCampaign(application.Campaign));
-        await deals.AddAsync(deal, cancellationToken);
-        if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
+        var deal = await CampaignApplicationDecisions.TryAcceptAsync(application, business.Id, applications, deals, unitOfWork, cancellationToken);
+        if (deal is null)
         {
             var persistedDeal = await deals.GetByCampaignApplicationIdAsync(application.Id, cancellationToken);
             if (persistedDeal is not null)
@@ -293,7 +293,7 @@ public sealed class DecideCampaignApplicationHandler(
                 return new CampaignApplicationDecisionDto(application.Id, (int)CampaignApplicationStatus.Accepted, persistedDeal.Id);
             }
 
-            throw new InvalidOperationException("Campaign application decision conflicts with an existing deal.");
+            throw new InvalidOperationException("Campaign application decision conflicts with its current status.");
         }
 
         var creatorChatId = await CampaignApplicationAccess.FindCreatorTelegramUserIdAsync(bloggers, brandFaces, application, cancellationToken);
@@ -312,7 +312,8 @@ public sealed class DecideCampaignApplicationHandler(
             return new CampaignApplicationDecisionDto(application.Id, (int)application.Status, null);
         }
 
-        if (!CampaignApplicationLifecycle.IsPending(application.Status))
+        if (!CampaignApplicationLifecycle.IsPending(application.Status)
+            || !await applications.TryDecidePendingAsync(application.Id, CampaignApplicationStatus.Rejected, cancellationToken))
         {
             throw new InvalidOperationException("Campaign application decision conflicts with its current status.");
         }
@@ -404,4 +405,42 @@ internal static class CampaignApplicationLifecycle
 {
     internal static bool IsPending(CampaignApplicationStatus status) =>
         status is CampaignApplicationStatus.Sent or CampaignApplicationStatus.Viewed;
+}
+
+// Accept is one transaction: the status flips only while the application is still pending, then the deal is inserted.
+// A withdrawal that commits first therefore never ends up with a deal (the creator's contacts open only with consent, D31).
+internal static class CampaignApplicationDecisions
+{
+    // Null: someone decided the application first (or the unique deal index caught a duplicate); the caller reads what won.
+    internal static async Task<Deal?> TryAcceptAsync(
+        CampaignApplication application,
+        Guid businessId,
+        ICampaignApplicationRepository applications,
+        IDealRepository deals,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await unitOfWork.ExecuteInTransactionAsync(async token =>
+            {
+                if (!await applications.TryDecidePendingAsync(application.Id, CampaignApplicationStatus.Accepted, token))
+                {
+                    return null;
+                }
+
+                application.Accept();
+                var deal = Deal.Create(application.Id, application.CreatorRole, application.CreatorId, businessId, CampaignTermsSnapshot.FromCampaign(application.Campaign));
+                await deals.AddAsync(deal, token);
+                // The unique deal index stays the last guard; a violation rolls the whole decision back.
+                return await unitOfWork.TrySaveChangesAsync(token) ? deal : throw new DuplicateDeal();
+            }, cancellationToken);
+        }
+        catch (DuplicateDeal)
+        {
+            return null;
+        }
+    }
+
+    private sealed class DuplicateDeal : Exception;
 }

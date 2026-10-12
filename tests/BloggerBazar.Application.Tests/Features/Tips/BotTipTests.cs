@@ -1,4 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Security;
+using BloggerBazar.Domain.Entities;
 using BloggerBazar.Application.Features.Tips;
 using BloggerBazar.Application.Tests.Features.Deals;
 using BloggerBazar.Domain.Enums;
@@ -125,6 +127,45 @@ public sealed class BotTipTests
 
         Assert.Equal(0, sent);
         Assert.Empty(bot.NotifiedChats);
+    }
+
+    [Fact]
+    public async Task Admin_preview_sends_the_next_tip_each_time_without_marking_the_day()
+    {
+        var owner = PlatformUser.Create(7, "Umid", null);
+        owner.SelectMarketplaceRole(MarketplaceRole.Business);
+        var bot = new SpyBotClient();
+        var handler = new SendBotTipPreviewHandler(new FakeUsers(owner), new AllowAdmin(), new SpyUnitOfWork(), bot);
+
+        var first = await handler.Handle(new SendBotTipPreviewCommand(7), CancellationToken.None);
+        var second = await handler.Handle(new SendBotTipPreviewCommand(7), CancellationToken.None);
+
+        Assert.Equal(BotTipCatalog.Next(MarketplaceRole.Business, null)!.Number, first.Number);
+        Assert.Equal(BotTipCatalog.Next(MarketplaceRole.Business, first.Number)!.Number, second.Number);
+        Assert.True(first.Sent);
+        Assert.Equal(BotTipCatalog.All.Count(tip => tip.IsFor(MarketplaceRole.Business)), first.Total);
+        Assert.Equal([7L, 7L], bot.NotifiedChats);
+        Assert.Null(owner.LastTipSentAtUtc);
+    }
+
+    [Fact]
+    public async Task Non_admin_cannot_preview_tips()
+    {
+        var bot = new SpyBotClient();
+        var handler = new SendBotTipPreviewHandler(new FakeUsers(PlatformUser.Create(8, "Ali", null)), new DenyAdmin(), new SpyUnitOfWork(), bot);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => handler.Handle(new SendBotTipPreviewCommand(8), CancellationToken.None));
+        Assert.Empty(bot.NotifiedChats);
+    }
+
+    private sealed class AllowAdmin : IAdminAccessPolicy
+    {
+        public void EnsureAllowed(long telegramUserId) { }
+    }
+
+    private sealed class DenyAdmin : IAdminAccessPolicy
+    {
+        public void EnsureAllowed(long telegramUserId) => throw new UnauthorizedAccessException("Admin access is required.");
     }
 
     // Mirrors the repository: claimed users drop out of the due list for the day.

@@ -24,6 +24,8 @@ const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
 type OnboardingStep = "welcome" | "telegram" | "checking" | "phone" | "role" | "profile" | "success" | "complete";
 
 const Admin = lazy(async () => ({ default: (await import("./pages/Admin")).Admin }));
+const AdminUserCard = lazy(async () => ({ default: (await import("./pages/AdminUserCard")).AdminUserCard }));
+const AdminFunnel = lazy(async () => ({ default: (await import("./pages/AdminFunnel")).AdminFunnel }));
 const BloggerDetails = lazy(async () => ({ default: (await import("./pages/BloggerDetails")).BloggerDetails }));
 const BusinessProfileForm = lazy(async () => ({ default: (await import("./pages/BusinessProfileForm")).BusinessProfileForm }));
 const BloggerProfileForm = lazy(async () => ({ default: (await import("./pages/BloggerProfileForm")).BloggerProfileForm }));
@@ -300,7 +302,7 @@ export function App() {
       {route.path === "/my-application" && route.id && <MyApplicationDetails id={route.id} />}
       {route.path === "/deal" && route.id && <DealDetails id={route.id} viewerRole={selectedRole} />}
       {route.path === "/offer" && route.id && <OfferDetails id={route.id} viewerRole={selectedRole} />}
-      {route.path === "/admin" && <Admin section={route.id} />}
+      {route.path === "/admin" && (route.id === "user" ? <AdminUserCard key={window.location.hash} /> : route.id === "funnel" ? <AdminFunnel /> : <Admin section={route.id} />)}
       {!knownRoutes.includes(route.path) && <Home />}
     </>}
   </Suspense></main></ActionCountsProvider></FavoritesProvider>;

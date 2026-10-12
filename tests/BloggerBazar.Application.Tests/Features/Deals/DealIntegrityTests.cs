@@ -193,90 +193,6 @@ public sealed class DealIntegrityTests
         Assert.Equal(CampaignTermsSnapshot.Version, winner.CampaignTermsSnapshotVersion);
     }
 
-    [Fact]
-    public async Task Collaboration_deal_requires_the_selected_participant_role_and_has_no_snapshot()
-    {
-        var blogger = Blogger(40);
-        var business = Business(41);
-        var request = CollaborationRequest.Create(blogger.Id, business.Id, "Let's collaborate");
-        Attach(request, nameof(CollaborationRequest.Blogger), blogger);
-        Attach(request, nameof(CollaborationRequest.Business), business);
-        var deals = new Deals();
-        var handler = new CreateDealFromCollaborationRequestHandler(
-            new Requests(request),
-            deals,
-            new Users(User(blogger.TelegramUserId, MarketplaceRole.Blogger)),
-            new Bloggers(blogger),
-            new Businesses(business),
-            new UnitOfWork());
-
-        var result = await handler.Handle(new CreateDealFromCollaborationRequestCommand(request.Id, blogger.TelegramUserId), CancellationToken.None);
-
-        var deal = Assert.Single(deals.Items);
-        Assert.Equal(deal.Id, result.Id);
-        Assert.Null(deal.CampaignTermsSnapshotVersion);
-        Assert.Null(deal.CampaignTitleSnapshot);
-    }
-
-    [Fact]
-    public async Task Collaboration_deal_denies_an_actor_with_a_nonparticipant_selected_role()
-    {
-        var blogger = Blogger(50);
-        var business = Business(51);
-        var request = CollaborationRequest.Create(blogger.Id, business.Id, "Let's collaborate");
-        Attach(request, nameof(CollaborationRequest.Blogger), blogger);
-        Attach(request, nameof(CollaborationRequest.Business), business);
-        var handler = new CreateDealFromCollaborationRequestHandler(
-            new Requests(request),
-            new Deals(),
-            new Users(User(blogger.TelegramUserId, MarketplaceRole.Business)),
-            new Bloggers(blogger),
-            new Businesses(business),
-            new UnitOfWork());
-
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => handler.Handle(new CreateDealFromCollaborationRequestCommand(request.Id, blogger.TelegramUserId), CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task Business_cannot_accept_its_own_collaboration_request_by_creating_a_deal()
-    {
-        var blogger = Blogger(60);
-        var business = Business(61);
-        var request = CollaborationRequest.Create(blogger.Id, business.Id, "Let's collaborate");
-        Attach(request, nameof(CollaborationRequest.Blogger), blogger);
-        Attach(request, nameof(CollaborationRequest.Business), business);
-        var deals = new Deals();
-        var handler = new CreateDealFromCollaborationRequestHandler(
-            new Requests(request),
-            deals,
-            new Users(User(business.TelegramUserId, MarketplaceRole.Business)),
-            new Bloggers(blogger),
-            new Businesses(business),
-            new UnitOfWork());
-
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => handler.Handle(new CreateDealFromCollaborationRequestCommand(request.Id, business.TelegramUserId), CancellationToken.None));
-
-        Assert.Empty(deals.Items);
-        Assert.Equal(CollaborationRequestStatus.Sent, request.Status);
-    }
-
-    [Fact]
-    public async Task Only_the_blogger_can_change_a_collaboration_request_status()
-    {
-        var blogger = Blogger(70);
-        var business = Business(71);
-        var request = CollaborationRequest.Create(blogger.Id, business.Id, "Let's collaborate");
-        Attach(request, nameof(CollaborationRequest.Blogger), blogger);
-        Attach(request, nameof(CollaborationRequest.Business), business);
-        var handler = new UpdateCollaborationRequestStatusHandler(new Requests(request), new UnitOfWork());
-
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            handler.Handle(new UpdateCollaborationRequestStatusCommand(request.Id, business.TelegramUserId, CollaborationRequestStatus.Accepted), CancellationToken.None));
-        await handler.Handle(new UpdateCollaborationRequestStatusCommand(request.Id, blogger.TelegramUserId, CollaborationRequestStatus.Accepted), CancellationToken.None);
-
-        Assert.Equal(CollaborationRequestStatus.Accepted, request.Status);
-    }
-
     private static PlatformUser User(long telegramUserId, MarketplaceRole role)
     {
         var user = PlatformUser.Create(telegramUserId, "User", null);
@@ -319,13 +235,6 @@ public sealed class DealIntegrityTests
         public Task<CampaignApplication?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<CampaignApplication?>(id == application.Id ? application : null);
         public Task<bool> ExistsAsync(Guid campaignId, MarketplaceRole creatorRole, Guid bloggerId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task AddAsync(CampaignApplication value, CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-
-    private sealed class Requests(CollaborationRequest request) : ICollaborationRequestRepository
-    {
-        public Task<CollaborationRequest?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<CollaborationRequest?>(id == request.Id ? request : null);
-        public Task<bool> ExistsDealAsync(Guid requestId, CancellationToken cancellationToken) => Task.FromResult(false);
-        public Task AddAsync(CollaborationRequest value, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class Deals : IDealRepository

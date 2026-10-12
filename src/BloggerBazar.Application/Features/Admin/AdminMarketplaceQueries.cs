@@ -71,6 +71,7 @@ public sealed class ModerateCampaignValidator : AbstractValidator<ModerateCampai
     {
         RuleFor(command => command.CampaignId).NotEmpty();
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
+        RuleFor(command => command.Status).IsInEnum().When(command => command.Status.HasValue);
         RuleFor(command => command).Must(command => command.Status.HasValue || command.IsPromoted.HasValue)
             .WithMessage("Campaign status or promotion must be provided.");
     }
@@ -83,7 +84,12 @@ public sealed class ModerateCampaignHandler(ICampaignRepository campaigns, IAdmi
         access.EnsureAllowed(command.TelegramUserId);
         var campaign = await campaigns.GetByIdAsync(command.CampaignId, cancellationToken)
             ?? throw new InvalidOperationException("Campaign was not found.");
-        if (command.Status.HasValue) campaign.SetStatus(command.Status.Value);
+        if (command.Status.HasValue && command.Status.Value != campaign.Status)
+        {
+            // Moderation is visible in the journal like promotion (a rejection is what the owner cannot undo).
+            campaign.SetStatus(command.Status.Value);
+            await auditLogs.AddAsync(AuditLog.Create(command.TelegramUserId, "campaign.status-changed", "Campaign", campaign.Id.ToString(), command.Status.Value.ToString()), cancellationToken);
+        }
         if (command.IsPromoted.HasValue)
         {
             campaign.SetPromotion(command.IsPromoted.Value);

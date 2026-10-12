@@ -146,6 +146,24 @@ public sealed class CampaignManagementMutationTests
         Assert.Equal(["campaigns"], cache.RotatedCatalogs);
     }
 
+    // An admin's rejection is final for the owner: closing would erase it and reopening would publish the campaign again.
+    [Fact]
+    public async Task Owner_can_neither_close_nor_reopen_a_campaign_the_admin_rejected()
+    {
+        var business = Business(10);
+        var campaign = CampaignFor(business, CampaignStatus.Rejected);
+        var repository = new CampaignRepository(campaign);
+        var cache = new RecordingCache();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new ReopenCampaignHandler(repository, new UserRepository(User(10)), new BusinessRepository(business), new UnitOfWork(), cache)
+            .Handle(new ReopenCampaignCommand(campaign.Id, 10), CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new CloseCampaignHandler(repository, new UserRepository(User(10)), new BusinessRepository(business), new UnitOfWork(), cache)
+            .Handle(new CloseCampaignCommand(campaign.Id, 10), CancellationToken.None));
+
+        Assert.Equal(CampaignStatus.Rejected, campaign.Status);
+        Assert.Empty(cache.RotatedCatalogs);
+    }
+
     [Fact]
     public async Task Campaign_past_its_deadline_is_not_reopened()
     {

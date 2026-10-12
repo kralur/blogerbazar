@@ -30,13 +30,16 @@ public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCo
     }
 }
 
-public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses, ICampaignRepository campaigns, IUnitOfWork unitOfWork, ICatalogCache? cache = null)
+public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses, ICampaignRepository campaigns, IUnitOfWork unitOfWork, ICatalogCache? cache = null, IPlatformUserRepository? users = null)
     : IRequestHandler<CreateCampaignCommand, CampaignDto>
 {
     public async Task<CampaignDto> Handle(CreateCampaignCommand command, CancellationToken cancellationToken)
     {
-        var business = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
-            ?? throw new InvalidOperationException("Create a business profile before publishing a campaign.");
+        // Selected-role rule: only an account working as Business publishes campaigns, never a blogger who also owns one.
+        var business = users is not null
+            ? await CampaignManagementAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken)
+            : await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
+                ?? throw new InvalidOperationException("Create a business profile before publishing a campaign.");
         // Keeps one business from flooding the catalog; real businesses create a handful a week.
         if (await campaigns.CountCreatedSinceAsync(business.Id, DateTime.UtcNow.AddDays(-1), cancellationToken) >= DailyLimit)
             throw new BusinessRuleConflictException(DailyLimitCode, "Daily campaign limit reached.");

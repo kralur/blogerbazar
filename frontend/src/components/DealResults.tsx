@@ -90,7 +90,7 @@ export function DealResults({ deal, onChanged, onMessage }: { deal: DealDetails;
     {deal.canSetPrice && <Button className="mt-2 w-full" disabled={busy} onClick={() => open({ kind: "price" })} type="button" variant="secondary">{deal.agreedPrice != null ? t("deals.changePrice") : t("deals.setPrice")}</Button>}
     <div className="mt-3 grid gap-2">
       {publications.map((publication) => <Card key={publication.id}>
-        <a className="block break-all text-sm font-semibold text-brand-accent" href={publication.url} onClick={(event) => follow(event, publication.url)} rel="noopener noreferrer" target="_blank">{publication.url.replace(/^https:\/\//, "")}</a>
+        <a className="block break-all text-sm font-semibold text-brand-blue" href={publication.url} onClick={(event) => follow(event, publication.url)} rel="noopener noreferrer" target="_blank">{publication.url.replace(/^https:\/\//, "")}</a>
         <p className="mt-1 text-sm text-brand-muted">{publication.views != null ? t("deals.viewsValue", { views: formatNumericInput(String(publication.views)) }) : t("deals.viewsMissing")}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Badge tone={publication.confirmed ? "green" : "gray"}>{publication.confirmed ? t("deals.publicationConfirmed") : t("deals.publicationUnconfirmed")}</Badge>

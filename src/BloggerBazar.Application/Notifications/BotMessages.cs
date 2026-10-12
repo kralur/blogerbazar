@@ -42,9 +42,6 @@ internal static class BotMessages
         $"{bloggerName} отклонил(а) ваше предложение.",
         $"{bloggerName} taklifingizni rad etdi.");
 
-    public static BotText CollaborationRequestReceived(string businessName) => Bilingual(
-        $"{businessName} отправил(а) вам предложение о сотрудничестве.",
-        $"{businessName} sizga hamkorlik taklifini yubordi.") with { Button = ReplyButton };
 
     // A deal is named after its campaign; an offer deal has no campaign, so its format names it.
     // "сделка в формате Reels" reads naturally; a bare "сделка Reels" does not.

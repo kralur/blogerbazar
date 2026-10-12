@@ -285,7 +285,6 @@ public sealed class BrandFaceParticipationTests
         public Task<Application.Features.Bloggers.MyBloggerProfileDto?> GetMyBloggerAsync(long telegramUserId, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<IReadOnlyList<CampaignDto>> SearchCampaignsAsync(string? city, string? category, int skip, int take, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<CampaignDto?> GetCampaignAsync(Guid id, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<IReadOnlyList<Application.Features.CollaborationRequests.CollaborationRequestDto>> GetCollaborationRequestsAsync(Guid? bloggerId, Guid? businessId, int take, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class Reviews : IReviewRepository

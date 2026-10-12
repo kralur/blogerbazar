@@ -13,12 +13,6 @@ public sealed record MyCampaignApplicationDto(Guid Id, Guid CampaignId, string C
 
     public static MyCampaignApplicationDto ForBlogger(Domain.Entities.CampaignApplication application) =>
         new(application.Id, application.CampaignId, application.Campaign.Title, application.Campaign.Business.Name, application.Campaign.Business.LogoUrl, application.Message, (int)application.Status, false, application.CreatedAtUtc, application.Campaign.BusinessId, BusinessCounterparty);
-
-    public static MyCampaignApplicationDto ForBusiness(Domain.Entities.CampaignApplication application, Domain.Entities.BloggerProfile blogger) =>
-        ForBusiness(application, blogger.Id, blogger.Name, blogger.AvatarUrl);
-
-    public static MyCampaignApplicationDto ForBusiness(Domain.Entities.CampaignApplication application, Guid applicantId, string applicantName, string? applicantImageUrl) =>
-        new(application.Id, application.CampaignId, application.Campaign.Title, applicantName, applicantImageUrl, application.Message, (int)application.Status, true, application.CreatedAtUtc, applicantId, CreatorRoles.Of(application.CreatorRole));
 }
 
 public sealed class GetMyCampaignApplicationsHandler(

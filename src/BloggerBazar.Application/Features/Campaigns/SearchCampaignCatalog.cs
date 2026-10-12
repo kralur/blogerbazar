@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Validation;
 using System.Globalization;
 using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Abstractions.Persistence;
@@ -102,8 +103,8 @@ public sealed class SearchCampaignCatalogHandler(ICampaignCatalogReadModel catal
         NormalizeIdentifier(query.Category),
         query.MinBudget,
         query.MaxBudget,
-        query.DeadlineFrom,
-        query.DeadlineTo,
+        UtcDates.AsUtc(query.DeadlineFrom),
+        UtcDates.AsUtc(query.DeadlineTo),
         query.Sort?.Trim().ToLowerInvariant() ?? "promoted",
         query.Page,
         query.PageSize);

@@ -5,7 +5,7 @@ import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({
   createComplaint: vi.fn(), getAdminComplaints: vi.fn(), closeAdminComplaint: vi.fn(),
-  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), getAdminCampaigns: vi.fn(), setAdminUserBlocked: vi.fn()
+  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), getAdminCampaigns: vi.fn(), setAdminUserBlocked: vi.fn(), sendAdminTipPreview: vi.fn()
 }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({ ...(await importOriginal<typeof import("../src/api/marketplace")>()), ...api }));
@@ -103,6 +103,17 @@ describe("Complaints (D52)", () => {
     expect(await screen.findByText(ru("admin.complaintsEmpty"))).toBeInTheDocument();
   });
 
+  it("sends the admin the next bot tip from the admin home", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
+    api.sendAdminTipPreview.mockResolvedValue({ number: 2, total: 14, sent: true });
+    render(<I18nProvider><Admin /></I18nProvider>);
+
+    fireEvent.click(await screen.findByRole("button", { name: ru("admin.tipPreview") }));
+
+    await waitFor(() => expect(api.sendAdminTipPreview).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("status")).toHaveTextContent("2");
+  });
+
   it("opens the reported profile, blocks its owner and shows closed complaints", async () => {
     api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 1, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, openComplaints: 1 });
     const complaint = { id: "c1", targetType: "blogger", targetId: "b1", targetName: "Madina", reason: "fake", status: "open", reporterTelegramUserId: 22, reporterRole: 1, createdAtUtc: "2026-10-12T08:00:00Z", ownerTelegramUserId: 5, ownerIsBlocked: false };
@@ -111,9 +122,9 @@ describe("Complaints (D52)", () => {
     render(<I18nProvider><Admin section="complaints" /></I18nProvider>);
 
     expect(await screen.findByRole("link", { name: ru("admin.complaintOpenTarget") })).toHaveAttribute("href", "#/blogger/b1");
-    fireEvent.click(screen.getByRole("button", { name: ru("admin.complaintBlockOwner") }));
+    fireEvent.click(screen.getByRole("button", { name: ru("common.block") }));
     await waitFor(() => expect(api.setAdminUserBlocked).toHaveBeenCalledWith(5, true));
-    expect(await screen.findByRole("button", { name: ru("admin.complaintUnblockOwner") })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: ru("common.unblock") })).toBeInTheDocument();
 
     api.getAdminComplaints.mockResolvedValue([{ ...complaint, id: "c2", status: "resolved", resolvedAtUtc: "2026-10-12T09:00:00Z", targetType: "deal", ownerTelegramUserId: null }]);
     fireEvent.click(screen.getByRole("button", { name: ru("admin.complaintStatus.resolved") }));
@@ -189,7 +200,7 @@ describe("Complaints (D52)", () => {
     api.getAdminUsers.mockResolvedValue([{ telegramUserId: 11, firstName: "Newcomer", role: 0, isBlocked: false, isDeleted: false, createdAtUtc: "2026-10-12T08:00:00Z" }]);
     render(<I18nProvider><Admin section="users" /></I18nProvider>);
 
-    expect(await screen.findByText("Newcomer")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /Newcomer/ })).toHaveAttribute("href", "#/admin/user?id=11");
     await waitFor(() => expect(api.getAdminUsers).toHaveBeenLastCalledWith("", "new"), { timeout: 2000 });
     expect(screen.getByRole("button", { name: ru("admin.userFilter.new") })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText(/^Регистрация: /)).toBeInTheDocument();

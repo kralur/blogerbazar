@@ -15,6 +15,8 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
         var staleCreatedBefore = nowUtc.AddDays(-7);
         var reviewWindowStart = nowUtc - ReviewWindow.Length;
         var firstReviewReminderAt = nowUtc.AddDays(-1);
+        // Not before the results reminder is due, so not-yet-due deals never fill the run's candidate limit.
+        var resultsReminderAt = nowUtc.AddDays(-DealReminderSchedule.ResultsReminderDay);
 
         // IgnoreQueryFilters: hidden reviews still mean the side has already reviewed.
         return await dbContext.Deals.AsNoTracking().IgnoreQueryFilters()
@@ -24,7 +26,8 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
                     && dbContext.DealReminders.Count(reminder => reminder.DealId == deal.Id && reminder.Kind == DealReminderKind.CompleteDay14) < 2)
                 || (deal.Status == DealStatus.Completed && deal.CompletedAtUtc > reviewWindowStart && deal.CompletedAtUtc <= firstReviewReminderAt
                     && (deal.Reviews.Count() < 2
-                        || (!dbContext.DealPublications.Any(publication => publication.DealId == deal.Id)
+                        || (deal.CompletedAtUtc <= resultsReminderAt
+                            && !dbContext.DealPublications.Any(publication => publication.DealId == deal.Id)
                             && !dbContext.DealReminders.Any(reminder => reminder.DealId == deal.Id && reminder.Kind == DealReminderKind.ResultsDay2)))))
             .OrderBy(deal => deal.CreatedAtUtc)
             .ThenBy(deal => deal.Id)

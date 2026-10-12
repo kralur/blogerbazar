@@ -102,6 +102,41 @@ public sealed class TelegramWebhookSecurityTests
         Assert.Equal((HttpStatusCode)429, rejected.StatusCode);
     }
 
+    [Fact]
+    public async Task Rejected_webhook_still_carries_security_headers()
+    {
+        using var factory = new TestApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.SendAsync(CreateRequest("{}", "invalid-secret"));
+
+        Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
+        Assert.Equal("DENY", response.Headers.GetValues("X-Frame-Options").Single());
+        Assert.True(response.Headers.CacheControl?.NoStore);
+    }
+
+    // Security B4: writes have their own budget; reading is not affected when it runs out.
+    [Fact]
+    public async Task Writes_have_their_own_tighter_limit_and_reads_keep_working()
+    {
+        using var factory = new TestApiFactory();
+        using var client = factory.CreateClient();
+
+        var statuses = new List<HttpStatusCode>();
+        for (var i = 0; i < 3; i++)
+        {
+            using var write = await client.PostAsync("/api/complaints", new StringContent("{}", Encoding.UTF8, "application/json"));
+            statuses.Add(write.StatusCode);
+        }
+
+        using var read = await client.GetAsync("/api/users/me");
+
+        Assert.NotEqual((HttpStatusCode)429, statuses[0]);
+        Assert.NotEqual((HttpStatusCode)429, statuses[1]);
+        Assert.Equal((HttpStatusCode)429, statuses[2]);
+        Assert.NotEqual((HttpStatusCode)429, read.StatusCode);
+    }
+
     private static HttpRequestMessage CreateRequest(string body, string? secret = "test-webhook-secret", string contentType = "application/json")
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/webhooks/telegram")
@@ -132,7 +167,9 @@ public sealed class TelegramWebhookSecurityTests
                 ["RateLimiting:TelegramWebhook:WindowSeconds"] = "60",
                 ["Database:ApplyMigrationsOnStartup"] = "false",
                 ["DevelopmentData:Seed"] = "false",
-                ["DealReminders:Enabled"] = "false"
+                ["DealReminders:Enabled"] = "false",
+                ["BotTips:Enabled"] = "false",
+                ["RateLimiting:WritePermitLimit"] = "2"
             })
             {
                 builder.UseSetting(key, value);

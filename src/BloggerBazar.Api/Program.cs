@@ -66,7 +66,10 @@ try
         ?? throw new InvalidOperationException("RateLimiting:MaxIpPartitions must be configured.");
     var maxTelegramUserPartitions = builder.Configuration.GetValue<int?>("RateLimiting:MaxTelegramUserPartitions")
         ?? throw new InvalidOperationException("RateLimiting:MaxTelegramUserPartitions must be configured.");
-    if (permitLimit <= 0 || windowSeconds <= 0 || webhookPermitLimit <= 0 || webhookWindowSeconds <= 0
+    // Security B4: changes (create, edit, upload) get their own, tighter budget per user, so a script cannot flood
+    // the catalog with campaigns, applications or photos while reading stays at the general limit.
+    var writePermitLimit = builder.Configuration.GetValue("RateLimiting:WritePermitLimit", 30);
+    if (writePermitLimit <= 0 || permitLimit <= 0 || windowSeconds <= 0 || webhookPermitLimit <= 0 || webhookWindowSeconds <= 0
         || globalConcurrentPermitLimit <= 0 || globalQueueLimit < 0 || maxIpPartitions <= 0 || maxTelegramUserPartitions <= 0)
     {
         throw new InvalidOperationException("Rate limiting values must be positive.");
@@ -107,9 +110,16 @@ try
                 ? resolver.ResolveIpPartitionKey(context, "telegram-webhook")
                 : resolver.ResolveApiPartitionKey(context);
             var isWebhook = context.Request.Path.StartsWithSegments("/api/webhooks/telegram");
+            var method = context.Request.Method;
+            var isWrite = !isWebhook && !HttpMethods.IsGet(method) && !HttpMethods.IsHead(method) && !HttpMethods.IsOptions(method);
+            if (isWrite)
+            {
+                partitionKey = $"write:{partitionKey}";
+            }
+
             return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = isWebhook ? webhookPermitLimit : permitLimit,
+                PermitLimit = isWebhook ? webhookPermitLimit : isWrite ? writePermitLimit : permitLimit,
                 Window = TimeSpan.FromSeconds(isWebhook ? webhookWindowSeconds : windowSeconds),
                 QueueLimit = 0,
                 AutoReplenishment = true

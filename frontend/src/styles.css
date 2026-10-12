@@ -28,6 +28,17 @@
     --bb-error: #D64545;
     --bb-error-text: #FFFFFF;
     --bb-error-subtle: rgba(214, 69, 69, 0.10);
+    /* State text on its pale surface or a plain card: darker in light theme, lighter in dark (both resolve here).
+       At least 4.5:1 on the subtle surface over the page background in both themes. */
+    --bb-error-on-subtle: color-mix(in srgb, var(--bb-error) 78%, var(--bb-text));
+    --bb-success-on-subtle: color-mix(in srgb, var(--bb-success) 65%, var(--bb-text));
+    --bb-warning-on-subtle: color-mix(in srgb, var(--bb-warning) 55%, var(--bb-text));
+    /* Solid fills under white text (danger button, counter badge, toasts). The same in both themes:
+       the light-theme state colors are too pale for white text, the dark-theme ones even more so. */
+    --bb-error-fill: #C53A3A;
+    --bb-success-fill: #1F7F48;
+    --bb-warning-fill: #8F6400;
+    --bb-info-fill: #315CF5;
     --bb-info: #315CF5;
     --bb-info-subtle: rgba(49, 92, 245, 0.10);
     --bb-overlay: rgba(10, 10, 10, 0.46);
@@ -736,7 +747,7 @@
   .ds-button--secondary { border-color: var(--bb-border); background: var(--bb-surface); color: var(--bb-text); box-shadow: none; }
   .ds-button--secondary:not(:disabled):hover { background: var(--bb-surface-secondary); }
   .ds-button--ghost { background: transparent; color: var(--bb-action); }
-  .ds-button--danger { border-color: var(--bb-error); background: var(--bb-error); color: var(--bb-error-text); }
+  .ds-button--danger { border-color: var(--bb-error-fill); background: var(--bb-error-fill); color: var(--bb-error-text); }
   .ds-button:disabled { border-color: var(--bb-border); background: var(--bb-surface-secondary); color: var(--bb-text-secondary); opacity: 1; }
 
   .ds-field-label { color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 750; line-height: 1.3; }
@@ -758,10 +769,10 @@
   .ds-badge { border: 1px solid transparent; border-radius: 999px; font-size: .75rem; font-weight: 800; line-height: 1.15; }
   .ds-badge--info { border-color: color-mix(in srgb, var(--bb-info) 28%, transparent); background: var(--bb-info-subtle); color: var(--bb-info); }
   .ds-badge--premium { border-color: color-mix(in srgb, var(--bb-premium) 28%, transparent); background: color-mix(in srgb, var(--bb-premium) 11%, transparent); color: var(--bb-premium); }
-  .ds-badge--warning { border-color: color-mix(in srgb, var(--bb-warning) 32%, transparent); background: var(--bb-warning-subtle); color: var(--bb-warning); }
-  .ds-badge--success { border-color: color-mix(in srgb, var(--bb-success) 28%, transparent); background: var(--bb-success-subtle); color: var(--bb-success); }
+  .ds-badge--warning { border-color: color-mix(in srgb, var(--bb-warning) 32%, transparent); background: var(--bb-warning-subtle); color: var(--bb-warning-on-subtle); }
+  .ds-badge--success { border-color: color-mix(in srgb, var(--bb-success) 28%, transparent); background: var(--bb-success-subtle); color: var(--bb-success-on-subtle); }
   .ds-badge--neutral { border-color: var(--bb-border); background: var(--bb-surface-secondary); color: var(--bb-text-secondary); }
-  .ds-badge--danger { border-color: color-mix(in srgb, var(--bb-error) 28%, transparent); background: var(--bb-error-subtle); color: var(--bb-error); }
+  .ds-badge--danger { border-color: color-mix(in srgb, var(--bb-error) 28%, transparent); background: var(--bb-error-subtle); color: var(--bb-error-on-subtle); }
 
   .ds-state { padding: 2rem 1rem; text-align: center; }
   .ds-state__icon { border: 1px solid var(--bb-border); border-radius: var(--bb-radius-control); background: var(--bb-surface-secondary); color: var(--bb-text); }
@@ -897,6 +908,10 @@
   .toast-enter {
     animation: toast-in 180ms cubic-bezier(.2,.8,.2,1) both;
   }
+  .toast--success { background: var(--bb-success-fill); }
+  .toast--warning { background: var(--bb-warning-fill); }
+  .toast--info { background: var(--bb-info-fill); }
+  .toast--error { background: var(--bb-error-fill); }
 
   .image-fade {
     background: linear-gradient(135deg, rgba(226,232,240,.9), rgba(207,250,254,.72));
@@ -1239,6 +1254,10 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 .fact-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .fact-grid__item { min-width: 0; padding: .75rem; border: 1px solid var(--bb-border); border-radius: .875rem; background: var(--bb-surface); }
 .fact-grid__item--wide { grid-column: 1 / -1; }
+/* Below 352 px two cells are about 100 px wide and break a city like "Samarqand" mid-word; one column there. */
+@media (max-width: 22rem) {
+  .fact-grid:not(.fact-grid--three) { grid-template-columns: minmax(0, 1fr); }
+}
 .fact-grid__item dt { color: var(--bb-text-secondary); font-size: .75rem; font-weight: 650; }
 .fact-grid__item dd { margin: .25rem 0 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: .9375rem; font-weight: 800; line-height: 1.3; }
 .glass-card .fact-grid__item { background: var(--bb-surface-secondary); }
@@ -1300,12 +1319,13 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .page-header__actions { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: .5rem; margin-left: auto; }
 /* Two or more header actions do not fit beside the title on a phone: they take their own row and share it. */
 @media (max-width: 30rem) {
-  .page-header__actions:has(> :nth-child(2)) { flex: 1 1 100%; margin-left: 0; }
-  .page-header__actions:has(> :nth-child(2)) > * { flex: 1 1 0; justify-content: center; }
+  .page-header__actions:has(> :nth-child(2)) { flex: 1 1 100%; flex-wrap: wrap; margin-left: 0; }
+  /* Sized by their own text, so a long Uzbek badge and "Shikoyat qilish" move to a second row instead of overflowing. */
+  .page-header__actions:has(> :nth-child(2)) > * { flex: 1 1 auto; justify-content: center; }
 }
 .page-header__icon-button { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
 .page-header__icon-button:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
-.report-button { display: inline-flex; min-height: 2.75rem; align-items: center; gap: .375rem; padding: 0 .75rem; border: 1px solid var(--bb-error); border-radius: .75rem; background: var(--bb-error-subtle); color: var(--bb-error-text); font-size: .875rem; font-weight: 700; white-space: nowrap; }
+.report-button { display: inline-flex; min-height: 2.75rem; align-items: center; gap: .375rem; padding: 0 .75rem; border: 1px solid var(--bb-error); border-radius: .75rem; background: var(--bb-error-subtle); color: var(--bb-error-on-subtle); font-size: .875rem; font-weight: 700; white-space: nowrap; }
 .report-button:focus-visible { outline: 2px solid var(--bb-error); outline-offset: 2px; }
 .page-header__secondary { display: inline-flex; min-height: 2.75rem; align-items: center; padding: 0 .75rem; border: 1px solid var(--bb-border); border-radius: .75rem; color: var(--bb-text); font-size: .8125rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
 .page-header__secondary:active { background: var(--bb-surface-secondary); }
@@ -1468,7 +1488,7 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 @media (prefers-reduced-motion: reduce) { .pull-refresh__ring--spinning { animation-duration: 2s; } }
 
 /* "Waiting for you" count: on the Requests icon in the bottom bar and next to each Requests tab. */
-.action-badge { display: inline-grid; min-width: 1.125rem; height: 1.125rem; place-items: center; padding: 0 .3rem; border-radius: 999px; background: var(--bb-error, #E5484D); color: #fff; font-size: .6875rem; font-weight: 800; line-height: 1; }
+.action-badge { display: inline-grid; min-width: 1.125rem; height: 1.125rem; place-items: center; padding: 0 .3rem; border-radius: 999px; background: var(--bb-error-fill); color: var(--bb-error-text); font-size: .6875rem; font-weight: 800; line-height: 1; }
 .bottom-nav__item { position: relative; }
 .bottom-nav__item .action-badge { position: absolute; top: .125rem; left: calc(50% + .5rem); border: 2px solid var(--bb-surface); }
 /* On tabs the badge is a dot in the corner: a long label like "Предложения" leaves no room for a number on a
@@ -1579,7 +1599,7 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .admin-tile { display: grid; justify-items: center; gap: .25rem; padding: 1rem .75rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); text-align: center; text-decoration: none; }
 .admin-tile--link:active { background: var(--bb-surface-secondary); }
 .admin-tile--alert { border-color: var(--bb-error); }
-.admin-tile--alert .admin-tile__value { color: var(--bb-error-text); }
+.admin-tile--alert .admin-tile__value { color: var(--bb-error-on-subtle); }
 .admin-tile__icon { color: var(--bb-text-secondary); }
 .admin-tile__value { font-size: 1.375rem; font-weight: 800; letter-spacing: -.01em; }
 .admin-tile__label { color: var(--bb-text-secondary); font-size: .8125rem; }
@@ -1589,6 +1609,15 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .admin-log-link span span, .admin-row__text span { overflow: hidden; color: var(--bb-text-secondary); font-size: .8125rem; text-overflow: ellipsis; }
 .admin-row__text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin-filters { display: flex; gap: .5rem; overflow-x: auto; }
+.admin-complaint__reason { display: inline-block; max-width: 100%; border: 1px solid color-mix(in srgb, var(--bb-error) 28%, transparent); border-radius: .75rem; background: var(--bb-error-subtle); color: var(--bb-error-on-subtle); padding: .25rem .625rem; font-size: .75rem; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
 .admin-filter { flex: 0 0 auto; min-height: 2.25rem; padding: 0 .875rem; border: 1px solid var(--bb-border); border-radius: 999px; background: var(--bb-surface); color: var(--bb-text); font-size: .8125rem; font-weight: 700; white-space: nowrap; }
 .admin-filter[aria-pressed="true"] { border-color: var(--bb-accent); background: var(--bb-accent); color: var(--bb-accent-text); }
 .admin-activity__link { color: var(--bb-text); font-weight: 700; text-decoration: none; }
+/* Admin funnel: one row per step; the bar is the share of the people who opened the app in the period. */
+.admin-funnel { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.admin-funnel__head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
+.admin-funnel__label { min-width: 0; font-size: .875rem; font-weight: 700; line-height: 1.3; }
+.admin-funnel__count { flex: 0 0 auto; font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.admin-funnel__bar { height: .5rem; margin-top: .375rem; overflow: hidden; border-radius: 999px; background: var(--bb-surface-secondary); }
+.admin-funnel__bar > span { display: block; height: 100%; border-radius: inherit; background: var(--bb-action); }
+.admin-funnel__rates { margin: .25rem 0 0; color: var(--bb-text-secondary); font-size: .75rem; line-height: 1.3; }

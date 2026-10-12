@@ -18,4 +18,11 @@ internal sealed class CampaignApplicationRepository(BloggerBazarDbContext dbCont
             : dbContext.CampaignApplications.AnyAsync(application => application.CampaignId == campaignId && application.BloggerId == creatorId, cancellationToken);
 
     public async Task AddAsync(CampaignApplication application, CancellationToken cancellationToken) => await dbContext.CampaignApplications.AddAsync(application, cancellationToken);
+
+    // A second concurrent update waits for the first one's row lock, then sees the decided status and changes nothing.
+    public async Task<bool> TryDecidePendingAsync(Guid applicationId, CampaignApplicationStatus status, CancellationToken cancellationToken) =>
+        await dbContext.CampaignApplications
+            .Where(application => application.Id == applicationId
+                && (application.Status == CampaignApplicationStatus.Sent || application.Status == CampaignApplicationStatus.Viewed))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(application => application.Status, status), cancellationToken) == 1;
 }

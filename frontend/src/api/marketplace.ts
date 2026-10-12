@@ -177,6 +177,11 @@ type ApiCampaign = {
 
 export type ContactDetails = { phone?: string | null; email?: string | null; telegram?: string | null; websiteUrl?: string | null };
 export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number; openComplaints?: number; newUsersToday?: number; newUsersWeek?: number; newDealsWeek?: number; completedDealsWeek?: number };
+// Admin funnel: people who first opened the app in the period and how many of them reached each step since then.
+export type AdminFunnelPeriod = "7d" | "30d" | "all";
+export type AdminFunnelRole = "blogger" | "brandFace" | "business";
+export type AdminFunnelStepKey = "opened" | "roleSelected" | "profile" | "reached" | "posted" | "answered" | "deal" | "completed" | "reviewed";
+export type AdminFunnel = { period: AdminFunnelPeriod; fromUtc: string | null; roles: Array<{ role: AdminFunnelRole; steps: Array<{ key: AdminFunnelStepKey; count: number }> }> };
 // D52: what can be reported and why; fixed camelCase values shared with the API.
 export type ComplaintTarget = "blogger" | "brandFace" | "business" | "campaign" | "offer" | "deal";
 export type ComplaintReason = "spam" | "fraud" | "fake" | "offensive" | "noShow" | "other";
@@ -189,6 +194,12 @@ export type AdminComplaint = {
 };
 export type AdminComplaintStatus = AdminComplaint["status"];
 export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; isDeleted: boolean; deletedAtUtc?: string | null; deletedByTelegramUserId?: number | null; createdAtUtc: string; verifiedPhone?: string | null; hasBloggerProfile?: boolean; hasBusinessProfile?: boolean; hasBrandFaceProfile?: boolean };
+export type AdminUserProfile = { role: "blogger" | "brandFace" | "business"; id: string; name: string; isHidden: boolean; isDeleted: boolean };
+export type AdminUserDeal = { id: string; role: "blogger" | "brandFace" | "business"; partnerName?: string | null; title?: string | null; status: number; agreedPrice?: number | null; createdAtUtc: string };
+export type AdminUserDetails = {
+  user: AdminPlatformUser; profiles: AdminUserProfile[]; activeDeals: number; completedDeals: number; cancelledDeals: number;
+  recentDeals: AdminUserDeal[]; complaintsAgainst: number; openComplaintsAgainst: number; complaintsFiled: number;
+};
 export type AdminUserFilter = "all" | "new" | "bloggers" | "businesses" | "brandFaces" | "admins" | "blocked" | "deleted";
 export type AdminBloggerProfile = { id: string; name: string; city: string; categories: string[]; avatarUrl?: string | null; totalFollowers: number; status: number; createdAtUtc: string };
 export type AdminBusiness = { id: string; name: string; city?: string | null; logoUrl?: string | null; moderationStatus: number; isHidden: boolean; isDeleted: boolean; campaignsCount: number; completedDealsCount: number; createdAtUtc: string };
@@ -840,8 +851,21 @@ export async function closeAdminComplaint(id: string, status: "resolved" | "dism
   return api<ComplaintResult>(`/api/admin/complaints/${id}`, { method: "PATCH", body: JSON.stringify({ status, note: note?.trim() || undefined }) });
 }
 
+export async function getAdminUserDetails(telegramUserId: number) {
+  return api<AdminUserDetails>(`/api/admin/users/${telegramUserId}`);
+}
+
+// D54: the next bot tip to the admin's own chat, to check how tips look.
+export async function sendAdminTipPreview() {
+  return api<{ number: number; total: number; sent: boolean }>("/api/admin/tips/preview", { method: "POST" });
+}
+
 export async function getAdminDashboard() {
   return api<AdminDashboard>("/api/admin/dashboard");
+}
+
+export async function getAdminFunnel(period: AdminFunnelPeriod) {
+  return api<AdminFunnel>(`/api/admin/funnel?period=${period}`);
 }
 
 export async function getAdminBloggers() {

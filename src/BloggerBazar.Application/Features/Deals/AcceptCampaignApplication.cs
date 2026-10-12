@@ -36,9 +36,10 @@ public sealed class AcceptCampaignApplicationHandler(
         var application = await applications.GetByIdAsync(command.CampaignApplicationId, cancellationToken)
             ?? throw new InvalidOperationException("Campaign application was not found.");
         var business = await DealAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
+        // Another business's application reads as missing, never as forbidden (no existence oracle).
         if (application.Campaign.BusinessId != business.Id)
         {
-            throw new UnauthorizedAccessException("You cannot accept an application for another business.");
+            throw new InvalidOperationException("Campaign application was not found.");
         }
 
         var existingDeal = await deals.GetByCampaignApplicationIdAsync(application.Id, cancellationToken);
@@ -59,10 +60,8 @@ public sealed class AcceptCampaignApplicationHandler(
             throw new InvalidOperationException("A deal already exists for this application.");
         }
 
-        application.Accept();
-        var deal = Deal.Create(application.Id, application.CreatorRole, application.CreatorId, business.Id, CampaignTermsSnapshot.FromCampaign(application.Campaign));
-        await deals.AddAsync(deal, cancellationToken);
-        if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
+        var deal = await Campaigns.CampaignApplicationDecisions.TryAcceptAsync(application, business.Id, applications, deals, unitOfWork, cancellationToken);
+        if (deal is null)
         {
             var persistedDeal = await deals.GetByCampaignApplicationIdAsync(application.Id, cancellationToken);
             if (persistedDeal is not null)
@@ -70,7 +69,7 @@ public sealed class AcceptCampaignApplicationHandler(
                 return DealDto.From(persistedDeal);
             }
 
-            throw new InvalidOperationException("Campaign application decision conflicts with an existing deal.");
+            throw new InvalidOperationException("Campaign application decision conflicts with its current status.");
         }
         var creatorChatId = bloggers is null ? null : await Campaigns.CampaignApplicationAccess.FindCreatorTelegramUserIdAsync(bloggers, brandFaces, application, cancellationToken);
         if (creatorChatId is not null) await BestEffortTelegramNotification.SendAsync(botClient, logger, creatorChatId.Value, BotMessages.CampaignApplicationAccepted(application.Campaign.Title), $"/deal/{deal.Id}", cancellationToken);

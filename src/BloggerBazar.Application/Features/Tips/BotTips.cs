@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Enums;
@@ -224,5 +225,39 @@ public sealed class ProcessBotTipsHandler(
                 }
             }
         }
+    }
+}
+
+// Admin preview: the owner or an admin gets the next tip for their own role at once, to check texts and buttons
+// without waiting for a tip day. Each press shows the next one; other users' rotation is not touched.
+public sealed record SendBotTipPreviewCommand(long ActorTelegramUserId) : IRequest<BotTipPreviewDto>;
+
+public sealed record BotTipPreviewDto(int Number, int Total, bool Sent);
+
+public sealed class SendBotTipPreviewHandler(
+    IPlatformUserRepository users,
+    IAdminAccessPolicy access,
+    IUnitOfWork unitOfWork,
+    ITelegramBotClient? botClient = null,
+    ILogger<SendBotTipPreviewHandler>? logger = null) : IRequestHandler<SendBotTipPreviewCommand, BotTipPreviewDto>
+{
+    public async Task<BotTipPreviewDto> Handle(SendBotTipPreviewCommand command, CancellationToken cancellationToken)
+    {
+        access.EnsureAllowed(command.ActorTelegramUserId);
+        var actor = await users.GetByTelegramUserIdAsync(command.ActorTelegramUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("An active account is required.");
+        var tip = BotTipCatalog.Next(actor.SelectedMarketplaceRole, actor.LastTipNumber)
+            ?? throw new InvalidOperationException("There is no tip for this role.");
+        var total = BotTipCatalog.All.Count(item => item.IsFor(actor.SelectedMarketplaceRole));
+
+        actor.SetLastTipNumber(tip.Number);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (botClient is null)
+        {
+            return new BotTipPreviewDto(tip.Number, total, false);
+        }
+
+        await BestEffortTelegramNotification.SendAsync(botClient, logger, actor.TelegramUserId, BotTipCatalog.Message(tip), tip.Route, cancellationToken);
+        return new BotTipPreviewDto(tip.Number, total, true);
     }
 }

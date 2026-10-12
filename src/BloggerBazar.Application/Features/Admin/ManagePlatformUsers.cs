@@ -54,6 +54,34 @@ public sealed class GetAdminUsersHandler(IPlatformUserRepository users, BloggerB
     }
 }
 
+// Admin user card: everything about one person in one screen, to judge a complaint or a dispute.
+// Role is "blogger", "brandFace" or "business" (D26 strings); deals are the newest ten on any of the person's profiles.
+public sealed record AdminUserProfileDto(string Role, Guid Id, string Name, bool IsHidden, bool IsDeleted);
+public sealed record AdminUserDealDto(Guid Id, string Role, string? PartnerName, string? Title, int Status, int? AgreedPrice, DateTime CreatedAtUtc);
+public sealed record AdminUserDetailsDto(
+    AdminPlatformUserDto User,
+    IReadOnlyList<AdminUserProfileDto> Profiles,
+    int ActiveDeals,
+    int CompletedDeals,
+    int CancelledDeals,
+    IReadOnlyList<AdminUserDealDto> RecentDeals,
+    int ComplaintsAgainst,
+    int OpenComplaintsAgainst,
+    int ComplaintsFiled);
+
+public sealed record GetAdminUserDetailsQuery(long ActorTelegramUserId, long TelegramUserId) : IRequest<AdminUserDetailsDto>;
+
+public sealed class GetAdminUserDetailsHandler(BloggerBazar.Application.Abstractions.Security.IAdminAccessPolicy access, IAdminMarketplaceReadModel marketplace)
+    : IRequestHandler<GetAdminUserDetailsQuery, AdminUserDetailsDto>
+{
+    public async Task<AdminUserDetailsDto> Handle(GetAdminUserDetailsQuery query, CancellationToken cancellationToken)
+    {
+        access.EnsureAllowed(query.ActorTelegramUserId);
+        return await marketplace.GetUserDetailsAsync(query.TelegramUserId, cancellationToken)
+            ?? throw new InvalidOperationException("Platform user was not found.");
+    }
+}
+
 public sealed class GetAuditLogHandler(IAuditLogRepository auditLogs, BloggerBazar.Application.Abstractions.Security.IAdminAccessPolicy access)
     : IRequestHandler<GetAuditLogQuery, IReadOnlyList<AuditLogDto>>
 {
@@ -75,6 +103,13 @@ public sealed class UpdatePlatformUserRoleHandler(IPlatformUserRepository users,
         if (target.Role == PlatformRole.Owner && command.Role != PlatformRole.Owner)
         {
             throw new InvalidOperationException("The owner role cannot be removed through this endpoint.");
+        }
+
+        // The owner comes only from the deployment settings (Administration:TelegramUserIds): granted here it could
+        // never be taken back or blocked, so one wrong tap would hand out permanent full access.
+        if (command.Role == PlatformRole.Owner && target.Role != PlatformRole.Owner)
+        {
+            throw new InvalidOperationException("The owner role cannot be granted through this endpoint.");
         }
         target.SetRole(command.Role);
         await auditLogs.AddAsync(AuditLog.Create(actor.TelegramUserId, "platform-user.role-updated", "PlatformUser", target.TelegramUserId.ToString(), command.Role.ToString()), cancellationToken);

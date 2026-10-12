@@ -1,6 +1,7 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Admin;
 using BloggerBazar.Application.Features.CollaborationRequests;
+using BloggerBazar.Application.Features.Complaints;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -60,6 +61,63 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
             .ToArrayAsync(cancellationToken);
     }
 
+    // Sequential queries: one DbContext must not run two at once.
+    public async Task<AdminUserDetailsDto?> GetUserDetailsAsync(long telegramUserId, CancellationToken cancellationToken)
+    {
+        var user = await SearchUsersByIdAsync(telegramUserId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        var blogger = await dbContext.BloggerProfiles.AsNoTracking().Where(profile => profile.TelegramUserId == telegramUserId)
+            .Select(profile => new AdminUserProfileDto("blogger", profile.Id, profile.Name, profile.IsHidden, profile.IsDeleted)).FirstOrDefaultAsync(cancellationToken);
+        var brandFace = await dbContext.BrandFaceProfiles.AsNoTracking().Where(profile => profile.TelegramUserId == telegramUserId)
+            .Select(profile => new AdminUserProfileDto("brandFace", profile.Id, profile.Name, profile.IsHidden, profile.IsDeleted)).FirstOrDefaultAsync(cancellationToken);
+        var business = await dbContext.BusinessProfiles.AsNoTracking().Where(profile => profile.TelegramUserId == telegramUserId)
+            .Select(profile => new AdminUserProfileDto("business", profile.Id, profile.Name, profile.IsHidden, profile.IsDeleted)).FirstOrDefaultAsync(cancellationToken);
+        var profiles = new[] { blogger, brandFace, business }.OfType<AdminUserProfileDto>().ToArray();
+
+        Guid? bloggerId = blogger?.Id, brandFaceId = brandFace?.Id, businessId = business?.Id;
+        var deals = dbContext.Deals.AsNoTracking()
+            .Where(deal => (bloggerId != null && deal.BloggerId == bloggerId) || (brandFaceId != null && deal.BrandFaceId == brandFaceId) || (businessId != null && deal.BusinessId == businessId));
+        var counts = await deals.GroupBy(deal => deal.Status).Select(group => new { Status = group.Key, Count = group.Count() }).ToArrayAsync(cancellationToken);
+        var recent = await deals.OrderByDescending(deal => deal.CreatedAtUtc).Take(10)
+            .Select(deal => new AdminUserDealDto(
+                deal.Id,
+                businessId != null && deal.BusinessId == businessId ? "business" : deal.BloggerId != null ? "blogger" : "brandFace",
+                businessId != null && deal.BusinessId == businessId
+                    ? (deal.BloggerId != null ? deal.Blogger!.Name : deal.BrandFace!.Name)
+                    : deal.Business.Name,
+                deal.CampaignTitleSnapshot,
+                (int)deal.Status,
+                deal.AgreedPrice,
+                deal.CreatedAtUtc))
+            .ToArrayAsync(cancellationToken);
+
+        // Complaints against the person: any of their profiles, or a campaign of their business.
+        var profileIds = profiles.Select(profile => profile.Id).ToArray();
+        var against = dbContext.Complaints.AsNoTracking().Where(complaint => profileIds.Contains(complaint.TargetId)
+            || (businessId != null && complaint.TargetType == ComplaintTargets.Campaign && dbContext.Campaigns.Any(campaign => campaign.Id == complaint.TargetId && campaign.BusinessId == businessId)));
+        var complaintsAgainst = await against.CountAsync(cancellationToken);
+        var openComplaintsAgainst = await against.CountAsync(complaint => complaint.Status == Complaint.OpenStatus, cancellationToken);
+        var complaintsFiled = await dbContext.Complaints.CountAsync(complaint => complaint.ReporterTelegramUserId == telegramUserId, cancellationToken);
+
+        int Count(DealStatus status) => counts.FirstOrDefault(item => item.Status == status)?.Count ?? 0;
+        return new AdminUserDetailsDto(user, profiles, Count(DealStatus.Active), Count(DealStatus.Completed), Count(DealStatus.Cancelled),
+            recent, complaintsAgainst, openComplaintsAgainst, complaintsFiled);
+    }
+
+    private async Task<AdminPlatformUserDto?> SearchUsersByIdAsync(long telegramUserId, CancellationToken cancellationToken) =>
+        await dbContext.PlatformUsers.AsNoTracking()
+            .Where(user => user.TelegramUserId == telegramUserId)
+            .Select(user => new AdminPlatformUserDto(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.IsBlocked, user.IsDeleted,
+                user.DeletedAtUtc, user.DeletedByTelegramUserId, user.CreatedAtUtc, user.VerifiedPhone,
+                dbContext.BloggerProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted),
+                dbContext.BusinessProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted),
+                dbContext.BrandFaceProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted)))
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyList<AdminBusinessDto>> GetBusinessesAsync(int take, CancellationToken cancellationToken) =>
         await dbContext.BusinessProfiles.AsNoTracking().OrderByDescending(profile => profile.CreatedAtUtc).Take(take)
             .Select(profile => new AdminBusinessDto(profile.Id, profile.Name, profile.City, profile.LogoUrl, (int)profile.ModerationStatus,
@@ -93,5 +151,80 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
         var completedDealsWeek = await dbContext.Deals.AsNoTracking().CountAsync(deal => deal.CompletedAtUtc >= weekAgo, cancellationToken);
         return new AdminDashboardDto(users, bloggers, businesses, publishedCampaigns, completedDeals, promotedBloggers, promotedCampaigns, openComplaints,
             newUsersToday, newUsersWeek, newDealsWeek, completedDealsWeek);
+    }
+
+    // The cohort is everyone whose first app open (PlatformUser.CreatedAtUtc) is in the period, deleted and blocked people
+    // included: they did reach their steps. Each later step is counted on the role's profiles of that cohort and also
+    // accepts the steps after it (a deal counts as "reached"), so the numbers never grow down the funnel.
+    // Sequential counts: one DbContext runs one query at a time.
+    public async Task<IReadOnlyList<AdminFunnelRoleDto>> GetFunnelAsync(DateTime? fromUtc, CancellationToken cancellationToken)
+    {
+        var cohort = dbContext.PlatformUsers.AsNoTracking();
+        if (fromUtc is { } from)
+        {
+            cohort = cohort.Where(user => user.CreatedAtUtc >= from);
+        }
+
+        var opened = await cohort.CountAsync(cancellationToken);
+        var deals = dbContext.Deals.AsNoTracking();
+        var completedDeals = deals.Where(deal => deal.Status == DealStatus.Completed);
+        // A review still hidden until the other side reviews (blind reviews) was left all the same.
+        var reviews = dbContext.Reviews.IgnoreQueryFilters().AsNoTracking().Where(review => review.Deal.Status == DealStatus.Completed);
+
+        var bloggers = dbContext.BloggerProfiles.AsNoTracking().Where(profile => cohort.Any(user => user.TelegramUserId == profile.TelegramUserId));
+        var blogger = new[]
+        {
+            new AdminFunnelStepDto(AdminFunnel.Opened, opened),
+            new AdminFunnelStepDto(AdminFunnel.RoleSelected, await cohort.CountAsync(user => user.SelectedMarketplaceRole == MarketplaceRole.Blogger
+                || dbContext.BloggerProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Profile, await bloggers.CountAsync(cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Reached, await bloggers.CountAsync(profile => dbContext.CampaignApplications.Any(application => application.BloggerId == profile.Id)
+                || dbContext.CollaborationRequests.Any(offer => offer.BloggerId == profile.Id)
+                || deals.Any(deal => deal.BloggerId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Deal, await bloggers.CountAsync(profile => deals.Any(deal => deal.BloggerId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Completed, await bloggers.CountAsync(profile => completedDeals.Any(deal => deal.BloggerId == profile.Id), cancellationToken)),
+            // A review counts for the role whose deal it was written on.
+            new AdminFunnelStepDto(AdminFunnel.Reviewed, await bloggers.CountAsync(profile => reviews.Any(review => review.ReviewerTelegramUserId == profile.TelegramUserId
+                && review.Deal.BloggerId == profile.Id), cancellationToken))
+        };
+
+        var brandFaces = dbContext.BrandFaceProfiles.AsNoTracking().Where(profile => cohort.Any(user => user.TelegramUserId == profile.TelegramUserId));
+        var brandFace = new[]
+        {
+            new AdminFunnelStepDto(AdminFunnel.Opened, opened),
+            new AdminFunnelStepDto(AdminFunnel.RoleSelected, await cohort.CountAsync(user => user.SelectedMarketplaceRole == MarketplaceRole.BrandFace
+                || dbContext.BrandFaceProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Profile, await brandFaces.CountAsync(cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Reached, await brandFaces.CountAsync(profile => dbContext.CampaignApplications.Any(application => application.BrandFaceId == profile.Id)
+                || dbContext.CollaborationRequests.Any(offer => offer.BrandFaceId == profile.Id)
+                || deals.Any(deal => deal.BrandFaceId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Deal, await brandFaces.CountAsync(profile => deals.Any(deal => deal.BrandFaceId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Completed, await brandFaces.CountAsync(profile => completedDeals.Any(deal => deal.BrandFaceId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Reviewed, await brandFaces.CountAsync(profile => reviews.Any(review => review.ReviewerTelegramUserId == profile.TelegramUserId
+                && review.Deal.BrandFaceId == profile.Id), cancellationToken))
+        };
+
+        var businesses = dbContext.BusinessProfiles.AsNoTracking().Where(profile => cohort.Any(user => user.TelegramUserId == profile.TelegramUserId));
+        var business = new[]
+        {
+            new AdminFunnelStepDto(AdminFunnel.Opened, opened),
+            new AdminFunnelStepDto(AdminFunnel.RoleSelected, await cohort.CountAsync(user => user.SelectedMarketplaceRole == MarketplaceRole.Business
+                || dbContext.BusinessProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Profile, await businesses.CountAsync(cancellationToken)),
+            // A draft is not seen by anyone, so only a campaign that went out counts (closed or rejected later included,
+            // and one an admin moved back to draft after it got applications).
+            new AdminFunnelStepDto(AdminFunnel.Posted, await businesses.CountAsync(profile => dbContext.Campaigns.Any(campaign => campaign.BusinessId == profile.Id
+                    && (campaign.Status != CampaignStatus.Draft || campaign.Applications.Any()))
+                || dbContext.CollaborationRequests.Any(offer => offer.BusinessId == profile.Id)
+                || deals.Any(deal => deal.BusinessId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Answered, await businesses.CountAsync(profile => dbContext.CampaignApplications.Any(application => application.Campaign.BusinessId == profile.Id)
+                || deals.Any(deal => deal.BusinessId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Deal, await businesses.CountAsync(profile => deals.Any(deal => deal.BusinessId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Completed, await businesses.CountAsync(profile => completedDeals.Any(deal => deal.BusinessId == profile.Id), cancellationToken)),
+            new AdminFunnelStepDto(AdminFunnel.Reviewed, await businesses.CountAsync(profile => reviews.Any(review => review.ReviewerTelegramUserId == profile.TelegramUserId
+                && review.Deal.BusinessId == profile.Id), cancellationToken))
+        };
+
+        return [new AdminFunnelRoleDto("blogger", blogger), new AdminFunnelRoleDto("brandFace", brandFace), new AdminFunnelRoleDto("business", business)];
     }
 }

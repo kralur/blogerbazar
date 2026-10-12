@@ -356,6 +356,111 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.DoesNotContain(await reminders.GetCandidatesAsync(nowUtc, CancellationToken.None), item => item.DealId == seed.DealId);
     }
 
+    // Audit 2026-10-12: an accept and a withdrawal sent at the same moment. Exactly one wins; a deal exists only for
+    // an accepted application (a withdrawn creator's contacts never open, D31).
+    [IntegrationFact]
+    public async Task Accept_and_withdraw_racing_never_leave_a_deal_behind_a_withdrawn_application()
+    {
+        for (var round = 0; round < 6; round++)
+        {
+            var bloggerTelegramUserId = 1_100_920 + round * 2;
+            var seed = await SeedPendingApplicationAsync(bloggerTelegramUserId, bloggerTelegramUserId + 1);
+            using var businessClient = CreateClient(bloggerTelegramUserId + 1);
+            using var bloggerClient = CreateClient(bloggerTelegramUserId);
+
+            var responses = await Task.WhenAll(
+                businessClient.PostAsync($"/api/campaigns/mine/{seed.CampaignId}/applications/{seed.ApplicationId}/accept", null),
+                bloggerClient.PostAsync($"/api/campaign-applications/mine/{seed.ApplicationId}/withdraw", null));
+
+            using var scope = factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var status = await dbContext.CampaignApplications.AsNoTracking().Where(application => application.Id == seed.ApplicationId).Select(application => application.Status).SingleAsync();
+            var hasDeal = await dbContext.Deals.AnyAsync(deal => deal.CampaignApplicationId == seed.ApplicationId);
+            Assert.Contains(status, new[] { CampaignApplicationStatus.Accepted, CampaignApplicationStatus.Withdrawn });
+            Assert.Equal(status == CampaignApplicationStatus.Accepted, hasDeal);
+            Assert.Single(responses, response => response.IsSuccessStatusCode);
+            Assert.All(responses.Where(response => !response.IsSuccessStatusCode), response => Assert.Equal(HttpStatusCode.Conflict, response.StatusCode));
+        }
+    }
+
+    [IntegrationFact]
+    public async Task Pending_application_is_decided_once_at_the_database_level()
+    {
+        var seed = await SeedPendingApplicationAsync(1_100_934, 1_100_935);
+        using var scope = factory.Services.CreateScope();
+        var applications = scope.ServiceProvider.GetRequiredService<ICampaignApplicationRepository>();
+
+        Assert.True(await applications.TryDecidePendingAsync(seed.ApplicationId, CampaignApplicationStatus.Withdrawn, CancellationToken.None));
+        Assert.False(await applications.TryDecidePendingAsync(seed.ApplicationId, CampaignApplicationStatus.Accepted, CancellationToken.None));
+        Assert.False(await applications.TryDecidePendingAsync(seed.ApplicationId, CampaignApplicationStatus.Rejected, CancellationToken.None));
+    }
+
+    // Audit 2026-10-12: the business could put a campaign the admin rejected back into the catalog (reopen, or close
+    // then reopen). Now the rejection stays and is written to the journal.
+    [IntegrationFact]
+    public async Task Business_cannot_republish_a_campaign_the_admin_rejected()
+    {
+        const long adminTelegramUserId = 1_100_936;
+        var seed = await SeedPendingApplicationAsync(1_100_937, 1_100_938);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var admin = PlatformUser.Create(adminTelegramUserId, "Admin", null);
+            admin.SetRole(PlatformRole.Admin);
+            dbContext.Add(admin);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var adminClient = CreateClient(adminTelegramUserId);
+        using var businessClient = CreateClient(1_100_938);
+        Assert.Equal(HttpStatusCode.OK, (await adminClient.PatchAsJsonAsync($"/api/admin/campaigns/{seed.CampaignId}", new { status = (int)CampaignStatus.Rejected })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Conflict, (await businessClient.PostAsync($"/api/campaigns/mine/{seed.CampaignId}/reopen", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await businessClient.PostAsync($"/api/campaigns/mine/{seed.CampaignId}/close", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await businessClient.GetAsync($"/api/campaigns/{seed.CampaignId}")).StatusCode);
+        var log = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/audit-logs");
+        Assert.Contains(log.EnumerateArray(), entry => entry.GetProperty("action").GetString() == "campaign.status-changed"
+            && entry.GetProperty("targetId").GetString() == seed.CampaignId.ToString());
+    }
+
+    [IntegrationFact]
+    public async Task Owner_role_is_never_granted_through_the_admin_api()
+    {
+        const long ownerTelegramUserId = 1_100_939;
+        const long memberTelegramUserId = 1_100_940;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var owner = PlatformUser.Create(ownerTelegramUserId, "Owner", null);
+            owner.SetRole(PlatformRole.Owner);
+            dbContext.AddRange(owner, PlatformUser.Create(memberTelegramUserId, "Member", null));
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var ownerClient = CreateClient(ownerTelegramUserId);
+        var grantOwner = await ownerClient.PatchAsJsonAsync($"/api/admin/users/{memberTelegramUserId}/role", new { role = (int)PlatformRole.Owner });
+        var grantAdmin = await ownerClient.PatchAsJsonAsync($"/api/admin/users/{memberTelegramUserId}/role", new { role = (int)PlatformRole.Admin });
+
+        Assert.Equal(HttpStatusCode.Conflict, grantOwner.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, grantAdmin.StatusCode);
+    }
+
+    // Audit 2026-10-12: legacy routes the app no longer calls are gone (direct requests bypassed offer limits and the
+    // selected role), and the legacy accept answers 404 for another business's application, never 403.
+    [IntegrationFact]
+    public async Task Legacy_routes_are_gone_and_a_foreign_application_reads_as_missing()
+    {
+        var seed = await SeedPendingApplicationAsync(1_100_941, 1_100_942);
+        var other = await SeedPendingApplicationAsync(1_100_943, 1_100_944);
+        using var businessClient = CreateClient(1_100_942);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await businessClient.PostAsJsonAsync($"/api/collaboration-requests/bloggers/{seed.BloggerId}", new { message = "Hello" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await businessClient.GetAsync("/api/collaboration-requests/me")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await businessClient.PatchAsJsonAsync($"/api/campaign-applications/{seed.ApplicationId}/status", new { status = 1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await businessClient.PostAsync($"/api/campaign-applications/{other.ApplicationId}/accept", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await businessClient.PostAsync($"/api/campaign-applications/{seed.ApplicationId}/accept", null)).StatusCode);
+    }
+
     [IntegrationFact]
     public async Task Api_responses_carry_security_headers_including_errors()
     {
@@ -634,6 +739,16 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Contains(businesses.EnumerateArray(), entry => entry.GetProperty("id").GetGuid() == seed.BusinessId);
         Assert.Equal(HttpStatusCode.OK, (await adminClient.GetAsync("/api/admin/bloggers")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await businessClient.GetAsync("/api/admin/businesses")).StatusCode);
+        var card = await adminClient.GetFromJsonAsync<JsonElement>($"/api/admin/users/{seed.BloggerTelegramUserId}");
+        Assert.Contains(card.GetProperty("profiles").EnumerateArray(), profile => profile.GetProperty("role").GetString() == "blogger" && profile.GetProperty("id").GetGuid() == seed.BloggerId);
+        Assert.Contains(card.GetProperty("recentDeals").EnumerateArray(), deal => deal.GetProperty("id").GetGuid() == seed.DealId && deal.GetProperty("role").GetString() == "blogger");
+        Assert.True(card.GetProperty("complaintsAgainst").GetInt32() >= 1);
+        Assert.True(card.GetProperty("activeDeals").GetInt32() + card.GetProperty("completedDeals").GetInt32() >= 1);
+        var businessCard = await adminClient.GetFromJsonAsync<JsonElement>($"/api/admin/users/{seed.BusinessTelegramUserId}");
+        Assert.Equal(1, businessCard.GetProperty("complaintsFiled").GetInt32());
+        Assert.Contains(businessCard.GetProperty("recentDeals").EnumerateArray(), deal => deal.GetProperty("role").GetString() == "business" && deal.GetProperty("partnerName").GetString() == "Integration blogger");
+        Assert.Equal(HttpStatusCode.Forbidden, (await businessClient.GetAsync($"/api/admin/users/{seed.BloggerTelegramUserId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await adminClient.GetAsync("/api/admin/users/999999999")).StatusCode);
 
         var close = await adminClient.PatchAsJsonAsync($"/api/admin/complaints/{item.GetProperty("id").GetGuid()}", new { status = "resolved", note = "Checked" });
         Assert.Equal(HttpStatusCode.OK, close.StatusCode);
@@ -710,6 +825,92 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task Admin_funnel_counts_people_once_per_step_and_only_within_the_period()
+    {
+        const long adminTelegramUserId = 1_100_960;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var admin = PlatformUser.Create(adminTelegramUserId, "Funnel admin", null);
+            admin.SetRole(PlatformRole.Admin);
+            dbContext.Add(admin);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var adminClient = CreateClient(adminTelegramUserId);
+        var allBefore = await GetFunnelAsync(adminClient, "all");
+        var monthBefore = await GetFunnelAsync(adminClient, "30d");
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            PlatformUser Person(long telegramUserId, MarketplaceRole? role)
+            {
+                var user = PlatformUser.Create(telegramUserId, "Funnel person", null);
+                if (role is { } selected) user.SelectMarketplaceRole(selected);
+                dbContext.Add(user);
+                return user;
+            }
+
+            // Opened the app only; picked the blogger role and left before the profile.
+            Person(1_100_961, null);
+            Person(1_100_962, MarketplaceRole.Blogger);
+            // A blogger profile without activity; an applicant with two pending applications; a blogger with a reviewed deal.
+            Person(1_100_963, MarketplaceRole.Blogger);
+            var idle = BloggerProfile.Create(1_100_963, "Funnel idle", "tashkent", ["beauty"]);
+            Person(1_100_964, MarketplaceRole.Blogger);
+            var applicant = BloggerProfile.Create(1_100_964, "Funnel applicant", "tashkent", ["beauty"]);
+            Person(1_100_965, MarketplaceRole.Blogger);
+            var doer = BloggerProfile.Create(1_100_965, "Funnel doer", "tashkent", ["beauty"]);
+            // A business that published, got applications, finished the deal and reviewed; another one with only a draft.
+            Person(1_100_966, MarketplaceRole.Business);
+            var business = BusinessProfile.Create(1_100_966, "Funnel business", "tashkent");
+            Person(1_100_967, MarketplaceRole.Business);
+            var drafter = BusinessProfile.Create(1_100_967, "Funnel drafter", "tashkent");
+            // A brand face with an offer from the business, and a blogger who first opened the app 40 days ago.
+            Person(1_100_968, MarketplaceRole.BrandFace);
+            var face = BrandFaceProfile.Create(1_100_968, "Funnel face", "tashkent", ["beauty"]);
+            Person(1_100_969, MarketplaceRole.Blogger);
+            var old = BloggerProfile.Create(1_100_969, "Funnel old", "tashkent", ["beauty"]);
+
+            var campaign = Campaign.Create(business.Id, "Funnel campaign", "Funnel description", ["beauty"], ["One reel"], 100, 200, "tashkent", null);
+            campaign.Publish();
+            var secondCampaign = Campaign.Create(business.Id, "Second funnel campaign", "Funnel description", ["beauty"], ["One reel"], 100, 200, "tashkent", null);
+            secondCampaign.Publish();
+            var draft = Campaign.Create(drafter.Id, "Draft funnel campaign", "Funnel description", ["beauty"], ["One reel"], 100, 200, "tashkent", null);
+            var accepted = CampaignApplication.Create(campaign.Id, doer.Id, null);
+            accepted.Accept();
+            var deal = Deal.Create(accepted.Id, doer.Id, business.Id, CampaignTermsSnapshot.FromCampaign(campaign));
+            deal.Complete();
+            dbContext.AddRange(idle, applicant, doer, business, drafter, face, old, campaign, secondCampaign, draft,
+                CampaignApplication.Create(campaign.Id, applicant.Id, null), CampaignApplication.Create(secondCampaign.Id, applicant.Id, null), accepted, deal,
+                Review.ForBusiness(deal.Id, 1_100_965, business.Id, 5, null), Review.ForBlogger(deal.Id, 1_100_966, doer.Id, 5, null),
+                CollaborationRequest.CreateOfferForBrandFace(face.Id, business.Id, "Photo shoot", CollaborationFormat.PhotoShoot, 300, null));
+            await dbContext.SaveChangesAsync();
+            await dbContext.PlatformUsers.Where(user => user.TelegramUserId == 1_100_969)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(user => user.CreatedAtUtc, DateTime.UtcNow.AddDays(-40)));
+        }
+
+        var all = await GetFunnelAsync(adminClient, "all");
+        Assert.Equal(["opened", "roleSelected", "profile", "reached", "deal", "completed", "reviewed"], all["blogger"].Select(step => step.Key));
+        Assert.Equal(["opened", "roleSelected", "profile", "posted", "answered", "deal", "completed", "reviewed"], all["business"].Select(step => step.Key));
+        // Two applications are one person reaching out; the drafter never got past the profile.
+        Assert.Equal([9, 5, 4, 2, 1, 1, 1], Growth(allBefore, all, "blogger"));
+        Assert.Equal([9, 1, 1, 1, 0, 0, 0], Growth(allBefore, all, "brandFace"));
+        Assert.Equal([9, 2, 2, 1, 1, 1, 1, 1], Growth(allBefore, all, "business"));
+
+        // The blogger who first opened the app 40 days ago falls outside the last 30 days, with every step after it.
+        var month = await GetFunnelAsync(adminClient, "30d");
+        Assert.Equal([8, 4, 3, 2, 1, 1, 1], Growth(monthBefore, month, "blogger"));
+        Assert.Equal([8, 1, 1, 1, 0, 0, 0], Growth(monthBefore, month, "brandFace"));
+        Assert.Equal([8, 2, 2, 1, 1, 1, 1, 1], Growth(monthBefore, month, "business"));
+
+        using var memberClient = CreateClient(1_100_961);
+        Assert.Equal(HttpStatusCode.Forbidden, (await memberClient.GetAsync("/api/admin/funnel")).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await adminClient.GetAsync("/api/admin/funnel?period=1d")).StatusCode);
+    }
+
+    [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {
         var seed = await SeedCampaignDealAsync(1_100_311, 1_100_312);
@@ -768,6 +969,26 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         return new SeededDeal(deal.Id, campaign.Id, application.Id, blogger.Id, bloggerTelegramUserId, businessTelegramUserId, business.Id);
     }
 
+    private async Task<SeededApplication> SeedPendingApplicationAsync(long bloggerTelegramUserId, long businessTelegramUserId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        var bloggerUser = PlatformUser.Create(bloggerTelegramUserId, "Blogger", null);
+        bloggerUser.SelectMarketplaceRole(MarketplaceRole.Blogger);
+        var businessUser = PlatformUser.Create(businessTelegramUserId, "Business", null);
+        businessUser.SelectMarketplaceRole(MarketplaceRole.Business);
+        var blogger = BloggerProfile.Create(bloggerTelegramUserId, "Integration blogger", "tashkent", ["beauty"]);
+        blogger.Approve();
+        var business = BusinessProfile.Create(businessTelegramUserId, "Integration business", "tashkent");
+        business.Approve();
+        var campaign = Campaign.Create(business.Id, "Pending title", "Pending description", ["beauty"], ["One reel"], 100, 200, "tashkent", null);
+        campaign.Publish();
+        var application = CampaignApplication.Create(campaign.Id, blogger.Id, null);
+        dbContext.AddRange(bloggerUser, businessUser, blogger, business, campaign, application);
+        await dbContext.SaveChangesAsync();
+        return new SeededApplication(campaign.Id, application.Id, blogger.Id);
+    }
+
     private async Task SelectRoleAsync(long telegramUserId, MarketplaceRole role)
     {
         using var scope = factory.Services.CreateScope();
@@ -783,6 +1004,28 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
         return await dbContext.Deals.AsNoTracking().SingleAsync(deal => deal.Id == dealId);
     }
+
+    // Steps of each role in order; every step must be a subset of the one before it.
+    private static async Task<Dictionary<string, (string Key, int Count)[]>> GetFunnelAsync(HttpClient client, string period)
+    {
+        var funnel = await client.GetFromJsonAsync<JsonElement>($"/api/admin/funnel?period={period}");
+        Assert.Equal(period, funnel.GetProperty("period").GetString());
+        var roles = funnel.GetProperty("roles").EnumerateArray().ToDictionary(
+            role => role.GetProperty("role").GetString()!,
+            role => role.GetProperty("steps").EnumerateArray().Select(step => (Key: step.GetProperty("key").GetString()!, Count: step.GetProperty("count").GetInt32())).ToArray());
+        foreach (var steps in roles.Values)
+        {
+            for (var index = 1; index < steps.Length; index++)
+            {
+                Assert.True(steps[index].Count <= steps[index - 1].Count, $"{steps[index].Key} has more people than {steps[index - 1].Key}");
+            }
+        }
+
+        return roles;
+    }
+
+    private static int[] Growth(Dictionary<string, (string Key, int Count)[]> before, Dictionary<string, (string Key, int Count)[]> after, string role) =>
+        after[role].Select((step, index) => step.Count - before[role][index].Count).ToArray();
 
     private HttpClient CreateClient(long telegramUserId)
     {
@@ -802,6 +1045,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var hash = Convert.ToHexString(signature.ComputeHash(Encoding.UTF8.GetBytes(dataCheckString))).ToLowerInvariant();
         return $"auth_date={authDate}&user={Uri.EscapeDataString(user)}&hash={hash}";
     }
+
+    private sealed record SeededApplication(Guid CampaignId, Guid ApplicationId, Guid BloggerId);
 
     private sealed record SeededDeal(Guid DealId, Guid CampaignId, Guid ApplicationId, Guid BloggerId, long BloggerTelegramUserId, long BusinessTelegramUserId, Guid BusinessId);
 }

@@ -43,6 +43,8 @@ public sealed class CloseCampaignHandler(ICampaignRepository campaigns, IPlatfor
     {
         var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
         var campaign = await campaigns.GetByIdForBusinessAsync(command.CampaignId, business.Id, cancellationToken) ?? throw new InvalidOperationException("Campaign was not found.");
+        // Archiving a campaign the admin rejected would erase the rejection, and reopen would then publish it.
+        if (campaign.Status == CampaignStatus.Rejected) throw new InvalidOperationException("A rejected campaign cannot be closed.");
         if (campaign.Status != CampaignStatus.Archived)
         {
             campaign.Archive();
@@ -60,6 +62,8 @@ public sealed class ReopenCampaignHandler(ICampaignRepository campaigns, IPlatfo
     {
         var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken);
         var campaign = await campaigns.GetByIdForBusinessAsync(command.CampaignId, business.Id, cancellationToken) ?? throw new InvalidOperationException("Campaign was not found.");
+        // Only a draft or a closed campaign goes (back) to the catalog; an admin's rejection is not the owner's to undo.
+        if (campaign.Status == CampaignStatus.Rejected) throw new InvalidOperationException("A rejected campaign cannot be published.");
         if (campaign.Status != CampaignStatus.Published)
         {
             // A campaign past its deadline would reopen straight into "expired"; the owner moves the deadline first.

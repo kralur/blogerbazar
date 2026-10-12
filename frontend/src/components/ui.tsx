@@ -289,7 +289,7 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
       role={isError ? "alert" : "status"}
       className={cn(
         "toast-enter fixed inset-x-4 z-50 mx-auto max-w-[390px] rounded-[var(--bb-radius-control)] px-4 py-3 text-sm font-bold text-white shadow-soft",
-        isError ? "bg-brand-danger" : isWarning ? "bg-brand-warning" : tone === "info" ? "bg-brand-blue" : "bg-brand-success"
+        isError ? "toast--error" : isWarning ? "toast--warning" : tone === "info" ? "toast--info" : "toast--success"
       )}
       style={{ bottom: "max(6rem, calc(5rem + var(--tg-content-safe-bottom, env(safe-area-inset-bottom))))" }}
     >

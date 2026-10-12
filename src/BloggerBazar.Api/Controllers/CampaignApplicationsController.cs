@@ -58,11 +58,4 @@ public sealed class CampaignApplicationsController(ISender sender, ITelegramWebA
         var deal = await sender.Send(new AcceptCampaignApplicationCommand(applicationId, actor.Id), cancellationToken);
         return StatusCode(StatusCodes.Status201Created, deal);
     }
-
-    [HttpPatch("{applicationId:guid}/status")]
-    public async Task<ActionResult<MyCampaignApplicationDto>> UpdateStatus(Guid applicationId, UpdateCampaignApplicationStatusRequest request, CancellationToken cancellationToken)
-    {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new UpdateCampaignApplicationStatusCommand(applicationId, actor.Id, request.Status), cancellationToken));
-    }
 }

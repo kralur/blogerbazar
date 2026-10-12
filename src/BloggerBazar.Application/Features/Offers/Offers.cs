@@ -195,9 +195,10 @@ public sealed class CreateOfferHandler(
             pending.Expire();
         }
 
+        var deadline = UtcDates.AsUtc(command.Deadline);
         var offer = recipient.Role == MarketplaceRole.BrandFace
-            ? CollaborationRequest.CreateOfferForBrandFace(recipient.Id, business.Id, command.Message.Trim(), OfferFormats.Parse(command.Format), command.OfferedBudget, command.Deadline)
-            : CollaborationRequest.CreateOffer(recipient.Id, business.Id, command.Message.Trim(), OfferFormats.Parse(command.Format), command.OfferedBudget, command.Deadline);
+            ? CollaborationRequest.CreateOfferForBrandFace(recipient.Id, business.Id, command.Message.Trim(), OfferFormats.Parse(command.Format), command.OfferedBudget, deadline)
+            : CollaborationRequest.CreateOffer(recipient.Id, business.Id, command.Message.Trim(), OfferFormats.Parse(command.Format), command.OfferedBudget, deadline);
         await offers.AddAsync(offer, cancellationToken);
         if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
         {

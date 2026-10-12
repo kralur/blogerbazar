@@ -35,6 +35,12 @@ Tokens live in `frontend/src/styles.css`. Tailwind aliases in `frontend/tailwind
 - `--bb-action`, `--bb-action-pressed`, `--bb-action-subtle`: navigation, links, and info.
 - `--bb-success`, `--bb-warning`, `--bb-error`, `--bb-info`: semantic foregrounds.
 - Matching `*-subtle` tokens: semantic backgrounds.
+- `--bb-success-on-subtle`, `--bb-warning-on-subtle`, `--bb-error-on-subtle`: state text on its `*-subtle`
+  surface or a plain card (badges, the report button). The light-theme success, warning and error colors are too
+  pale for small text on a pale surface; these mixes keep at least 4.5:1 in both themes.
+- `--bb-error-fill`, `--bb-success-fill`, `--bb-warning-fill`, `--bb-info-fill`: solid fills under white text
+  (danger button, counter badge, toasts), the same in both themes. Never put white text on `--bb-success`,
+  `--bb-warning`, `--bb-error` or `--bb-info` directly: in the dark theme they are light colors.
 - `--bb-premium`: premium-only emphasis, not a general brand color.
 
 ### Shape and elevation

@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminDashboard, getAdminUsers, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
+import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminDashboard, getAdminUsers, sendAdminTipPreview, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/currency";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { PageHeader } from "../components/PageHeader";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { adminFunnelHref } from "./AdminFunnel";
+import { adminUserCardHref } from "./AdminUserCard";
 
 const roleKeys = ["admin.role.member", "admin.role.support", "admin.role.moderator", "admin.role.admin", "admin.role.owner"];
 const sections = ["users", "bloggers", "businesses", "campaigns", "complaints", "log"] as const;
@@ -120,6 +122,17 @@ export function Admin({ section: rawSection }: { section?: string }) {
       setToast(updated.isBlocked ? t("admin.userBlocked") : t("admin.userUnblocked"));
     } catch { setToastTone("error"); setToast(t("admin.userUpdateDenied")); }
   };
+  const [tipSending, setTipSending] = useState(false);
+  const previewTip = async () => {
+    if (tipSending) return;
+    setTipSending(true);
+    try {
+      const result = await sendAdminTipPreview();
+      setToastTone(result.sent ? "success" : "error");
+      setToast(result.sent ? t("admin.tipSent", { number: result.number, total: result.total }) : t("admin.tipFailed"));
+    } catch { setToastTone("error"); setToast(t("admin.tipFailed")); }
+    finally { setTipSending(false); }
+  };
   const closeComplaint = async (complaint: AdminComplaint, status: "resolved" | "dismissed") => {
     if (closing) return;
     setClosing(complaint.id);
@@ -157,6 +170,8 @@ export function Admin({ section: rawSection }: { section?: string }) {
         })}
       </section>
       <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.activityTitle")}</h2><a className="admin-activity__link mt-2 block text-sm" href="#/admin/users?filter=new">{t("admin.activityUsers", { today: dashboard.newUsersToday ?? 0, week: dashboard.newUsersWeek ?? 0 })} ›</a><p className="mt-1 text-sm text-brand-muted">{t("admin.activityDeals", { started: dashboard.newDealsWeek ?? 0, completed: dashboard.completedDealsWeek ?? 0 })}</p></Card>
+      <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.tipsTitle")}</h2><p className="mt-1 text-sm text-brand-muted">{t("admin.tipsHint")}</p><Button className="mt-3 w-full" disabled={tipSending} onClick={() => void previewTip()} type="button" variant="secondary">{t("admin.tipPreview")}</Button></Card>
+      <a className="admin-log-link" href={adminFunnelHref}><span><strong>{t("admin.funnelTitle")}</strong><span>{t("admin.funnelLinkHint")}</span></span><span aria-hidden="true">›</span></a>
       <a className="admin-log-link" href="#/admin/log"><span><strong>{t("admin.logTitle")}</strong><span>{t("admin.logHint")}</span></span><span aria-hidden="true">›</span></a>
       <Toast message={toast} tone={toastTone} />
       <BottomNav />
@@ -176,27 +191,30 @@ export function Admin({ section: rawSection }: { section?: string }) {
       <div aria-label={t("admin.userFilter")} className="admin-filters no-scrollbar" role="group">{userFilters.map((value) => <button aria-pressed={userFilter === value} className="admin-filter" key={value} onClick={() => setUserFilter(value)} type="button">{t(`admin.userFilter.${value}`)}</button>)}</div>
     </div>}
     {section === "complaints" && <div aria-label={t("admin.complaintStatusFilter")} className="admin-filters no-scrollbar" role="group">{complaintStatuses.map((value) => <button aria-pressed={complaintStatus === value} className="admin-filter" key={value} onClick={() => setComplaintStatus(value)} type="button">{t(`admin.complaintStatus.${value}`)}</button>)}</div>}
-    {listLoading && items.length === 0 ? <LoadingState /> : items.length === 0 ? empty : <div className="grid gap-2">
+    {listLoading && items.length === 0 ? <LoadingState /> : items.length === 0 ? empty : <div className="grid grid-cols-1 gap-2">
       {section === "users" && lists.users.map((user) => {
         const profiles = [user.hasBloggerProfile && t("admin.userFilter.bloggers"), user.hasBusinessProfile && t("admin.userFilter.businesses"), user.hasBrandFaceProfile && t("admin.userFilter.brandFaces")].filter(Boolean).join(" · ");
         return <Card className="p-3" key={user.telegramUserId}>
-          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="font-extrabold">{user.firstName}</p><p className="text-xs text-brand-muted">{user.username ? "@" + user.username : `id ${user.telegramUserId}`}{user.verifiedPhone ? ` · ${user.verifiedPhone}` : ""}</p>{profiles && <p className="mt-1 text-xs text-brand-muted">{profiles}</p>}<p className="mt-1 text-xs text-brand-muted">{t("admin.registeredAt", { date: formatDate(user.createdAtUtc) })}</p>{user.isDeleted && <p className="mt-1 text-xs text-brand-muted">{t("admin.deletedInfo", { date: formatDate(user.deletedAtUtc), actor: user.deletedByTelegramUserId ?? user.telegramUserId })}</p>}</div><Badge tone={user.isDeleted || user.isBlocked ? "gray" : "blue"}>{user.isDeleted ? t("profile.deleted") : user.isBlocked ? t("common.blocked") : roleLabels[user.role]}</Badge></div>
+          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><a className="font-extrabold underline-offset-2 hover:underline" href={adminUserCardHref(user.telegramUserId)}>{user.firstName} ›</a><p className="text-xs text-brand-muted">{user.username ? "@" + user.username : `id ${user.telegramUserId}`}{user.verifiedPhone ? ` · ${user.verifiedPhone}` : ""}</p>{profiles && <p className="mt-1 text-xs text-brand-muted">{profiles}</p>}<p className="mt-1 text-xs text-brand-muted">{t("admin.registeredAt", { date: formatDate(user.createdAtUtc) })}</p>{user.isDeleted && <p className="mt-1 text-xs text-brand-muted">{t("admin.deletedInfo", { date: formatDate(user.deletedAtUtc), actor: user.deletedByTelegramUserId ?? user.telegramUserId })}</p>}</div><Badge tone={user.isDeleted || user.isBlocked ? "gray" : "blue"}>{user.isDeleted ? t("profile.deleted") : user.isBlocked ? t("common.blocked") : roleLabels[user.role]}</Badge></div>
           {/* A chat opens only by @username: Telegram has no link to a person without one, so the phone is shown instead. */}
           {user.username && <Button className="mt-3 w-full" onClick={() => openLink(`https://t.me/${user.username}`)} type="button" variant="secondary">{t("admin.writeInTelegram")}</Button>}
-          <div className="mt-2 flex gap-2"><select aria-label={t("admin.userRoleAria")} className="ds-legacy-field min-h-11 flex-1 rounded-xl border px-2 text-sm" disabled={user.isDeleted || user.role === 4} onChange={(event) => void updateRole(user.telegramUserId, Number(event.target.value))} value={user.role}>{roleLabels.map((label, value) => <option key={roleKeys[value]} value={value}>{label}</option>)}</select><Button disabled={user.isDeleted || user.role === 4} onClick={() => void toggleBlock(user)} type="button" variant={user.isBlocked ? "secondary" : "danger"}>{user.isBlocked ? t("common.unblock") : t("common.block")}</Button></div>
+          <div className="mt-2 flex gap-2"><select aria-label={t("admin.userRoleAria")} className="ds-legacy-field min-h-11 min-w-0 flex-1 rounded-xl border px-2 text-sm" disabled={user.isDeleted || user.role === 4} onChange={(event) => void updateRole(user.telegramUserId, Number(event.target.value))} value={user.role}>{roleLabels.map((label, value) => (value !== 4 || user.role === 4) && <option key={roleKeys[value]} value={value}>{label}</option>)}</select><Button className="shrink-0" disabled={user.isDeleted || user.role === 4} onClick={() => void toggleBlock(user)} type="button" variant={user.isBlocked ? "secondary" : "danger"}>{user.isBlocked ? t("common.unblock") : t("common.block")}</Button></div>
         </Card>;
       })}
       {section === "bloggers" && lists.bloggers.map((blogger) => <a className="admin-row" href={`#/blogger/${blogger.id}`} key={blogger.id}><Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} /><span className="admin-row__text"><strong>{blogger.name}</strong><span>{t(`admin.moderation.${blogger.status}`)} · {formatDate(blogger.createdAtUtc)}</span></span></a>)}
       {section === "businesses" && lists.businesses.map((business) => <a className="admin-row" href={`#/company/${business.id}`} key={business.id}><Avatar name={business.name} size="sm" src={business.logoUrl} /><span className="admin-row__text"><strong>{business.name}</strong><span>{business.isDeleted ? t("common.deletedAccount") : t(`admin.moderation.${business.moderationStatus}`)} · {t("admin.businessCounts", { campaigns: business.campaignsCount, deals: business.completedDealsCount })}</span></span></a>)}
       {section === "campaigns" && lists.campaigns.map((campaign) => <a className="admin-row" href={`#/campaign/${campaign.id}`} key={campaign.id}><span className="admin-row__text"><strong>{campaign.title}</strong><span>{campaign.businessName} · {t(`admin.campaignStatus.${campaign.status}`)} · {t("admin.applicationsCount", { count: campaign.applicationsCount })}</span></span>{campaign.isPromoted && <Badge tone="gold">{t("campaign.promoted")}</Badge>}</a>)}
       {section === "complaints" && lists.complaints.map((complaint) => <Card className="p-3" key={complaint.id}>
-        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate font-extrabold">{complaint.targetName || t("common.deletedAccount")}</p><p className="text-xs text-brand-muted">{t(`admin.complaintTarget.${complaint.targetType}`)} · {formatDate(complaint.createdAtUtc)}</p></div><Badge tone="red">{t(`report.reason.${complaint.reason}`)}</Badge></div>
+        {/* The reason gets its own line: long reasons ("Spam or ...") must wrap, not push the card off the screen. */}
+        <p className="truncate font-extrabold">{complaint.targetName || t("common.deletedAccount")}</p>
+        <p className="text-xs text-brand-muted">{t(`admin.complaintTarget.${complaint.targetType}`)} · {formatDate(complaint.createdAtUtc)}</p>
+        <p className="admin-complaint__reason mt-2">{t(`report.reason.${complaint.reason}`)}</p>
         {complaint.comment && <p className="mt-2 whitespace-pre-line text-sm leading-6 text-brand-muted">{complaint.comment}</p>}
-        <p className="mt-2 text-xs text-brand-muted">{t("admin.complaintReporter", { name: complaint.reporterName || String(complaint.reporterTelegramUserId), id: complaint.reporterTelegramUserId })}</p>
+        <a className="mt-2 block text-xs text-brand-muted" href={adminUserCardHref(complaint.reporterTelegramUserId)}>{t("admin.complaintReporter", { name: complaint.reporterName || String(complaint.reporterTelegramUserId), id: complaint.reporterTelegramUserId })} ›</a>
         {complaint.status !== "open" && <p className="mt-1 text-xs text-brand-muted">{t("admin.complaintClosedAt", { date: formatDate(complaint.resolvedAtUtc) })}</p>}
-        {(complaintTargetRoutes[complaint.targetType] || complaint.ownerTelegramUserId) && <div className="mt-3 flex gap-2">
-          {complaintTargetRoutes[complaint.targetType] && <a className="ds-button ds-button--secondary tap-target inline-flex flex-1 items-center justify-center px-5" href={`${complaintTargetRoutes[complaint.targetType]}${complaint.targetId}`}>{t("admin.complaintOpenTarget")}</a>}
-          {complaint.ownerTelegramUserId && <Button className="flex-1" onClick={() => void toggleOwnerBlock(complaint)} type="button" variant={complaint.ownerIsBlocked ? "secondary" : "danger"}>{t(complaint.ownerIsBlocked ? "admin.complaintUnblockOwner" : "admin.complaintBlockOwner")}</Button>}
+        {(complaintTargetRoutes[complaint.targetType] || complaint.ownerTelegramUserId) && <div className="mt-3 flex flex-wrap gap-2">
+          {complaintTargetRoutes[complaint.targetType] && <a className="ds-button ds-button--secondary tap-target inline-flex flex-auto items-center justify-center px-5" href={`${complaintTargetRoutes[complaint.targetType]}${complaint.targetId}`}>{t("admin.complaintOpenTarget")}</a>}
+          {complaint.ownerTelegramUserId && <Button className="flex-auto" onClick={() => void toggleOwnerBlock(complaint)} type="button" variant={complaint.ownerIsBlocked ? "secondary" : "danger"}>{t(complaint.ownerIsBlocked ? "common.unblock" : "common.block")}</Button>}
         </div>}
         {complaint.status === "open" && <div className="mt-2 grid grid-cols-2 gap-2"><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "resolved")} type="button">{t("admin.complaintResolve")}</Button><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "dismissed")} type="button" variant="secondary">{t("admin.complaintDismiss")}</Button></div>}
       </Card>)}

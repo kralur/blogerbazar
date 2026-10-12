@@ -51,6 +51,7 @@ function friendlyError(status: number, code?: string) {
   if (status === 403) return translate("error.access_denied");
   if (status === 404) return translate("error.not_found");
   if (status === 409) return translate("error.conflict");
+  if (status === 429) return translate("error.rate_limited");
   if (status >= 500) return translate("error.server");
   return translate("error.default");
 }

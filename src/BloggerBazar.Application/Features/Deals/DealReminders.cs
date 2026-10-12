@@ -43,7 +43,7 @@ public static class DealReminderSchedule
 
     // D51: two days after completion the creator is asked once for the publication link, if none was added.
     // Day 2 keeps it apart from the review reminders on days 1 and 3.
-    private const int ResultsReminderDay = 2;
+    public const int ResultsReminderDay = 2;
 
     public static bool IsDeliveryTime(DateTime nowUtc)
     {

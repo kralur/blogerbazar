@@ -65,6 +65,8 @@ public sealed class PlatformUser
     }
 
     public void SetTipsDisabled(bool disabled) { TipsDisabled = disabled; UpdatedAtUtc = DateTime.UtcNow; }
+    // An admin preview moves the admin's own rotation on; the daily send mark (LastTipSentAtUtc) stays untouched.
+    public void SetLastTipNumber(int number) { LastTipNumber = number; UpdatedAtUtc = DateTime.UtcNow; }
     public void SetBlocked(bool isBlocked) { IsBlocked = isBlocked; UpdatedAtUtc = DateTime.UtcNow; }
     public void SoftDelete(long deletedByTelegramUserId) { IsDeleted = true; DeletedAtUtc = DateTime.UtcNow; DeletedByTelegramUserId = deletedByTelegramUserId; UpdatedAtUtc = DeletedAtUtc.Value; }
     public void RestoreForNewOnboarding(string firstName, string? username)

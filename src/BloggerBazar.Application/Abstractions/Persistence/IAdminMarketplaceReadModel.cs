@@ -12,4 +12,9 @@ public interface IAdminMarketplaceReadModel
     Task<AdminDashboardDto> GetDashboardAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<AdminPlatformUserDto>> SearchUsersAsync(string? search, string? filter, int take, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<AdminPlatformUserDto>>([]);
+    Task<AdminUserDetailsDto?> GetUserDetailsAsync(long telegramUserId, CancellationToken cancellationToken) =>
+        Task.FromResult<AdminUserDetailsDto?>(null);
+    // People who first opened the app since fromUtc (all time when null) and the funnel steps they reached, per role.
+    Task<IReadOnlyList<AdminFunnelRoleDto>> GetFunnelAsync(DateTime? fromUtc, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<AdminFunnelRoleDto>>([]);
 }

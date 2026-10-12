@@ -26,6 +26,22 @@ public sealed class PlatformUserManagementHandlerTests
         Assert.Equal(member.TelegramUserId.ToString(), entry.TargetId);
     }
 
+    // The owner role comes only from the deployment settings: granted in the app it could never be revoked or blocked.
+    [Fact]
+    public async Task Owner_role_cannot_be_granted_to_another_user()
+    {
+        var owner = PlatformUser.Create(1, "Owner", "owner");
+        owner.SetRole(PlatformRole.Owner);
+        var member = PlatformUser.Create(2, "Member", "member");
+        var auditLogs = new InMemoryAuditLogRepository();
+        var handler = new UpdatePlatformUserRoleHandler(new InMemoryPlatformUserRepository(owner, member), auditLogs, new SpyUnitOfWork());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new UpdatePlatformUserRoleCommand(owner.TelegramUserId, member.TelegramUserId, PlatformRole.Owner), CancellationToken.None));
+
+        Assert.Equal(PlatformRole.Member, member.Role);
+        Assert.Empty(auditLogs.Entries);
+    }
+
     [Fact]
     public async Task Non_owner_cannot_assign_a_role()
     {
