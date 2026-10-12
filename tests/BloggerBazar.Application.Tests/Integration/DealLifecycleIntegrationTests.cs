@@ -589,6 +589,38 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task Admin_finds_users_by_phone_and_filters_by_role()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_371, 1_100_372);
+        const long adminTelegramUserId = 1_100_373;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var admin = PlatformUser.Create(adminTelegramUserId, "Admin search", null);
+            admin.SetRole(PlatformRole.Admin);
+            var blogger = await dbContext.PlatformUsers.SingleAsync(user => user.TelegramUserId == seed.BloggerTelegramUserId);
+            blogger.VerifyPhone("+998901110371", DateTime.UtcNow);
+            dbContext.Add(admin);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var adminClient = CreateClient(adminTelegramUserId);
+        var byPhone = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/users?search=90%20111%2003%2071");
+        var found = Assert.Single(byPhone.EnumerateArray());
+        Assert.Equal(seed.BloggerTelegramUserId, found.GetProperty("telegramUserId").GetInt64());
+        Assert.Equal("+998901110371", found.GetProperty("verifiedPhone").GetString());
+        Assert.True(found.GetProperty("hasBloggerProfile").GetBoolean());
+
+        var bloggers = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/users?filter=bloggers&take=200");
+        Assert.Contains(bloggers.EnumerateArray(), user => user.GetProperty("telegramUserId").GetInt64() == seed.BloggerTelegramUserId);
+        Assert.DoesNotContain(bloggers.EnumerateArray(), user => user.GetProperty("telegramUserId").GetInt64() == seed.BusinessTelegramUserId);
+        var admins = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/users?filter=admins&take=200");
+        Assert.Contains(admins.EnumerateArray(), user => user.GetProperty("telegramUserId").GetInt64() == adminTelegramUserId);
+        var dashboard = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/dashboard");
+        Assert.True(dashboard.GetProperty("newUsersWeek").GetInt32() >= 3);
+    }
+
+    [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {
         var seed = await SeedCampaignDealAsync(1_100_311, 1_100_312);

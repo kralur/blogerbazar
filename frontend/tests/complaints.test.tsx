@@ -9,7 +9,8 @@ const api = vi.hoisted(() => ({
 }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({ ...(await importOriginal<typeof import("../src/api/marketplace")>()), ...api }));
-vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => ({ haptic: { impact: vi.fn(), success: vi.fn(), selection: vi.fn(), error: vi.fn(), warning: vi.fn() } }) }));
+const openLink = vi.hoisted(() => vi.fn());
+vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => ({ openLink, haptic: { impact: vi.fn(), success: vi.fn(), selection: vi.fn(), error: vi.fn(), warning: vi.fn() } }) }));
 vi.mock("../src/hooks/useProfileDataRefresh", () => ({ useProfileDataRefresh: () => undefined }));
 vi.mock("../src/components/ui", () => ({
   Avatar: ({ name }: { name: string }) => <span>{name}</span>,
@@ -136,5 +137,28 @@ describe("Complaints (D52)", () => {
 
     expect(await screen.findByText(ru("admin.log.platform-user.blocked"))).toBeInTheDocument();
     expect(screen.getByText(/Umid → Ali/)).toBeInTheDocument();
+  });
+
+  it("searches users by phone, filters them and opens a Telegram chat", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 2, bloggers: 1, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
+    api.getAdminUsers.mockResolvedValue([{ telegramUserId: 9, firstName: "Ali", username: "miraskarov", role: 0, isBlocked: false, isDeleted: false, createdAtUtc: "2026-10-01T00:00:00Z", verifiedPhone: "+998901234567", hasBloggerProfile: true }]);
+    render(<I18nProvider><Admin section="users" /></I18nProvider>);
+
+    expect(await screen.findByText(/\+998901234567/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(ru("admin.userSearch")), { target: { value: "90 123" } });
+    await waitFor(() => expect(api.getAdminUsers).toHaveBeenLastCalledWith("90 123", "all"), { timeout: 2000 });
+    fireEvent.click(screen.getByRole("button", { name: ru("admin.userFilter.blocked") }));
+    await waitFor(() => expect(api.getAdminUsers).toHaveBeenLastCalledWith("90 123", "blocked"), { timeout: 2000 });
+
+    fireEvent.click(screen.getByRole("button", { name: ru("admin.writeInTelegram") }));
+    expect(openLink).toHaveBeenCalledWith("https://t.me/miraskarov");
+  });
+
+  it("shows activity for today and the last 7 days on the admin home", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 8, bloggers: 5, businesses: 7, publishedCampaigns: 4, completedDeals: 6, promotedBloggers: 0, promotedCampaigns: 0, newUsersToday: 2, newUsersWeek: 5, newDealsWeek: 3, completedDealsWeek: 1 });
+    render(<I18nProvider><Admin /></I18nProvider>);
+
+    expect(await screen.findByText(translate("admin.activityUsers", { today: 2, week: 5 }, "ru"))).toBeInTheDocument();
+    expect(screen.getByText(translate("admin.activityDeals", { started: 3, completed: 1 }, "ru"))).toBeInTheDocument();
   });
 });

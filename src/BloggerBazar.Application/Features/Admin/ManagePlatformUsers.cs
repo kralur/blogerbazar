@@ -7,9 +7,22 @@ using MediatR;
 
 namespace BloggerBazar.Application.Features.Admin;
 
-public sealed record AdminPlatformUserDto(long TelegramUserId, string FirstName, string? Username, PlatformRole Role, bool IsBlocked, bool IsDeleted, DateTime? DeletedAtUtc, long? DeletedByTelegramUserId, DateTime CreatedAtUtc)
+// VerifiedPhone and the profile flags let an admin find a person and see which roles they have (additive).
+public sealed record AdminPlatformUserDto(long TelegramUserId, string FirstName, string? Username, PlatformRole Role, bool IsBlocked, bool IsDeleted, DateTime? DeletedAtUtc, long? DeletedByTelegramUserId, DateTime CreatedAtUtc,
+    string? VerifiedPhone = null, bool HasBloggerProfile = false, bool HasBusinessProfile = false, bool HasBrandFaceProfile = false)
 {
-    public static AdminPlatformUserDto From(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.IsBlocked, user.IsDeleted, user.DeletedAtUtc, user.DeletedByTelegramUserId, user.CreatedAtUtc);
+    public static AdminPlatformUserDto From(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.IsBlocked, user.IsDeleted, user.DeletedAtUtc, user.DeletedByTelegramUserId, user.CreatedAtUtc, user.VerifiedPhone);
+}
+
+// Filter values for the admin user list; anything else means all users.
+public static class AdminUserFilters
+{
+    public const string Bloggers = "bloggers";
+    public const string Businesses = "businesses";
+    public const string BrandFaces = "brandFaces";
+    public const string Admins = "admins";
+    public const string Blocked = "blocked";
+    public const string Deleted = "deleted";
 }
 
 public sealed record AuditLogDto(Guid Id, long ActorTelegramUserId, string Action, string TargetType, string TargetId, string? Details, string? CorrelationId, DateTime CreatedAtUtc)
@@ -17,18 +30,25 @@ public sealed record AuditLogDto(Guid Id, long ActorTelegramUserId, string Actio
     public static AuditLogDto From(AuditLog entry) => new(entry.Id, entry.ActorTelegramUserId, entry.Action, entry.TargetType, entry.TargetId, entry.Details, entry.CorrelationId, entry.CreatedAtUtc);
 }
 
-public sealed record GetAdminUsersQuery(long ActorTelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AdminPlatformUserDto>>;
+public sealed record GetAdminUsersQuery(long ActorTelegramUserId, int Take = 100, string? Search = null, string? Filter = null) : IRequest<IReadOnlyList<AdminPlatformUserDto>>;
 public sealed record GetAuditLogQuery(long ActorTelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AuditLogDto>>;
 public sealed record UpdatePlatformUserRoleCommand(long ActorTelegramUserId, long TargetTelegramUserId, PlatformRole Role) : IRequest<AdminPlatformUserDto>;
 public sealed record SetPlatformUserBlockedCommand(long ActorTelegramUserId, long TargetTelegramUserId, bool IsBlocked) : IRequest<AdminPlatformUserDto>;
 
-public sealed class GetAdminUsersHandler(IPlatformUserRepository users, BloggerBazar.Application.Abstractions.Security.IAdminAccessPolicy access)
+public sealed class GetAdminUsersHandler(IPlatformUserRepository users, BloggerBazar.Application.Abstractions.Security.IAdminAccessPolicy access, IAdminMarketplaceReadModel? marketplace = null)
     : IRequestHandler<GetAdminUsersQuery, IReadOnlyList<AdminPlatformUserDto>>
 {
     public async Task<IReadOnlyList<AdminPlatformUserDto>> Handle(GetAdminUsersQuery query, CancellationToken cancellationToken)
     {
         access.EnsureAllowed(query.ActorTelegramUserId);
-        return (await users.GetAllAsync(Math.Clamp(query.Take, 1, 200), cancellationToken)).Select(AdminPlatformUserDto.From).ToArray();
+        var take = Math.Clamp(query.Take, 1, 200);
+        // Search by phone, name, @username or Telegram id, with a role/status filter.
+        if (marketplace is not null)
+        {
+            return await marketplace.SearchUsersAsync(string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim(), query.Filter, take, cancellationToken);
+        }
+
+        return (await users.GetAllAsync(take, cancellationToken)).Select(AdminPlatformUserDto.From).ToArray();
     }
 }
 

@@ -12,10 +12,10 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class AdminMarketplaceController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("users")]
-    public async Task<ActionResult<IReadOnlyList<AdminPlatformUserDto>>> GetUsers([FromQuery] int take = 100, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<IReadOnlyList<AdminPlatformUserDto>>> GetUsers([FromQuery] int take = 100, [FromQuery] string? search = null, [FromQuery] string? filter = null, CancellationToken cancellationToken = default)
     {
         var actor = GetTelegramUser();
-        return Ok(await sender.Send(new GetAdminUsersQuery(actor.Id, take), cancellationToken));
+        return Ok(await sender.Send(new GetAdminUsersQuery(actor.Id, take, search, filter), cancellationToken));
     }
 
     [HttpPatch("users/{telegramUserId:long}/role")]
