@@ -187,7 +187,7 @@ export type AdminComplaint = {
   createdAtUtc: string; resolvedAtUtc?: string | null; resolutionNote?: string | null;
 };
 export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; isDeleted: boolean; deletedAtUtc?: string | null; deletedByTelegramUserId?: number | null; createdAtUtc: string; verifiedPhone?: string | null; hasBloggerProfile?: boolean; hasBusinessProfile?: boolean; hasBrandFaceProfile?: boolean };
-export type AdminUserFilter = "all" | "bloggers" | "businesses" | "brandFaces" | "admins" | "blocked" | "deleted";
+export type AdminUserFilter = "all" | "new" | "bloggers" | "businesses" | "brandFaces" | "admins" | "blocked" | "deleted";
 export type AdminBloggerProfile = { id: string; name: string; city: string; categories: string[]; avatarUrl?: string | null; totalFollowers: number; status: number; createdAtUtc: string };
 export type AdminBusiness = { id: string; name: string; city?: string | null; logoUrl?: string | null; moderationStatus: number; isHidden: boolean; isDeleted: boolean; campaignsCount: number; completedDealsCount: number; createdAtUtc: string };
 export type AdminCampaign = { id: string; title: string; businessName: string; status: number; isPromoted: boolean; applicationsCount: number; createdAtUtc: string };

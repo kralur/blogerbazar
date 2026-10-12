@@ -23,6 +23,8 @@ public static class AdminUserFilters
     public const string Admins = "admins";
     public const string Blocked = "blocked";
     public const string Deleted = "deleted";
+    public const string New = "new";
+    public const int NewDays = 7;
 }
 
 public sealed record AuditLogDto(Guid Id, long ActorTelegramUserId, string Action, string TargetType, string TargetId, string? Details, string? CorrelationId, DateTime CreatedAtUtc)

@@ -32,6 +32,8 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
             AdminUserFilters.Admins => users.Where(user => user.Role == PlatformRole.Owner || user.Role == PlatformRole.Admin),
             AdminUserFilters.Blocked => users.Where(user => user.IsBlocked),
             AdminUserFilters.Deleted => users.Where(user => user.IsDeleted),
+            // Same window as the "new users in 7 days" counter on the admin home.
+            AdminUserFilters.New => users.Where(user => user.CreatedAtUtc >= DateTime.UtcNow.AddDays(-AdminUserFilters.NewDays)),
             _ => users
         };
 

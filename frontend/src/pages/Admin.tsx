@@ -11,11 +11,15 @@ import { useTelegram } from "../telegram/TelegramProvider";
 const roleKeys = ["admin.role.member", "admin.role.support", "admin.role.moderator", "admin.role.admin", "admin.role.owner"];
 const sections = ["users", "bloggers", "businesses", "campaigns", "complaints", "log"] as const;
 type Section = typeof sections[number];
+const filterFromHash = (): AdminUserFilter => {
+  const requested = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("filter");
+  return userFilters.includes(requested as AdminUserFilter) ? requested as AdminUserFilter : "all";
+};
 const isSection = (value?: string): value is Section => Boolean(value && (sections as readonly string[]).includes(value));
 
 type Lists = { users: AdminPlatformUser[]; bloggers: AdminBloggerProfile[]; businesses: AdminBusiness[]; campaigns: AdminCampaign[]; complaints: AdminComplaint[]; log: AdminAuditLog[] };
 const emptyLists: Lists = { users: [], bloggers: [], businesses: [], campaigns: [], complaints: [], log: [] };
-const userFilters: AdminUserFilter[] = ["all", "bloggers", "businesses", "brandFaces", "admins", "blocked", "deleted"];
+const userFilters: AdminUserFilter[] = ["all", "new", "bloggers", "businesses", "brandFaces", "admins", "blocked", "deleted"];
 
 // The admin home is a grid of tiles; each tile opens its own list at #/admin/<section>, so nothing needs long scrolling.
 export function Admin({ section: rawSection }: { section?: string }) {
@@ -34,7 +38,10 @@ export function Admin({ section: rawSection }: { section?: string }) {
   const { openLink } = useTelegram();
   // User search (phone, name, @username, Telegram id) and filter; typing waits 300 ms before asking the server.
   const [userSearch, setUserSearch] = useState("");
-  const [userFilter, setUserFilter] = useState<AdminUserFilter>("all");
+  // "#/admin/users?filter=new" (the link from "Activity") opens the list already filtered.
+  const [userFilter, setUserFilter] = useState<AdminUserFilter>(() => filterFromHash());
+  // The admin page stays mounted between sections, so the link's filter is read again on each section change.
+  useEffect(() => { if (section === "users") setUserFilter(filterFromHash()); }, [section]);
   const userQuery = useRef({ search: "", filter: "all" as AdminUserFilter });
   userQuery.current = { search: userSearch, filter: userFilter };
 
@@ -125,7 +132,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
             : <div className="admin-tile" key={tile.key}>{body}</div>;
         })}
       </section>
-      <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.activityTitle")}</h2><p className="mt-2 text-sm text-brand-muted">{t("admin.activityUsers", { today: dashboard.newUsersToday ?? 0, week: dashboard.newUsersWeek ?? 0 })}</p><p className="mt-1 text-sm text-brand-muted">{t("admin.activityDeals", { started: dashboard.newDealsWeek ?? 0, completed: dashboard.completedDealsWeek ?? 0 })}</p></Card>
+      <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.activityTitle")}</h2><a className="admin-activity__link mt-2 block text-sm" href="#/admin/users?filter=new">{t("admin.activityUsers", { today: dashboard.newUsersToday ?? 0, week: dashboard.newUsersWeek ?? 0 })} ›</a><p className="mt-1 text-sm text-brand-muted">{t("admin.activityDeals", { started: dashboard.newDealsWeek ?? 0, completed: dashboard.completedDealsWeek ?? 0 })}</p></Card>
       <a className="admin-log-link" href="#/admin/log"><span><strong>{t("admin.logTitle")}</strong><span>{t("admin.logHint")}</span></span><span aria-hidden="true">›</span></a>
       <Toast message={toast} tone={toastTone} />
       <BottomNav />
@@ -148,7 +155,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
       {section === "users" && lists.users.map((user) => {
         const profiles = [user.hasBloggerProfile && t("admin.userFilter.bloggers"), user.hasBusinessProfile && t("admin.userFilter.businesses"), user.hasBrandFaceProfile && t("admin.userFilter.brandFaces")].filter(Boolean).join(" · ");
         return <Card className="p-3" key={user.telegramUserId}>
-          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="font-extrabold">{user.firstName}</p><p className="text-xs text-brand-muted">{user.username ? "@" + user.username : `id ${user.telegramUserId}`}{user.verifiedPhone ? ` · ${user.verifiedPhone}` : ""}</p>{profiles && <p className="mt-1 text-xs text-brand-muted">{profiles}</p>}{user.isDeleted && <p className="mt-1 text-xs text-brand-muted">{t("admin.deletedInfo", { date: formatDate(user.deletedAtUtc), actor: user.deletedByTelegramUserId ?? user.telegramUserId })}</p>}</div><Badge tone={user.isDeleted || user.isBlocked ? "gray" : "blue"}>{user.isDeleted ? t("profile.deleted") : user.isBlocked ? t("common.blocked") : roleLabels[user.role]}</Badge></div>
+          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="font-extrabold">{user.firstName}</p><p className="text-xs text-brand-muted">{user.username ? "@" + user.username : `id ${user.telegramUserId}`}{user.verifiedPhone ? ` · ${user.verifiedPhone}` : ""}</p>{profiles && <p className="mt-1 text-xs text-brand-muted">{profiles}</p>}<p className="mt-1 text-xs text-brand-muted">{t("admin.registeredAt", { date: formatDate(user.createdAtUtc) })}</p>{user.isDeleted && <p className="mt-1 text-xs text-brand-muted">{t("admin.deletedInfo", { date: formatDate(user.deletedAtUtc), actor: user.deletedByTelegramUserId ?? user.telegramUserId })}</p>}</div><Badge tone={user.isDeleted || user.isBlocked ? "gray" : "blue"}>{user.isDeleted ? t("profile.deleted") : user.isBlocked ? t("common.blocked") : roleLabels[user.role]}</Badge></div>
           {/* A chat opens only by @username: Telegram has no link to a person without one, so the phone is shown instead. */}
           {user.username && <Button className="mt-3 w-full" onClick={() => openLink(`https://t.me/${user.username}`)} type="button" variant="secondary">{t("admin.writeInTelegram")}</Button>}
           <div className="mt-2 flex gap-2"><select aria-label={t("admin.userRoleAria")} className="ds-legacy-field min-h-11 flex-1 rounded-xl border px-2 text-sm" disabled={user.isDeleted || user.role === 4} onChange={(event) => void updateRole(user.telegramUserId, Number(event.target.value))} value={user.role}>{roleLabels.map((label, value) => <option key={roleKeys[value]} value={value}>{label}</option>)}</select><Button disabled={user.isDeleted || user.role === 4} onClick={() => void toggleBlock(user)} type="button" variant={user.isBlocked ? "secondary" : "danger"}>{user.isBlocked ? t("common.unblock") : t("common.block")}</Button></div>

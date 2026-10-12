@@ -616,6 +616,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.DoesNotContain(bloggers.EnumerateArray(), user => user.GetProperty("telegramUserId").GetInt64() == seed.BusinessTelegramUserId);
         var admins = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/users?filter=admins&take=200");
         Assert.Contains(admins.EnumerateArray(), user => user.GetProperty("telegramUserId").GetInt64() == adminTelegramUserId);
+        var newcomers = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/users?filter=new&take=200");
+        Assert.Contains(newcomers.EnumerateArray(), user => user.GetProperty("telegramUserId").GetInt64() == seed.BloggerTelegramUserId);
         var dashboard = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/dashboard");
         Assert.True(dashboard.GetProperty("newUsersWeek").GetInt32() >= 3);
     }

@@ -821,4 +821,6 @@
   ,"admin.userFilter.blocked": "Заблокированные"
   ,"admin.userFilter.deleted": "Удалённые"
   ,"admin.writeInTelegram": "Написать в Telegram"
+  ,"admin.userFilter.new": "Новые (7 дней)"
+  ,"admin.registeredAt": "Регистрация: {date}"
 }

@@ -820,4 +820,6 @@
   ,"admin.userFilter.blocked": "Bloklanganlar"
   ,"admin.userFilter.deleted": "O‘chirilganlar"
   ,"admin.writeInTelegram": "Telegramda yozish"
+  ,"admin.userFilter.new": "Yangilar (7 kun)"
+  ,"admin.registeredAt": "Ro‘yxatdan o‘tgan: {date}"
 }

@@ -1590,3 +1590,4 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .admin-filters { display: flex; gap: .5rem; overflow-x: auto; }
 .admin-filter { flex: 0 0 auto; min-height: 2.25rem; padding: 0 .875rem; border: 1px solid var(--bb-border); border-radius: 999px; background: var(--bb-surface); color: var(--bb-text); font-size: .8125rem; font-weight: 700; white-space: nowrap; }
 .admin-filter[aria-pressed="true"] { border-color: var(--bb-accent); background: var(--bb-accent); color: var(--bb-accent-text); }
+.admin-activity__link { color: var(--bb-text); font-weight: 700; text-decoration: none; }

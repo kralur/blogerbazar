@@ -158,7 +158,21 @@ describe("Complaints (D52)", () => {
     api.getAdminDashboard.mockResolvedValue({ users: 8, bloggers: 5, businesses: 7, publishedCampaigns: 4, completedDeals: 6, promotedBloggers: 0, promotedCampaigns: 0, newUsersToday: 2, newUsersWeek: 5, newDealsWeek: 3, completedDealsWeek: 1 });
     render(<I18nProvider><Admin /></I18nProvider>);
 
-    expect(await screen.findByText(translate("admin.activityUsers", { today: 2, week: 5 }, "ru"))).toBeInTheDocument();
+    const newUsers = await screen.findByRole("link", { name: new RegExp(translate("admin.activityUsers", { today: 2, week: 5 }, "ru")) });
+    expect(newUsers).toHaveAttribute("href", "#/admin/users?filter=new");
     expect(screen.getByText(translate("admin.activityDeals", { started: 3, completed: 1 }, "ru"))).toBeInTheDocument();
+  });
+
+  it("opens new users from the activity link with their registration date", async () => {
+    window.location.hash = "#/admin/users?filter=new";
+    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, newUsersToday: 1, newUsersWeek: 1 });
+    api.getAdminUsers.mockResolvedValue([{ telegramUserId: 11, firstName: "Newcomer", role: 0, isBlocked: false, isDeleted: false, createdAtUtc: "2026-10-12T08:00:00Z" }]);
+    render(<I18nProvider><Admin section="users" /></I18nProvider>);
+
+    expect(await screen.findByText("Newcomer")).toBeInTheDocument();
+    await waitFor(() => expect(api.getAdminUsers).toHaveBeenLastCalledWith("", "new"), { timeout: 2000 });
+    expect(screen.getByRole("button", { name: ru("admin.userFilter.new") })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/^Регистрация: /)).toBeInTheDocument();
+    window.location.hash = "";
   });
 });
