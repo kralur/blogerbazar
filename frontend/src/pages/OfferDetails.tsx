@@ -84,7 +84,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
   const formatDate = (value: string, withTime = false) => formatShortDate(value, language, withTime ? { time: true } : { year: true });
 
   return <div className="screen screen--with-nav offer-details">
-    <PageHeader actions={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />
+    <PageHeader actions={<><Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge><ReportButton targetId={offer.id} targetType="offer" /></>} back={{ href: "#/requests", label: t("nav.requests") }} />
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t("offers.title")}</p>
     <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{t(offerFormatLabelKey(offer.format))}</h1>
     <CounterpartyRow href={viewerRole === "Business" ? (offer.brandFaceId ? profileRoute("brandFace", offer.brandFaceId) : offer.bloggerId ? profileRoute("blogger", offer.bloggerId) : null) : (viewerRole === "Blogger" || viewerRole === "BrandFace") && offer.businessId ? `#/company/${offer.businessId}` : null} imageUrl={offer.counterpartyImageUrl} label={t(viewerRole === "Business" ? (offer.brandFaceId ? "offers.counterpartyBrandFace" : "offers.counterpartyBlogger") : viewerRole === "Blogger" || viewerRole === "BrandFace" ? "offers.counterpartyBusiness" : "offers.counterparty")} name={offer.counterpartyName} />
@@ -100,7 +100,6 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
       <div className="grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => decide(false)} type="button" variant="secondary">{t("offers.decline")}</Button><Button disabled={busy} onClick={() => decide(true)} type="button">{t("offers.accept")}</Button></div>
     </div>}
     {offer.dealId && <Button className="mt-5 w-full" onClick={() => { window.location.hash = dealRoute(offer.dealId!); }} type="button">{t("deals.open")}</Button>}
-    <ReportButton targetId={offer.id} targetType="offer" />
     <Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;

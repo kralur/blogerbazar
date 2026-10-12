@@ -210,7 +210,7 @@ export function CampaignDetails({ id }: { id: string }) {
   const companyInitials = campaign.company.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return (
     <div className="screen screen--with-nav">
-      <PageHeader actions={<Badge tone={expired ? "gray" : campaign.isPromoted ? "gold" : "blue"}>{expired ? t("campaign.expired") : campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>} back={{ href: "#/campaigns", label: t("nav.campaigns") }} />
+      <PageHeader actions={<><Badge tone={expired ? "gray" : campaign.isPromoted ? "gold" : "blue"}>{expired ? t("campaign.expired") : campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge>{blockedReason !== "own" && <ReportButton targetId={campaign.id} targetType="campaign" />}</>} back={{ href: "#/campaigns", label: t("nav.campaigns") }} />
       <Card className="mt-4 overflow-hidden p-0">
         <div className="campaign-hero">
           <a aria-label={t("company.openAria", { name: campaign.company })} className="campaign-hero__business" href={`#/company/${campaign.businessId}`}><Avatar name={companyInitials} size="sm" variant="neutral" /><span className="min-w-0 truncate text-sm font-semibold text-brand-muted">{campaign.company}</span><Icon className="campaign-hero__business-chevron" name="back" /></a>
@@ -230,7 +230,6 @@ export function CampaignDetails({ id }: { id: string }) {
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
       {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary tap-target inline-flex w-full items-center justify-center gap-2 px-5" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
-      {blockedReason !== "own" && <ReportButton targetId={campaign.id} targetType="campaign" />}
       <Toast message={toast} tone={toastTone} /><BottomNav />
     </div>
   );

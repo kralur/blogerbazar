@@ -28,27 +28,10 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
                 .Take(RailSize))
             .ToArrayAsync(cancellationToken);
 
-        var promotedCampaigns = await publishedCampaigns
-            .Where(campaign => campaign.IsPromoted)
-            .OrderByDescending(campaign => campaign.UpdatedAtUtc)
-            .Take(RailSize)
-            .Select(campaign => new CampaignDto(
-                campaign.Id,
-                campaign.BusinessId,
-                campaign.Business.Name,
-                campaign.Title,
-                campaign.Description,
-                campaign.City,
-                campaign.Categories,
-                campaign.Requirements,
-                campaign.BudgetFrom,
-                campaign.BudgetTo,
-                campaign.Deadline,
-                campaign.IsPromoted,
-                (int)campaign.Status,
-                campaign.Applications.Count(application => application.BloggerId != null ? !application.Blogger!.IsDeleted : !application.BrandFace!.IsDeleted),
-                campaign.CreatedAtUtc,
-                campaign.Business.IsHidden))
+        var promotedCampaigns = await ProjectCampaigns(publishedCampaigns
+                .Where(campaign => campaign.IsPromoted)
+                .OrderByDescending(campaign => campaign.UpdatedAtUtc)
+                .Take(RailSize))
             .ToArrayAsync(cancellationToken);
 
         var topRatedBloggers = await ProjectBloggers(approvedBloggers
@@ -63,31 +46,10 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
                 .Take(RailSize))
             .ToArrayAsync(cancellationToken);
 
-        var newBrandFaces = await brandFaces
-            .OrderByDescending(profile => profile.IsPromoted)
-            .ThenByDescending(profile => profile.UpdatedAtUtc)
-            .Take(RailSize)
-            .Select(profile => new BrandFacePublicDto(
-                profile.Id,
-                profile.Name,
-                profile.City,
-                profile.Languages,
-                profile.Categories,
-                profile.Experience,
-                profile.Instagram,
-                profile.Telegram,
-                profile.PortfolioUrl,
-                profile.CollaborationPrice,
-                profile.Description,
-                profile.AvatarUrl,
-                profile.IsPromoted,
-                profile.CreatedAtUtc,
-                profile.Age,
-                profile.Gender,
-                profile.Formats,
-                profile.ShowreelUrl,
-                profile.PhotoUrls,
-                profile.IsHidden))
+        var newBrandFaces = await ProjectBrandFaces(brandFaces
+                .OrderByDescending(profile => profile.IsPromoted)
+                .ThenByDescending(profile => profile.UpdatedAtUtc)
+                .Take(RailSize))
             .ToArrayAsync(cancellationToken);
 
         var popularBusinesses = await businesses
@@ -137,7 +99,50 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
             statistics);
     }
 
-    private static IQueryable<BloggerProfileDto> ProjectBloggers(IQueryable<BloggerProfile> profiles) =>
+    // Shared with the "for you" rails (D53) so a card looks the same everywhere.
+    internal static IQueryable<CampaignDto> ProjectCampaigns(IQueryable<Campaign> campaigns) =>
+        campaigns.Select(campaign => new CampaignDto(
+            campaign.Id,
+            campaign.BusinessId,
+            campaign.Business.Name,
+            campaign.Title,
+            campaign.Description,
+            campaign.City,
+            campaign.Categories,
+            campaign.Requirements,
+            campaign.BudgetFrom,
+            campaign.BudgetTo,
+            campaign.Deadline,
+            campaign.IsPromoted,
+            (int)campaign.Status,
+            campaign.Applications.Count(application => application.BloggerId != null ? !application.Blogger!.IsDeleted : !application.BrandFace!.IsDeleted),
+            campaign.CreatedAtUtc,
+            campaign.Business.IsHidden));
+
+    internal static IQueryable<BrandFacePublicDto> ProjectBrandFaces(IQueryable<BrandFaceProfile> profiles) =>
+        profiles.Select(profile => new BrandFacePublicDto(
+            profile.Id,
+            profile.Name,
+            profile.City,
+            profile.Languages,
+            profile.Categories,
+            profile.Experience,
+            profile.Instagram,
+            profile.Telegram,
+            profile.PortfolioUrl,
+            profile.CollaborationPrice,
+            profile.Description,
+            profile.AvatarUrl,
+            profile.IsPromoted,
+            profile.CreatedAtUtc,
+            profile.Age,
+            profile.Gender,
+            profile.Formats,
+            profile.ShowreelUrl,
+            profile.PhotoUrls,
+            profile.IsHidden));
+
+    internal static IQueryable<BloggerProfileDto> ProjectBloggers(IQueryable<BloggerProfile> profiles) =>
         profiles.Select(profile => new BloggerProfileDto(
             profile.Id,
             profile.Name,

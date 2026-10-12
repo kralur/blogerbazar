@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 
-const api = vi.hoisted(() => ({ getMarketplaceHome: vi.fn(), getMyDeals: vi.fn(), getMyCampaigns: vi.fn(), getMyOffers: vi.fn() }));
+const api = vi.hoisted(() => ({ getMarketplaceHome: vi.fn(), getMyDeals: vi.fn(), getMyCampaigns: vi.fn(), getMyOffers: vi.fn(), getRecommendations: vi.fn() }));
 let profileRefresh: (() => void) | undefined;
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({
@@ -11,7 +11,8 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getMarketplaceHome: api.getMarketplaceHome,
   getMyDeals: api.getMyDeals,
   getMyCampaigns: api.getMyCampaigns,
-  getMyOffers: api.getMyOffers
+  getMyOffers: api.getMyOffers,
+  getRecommendations: api.getRecommendations
 }));
 vi.mock("../src/hooks/useScrollRestoration", () => ({ useScrollRestoration: vi.fn() }));
 vi.mock("../src/hooks/useProfileDataRefresh", () => ({
@@ -66,7 +67,31 @@ describe("Home", () => {
     api.getMyDeals.mockResolvedValue([]);
     api.getMyCampaigns.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20, hasMore: false });
     api.getMyOffers.mockResolvedValue([]);
+    api.getRecommendations.mockResolvedValue({ audience: "none", campaigns: [], bloggers: [], brandFaces: [] });
     window.location.hash = "#/";
+  });
+
+  it("shows the For you rail first for a creator and hides it when nothing matches", async () => {
+    api.getRecommendations.mockResolvedValue({ audience: "creator", campaigns: [{ id: "match", title: "Matching campaign", description: "", categories: ["beauty"], applicationsCount: 0, createdAtUtc: "2026-01-01T00:00:00Z" }], bloggers: [], brandFaces: [] });
+    renderHome("Blogger");
+
+    const rail = await screen.findByRole("region", { name: ru("home.forYou") });
+    expect(rail).toHaveTextContent("Matching campaign");
+    const promoted = screen.getByRole("region", { name: ru("home.promotedCampaigns") });
+    expect(rail.compareDocumentPosition(promoted) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    cleanup();
+    api.getRecommendations.mockResolvedValue({ audience: "creator", campaigns: [], bloggers: [], brandFaces: [] });
+    renderHome("Blogger");
+    await screen.findByText("Promoted campaign");
+    expect(screen.queryByRole("region", { name: ru("home.forYou") })).not.toBeInTheDocument();
+  });
+
+  it("shows matching creators For you to a business", async () => {
+    api.getRecommendations.mockResolvedValue({ audience: "business", campaigns: [], bloggers: [{ id: "fit", name: "Fitting blogger", city: "tashkent", categories: ["beauty"], totalFollowers: 1000, reviewsCount: 0, completedDealsCount: 0 }], brandFaces: [] });
+    renderHome("Business");
+
+    expect(await screen.findByRole("region", { name: ru("home.forYou") })).toHaveTextContent("Fitting blogger");
   });
 
   it("puts creator search first for Business and drops the hero and marketplace statistics", async () => {

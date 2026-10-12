@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IBrandFaceProfileRepository, BrandFaceProfileRepository>();
         services.AddScoped<IMarketplaceHomeReadModel, MarketplaceHomeReadModel>();
+        services.AddScoped<IMarketplaceRecommendationReadModel, MarketplaceRecommendationReadModel>();
         services.AddScoped<IMarketplaceCatalogReadModel, MarketplaceCatalogReadModel>();
         services.AddScoped<ICampaignCatalogReadModel, CampaignCatalogReadModel>();
         services.AddScoped<ICampaignManagementReadModel, CampaignManagementReadModel>();
@@ -58,6 +59,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<BloggerBazarDbContext>());
         services.Configure<TelegramOptions>(configuration.GetSection(TelegramOptions.SectionName));
         services.Configure<AdministrationOptions>(configuration.GetSection(AdministrationOptions.SectionName));
+        services.AddSingleton<IConfiguredOwners, ConfiguredOwners>();
         services.AddSingleton<ITelegramWebAppValidator, TelegramWebAppValidator>();
         services.AddSingleton<ITelegramWebhookValidator, TelegramWebhookValidator>();
         services.AddScoped<IRecipientLanguageLookup, RecipientLanguageLookup>();

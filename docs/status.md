@@ -3,13 +3,13 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-12, D52 (жалобы) и очистка оплаты в review._
+_Последнее обновление: 2026-10-12, D53 («Подходят вам») в review._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | `f0cd8bb` D51 данные сделки (до этого `46b6320` D50, `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Published `main` / `origin/main` | `e8363e0` D52 жалобы + очистка оплаты (до этого `f0cd8bb` D51, `46b6320` D50, `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
 | CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 · R2b: https://github.com/kralur/blogerbazar/pull/7 · R3: https://github.com/kralur/blogerbazar/pull/8 · R4: https://github.com/kralur/blogerbazar/pull/9 · R5: https://github.com/kralur/blogerbazar/pull/10 |
 
@@ -40,9 +40,10 @@ _Последнее обновление: 2026-10-12, D52 (жалобы) и оч
 - **D51 — данные сделки, лёгкая версия** (опубликовано, `f0cd8bb`, CI зелёный): цена сделки, ссылки на публикации с
   просмотрами и подтверждением бизнеса, поля в окне завершения. Миграция `AddDealResults` (одобрена владельцем
   вместе с этапом). Плюс: правило 1 в `GetMyCampaignApplications`, контакты бизнеса для бренд-фейса со сделкой.
-- **Очистка оплаты контактов + D52 жалобы** (в review, не закоммичено): удалён мёртвый код оплаты (webhook бота
+- **Очистка оплаты контактов + D52 жалобы** (опубликовано, `e8363e0`, CI зелёный): удалён мёртвый код оплаты (webhook бота
   остался для `/start`, `/phone`, контакта); жалобы всех ролей с очередью в админке, миграция `AddComplaints`;
   исправлен дашборд админки (параллельные запросы на одном DbContext).
+- **D53 — «Подходят вам» на главной** (в review, не закоммичено): `GET /api/marketplace/for-me`, без миграции.
 - **Рабочие пространства бизнеса**: аудит этапа 0 сделан (roadmap, п. 8), реализация ждёт подтверждения спроса.
 
 ## Последние результаты gates

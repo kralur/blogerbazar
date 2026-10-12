@@ -141,7 +141,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
   const budget = terms ? formatBudgetRange(terms.budgetFrom, terms.budgetTo) : null;
 
   return <div className="screen screen--with-nav deal-details">
-    <PageHeader actions={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} back={{ href: "#/requests", label: t("nav.requests") }} />
+    <PageHeader actions={<><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>{!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}</>} back={{ href: "#/requests", label: t("nav.requests") }} />
     <p className="mt-4 text-sm font-semibold text-brand-muted">{t(dealSourceLabelKey(deal.sourceType))}</p>
     <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{terms?.title ?? (deal.offer ? t(offerFormatLabelKey(deal.offer.format)) : t("deals.source.collaborationRequest"))}</h1>
     <CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
@@ -192,7 +192,6 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
         {completeError && <p className="text-sm font-semibold text-brand-danger" role="alert">{completeError}</p>}
       </div>}
       <div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => setCompleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={complete} type="button">{busy ? t("deals.completing") : t("requests.complete")}</Button></div></Modal>
-    {!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}
     <Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;

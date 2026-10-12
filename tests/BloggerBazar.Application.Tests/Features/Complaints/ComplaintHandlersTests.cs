@@ -30,6 +30,20 @@ public sealed class ComplaintHandlersTests
     }
 
     [Fact]
+    public async Task Admins_get_a_bot_message_about_a_new_case_but_not_about_a_repeat()
+    {
+        var world = new World { AdminIds = [900, 901] };
+        var bot = new SpyBotClient();
+
+        await world.Report(BusinessTelegramId, ComplaintTargets.Blogger, world.Blogger.Id, "fake", bot);
+        await world.Report(BusinessTelegramId, ComplaintTargets.Blogger, world.Blogger.Id, "fake", bot);
+
+        Assert.Equal([900L, 901L], bot.NotifiedChats);
+        Assert.All(bot.Routes, route => Assert.Equal("/admin", route));
+        Assert.DoesNotContain(bot.Texts, text => text.Contains("Business", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Reporting_the_same_target_again_keeps_one_open_case()
     {
         var world = new World();
@@ -164,11 +178,21 @@ public sealed class ComplaintHandlersTests
         public PlatformUser BusinessUser { get; }
         public FakeUsers Users { get; }
         public FakeComplaints Complaints { get; } = new();
+        public long[] AdminIds { get; init; } = [];
 
-        public Task<ComplaintDto> Report(long telegramUserId, string targetType, Guid targetId, string reason) =>
-            new CreateComplaintHandler(Complaints, Users, new FakeBloggers(Blogger, DealTestData.Blogger(StrangerTelegramId)), new FakeBusinesses(Business), new FakeBrandFaces(),
-                    new Campaigns(Campaign), new FakeDeals(Deal), new NoOffers(), new SpyUnitOfWork())
+        public Task<ComplaintDto> Report(long telegramUserId, string targetType, Guid targetId, string reason, SpyBotClient? bot = null) =>
+            new CreateComplaintHandler(Complaints, new AdminAwareUsers(Users, AdminIds), new FakeBloggers(Blogger, DealTestData.Blogger(StrangerTelegramId)), new FakeBusinesses(Business), new FakeBrandFaces(),
+                    new Campaigns(Campaign), new FakeDeals(Deal), new NoOffers(), new SpyUnitOfWork(), bot)
                 .Handle(new CreateComplaintCommand(telegramUserId, targetType, targetId, reason, null), CancellationToken.None);
+    }
+
+    private sealed class AdminAwareUsers(FakeUsers inner, long[] adminIds) : IPlatformUserRepository
+    {
+        public Task<PlatformUser?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => inner.GetByTelegramUserIdAsync(telegramUserId, cancellationToken);
+        public Task<IReadOnlyList<PlatformUser>> GetActiveAsync(int take, CancellationToken cancellationToken) => inner.GetActiveAsync(take, cancellationToken);
+        public Task<int> CountActiveAsync(CancellationToken cancellationToken) => inner.CountActiveAsync(cancellationToken);
+        public Task<IReadOnlyList<long>> GetAdminTelegramUserIdsAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<long>>(adminIds);
+        public Task AddAsync(PlatformUser user, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class FakeComplaints : IComplaintRepository

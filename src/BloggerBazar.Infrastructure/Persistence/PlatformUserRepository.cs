@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Domain.Entities;
+using BloggerBazar.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace BloggerBazar.Infrastructure.Persistence;
@@ -26,6 +27,12 @@ internal sealed class PlatformUserRepository(BloggerBazarDbContext dbContext) : 
                 .SetProperty(user => user.DeletedAtUtc, DateTime.UtcNow)
                 .SetProperty(user => user.DeletedByTelegramUserId, deletedByTelegramUserId)
                 .SetProperty(user => user.UpdatedAtUtc, DateTime.UtcNow), cancellationToken) == 1;
+
+    public async Task<IReadOnlyList<long>> GetAdminTelegramUserIdsAsync(CancellationToken cancellationToken) =>
+        await dbContext.PlatformUsers
+            .Where(user => !user.IsBlocked && !user.IsDeleted && (user.Role == PlatformRole.Owner || user.Role == PlatformRole.Admin))
+            .Select(user => user.TelegramUserId)
+            .ToArrayAsync(cancellationToken);
 
     public async Task AddAsync(PlatformUser user, CancellationToken cancellationToken) =>
         await dbContext.PlatformUsers.AddAsync(user, cancellationToken);

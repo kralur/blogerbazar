@@ -92,6 +92,33 @@ internal static class BotMessages
         $"{partner} добавил(а) ссылку на публикацию по сделке{Spaced(TopicRussian(topic))}. Проверьте и подтвердите просмотры.",
         $"{partner} {DealUzbek(topic, "i", "")} bo‘yicha e’lon havolasini qo‘shdi. Tekshirib, ko‘rishlar sonini tasdiqlang.") with { Button = OpenDealButton };
 
+    internal static readonly BotText ComplaintsButton = new("Открыть жалобы", "Shikoyatlarni ochish");
+
+    // D52: tells owners and admins a case is waiting; what and why, never who reported it.
+    public static BotText NewComplaint(string targetType, string reason) => Bilingual(
+        $"Новая жалоба: {ComplaintTargetRussian(targetType)}, причина: {ComplaintReasonRussian(reason)}. Проверьте в админке.",
+        $"Yangi shikoyat: {ComplaintTargetUzbek(targetType)}, sabab: {ComplaintReasonUzbek(reason)}. Admin panelda tekshiring.") with { Button = ComplaintsButton };
+
+    private static string ComplaintTargetRussian(string targetType) => targetType switch
+    {
+        "blogger" => "блогер", "brandFace" => "бренд-фейс", "business" => "бизнес", "campaign" => "кампания", "offer" => "предложение", "deal" => "сделка", _ => targetType
+    };
+
+    private static string ComplaintTargetUzbek(string targetType) => targetType switch
+    {
+        "blogger" => "bloger", "brandFace" => "brend-yuz", "business" => "biznes", "campaign" => "kampaniya", "offer" => "taklif", "deal" => "bitim", _ => targetType
+    };
+
+    private static string ComplaintReasonRussian(string reason) => reason switch
+    {
+        "spam" => "спам", "fraud" => "мошенничество", "fake" => "фейк или накрутка", "offensive" => "оскорбления", "noShow" => "не выполнил договорённости", "other" => "другое", _ => reason
+    };
+
+    private static string ComplaintReasonUzbek(string reason) => reason switch
+    {
+        "spam" => "spam", "fraud" => "firibgarlik", "fake" => "soxta profil", "offensive" => "haqorat", "noShow" => "kelishuvni bajarmadi", "other" => "boshqa", _ => reason
+    };
+
     public static BotText PartnerReviewed(string partner, DealTopic topic) => Bilingual(
         $"{partner} оставил(а) отзыв о сделке{Spaced(TopicRussian(topic))}. Оставьте и свой отзыв: вы увидите отзывы друг друга, когда оба оцените сделку.",
         $"{partner} {DealUzbek(topic, "i", "")} haqida fikr qoldirdi. Siz ham fikr qoldiring: ikkalangiz baholaganingizda bir-biringizning fikrlarini ko‘rasiz.") with { Button = ReviewButton };

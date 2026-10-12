@@ -552,6 +552,39 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task For_you_matches_by_category_and_city_and_skips_applied_campaigns()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_361, 1_100_362);
+        Guid matching, unrelated;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var match = Campaign.Create(seed.BusinessId, "For you match", "Description", ["beauty"], ["One reel"], 100, 200, "tashkent", null);
+            match.Publish();
+            var other = Campaign.Create(seed.BusinessId, "For you unrelated", "Description", ["cars"], ["One reel"], 100, 200, "bukhara", null);
+            other.Publish();
+            var applied = await dbContext.Campaigns.SingleAsync(campaign => campaign.Id == seed.CampaignId);
+            applied.Publish();
+            dbContext.AddRange(match, other);
+            await dbContext.SaveChangesAsync();
+            (matching, unrelated) = (match.Id, other.Id);
+        }
+
+        using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+        var forBlogger = await bloggerClient.GetFromJsonAsync<JsonElement>("/api/marketplace/for-me");
+        var forBusiness = await businessClient.GetFromJsonAsync<JsonElement>("/api/marketplace/for-me");
+
+        Assert.Equal("creator", forBlogger.GetProperty("audience").GetString());
+        var campaignIds = forBlogger.GetProperty("campaigns").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ToArray();
+        Assert.Contains(matching, campaignIds);
+        Assert.DoesNotContain(unrelated, campaignIds);
+        Assert.DoesNotContain(seed.CampaignId, campaignIds);
+        Assert.Equal("business", forBusiness.GetProperty("audience").GetString());
+        Assert.Contains(forBusiness.GetProperty("bloggers").EnumerateArray(), item => item.GetProperty("id").GetGuid() == seed.BloggerId);
+    }
+
+    [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {
         var seed = await SeedCampaignDealAsync(1_100_311, 1_100_312);

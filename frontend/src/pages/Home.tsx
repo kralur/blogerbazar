@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { getMarketplaceHome, getMyCampaigns, getMyDeals, getMyOffers, type MarketplaceRole } from "../api/marketplace";
+import { getMarketplaceHome, getMyCampaigns, getMyDeals, getMyOffers, getRecommendations, type MarketplaceRole } from "../api/marketplace";
 import { BloggerCard } from "../components/BloggerCard";
 import { BrandFaceCard } from "../components/BrandFaceCard";
 import { CampaignCard } from "../components/CampaignCard";
@@ -11,6 +11,19 @@ import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type HomeData = Awaited<ReturnType<typeof getMarketplaceHome>>;
+type Recommendations = Awaited<ReturnType<typeof getRecommendations>>;
+
+// D53: the "For you" rail; a missing or failed answer simply hides it.
+function useRecommendations(enabled: boolean, reloadKey: number) {
+  const [value, setValue] = useState<Recommendations | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    const controller = new AbortController();
+    getRecommendations(controller.signal).then((result) => { if (!controller.signal.aborted) setValue(result); }).catch(() => undefined);
+    return () => controller.abort();
+  }, [enabled, reloadKey]);
+  return value;
+}
 type HomeRole = MarketplaceRole;
 
 function HomeSection({ title, actionHref, children }: { title: string; actionHref?: string; children: ReactNode }) {
@@ -176,6 +189,13 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   useScreenRefresh(() => { setActivityReloadKey((key) => key + 1); load(); });
 
   const activity = useHomeActivity(resolvedRole, !isPreview, activityReloadKey);
+  const forYou = useRecommendations(!isPreview, activityReloadKey);
+  const forYouCount = forYou ? forYou.campaigns.length + forYou.bloggers.length + forYou.brandFaces.length : 0;
+  const forYouRail = forYou && forYouCount > 0 && <HomeSection actionHref={forYou.audience === "business" ? "#/search" : "#/campaigns"} title={t("home.forYou")}>
+    {forYou.campaigns.map((campaign) => <div className="home-rail__campaign" key={campaign.id}><CampaignCard campaign={campaign} variant="home" /></div>)}
+    {forYou.bloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}
+    {forYou.brandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceCard profile={profile} variant="home" /></div>)}
+  </HomeSection>;
   const hasAnyBlogger = Boolean(data?.promotedBloggers.length || data?.topRatedBloggers.length || data?.newBloggers.length);
   const hasCampaigns = Boolean(data?.promotedCampaigns.length);
   const bloggerRail = (title: string, bloggers: HomeData["topRatedBloggers"]) => bloggers.length > 0 && <HomeSection actionHref="#/search" title={title}>{bloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>;
@@ -188,6 +208,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
     {activity && activity.length > 0 && <HomeActivity items={activity} />}
     {failed && !data ? <HomeError offline={offline} onRetry={load} /> : !data ? <HomeSkeleton role={resolvedRole} /> : <div className="home-content">
       {failed && <p className="text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
+      {forYouRail}
       {resolvedRole === "Business" && <>
         {bloggerRail(t("home.promotedBloggers"), data.promotedBloggers)}
         {bloggerRail(t("home.topRated"), data.topRatedBloggers)}

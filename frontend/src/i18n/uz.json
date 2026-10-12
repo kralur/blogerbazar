@@ -778,4 +778,7 @@
   ,"admin.complaintResolved": "Shikoyat hal qilingan deb yopildi"
   ,"admin.complaintDismissed": "Shikoyat rad etildi"
   ,"admin.complaintFailed": "Shikoyatni yangilab bo‘lmadi"
+  ,"home.forYou": "Sizga mos"
+  ,"settings.adminPanel": "Admin panel"
+  ,"settings.adminPanelHint": "Shikoyatlar, foydalanuvchilar va statistika"
 }

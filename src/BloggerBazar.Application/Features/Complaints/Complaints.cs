@@ -1,11 +1,14 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Security;
+using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Deals;
+using BloggerBazar.Application.Notifications;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace BloggerBazar.Application.Features.Complaints;
 
@@ -97,7 +100,9 @@ public sealed class CreateComplaintHandler(
     ICampaignRepository campaigns,
     IDealRepository deals,
     ICollaborationRequestRepository offers,
-    IUnitOfWork unitOfWork) : IRequestHandler<CreateComplaintCommand, ComplaintDto>
+    IUnitOfWork unitOfWork,
+    ITelegramBotClient? botClient = null,
+    ILogger<CreateComplaintHandler>? logger = null) : IRequestHandler<CreateComplaintCommand, ComplaintDto>
 {
     public const int DailyLimit = 10;
 
@@ -132,6 +137,12 @@ public sealed class CreateComplaintHandler(
             var winner = await complaints.FindOpenAsync(command.TelegramUserId, command.TargetType, command.TargetId, cancellationToken)
                 ?? throw new InvalidOperationException("The complaint conflicts with another one.");
             return new ComplaintDto(winner.Id, winner.Status, true);
+        }
+
+        // Owners and admins hear about each new case in the bot chat; a failed message never fails the report.
+        foreach (var adminId in (await users.GetAdminTelegramUserIdsAsync(cancellationToken)).Where(id => id != command.TelegramUserId))
+        {
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, adminId, BotMessages.NewComplaint(complaint.TargetType, complaint.Reason), "/admin", cancellationToken);
         }
 
         return new ComplaintDto(complaint.Id, complaint.Status, false);

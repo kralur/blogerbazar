@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCurrentPlatformUser } from "../api/marketplace";
 import { AccountActions } from "../components/AccountActions";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { PageHeader } from "../components/PageHeader";
@@ -17,6 +18,13 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
   const { t } = useI18n();
   const { haptic } = useTelegram();
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
+  // Owners and admins (platform roles 3 and 4) get the way into the admin panel; nobody else sees it.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let active = true;
+    getCurrentPlatformUser().then((user) => { if (active) setIsAdmin(user.role >= 3 && !user.isBlocked); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   const chooseTheme = (value: ThemePreference) => {
     haptic.selection();
@@ -34,6 +42,7 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
           {themeOptions.map((option) => <button aria-pressed={theme === option.value} className="language-switcher__option" key={option.value} onClick={() => chooseTheme(option.value)} type="button">{t(option.labelKey)}</button>)}
         </div>
       </div>
+      {isAdmin && <a className="settings-row" href="#/admin"><span className="settings-row__text"><strong>{t("settings.adminPanel")}</strong><span className="text-sm text-brand-muted">{t("settings.adminPanelHint")}</span></span><span aria-hidden="true">›</span></a>}
     </div>
     <AccountActions onSessionReset={onSessionReset} />
     <p className="text-center text-xs text-brand-muted">BloggerBazar · {t("common.version", { version: "1.0.0" })}</p>

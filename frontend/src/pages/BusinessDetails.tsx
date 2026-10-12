@@ -45,7 +45,7 @@ export function BusinessDetails({ id }: { id: string }) {
   if (!profile) return <div className="screen screen--with-nav"><ErrorState onRetry={() => void load()} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   const website = profile.websiteUrl ? [{ kind: "website" as const, value: profile.websiteUrl }] : [];
   return <div className="screen screen--with-nav">
-    <PageHeader back={{ href: "#/campaigns", label: t("common.back") }} />
+    <PageHeader actions={<ReportButton targetId={profile.id} targetType="business" />} back={{ href: "#/campaigns", label: t("common.back") }} />
     <div className="mt-4 text-center">
       <div className="mx-auto w-fit"><Avatar name={profile.name} size="xl" src={profile.logoUrl} /></div>
       <h1 className="mt-3 text-2xl font-extrabold tracking-tight">{profile.name}</h1>
@@ -69,7 +69,6 @@ export function BusinessDetails({ id }: { id: string }) {
     {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
     <ReviewsSection allHref={`#/company-reviews/${profile.id}`} count={profile.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={profile.rating} reviewerRoute={(profileId, role) => profileRoute(role ?? "blogger", profileId)} reviews={profile.reviews ?? []} title={t("campaign.businessReviews")} />
     {website.length > 0 && <DetailSection title={t("company.website")}><ContactList items={website} /></DetailSection>}
-    <ReportButton targetId={profile.id} targetType="business" />
     <BottomNav />
   </div>;
 }

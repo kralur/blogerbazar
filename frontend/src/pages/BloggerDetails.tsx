@@ -106,7 +106,7 @@ export function BloggerDetails({ id }: { id: string }) {
   const platformStats = blogger.platforms.filter((platform) => platform.followers > 0);
   const tags = [blogger.barterEnabled ? t("card.barter") : null].filter((tag): tag is string => tag !== null);
   return <div className="screen screen--with-nav">
-    <PageHeader actions={<FavoriteButton bloggerId={blogger.id} />} back={{ href: "#/search", label: t("common.back") }} />
+    <PageHeader actions={<><FavoriteButton bloggerId={blogger.id} /><ReportButton targetId={blogger.id} targetType="blogger" /></>} back={{ href: "#/search", label: t("common.back") }} />
     {blogger.coverUrl && <div className="profile-cover"><img alt="" className="image-fade h-full w-full object-cover" decoding="async" src={blogger.coverUrl} /></div>}
     <div className={`relative text-center ${blogger.coverUrl ? "-mt-14" : "mt-2"}`}><div className="mx-auto w-fit"><Avatar name={blogger.name} size="xl" src={blogger.avatarUrl} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{blogger.name}</h1><p className="mt-1 text-sm text-brand-muted">{blogger.categories.map((category) => categoryLabel(category, language)).join(" · ")} · {cityLabel(blogger.city, language)}</p><div className="mt-2">{blogger.reviewsCount || blogger.completedDealsCount ? <><Rating count={blogger.reviewsCount} value={blogger.rating} /> <span className="text-sm text-brand-muted">· {t("details.deals", { count: blogger.completedDealsCount })}</span></> : <span className="text-sm text-brand-muted">{t("details.newProfile")}</span>}</div></div>
     {platformStats.length > 0 ? <PlatformStats platforms={platformStats} total={blogger.totalFollowers} /> : <FactGrid className="mt-5 fact-grid--three" facts={[
@@ -124,7 +124,6 @@ export function BloggerDetails({ id }: { id: string }) {
     {blogger.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
     {role === "Business" && !blogger.isHidden && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm bloggerId={blogger.id} initialBudget={offerPreset?.budget} initialFormat={offerPreset?.format} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
-    <ReportButton targetId={id} targetType="blogger" />
     <Toast message={toast} /><BottomNav />
   </div>;
 }

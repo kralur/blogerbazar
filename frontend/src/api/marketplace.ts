@@ -493,6 +493,12 @@ export async function getMarketplaceHome(signal?: AbortSignal) {
   };
 }
 
+// D53 "For you": the signed-in rail. "none" means there is nothing to match yet (no profile for the role).
+export async function getRecommendations(signal?: AbortSignal) {
+  const result = await api<{ audience: "creator" | "business" | "none"; campaigns: ApiCampaign[]; bloggers: ApiBlogger[]; brandFaces: BrandFaceCard[] }>("/api/marketplace/for-me", { signal });
+  return { audience: result.audience, campaigns: result.campaigns.map(asCampaignCard), bloggers: result.bloggers.map(asBloggerCard), brandFaces: result.brandFaces };
+}
+
 export async function getCategories() {
   return api<string[]>("/api/marketplace/taxonomy/categories");
 }

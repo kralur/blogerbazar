@@ -1,4 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
@@ -28,7 +29,7 @@ public sealed class GetCurrentPlatformUserValidator : AbstractValidator<GetCurre
     }
 }
 
-public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users, IUnitOfWork unitOfWork)
+public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users, IUnitOfWork unitOfWork, IConfiguredOwners? owners = null)
     : IRequestHandler<GetCurrentPlatformUserCommand, CurrentPlatformUserDto>
 {
     public async Task<CurrentPlatformUserDto> Handle(GetCurrentPlatformUserCommand command, CancellationToken cancellationToken)
@@ -54,6 +55,12 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
             {
                 user.SyncTelegramIdentity(command.FirstName.Trim(), NormalizeUsername(command.Username));
             }
+        }
+
+        // The owner named in the deployment settings gets the Owner role on sign-in; nobody can grant it in the app.
+        if (owners?.IsConfiguredOwner(user.TelegramUserId) == true && user.Role != PlatformRole.Owner)
+        {
+            user.SetRole(PlatformRole.Owner);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
