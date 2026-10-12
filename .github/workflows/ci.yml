@@ -20,6 +20,16 @@ jobs:
           dotnet-version: 9.0.x
       - name: Restore .NET dependencies
         run: dotnet restore BloggerBazar.sln
+      # Security 3: a known vulnerability in a package that ships to production fails the build (tests excluded).
+      - name: Check production NuGet packages for known vulnerabilities
+        run: |
+          failed=0
+          for project in src/*/*.csproj; do
+            report=$(dotnet list "$project" package --vulnerable --include-transitive)
+            echo "$report"
+            if echo "$report" | grep -q "has the following vulnerable packages"; then failed=1; fi
+          done
+          exit $failed
       - name: Build backend
         run: dotnet build BloggerBazar.sln --configuration Release --no-restore
       - name: Run backend tests
@@ -39,6 +49,9 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install frontend dependencies
         run: npm ci
+      # Security 3: only what ships to users; build and test tools are updated by Dependabot.
+      - name: Check production npm packages for known vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
       - name: Audit translations
         run: npm run i18n:audit
       - name: Run frontend tests when present

@@ -160,6 +160,7 @@ try
         await DevelopmentDataSeeder.SeedAsync(dbContext, app.Logger);
         app.Logger.LogInformation("Development data seed completed");
     }
+    app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseMiddleware<CorrelationIdMiddleware>();
     app.UseSerilogRequestLogging(options => options.EnrichDiagnosticContext = (diagnosticContext, context) =>
     {

@@ -357,6 +357,25 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task Api_responses_carry_security_headers_including_errors()
+    {
+        using var client = CreateClient(1_100_903);
+        using var ok = await client.GetAsync("/api/users/me");
+        using var missing = await client.GetAsync($"/api/deals/me/{Guid.NewGuid()}");
+
+        foreach (var response in new[] { ok, missing })
+        {
+            Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
+            Assert.Equal("DENY", response.Headers.GetValues("X-Frame-Options").Single());
+            Assert.Equal("no-referrer", response.Headers.GetValues("Referrer-Policy").Single());
+            Assert.True(response.Headers.CacheControl?.NoStore);
+        }
+
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.False(missing.IsSuccessStatusCode);
+    }
+
+    [IntegrationFact]
     public async Task Bot_tips_can_be_switched_off_and_are_claimed_once_a_day()
     {
         const long tipsOn = 1_100_901;
