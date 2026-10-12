@@ -134,6 +134,10 @@ try
     {
         builder.Services.AddHostedService<DealReminderWorker>();
     }
+    if (builder.Configuration.GetValue("BotTips:Enabled", true))
+    {
+        builder.Services.AddHostedService<BotTipWorker>();
+    }
     builder.Services.AddCors(options => options.AddPolicy("mini-app", policy =>
     {
         var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];

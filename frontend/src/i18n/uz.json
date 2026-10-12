@@ -830,4 +830,9 @@
   ,"admin.complaintStatus.resolved": "Hal qilingan"
   ,"admin.complaintStatus.dismissed": "Rad etilgan"
   ,"admin.complaintClosedAt": "Yopilgan: {date}"
+  ,"settings.tips": "Bot maslahatlari"
+  ,"settings.tipsHint": "Du, Ch va Ju: ilova imkoniyatlari haqida bitta maslahat"
+  ,"settings.tipsOn": "Yoqilgan"
+  ,"settings.tipsOff": "O‘chirilgan"
+  ,"settings.tipsFailed": "Sozlamani saqlab bo‘lmadi"
 }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Deals;
+using BloggerBazar.Application.Features.Tips;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using BloggerBazar.Infrastructure.Persistence;
@@ -353,6 +354,40 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
 
         Assert.True(await reminders.TryClaimAsync(seed.DealId, DealReminderKind.ResultsDay2, MarketplaceRole.Blogger, nowUtc, CancellationToken.None));
         Assert.DoesNotContain(await reminders.GetCandidatesAsync(nowUtc, CancellationToken.None), item => item.DealId == seed.DealId);
+    }
+
+    [IntegrationFact]
+    public async Task Bot_tips_can_be_switched_off_and_are_claimed_once_a_day()
+    {
+        const long tipsOn = 1_100_901;
+        const long tipsOff = 1_100_902;
+        using (var onClient = CreateClient(tipsOn))
+        {
+            Assert.True((await onClient.GetFromJsonAsync<JsonElement>("/api/users/me")).GetProperty("tipsEnabled").GetBoolean());
+        }
+
+        using (var offClient = CreateClient(tipsOff))
+        {
+            Assert.Equal(HttpStatusCode.OK, (await offClient.GetAsync("/api/users/me")).StatusCode);
+            var off = await offClient.PutAsJsonAsync("/api/users/me/tips", new { enabled = false });
+            Assert.Equal(HttpStatusCode.OK, off.StatusCode);
+            Assert.False((await off.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("tipsEnabled").GetBoolean());
+        }
+
+        // Both joined just now, so the check runs as if the next day has started.
+        var dayStartUtc = DateTime.UtcNow.AddMinutes(1);
+        var claimAtUtc = dayStartUtc.AddMinutes(1);
+        using var scope = factory.Services.CreateScope();
+        var tips = scope.ServiceProvider.GetRequiredService<IBotTipRepository>();
+        var due = await tips.GetDueAsync(dayStartUtc, 1000, CancellationToken.None);
+        Assert.Contains(due, recipient => recipient.TelegramUserId == tipsOn);
+        Assert.DoesNotContain(due, recipient => recipient.TelegramUserId == tipsOff);
+
+        Assert.True(await tips.TryClaimAsync(tipsOn, 5, dayStartUtc, claimAtUtc, CancellationToken.None));
+        Assert.False(await tips.TryClaimAsync(tipsOn, 6, dayStartUtc, claimAtUtc, CancellationToken.None));
+        Assert.DoesNotContain(await tips.GetDueAsync(dayStartUtc, 1000, CancellationToken.None), recipient => recipient.TelegramUserId == tipsOn);
+        var stored = await scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>().PlatformUsers.AsNoTracking().SingleAsync(user => user.TelegramUserId == tipsOn);
+        Assert.Equal(5, stored.LastTipNumber);
     }
 
     // D46: a brand face goes through the same cycle as a blogger: apply, accept, deal, complete, reviews.

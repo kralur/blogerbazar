@@ -31,6 +31,10 @@ public sealed class PlatformUser
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAtUtc { get; private set; }
     public long? DeletedByTelegramUserId { get; private set; }
+    // Bot tips (D54): the user can switch them off; the last number keeps the next tip new.
+    public bool TipsDisabled { get; private set; }
+    public int? LastTipNumber { get; private set; }
+    public DateTime? LastTipSentAtUtc { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
 
@@ -60,6 +64,7 @@ public sealed class PlatformUser
         UpdatedAtUtc = utcNow;
     }
 
+    public void SetTipsDisabled(bool disabled) { TipsDisabled = disabled; UpdatedAtUtc = DateTime.UtcNow; }
     public void SetBlocked(bool isBlocked) { IsBlocked = isBlocked; UpdatedAtUtc = DateTime.UtcNow; }
     public void SoftDelete(long deletedByTelegramUserId) { IsDeleted = true; DeletedAtUtc = DateTime.UtcNow; DeletedByTelegramUserId = deletedByTelegramUserId; UpdatedAtUtc = DeletedAtUtc.Value; }
     public void RestoreForNewOnboarding(string firstName, string? username)

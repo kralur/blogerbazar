@@ -17,6 +17,7 @@ import { clearMyCampaignCache } from "./data/myCampaignCache";
 import { clearPublicDetailCache } from "./data/publicDetailCache";
 import { clearCampaignApplicationCache } from "./data/campaignApplicationCache";
 import { clearDealCache } from "./data/dealCache";
+import { isDeepLinkRoute } from "./lib/deepLink";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
@@ -71,12 +72,11 @@ function useRoute() {
   return { path: path ? `/${path}` : "/", id };
 }
 
-// Bot notifications open the Mini App with ?bb_route=/deal/{id} or /offer/{id}; keep that route after sign-in.
-const deepLinkPattern = /^\/(deal|offer)\/[0-9a-f-]{36}$/i;
+// Bot notifications open the Mini App with ?bb_route=<route>; keep that route after sign-in.
 function readInitialDeepLink() {
   if (typeof window === "undefined") return null;
   const route = new URLSearchParams(window.location.search).get("bb_route");
-  return route && deepLinkPattern.test(route) ? route : null;
+  return isDeepLinkRoute(route) ? route : null;
 }
 const initialDeepLink = readInitialDeepLink();
 

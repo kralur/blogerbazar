@@ -1027,6 +1027,12 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("LastTipNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LastTipSentAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("PhoneVerifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1042,6 +1048,9 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
 
                     b.Property<long>("TelegramUserId")
                         .HasColumnType("bigint");
+
+                    b.Property<bool>("TipsDisabled")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");

@@ -36,6 +36,15 @@ public sealed class UsersController(ISender sender, ITelegramWebAppValidator tel
         return Ok(await sender.Send(new SetInterfaceLanguageCommand(telegramUser.Id, request.Language), cancellationToken));
     }
 
+    // D54: bot tips on or off.
+    [HttpPut("tips")]
+    [ProducesResponseType<CurrentPlatformUserDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<CurrentPlatformUserDto>> SetTips(SetBotTipsRequest request, CancellationToken cancellationToken)
+    {
+        var telegramUser = GetTelegramUser();
+        return Ok(await sender.Send(new SetBotTipsCommand(telegramUser.Id, request.Enabled), cancellationToken));
+    }
+
     // D50: pause or resume one of the account's role profiles; role is "blogger", "brand-face" or "business".
     [HttpPut("roles/{role}/visibility")]
     [ProducesResponseType<ProfileVisibilityDto>(StatusCodes.Status200OK)]

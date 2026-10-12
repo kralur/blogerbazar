@@ -831,4 +831,9 @@
   ,"admin.complaintStatus.resolved": "Решённые"
   ,"admin.complaintStatus.dismissed": "Отклонённые"
   ,"admin.complaintClosedAt": "Закрыта: {date}"
+  ,"settings.tips": "Советы от бота"
+  ,"settings.tipsHint": "Пн, ср и пт: одна подсказка о том, что умеет приложение"
+  ,"settings.tipsOn": "Включены"
+  ,"settings.tipsOff": "Выключены"
+  ,"settings.tipsFailed": "Не удалось сохранить настройку"
 }

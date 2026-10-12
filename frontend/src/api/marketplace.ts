@@ -206,6 +206,8 @@ export type CurrentPlatformUser = {
   preferredLanguage?: "ru" | "uz" | null;
   // Shared from Telegram (D41); profiles show only this number.
   verifiedPhone?: string | null;
+  // D54: bot tips three times a week; old backends omit it, which means on.
+  tipsEnabled?: boolean;
 };
 
 export type FavoriteBlogger = {
@@ -872,6 +874,11 @@ export async function updateAdminUserRole(telegramUserId: number, role: number) 
 
 export async function setAdminUserBlocked(telegramUserId: number, isBlocked: boolean) {
   return api<AdminPlatformUser>("/api/admin/users/" + telegramUserId + "/blocked", { method: "PATCH", body: JSON.stringify({ isBlocked }) });
+}
+
+// D54: bot tips on or off.
+export async function setBotTips(enabled: boolean) {
+  return api<CurrentPlatformUser>("/api/users/me/tips", { method: "PUT", body: JSON.stringify({ enabled }) });
 }
 
 // Bot messages use the language stored here (D39).

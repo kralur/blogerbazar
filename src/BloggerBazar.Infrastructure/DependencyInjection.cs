@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IComplaintRepository, ComplaintRepository>();
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IDealReminderRepository, DealReminderRepository>();
+        services.AddScoped<IBotTipRepository, BotTipRepository>();
         services.AddScoped<IContactUnlockRepository, ContactUnlockRepository>();
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
         services.AddScoped<IBrandFaceFavoriteRepository, BrandFaceFavoriteRepository>();

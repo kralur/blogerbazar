@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { getCurrentPlatformUser } from "../api/marketplace";
+import { getCurrentPlatformUser, setBotTips } from "../api/marketplace";
 import { AccountActions } from "../components/AccountActions";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { PageHeader } from "../components/PageHeader";
-import { BottomNav } from "../components/ui";
+import { BottomNav, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../lib/themePreference";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -20,11 +20,33 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
   // Owners and admins (platform roles 3 and 4) get the way into the admin panel; nobody else sees it.
   const [isAdmin, setIsAdmin] = useState(false);
+  // D54: bot tips; null until the account is loaded, so the switch never shows a guess.
+  const [tipsEnabled, setTipsEnabled] = useState<boolean | null>(null);
+  const [toast, setToast] = useState("");
   useEffect(() => {
     let active = true;
-    getCurrentPlatformUser().then((user) => { if (active) setIsAdmin(user.role >= 3 && !user.isBlocked); }).catch(() => undefined);
+    getCurrentPlatformUser().then((user) => {
+      if (!active) return;
+      setIsAdmin(user.role >= 3 && !user.isBlocked);
+      setTipsEnabled(user.tipsEnabled ?? true);
+    }).catch(() => undefined);
     return () => { active = false; };
   }, []);
+
+  const chooseTips = async (enabled: boolean) => {
+    if (tipsEnabled === enabled) return;
+    haptic.selection();
+    const previous = tipsEnabled;
+    setTipsEnabled(enabled);
+    setToast("");
+    try {
+      const user = await setBotTips(enabled);
+      setTipsEnabled(user.tipsEnabled ?? enabled);
+    } catch {
+      setTipsEnabled(previous);
+      setToast(t("settings.tipsFailed"));
+    }
+  };
 
   const chooseTheme = (value: ThemePreference) => {
     haptic.selection();
@@ -42,10 +64,18 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
           {themeOptions.map((option) => <button aria-pressed={theme === option.value} className="language-switcher__option" key={option.value} onClick={() => chooseTheme(option.value)} type="button">{t(option.labelKey)}</button>)}
         </div>
       </div>
+      {tipsEnabled !== null && <div className="settings-row settings-row--stacked">
+        <span className="settings-row__text"><strong>{t("settings.tips")}</strong><span className="text-sm text-brand-muted">{t("settings.tipsHint")}</span></span>
+        <div aria-label={t("settings.tips")} className="language-switcher language-switcher--three language-switcher--two" role="group">
+          <button aria-pressed={tipsEnabled} className="language-switcher__option" onClick={() => void chooseTips(true)} type="button">{t("settings.tipsOn")}</button>
+          <button aria-pressed={!tipsEnabled} className="language-switcher__option" onClick={() => void chooseTips(false)} type="button">{t("settings.tipsOff")}</button>
+        </div>
+      </div>}
       {isAdmin && <a className="settings-row" href="#/admin"><span className="settings-row__text"><strong>{t("settings.adminPanel")}</strong><span className="text-sm text-brand-muted">{t("settings.adminPanelHint")}</span></span><span aria-hidden="true">›</span></a>}
     </div>
     <AccountActions onSessionReset={onSessionReset} />
     <p className="text-center text-xs text-brand-muted">BloggerBazar · {t("common.version", { version: "1.0.0" })}</p>
+    <Toast message={toast} tone="error" />
     <BottomNav />
   </div>;
 }

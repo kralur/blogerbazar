@@ -328,6 +328,7 @@
   .language-switcher__option[aria-pressed="true"] { background: var(--bb-accent); color: var(--bb-accent-text); }
   .language-switcher--three { display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .language-switcher--three .language-switcher__option { min-width: 0; padding: .375rem .5rem; font-size: .8125rem; line-height: 1.15; white-space: normal; }
+  .language-switcher--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .language-switcher__option:not([aria-pressed="true"]):hover { background: var(--bb-surface-secondary); }
   .language-switcher__option:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--bb-accent); outline-offset: -2px; }
 
