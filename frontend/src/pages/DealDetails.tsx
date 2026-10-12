@@ -5,6 +5,7 @@ import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { DealResults, digitsToNumber, isHttpsLink } from "../components/DealResults";
+import { ReportButton } from "../components/ReportButton";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatShortDate, formatBudgetRange, formatCurrency, formatNumericInput } from "../lib/currency";
 import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
@@ -191,6 +192,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
         {completeError && <p className="text-sm font-semibold text-brand-danger" role="alert">{completeError}</p>}
       </div>}
       <div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => setCompleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={complete} type="button">{busy ? t("deals.completing") : t("requests.complete")}</Button></div></Modal>
+    {!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}
     <Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;

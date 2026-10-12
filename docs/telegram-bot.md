@@ -56,7 +56,7 @@ Telegram пересылает сообщения боту на `POST https://<д
 Включить (в браузере, одной строкой; токен и секрет никому не пересылать):
 
 ```text
-https://api.telegram.org/bot<ТОКЕН>/setWebhook?url=https://<ДОМЕН_API>/api/webhooks/telegram&secret_token=<СЕКРЕТ>&allowed_updates=["message","pre_checkout_query"]&drop_pending_updates=true
+https://api.telegram.org/bot<ТОКЕН>/setWebhook?url=https://<ДОМЕН_API>/api/webhooks/telegram&secret_token=<СЕКРЕТ>&allowed_updates=["message"]&drop_pending_updates=true
 ```
 
 Проверить: `https://api.telegram.org/bot<ТОКЕН>/getWebhookInfo` — `url` указывает на API, нет `last_error_message`.

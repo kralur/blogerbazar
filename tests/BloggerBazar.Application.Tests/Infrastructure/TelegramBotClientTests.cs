@@ -120,5 +120,5 @@ public sealed class TelegramBotClientTests
     [InlineData("hello", false)]
     [InlineData(null, false)]
     public void Start_command_accepts_a_deep_link_payload(string? text, bool expected) =>
-        Assert.Equal(expected, TelegramPaymentsWebhookController.IsStartCommand(text, "@BloggerBazarBot"));
+        Assert.Equal(expected, TelegramWebhookController.IsStartCommand(text, "@BloggerBazarBot"));
 }

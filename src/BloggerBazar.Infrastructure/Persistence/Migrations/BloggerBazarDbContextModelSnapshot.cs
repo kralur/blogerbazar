@@ -613,6 +613,66 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("BloggerBazar.Domain.Entities.Complaint", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<int>("ReporterRole")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("ReporterTelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("ResolvedByTelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReporterTelegramUserId", "CreatedAtUtc");
+
+                    b.HasIndex("Status", "CreatedAtUtc");
+
+                    b.HasIndex("ReporterTelegramUserId", "TargetType", "TargetId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'open'");
+
+                    b.ToTable("complaints", (string)null);
+                });
+
             modelBuilder.Entity("BloggerBazar.Domain.Entities.ContactUnlock", b =>
                 {
                     b.Property<Guid>("Id")

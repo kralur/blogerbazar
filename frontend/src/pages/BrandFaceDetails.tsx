@@ -6,6 +6,7 @@ import { ChipList, DetailSection, FactGrid, ReviewsSection, reviewCarouselLimit 
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency } from "../lib/currency";
 import { ContactList, hasContacts } from "../components/ContactList";
+import { ReportButton } from "../components/ReportButton";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
@@ -98,6 +99,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
     {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
     {role === "Business" && !profile.isHidden && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm brandFaceId={profile.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
+    <ReportButton targetId={profile.id} targetType="brandFace" />
     <Toast message={toast} />
     <BottomNav />
   </div>;

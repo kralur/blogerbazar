@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ReportButton } from "../components/ReportButton";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { acceptOffer, declineOffer, getMyOffer, type MarketplaceRole, type Offer } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Toast } from "../components/ui";
@@ -99,6 +100,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
       <div className="grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => decide(false)} type="button" variant="secondary">{t("offers.decline")}</Button><Button disabled={busy} onClick={() => decide(true)} type="button">{t("offers.accept")}</Button></div>
     </div>}
     {offer.dealId && <Button className="mt-5 w-full" onClick={() => { window.location.hash = dealRoute(offer.dealId!); }} type="button">{t("deals.open")}</Button>}
+    <ReportButton targetId={offer.id} targetType="offer" />
     <Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;

@@ -25,6 +25,7 @@ vi.mock("../src/components/ui", () => ({
   Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
   FixedActionBar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Modal: () => null,
+  Textarea: () => null,
   Rating: () => null,
   BottomNav: () => <nav aria-label="bottom-nav" />,
   Card: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,

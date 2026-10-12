@@ -112,10 +112,6 @@ internal static class BotMessages
         $"Сделка{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)} всё ещё активна. Если сотрудничество завершено, отметьте это в приложении.",
         $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "i", "")} hali faol. Hamkorlik yakunlangan bo‘lsa, buni ilovada belgilang.") with { Button = OpenDealButton };
 
-    public static BotText ContactUnlockPaid => Bilingual(
-        "Оплата подтверждена, контакты разблокированы.",
-        "To‘lov tasdiqlandi, kontaktlar ochildi.");
-
     public static BotText BloggerProfileApproved => Bilingual(
         "🎉 Ваш профиль прошёл проверку и доступен пользователям BloggerBazar.",
         "🎉 Profilingiz tekshiruvdan o‘tdi va BloggerBazar foydalanuvchilariga ko‘rinadi.");

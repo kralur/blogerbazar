@@ -8,6 +8,7 @@ import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCompactNumber, formatCurrency, formatPercentage } from "../lib/currency";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { ContactList, hasContacts } from "../components/ContactList";
+import { ReportButton } from "../components/ReportButton";
 import { platformProfileLink } from "../lib/contacts";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
@@ -123,6 +124,7 @@ export function BloggerDetails({ id }: { id: string }) {
     {blogger.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
     {role === "Business" && !blogger.isHidden && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm bloggerId={blogger.id} initialBudget={offerPreset?.budget} initialFormat={offerPreset?.format} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
+    <ReportButton targetId={id} targetType="blogger" />
     <Toast message={toast} /><BottomNav />
   </div>;
 }

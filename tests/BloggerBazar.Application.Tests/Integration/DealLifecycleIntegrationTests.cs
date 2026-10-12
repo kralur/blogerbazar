@@ -513,6 +513,45 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task Complaint_reaches_the_admin_queue_once_and_closes()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_351, 1_100_352);
+        const long adminTelegramUserId = 1_100_353;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var admin = PlatformUser.Create(adminTelegramUserId, "Admin", null);
+            admin.SetRole(PlatformRole.Admin);
+            dbContext.Add(admin);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var businessClient = CreateClient(seed.BusinessTelegramUserId);
+        using var adminClient = CreateClient(adminTelegramUserId);
+        using var strangerClient = CreateClient(1_100_354);
+        var report = new { targetType = "blogger", targetId = seed.BloggerId, reason = "fake", comment = "Followers look bought" };
+
+        var first = await businessClient.PostAsJsonAsync("/api/complaints", report);
+        var again = await businessClient.PostAsJsonAsync("/api/complaints", report);
+        var foreignDeal = await strangerClient.PostAsJsonAsync("/api/complaints", new { targetType = "deal", targetId = seed.DealId, reason = "noShow" });
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        var created = await first.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True((await again.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("alreadyReported").GetBoolean());
+        Assert.NotEqual(HttpStatusCode.OK, foreignDeal.StatusCode);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await businessClient.GetAsync("/api/admin/complaints")).StatusCode);
+        var queue = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/complaints");
+        var item = Assert.Single(queue.EnumerateArray(), entry => entry.GetProperty("id").GetGuid() == created.GetProperty("id").GetGuid());
+        Assert.Equal("Integration blogger", item.GetProperty("targetName").GetString());
+        var dashboard = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/dashboard");
+        Assert.True(dashboard.GetProperty("openComplaints").GetInt32() >= 1);
+
+        var close = await adminClient.PatchAsJsonAsync($"/api/admin/complaints/{item.GetProperty("id").GetGuid()}", new { status = "resolved", note = "Checked" });
+        Assert.Equal(HttpStatusCode.OK, close.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await adminClient.PatchAsJsonAsync($"/api/admin/complaints/{item.GetProperty("id").GetGuid()}", new { status = "dismissed" })).StatusCode);
+    }
+
+    [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {
         var seed = await SeedCampaignDealAsync(1_100_311, 1_100_312);

@@ -55,11 +55,6 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
             await ApiProblemWriter.WriteAsync(context, isNotFound ? StatusCodes.Status404NotFound : StatusCodes.Status409Conflict);
             logger.LogInformation("Business request rejected for {Path}; Outcome {Outcome}", context.Request.Path, isNotFound ? "not_found" : "conflict");
         }
-        catch (PaymentProviderUnavailableException)
-        {
-            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status503ServiceUnavailable, "payment_provider_unavailable", "Payment provider unavailable");
-            logger.LogWarning("Payment provider unavailable for {Path}", context.Request.Path);
-        }
         catch (ProfileMediaStorageUnavailableException)
         {
             await ApiProblemWriter.WriteAsync(context, StatusCodes.Status503ServiceUnavailable, "profile_media_unavailable", "Profile media is temporarily unavailable");

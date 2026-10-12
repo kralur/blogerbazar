@@ -12,7 +12,8 @@ public sealed record AdminDashboardDto(
     int PublishedCampaigns,
     int CompletedDeals,
     int PromotedBloggers,
-    int PromotedCampaigns);
+    int PromotedCampaigns,
+    int OpenComplaints = 0);
 
 public sealed record GetAdminDashboardQuery(long TelegramUserId) : IRequest<AdminDashboardDto>;
 

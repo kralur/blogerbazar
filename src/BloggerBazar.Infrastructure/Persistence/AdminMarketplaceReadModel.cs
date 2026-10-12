@@ -1,6 +1,7 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Admin;
 using BloggerBazar.Application.Features.CollaborationRequests;
+using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,18 +27,17 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
                 request.Business.Name, request.Message, (int)request.Status, request.Deal == null ? null : request.Deal.Id, request.CreatedAtUtc, request.BrandFaceId))
             .ToArrayAsync(cancellationToken);
 
+    // One DbContext runs one query at a time: parallel CountAsync calls on it throw, so the counts go in sequence.
     public async Task<AdminDashboardDto> GetDashboardAsync(CancellationToken cancellationToken)
     {
-        var users = dbContext.PlatformUsers.AsNoTracking().CountAsync(user => !user.IsBlocked && !user.IsDeleted, cancellationToken);
-        var bloggers = dbContext.BloggerProfiles.AsNoTracking().CountAsync(cancellationToken);
-        var businesses = dbContext.BusinessProfiles.AsNoTracking().CountAsync(cancellationToken);
-        var publishedCampaigns = dbContext.Campaigns.AsNoTracking().CountAsync(campaign => campaign.Status == CampaignStatus.Published, cancellationToken);
-        var completedDeals = dbContext.Deals.AsNoTracking().CountAsync(deal => deal.Status == DealStatus.Completed, cancellationToken);
-        var promotedBloggers = dbContext.BloggerProfiles.AsNoTracking().CountAsync(profile => profile.IsPromoted, cancellationToken);
-        var promotedCampaigns = dbContext.Campaigns.AsNoTracking().CountAsync(campaign => campaign.IsPromoted, cancellationToken);
-
-        await Task.WhenAll(users, bloggers, businesses, publishedCampaigns, completedDeals, promotedBloggers, promotedCampaigns);
-        return new AdminDashboardDto(users.Result, bloggers.Result, businesses.Result, publishedCampaigns.Result, completedDeals.Result,
-            promotedBloggers.Result, promotedCampaigns.Result);
+        var users = await dbContext.PlatformUsers.AsNoTracking().CountAsync(user => !user.IsBlocked && !user.IsDeleted, cancellationToken);
+        var bloggers = await dbContext.BloggerProfiles.AsNoTracking().CountAsync(cancellationToken);
+        var businesses = await dbContext.BusinessProfiles.AsNoTracking().CountAsync(cancellationToken);
+        var publishedCampaigns = await dbContext.Campaigns.AsNoTracking().CountAsync(campaign => campaign.Status == CampaignStatus.Published, cancellationToken);
+        var completedDeals = await dbContext.Deals.AsNoTracking().CountAsync(deal => deal.Status == DealStatus.Completed, cancellationToken);
+        var promotedBloggers = await dbContext.BloggerProfiles.AsNoTracking().CountAsync(profile => profile.IsPromoted, cancellationToken);
+        var promotedCampaigns = await dbContext.Campaigns.AsNoTracking().CountAsync(campaign => campaign.IsPromoted, cancellationToken);
+        var openComplaints = await dbContext.Complaints.AsNoTracking().CountAsync(complaint => complaint.Status == Complaint.OpenStatus, cancellationToken);
+        return new AdminDashboardDto(users, bloggers, businesses, publishedCampaigns, completedDeals, promotedBloggers, promotedCampaigns, openComplaints);
     }
 }

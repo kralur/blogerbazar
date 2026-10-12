@@ -26,6 +26,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<BrandFaceFavorite> BrandFaceFavorites => Set<BrandFaceFavorite>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Complaint> Complaints => Set<Complaint>();
     public DbSet<BrandFaceProfile> BrandFaceProfiles => Set<BrandFaceProfile>();
 
     public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken)
@@ -104,6 +105,19 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         auditLog.Property(entity => entity.CorrelationId).HasMaxLength(128);
         auditLog.HasIndex(entity => new { entity.ActorTelegramUserId, entity.CreatedAtUtc });
         auditLog.HasIndex(entity => new { entity.TargetType, entity.TargetId, entity.CreatedAtUtc });
+
+        var complaint = modelBuilder.Entity<Complaint>();
+        complaint.ToTable("complaints");
+        complaint.HasKey(entity => entity.Id);
+        complaint.Property(entity => entity.TargetType).HasMaxLength(16).IsRequired();
+        complaint.Property(entity => entity.Reason).HasMaxLength(16).IsRequired();
+        complaint.Property(entity => entity.Status).HasMaxLength(16).IsRequired();
+        complaint.Property(entity => entity.Comment).HasMaxLength(500);
+        complaint.Property(entity => entity.ResolutionNote).HasMaxLength(500);
+        // One open case per reporter and target (D52); a closed case does not block a new report.
+        complaint.HasIndex(entity => new { entity.ReporterTelegramUserId, entity.TargetType, entity.TargetId }).IsUnique().HasFilter("\"Status\" = 'open'");
+        complaint.HasIndex(entity => new { entity.ReporterTelegramUserId, entity.CreatedAtUtc });
+        complaint.HasIndex(entity => new { entity.Status, entity.CreatedAtUtc });
 
         var brandFace = modelBuilder.Entity<BrandFaceProfile>();
         brandFace.ToTable("brand_face_profiles");

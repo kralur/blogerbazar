@@ -2,7 +2,7 @@ using BloggerBazar.Api.Contracts.Deals;
 using BloggerBazar.Api.Contracts.Reviews;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Deals;
-using BloggerBazar.Application.Features.Payments;
+using BloggerBazar.Application.Features.Contacts;
 using BloggerBazar.Application.Features.Reviews;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;

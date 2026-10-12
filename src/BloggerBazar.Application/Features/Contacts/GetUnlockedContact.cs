@@ -5,7 +5,7 @@ using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
 
-namespace BloggerBazar.Application.Features.Payments;
+namespace BloggerBazar.Application.Features.Contacts;
 
 public sealed record GetUnlockedContactQuery(ContactTargetType TargetType, Guid TargetId, long ViewerTelegramUserId) : IRequest<ContactDetailsDto>;
 

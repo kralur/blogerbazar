@@ -1,5 +1,5 @@
 using BloggerBazar.Application.Abstractions.Persistence;
-using BloggerBazar.Application.Features.Payments;
+using BloggerBazar.Application.Features.Contacts;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;

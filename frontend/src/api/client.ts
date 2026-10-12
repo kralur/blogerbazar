@@ -39,13 +39,12 @@ export function getApiErrorMessage(error: unknown, fallback: string, options?: {
   return error.message || fallback;
 }
 
-const businessConflictCodes = new Set(["offer_daily_limit", "offer_already_active", "campaign_expired", "campaign_has_applications", "favorite_own_profile", "phone_not_verified", "campaign_daily_limit", "contact_phone_missing", "contact_share_failed", "profile_hidden", "business_hidden", "photo_limit", "price_fixed_by_offer", "publication_limit", "publication_duplicate", "publication_confirmed"]);
+const businessConflictCodes = new Set(["offer_daily_limit", "offer_already_active", "campaign_expired", "campaign_has_applications", "favorite_own_profile", "phone_not_verified", "campaign_daily_limit", "contact_phone_missing", "contact_share_failed", "profile_hidden", "business_hidden", "photo_limit", "price_fixed_by_offer", "publication_limit", "publication_duplicate", "publication_confirmed", "complaint_own", "complaint_daily_limit"]);
 
 function friendlyError(status: number, code?: string) {
   const normalizedCode = code?.toLowerCase();
   if (normalizedCode && businessConflictCodes.has(normalizedCode)) return translate(`error.${normalizedCode}`);
   if (normalizedCode === "validation_failed") return translate("error.validation_failed");
-  if (normalizedCode === "payment_provider_unavailable") return translate("error.payment_provider_unavailable");
   if (normalizedCode === "profile_media_unavailable") return translate("error.profile_media_unavailable");
   if (normalizedCode === "invalid_profile_media") return translate("error.invalid_profile_media");
   if (status === 401) return translate("error.session_expired");

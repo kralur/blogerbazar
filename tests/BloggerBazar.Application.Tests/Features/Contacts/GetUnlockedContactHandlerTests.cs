@@ -1,13 +1,13 @@
 using System.Runtime.CompilerServices;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Deals;
-using BloggerBazar.Application.Features.Payments;
+using BloggerBazar.Application.Features.Contacts;
 using BloggerBazar.Application.Tests.Features.Deals;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using static BloggerBazar.Application.Tests.Features.Deals.DealTestData;
 
-namespace BloggerBazar.Application.Tests.Features.Payments;
+namespace BloggerBazar.Application.Tests.Features.Contacts;
 
 public sealed class GetUnlockedContactHandlerTests
 {

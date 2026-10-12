@@ -3,7 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace BloggerBazar.Application.Tests.Features.Payments;
+namespace BloggerBazar.Application.Tests.Features.Telegram;
 
 [Collection(BloggerBazar.Application.Tests.Integration.ApiHostCollection.Name)]
 public sealed class TelegramWebhookSecurityTests

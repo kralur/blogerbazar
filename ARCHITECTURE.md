@@ -7,7 +7,7 @@ The client is a React + TypeScript Telegram Mini App. The only production backen
 ```
 React Mini App → ASP.NET Core API → Application (CQRS) → Domain
                                       ↓
-                         Infrastructure (EF Core, PostgreSQL, Redis, Telegram, Click)
+                         Infrastructure (EF Core, PostgreSQL, Redis, Telegram, R2)
 ```
 
 ## Layer rules
@@ -21,14 +21,14 @@ React Mini App → ASP.NET Core API → Application (CQRS) → Domain
 
 - Every write from the Mini App is bound to a Telegram user by validating the signed `Authorization: tma <initData>` value server-side.
 - Contact data stays server-only and is never included in public profile DTOs.
-- Click and Telegram secrets are supplied exclusively through environment variables or a secret manager.
+- Telegram and storage secrets are supplied exclusively through environment variables or a secret manager.
 - CORS is an explicit allow-list; production must configure `FRONTEND_URL`.
 
 ## Payment boundary
 
-`PaymentOrder` stores the payable product, price snapshot and provider transaction state. `ContactUnlock` is a separate immutable access record and is created only after a matching order is confirmed as paid. This prevents a client from granting itself access by merely creating an order and keeps the model extensible for PRO subscriptions and promoted listings.
-
-The Click adapter must validate the provider signature before it can send a confirmation command. The application layer then verifies the reference and exact amount before atomically recording payment and access.
+There is no payment flow today: the paid contact unlock was removed (2026-10-12). The `PaymentOrder`,
+`ContactUnlock` and credit tables stay as history. A future Pro pass (D32) needs its own order model and a
+provider adapter that validates the provider signature and the exact amount before granting access.
 
 ## Migration strategy
 

@@ -39,7 +39,7 @@
   "admin.bloggers": "Блогеры", "admin.businesses": "Компании",
   "requests.eyebrow": "Кампании, отклики и сделки", "requests.title": "Заявки", "requests.applications": "Отклики", "requests.deals": "Сделки", "requests.loading": "Загружаем данные…", "requests.emptyApplicationsTitle": "Заявок пока нет", "requests.emptyApplicationsSubtitle": "Откликнитесь на кампанию или опубликуйте свою, и заявки появятся здесь.", "requests.emptyDealsTitle": "Сделок пока нет", "requests.emptyDealsSubtitle": "Принятая заявка автоматически станет сделкой и появится здесь.", "requests.applicationSent": "Отправлена", "requests.applicationViewed": "Просмотрена", "requests.applicationAccepted": "Принята", "requests.acceptAction": "Принять заявку", "requests.applicationRejected": "Отклонена", "requests.applicationWithdrawn": "Отозвана", "requests.dealActive": "В работе", "requests.dealCompleted": "Завершена", "requests.dealCancelled": "Отменена", "requests.started": "Начата", "requests.completed": "Завершена", "requests.accepted": "Заявка принята, сделка создана", "requests.acceptFailed": "Не удалось принять заявку", "requests.complete": "Завершить сделку", "requests.completedToast": "Сделка завершена. Теперь можно оставить отзыв.", "requests.completeFailed": "Не удалось завершить сделку", "requests.reviewTitle": "Как прошла сделка?", "requests.reviewPlaceholder": "Расскажите о сотрудничестве", "requests.publishReview": "Опубликовать отзыв", "requests.reviewPublished": "Спасибо! Отзыв отправлен.", "requests.reviewFailed": "Не удалось опубликовать отзыв", "requests.loadFailed": "Не удалось загрузить данные", "requests.noMessage": "Сообщение не добавлено.", "requests.status": "Статус", "requests.rating": "Оценка",
   "ui.errorTitle": "Не удалось загрузить данные", "ui.errorSubtitle": "Проверьте подключение и повторите попытку.", "ui.offlineTitle": "Нет подключения", "ui.offlineSubtitle": "Интернет недоступен. Мы сохраним экран и попробуем подключиться снова.", "ui.accessDenied": "Доступ ограничен", "ui.accessDeniedSubtitle": "У вас нет доступа к этому разделу.", "ui.close": "Закрыть",
-  "error.payment_provider_unavailable": "Платёжный провайдер временно недоступен.", "error.access_denied": "Нет доступа к этому действию.", "error.not_found": "Данные не найдены.", "error.conflict": "Это действие сейчас недоступно.", "error.validation_failed": "Проверьте заполненные поля и повторите попытку.", "error.server": "Временная ошибка сервера. Повторите попытку.", "error.default": "Не удалось обработать данные.",
+  "error.access_denied": "Нет доступа к этому действию.", "error.not_found": "Данные не найдены.", "error.conflict": "Это действие сейчас недоступно.", "error.validation_failed": "Проверьте заполненные поля и повторите попытку.", "error.server": "Временная ошибка сервера. Повторите попытку.", "error.default": "Не удалось обработать данные.",
   "taxonomy.category.lifestyle": "Лайфстайл", "taxonomy.category.beauty": "Красота", "taxonomy.category.food": "Еда", "taxonomy.category.technology": "Технологии", "taxonomy.category.sport": "Спорт", "taxonomy.category.travel": "Путешествия", "taxonomy.category.finance": "Финансы", "taxonomy.category.gaming": "Игры", "taxonomy.category.fashion": "Мода", "taxonomy.city.tashkent": "Ташкент", "taxonomy.city.samarkand": "Самарканд", "taxonomy.city.bukhara": "Бухара", "taxonomy.city.fergana": "Фергана", "taxonomy.city.andijan": "Андижан", "taxonomy.city.namangan": "Наманган", "taxonomy.city.uzbekistan": "Узбекистан"
 ,
   "onboarding.title": "Выберите свою роль",
@@ -745,4 +745,38 @@
   ,"error.publication_limit": "В сделке может быть не больше 5 ссылок."
   ,"error.publication_duplicate": "Эта ссылка уже добавлена."
   ,"error.publication_confirmed": "Подтверждённую ссылку удалить нельзя."
+  ,"report.action": "Пожаловаться"
+  ,"report.title": "Пожаловаться"
+  ,"report.description": "Что не так? Жалобу увидит только команда BloggerBazar, автор о ней не узнает."
+  ,"report.reasonLabel": "Причина"
+  ,"report.reason.spam": "Спам или навязчивая реклама"
+  ,"report.reason.fraud": "Мошенничество"
+  ,"report.reason.fake": "Фейковый профиль или накрутка"
+  ,"report.reason.offensive": "Оскорбления или неприемлемый контент"
+  ,"report.reason.noShow": "Не выполнил договорённости"
+  ,"report.reason.other": "Другое"
+  ,"report.commentLabel": "Комментарий (необязательно)"
+  ,"report.commentLabelRequired": "Опишите, что случилось"
+  ,"report.reasonRequired": "Выберите причину"
+  ,"report.commentRequired": "Напишите пару слов о проблеме"
+  ,"report.send": "Отправить"
+  ,"report.sent": "Жалоба отправлена. Мы проверим."
+  ,"report.already": "Вы уже пожаловались. Мы проверяем."
+  ,"report.failed": "Не удалось отправить жалобу. Попробуйте ещё раз."
+  ,"error.complaint_own": "Нельзя пожаловаться на свой профиль или кампанию."
+  ,"error.complaint_daily_limit": "Слишком много жалоб за сутки. Попробуйте завтра."
+  ,"admin.complaints": "Жалобы"
+  ,"admin.complaintsEmpty": "Новых жалоб нет"
+  ,"admin.complaintTarget.blogger": "Блогер"
+  ,"admin.complaintTarget.brandFace": "Бренд-фейс"
+  ,"admin.complaintTarget.business": "Бизнес"
+  ,"admin.complaintTarget.campaign": "Кампания"
+  ,"admin.complaintTarget.offer": "Предложение"
+  ,"admin.complaintTarget.deal": "Сделка"
+  ,"admin.complaintReporter": "Пожаловался: {name} (id {id})"
+  ,"admin.complaintResolve": "Решено"
+  ,"admin.complaintDismiss": "Отклонить"
+  ,"admin.complaintResolved": "Жалоба закрыта как решённая"
+  ,"admin.complaintDismissed": "Жалоба отклонена"
+  ,"admin.complaintFailed": "Не удалось обновить жалобу"
 }

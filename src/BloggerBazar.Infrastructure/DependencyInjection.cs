@@ -1,11 +1,9 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Abstractions.Caching;
-using BloggerBazar.Application.Abstractions.Payments;
 using BloggerBazar.Infrastructure.Persistence;
 using BloggerBazar.Infrastructure.Caching;
 using BloggerBazar.Infrastructure.Security;
-using BloggerBazar.Infrastructure.Payments;
 using BloggerBazar.Infrastructure.Telegram;
 using BloggerBazar.Infrastructure.Media;
 using BloggerBazar.Infrastructure.Configuration;
@@ -30,15 +28,14 @@ public static class DependencyInjection
         services.AddScoped<ICampaignApplicationRepository, CampaignApplicationRepository>();
         services.AddScoped<IDealRepository, DealRepository>();
         services.AddScoped<IDealPublicationRepository, DealPublicationRepository>();
+        services.AddScoped<IComplaintRepository, ComplaintRepository>();
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IDealReminderRepository, DealReminderRepository>();
-        services.AddScoped<IPaymentOrderRepository, PaymentOrderRepository>();
         services.AddScoped<IContactUnlockRepository, ContactUnlockRepository>();
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
         services.AddScoped<IBrandFaceFavoriteRepository, BrandFaceFavoriteRepository>();
         services.AddScoped<IPortfolioItemRepository, PortfolioItemRepository>();
         services.AddScoped<ICollaborationRequestRepository, CollaborationRequestRepository>();
-        services.AddScoped<ICreditAccountRepository, CreditAccountRepository>();
         services.AddScoped<ISocialPlatformRepository, SocialPlatformRepository>();
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
@@ -55,8 +52,6 @@ public static class DependencyInjection
         services.AddScoped<IReviewReadModel, ReviewReadModel>();
         services.AddScoped<IPublicBusinessReadModel, PublicBusinessReadModel>();
         services.AddScoped<IDealReadModel, DealReadModel>();
-        services.AddSingleton<IContactUnlockPricing, ContactUnlockPricing>();
-        services.Configure<ClickTelegramPaymentOptions>(configuration.GetSection(ClickTelegramPaymentOptions.SectionName));
         services.Configure<ProfileMediaOptions>(configuration.GetSection(ProfileMediaOptions.SectionName));
         services.AddSingleton<IProfileMediaStorage, S3ProfileMediaStorage>();
         services.AddSingleton<ICatalogCache, DistributedCatalogCache>();
@@ -65,11 +60,6 @@ public static class DependencyInjection
         services.Configure<AdministrationOptions>(configuration.GetSection(AdministrationOptions.SectionName));
         services.AddSingleton<ITelegramWebAppValidator, TelegramWebAppValidator>();
         services.AddSingleton<ITelegramWebhookValidator, TelegramWebhookValidator>();
-        services.AddHttpClient<ITelegramPaymentGateway, TelegramPaymentGateway>(client =>
-        {
-            client.BaseAddress = new Uri("https://api.telegram.org/");
-            client.Timeout = TimeSpan.FromSeconds(5);
-        });
         services.AddScoped<IRecipientLanguageLookup, RecipientLanguageLookup>();
         services.AddHttpClient<ITelegramBotClient, TelegramBotClient>(client =>
         {

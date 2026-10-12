@@ -3,7 +3,7 @@ using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Abstractions.Security;
 using Microsoft.AspNetCore.Http;
 
-namespace BloggerBazar.Application.Tests.Features.Payments;
+namespace BloggerBazar.Application.Tests.Features.Telegram;
 
 public sealed class RateLimitPartitionKeyResolverTests
 {

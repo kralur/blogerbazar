@@ -176,7 +176,16 @@ type ApiCampaign = {
 };
 
 export type ContactDetails = { phone?: string | null; email?: string | null; telegram?: string | null; websiteUrl?: string | null };
-export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number };
+export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number; openComplaints?: number };
+// D52: what can be reported and why; fixed camelCase values shared with the API.
+export type ComplaintTarget = "blogger" | "brandFace" | "business" | "campaign" | "offer" | "deal";
+export type ComplaintReason = "spam" | "fraud" | "fake" | "offensive" | "noShow" | "other";
+export type ComplaintResult = { id: string; status: string; alreadyReported: boolean };
+export type AdminComplaint = {
+  id: string; targetType: ComplaintTarget; targetId: string; targetName?: string | null; reason: ComplaintReason; comment?: string | null;
+  status: "open" | "resolved" | "dismissed"; reporterTelegramUserId: number; reporterName?: string | null; reporterRole: number;
+  createdAtUtc: string; resolvedAtUtc?: string | null; resolutionNote?: string | null;
+};
 export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; isDeleted: boolean; deletedAtUtc?: string | null; deletedByTelegramUserId?: number | null; createdAtUtc: string };
 export type AdminBloggerProfile = { id: string; name: string; city: string; categories: string[]; avatarUrl?: string | null; totalFollowers: number; status: number; createdAtUtc: string };
 export type AdminAuditLog = { id: string; actorTelegramUserId: number; action: string; targetType: string; targetId: string; details?: string | null; correlationId?: string | null; createdAtUtc: string };
@@ -804,6 +813,18 @@ export async function removeBrandFaceFavorite(brandFaceId: string) {
 
 export async function deleteCurrentAccount() {
   return api<{ alreadyDeleted: boolean }>("/api/users/me", { method: "DELETE" });
+}
+
+export async function createComplaint(targetType: ComplaintTarget, targetId: string, reason: ComplaintReason, comment?: string) {
+  return api<ComplaintResult>("/api/complaints", { method: "POST", body: JSON.stringify({ targetType, targetId, reason, comment: comment?.trim() || undefined }) });
+}
+
+export async function getAdminComplaints(status: "open" | "resolved" | "dismissed" = "open") {
+  return api<AdminComplaint[]>(`/api/admin/complaints?status=${status}`);
+}
+
+export async function closeAdminComplaint(id: string, status: "resolved" | "dismissed", note?: string) {
+  return api<ComplaintResult>(`/api/admin/complaints/${id}`, { method: "PATCH", body: JSON.stringify({ status, note: note?.trim() || undefined }) });
 }
 
 export async function getAdminDashboard() {

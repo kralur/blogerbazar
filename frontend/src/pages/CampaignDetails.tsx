@@ -6,6 +6,7 @@ import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatBudgetRange, formatDate, isPastDay } from "../lib/currency";
 import { ChipList, DetailSection, FactGrid, ReviewsSection } from "../components/details/DetailBlocks";
 import { ContactList, hasContacts } from "../components/ContactList";
+import { ReportButton } from "../components/ReportButton";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { getCachedCampaignApplication, setCachedCampaignApplication } from "../data/campaignApplicationCache";
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
@@ -229,6 +230,7 @@ export function CampaignDetails({ id }: { id: string }) {
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
       {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary tap-target inline-flex w-full items-center justify-center gap-2 px-5" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
+      {blockedReason !== "own" && <ReportButton targetId={campaign.id} targetType="campaign" />}
       <Toast message={toast} tone={toastTone} /><BottomNav />
     </div>
   );

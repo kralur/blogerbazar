@@ -38,7 +38,7 @@
   "admin.bloggers": "Blogerlar", "admin.businesses": "Kompaniyalar",
   "requests.eyebrow": "Kampaniyalar, javoblar va bitimlar", "requests.title": "Arizalar", "requests.applications": "Javoblar", "requests.deals": "Bitimlar", "requests.loading": "Ma’lumotlar yuklanmoqda…", "requests.emptyApplicationsTitle": "Hali arizalar yo‘q", "requests.emptyApplicationsSubtitle": "Kampaniyaga javob bering yoki o‘zingiznikini e’lon qiling, arizalar shu yerda ko‘rinadi.", "requests.emptyDealsTitle": "Hali bitimlar yo‘q", "requests.emptyDealsSubtitle": "Qabul qilingan ariza avtomatik ravishda bitimga aylanadi va shu yerda ko‘rinadi.", "requests.applicationSent": "Yuborildi", "requests.applicationViewed": "Ko‘rib chiqildi", "requests.applicationAccepted": "Qabul qilindi", "requests.acceptAction": "Arizani qabul qilish", "requests.applicationRejected": "Rad etildi", "requests.applicationWithdrawn": "Qaytarib olindi", "requests.dealActive": "Jarayonda", "requests.dealCompleted": "Yakunlandi", "requests.dealCancelled": "Bekor qilindi", "requests.started": "Boshlandi", "requests.completed": "Yakunlandi", "requests.accepted": "Ariza qabul qilindi, bitim yaratildi", "requests.acceptFailed": "Arizani qabul qilib bo‘lmadi", "requests.complete": "Bitimni yakunlash", "requests.completedToast": "Bitim yakunlandi. Endi fikr qoldirishingiz mumkin.", "requests.completeFailed": "Bitimni yakunlab bo‘lmadi", "requests.reviewTitle": "Bitim qanday o‘tdi?", "requests.reviewPlaceholder": "Hamkorlik haqida yozing", "requests.publishReview": "Fikrni e’lon qilish", "requests.reviewPublished": "Rahmat! Fikringiz yuborildi.", "requests.reviewFailed": "Fikrni e’lon qilib bo‘lmadi", "requests.loadFailed": "Ma’lumotlarni yuklab bo‘lmadi", "requests.noMessage": "Xabar qo‘shilmagan.", "requests.status": "Holat", "requests.rating": "Baho",
   "ui.errorTitle": "Ma’lumotlarni yuklab bo‘lmadi", "ui.errorSubtitle": "Ulanishni tekshiring va qayta urinib ko‘ring.", "ui.offlineTitle": "Ulanish yo‘q", "ui.offlineSubtitle": "Internet mavjud emas. Ekranni saqlaymiz va qayta ulanishga urinib ko‘ramiz.", "ui.accessDenied": "Kirish cheklangan", "ui.accessDeniedSubtitle": "Bu bo‘limga ruxsatingiz yo‘q.", "ui.close": "Yopish",
-  "error.payment_provider_unavailable": "To‘lov provayderi vaqtincha mavjud emas.", "error.access_denied": "Bu amal uchun ruxsat yo‘q.", "error.not_found": "Ma’lumot topilmadi.", "error.conflict": "Bu amal hozir mavjud emas.", "error.validation_failed": "To‘ldirilgan maydonlarni tekshiring va qayta urinib ko‘ring.", "error.server": "Serverda vaqtinchalik xatolik. Qayta urinib ko‘ring.", "error.default": "Ma’lumotni qayta ishlashda xatolik yuz berdi.",
+  "error.access_denied": "Bu amal uchun ruxsat yo‘q.", "error.not_found": "Ma’lumot topilmadi.", "error.conflict": "Bu amal hozir mavjud emas.", "error.validation_failed": "To‘ldirilgan maydonlarni tekshiring va qayta urinib ko‘ring.", "error.server": "Serverda vaqtinchalik xatolik. Qayta urinib ko‘ring.", "error.default": "Ma’lumotni qayta ishlashda xatolik yuz berdi.",
   "taxonomy.category.lifestyle": "Layfstayl", "taxonomy.category.beauty": "Go‘zallik", "taxonomy.category.food": "Taomlar", "taxonomy.category.technology": "Texnologiya", "taxonomy.category.sport": "Sport", "taxonomy.category.travel": "Sayohat", "taxonomy.category.finance": "Moliya", "taxonomy.category.gaming": "O‘yinlar", "taxonomy.category.fashion": "Moda", "taxonomy.city.tashkent": "Toshkent", "taxonomy.city.samarkand": "Samarqand", "taxonomy.city.bukhara": "Buxoro", "taxonomy.city.fergana": "Farg‘ona", "taxonomy.city.andijan": "Andijon", "taxonomy.city.namangan": "Namangan", "taxonomy.city.uzbekistan": "O‘zbekiston"
 ,
   "onboarding.title": "O‘z rolingizni tanlang",
@@ -744,4 +744,38 @@
   ,"error.publication_limit": "Bitimda 5 tadan ortiq havola bo‘lishi mumkin emas."
   ,"error.publication_duplicate": "Bu havola allaqachon qo‘shilgan."
   ,"error.publication_confirmed": "Tasdiqlangan havolani o‘chirib bo‘lmaydi."
+  ,"report.action": "Shikoyat qilish"
+  ,"report.title": "Shikoyat qilish"
+  ,"report.description": "Nima noto‘g‘ri? Shikoyatni faqat BloggerBazar jamoasi ko‘radi, muallif bu haqda bilmaydi."
+  ,"report.reasonLabel": "Sabab"
+  ,"report.reason.spam": "Spam yoki ortiqcha reklama"
+  ,"report.reason.fraud": "Firibgarlik"
+  ,"report.reason.fake": "Soxta profil yoki sun’iy obunachilar"
+  ,"report.reason.offensive": "Haqorat yoki nomaqbul kontent"
+  ,"report.reason.noShow": "Kelishuvni bajarmadi"
+  ,"report.reason.other": "Boshqa"
+  ,"report.commentLabel": "Izoh (majburiy emas)"
+  ,"report.commentLabelRequired": "Nima bo‘lganini yozing"
+  ,"report.reasonRequired": "Sababni tanlang"
+  ,"report.commentRequired": "Muammo haqida bir necha so‘z yozing"
+  ,"report.send": "Yuborish"
+  ,"report.sent": "Shikoyat yuborildi. Tekshiramiz."
+  ,"report.already": "Siz allaqachon shikoyat qilgansiz. Tekshirmoqdamiz."
+  ,"report.failed": "Shikoyatni yuborib bo‘lmadi. Qayta urinib ko‘ring."
+  ,"error.complaint_own": "O‘z profilingiz yoki kampaniyangiz ustidan shikoyat qilib bo‘lmaydi."
+  ,"error.complaint_daily_limit": "Bir kunda juda ko‘p shikoyat. Ertaga urinib ko‘ring."
+  ,"admin.complaints": "Shikoyatlar"
+  ,"admin.complaintsEmpty": "Yangi shikoyatlar yo‘q"
+  ,"admin.complaintTarget.blogger": "Bloger"
+  ,"admin.complaintTarget.brandFace": "Brend-yuz"
+  ,"admin.complaintTarget.business": "Biznes"
+  ,"admin.complaintTarget.campaign": "Kampaniya"
+  ,"admin.complaintTarget.offer": "Taklif"
+  ,"admin.complaintTarget.deal": "Bitim"
+  ,"admin.complaintReporter": "Shikoyatchi: {name} (id {id})"
+  ,"admin.complaintResolve": "Hal qilindi"
+  ,"admin.complaintDismiss": "Rad etish"
+  ,"admin.complaintResolved": "Shikoyat hal qilingan deb yopildi"
+  ,"admin.complaintDismissed": "Shikoyat rad etildi"
+  ,"admin.complaintFailed": "Shikoyatni yangilab bo‘lmadi"
 }

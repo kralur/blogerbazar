@@ -1,10 +1,6 @@
 using BloggerBazar.Api.Contracts.Telegram;
-using BloggerBazar.Api.Security;
-using BloggerBazar.Application.Abstractions.Payments;
 using BloggerBazar.Application.Abstractions.Telegram;
-using BloggerBazar.Application.Features.Payments;
 using BloggerBazar.Application.Features.Users;
-using BloggerBazar.Infrastructure.Payments;
 using BloggerBazar.Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -15,32 +11,20 @@ namespace BloggerBazar.Api.Controllers;
 
 [Route("api/webhooks/telegram")]
 [EnableRateLimiting("telegram-webhook")]
-public sealed class TelegramPaymentsWebhookController(
+// The bot's only webhook: /start, /phone and a shared contact. Contact-unlock payments were removed from the product.
+public sealed class TelegramWebhookController(
     ISender mediator,
-    ITelegramPaymentGateway paymentGateway,
-    IOptions<ClickTelegramPaymentOptions> paymentOptions,
     IOptions<TelegramOptions> telegramOptions,
     ITelegramBotClient botClient,
-    ILogger<TelegramPaymentsWebhookController> logger) : ControllerBase
+    ILogger<TelegramWebhookController> logger) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> Receive([FromBody] TelegramPaymentWebhookUpdate? update, CancellationToken cancellationToken)
+    public async Task<IActionResult> Receive([FromBody] TelegramWebhookUpdate? update, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid || update is null || !TelegramWebhookPayloadValidator.IsValid(update))
+        if (!ModelState.IsValid || update is null)
         {
             logger.LogWarning("Telegram webhook payload was rejected. TraceId {TraceId}; SourceIp {SourceIp}", HttpContext.TraceIdentifier, HttpContext.Connection.RemoteIpAddress?.ToString());
             return BadRequest();
-        }
-
-        if (update.PreCheckoutQuery is { } checkout)
-        {
-            var isAmountValid = paymentOptions.Value.TryGetAmountUzs(checkout.Currency, checkout.TotalAmount, out var amountUzs);
-            var validation = isAmountValid
-                ? await mediator.Send(new ValidateContactUnlockCheckoutCommand(checkout.InvoicePayload, checkout.From.Id, amountUzs), cancellationToken)
-                : TelegramCheckoutValidationDto.Rejected();
-
-            await paymentGateway.AnswerPreCheckoutQueryAsync(checkout.Id, validation.IsApproved, validation.ErrorMessage, cancellationToken);
-            return Ok();
         }
 
         if (update.Message is { } message && IsStartCommand(message.Text, telegramOptions.Value.BotUsername))
@@ -53,8 +37,8 @@ public sealed class TelegramPaymentsWebhookController(
                 }
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
-                    // A non-2xx answer makes Telegram redeliver this update and hold the updates behind it
-                    // (payments included); a missed greeting is not worth that, so log it and acknowledge.
+                    // A non-2xx answer makes Telegram redeliver this update and hold the updates behind it;
+                    // a missed greeting is not worth that, so log it and acknowledge.
                     logger.LogError(exception, "Unable to send Telegram start message to chat {ChatId}.", chat.Id);
                 }
             }
@@ -81,19 +65,6 @@ public sealed class TelegramPaymentsWebhookController(
                     ? botClient.SendPhoneNotSavedAsync(contactChat.Id, cancellationToken)
                     : botClient.SendPhoneRequestAsync(contactChat.Id, true, cancellationToken), contactChat.Id);
             return Ok();
-        }
-
-        if (update.Message?.SuccessfulPayment is { } payment && update.Message.From is { } payer)
-        {
-            if (!paymentOptions.Value.TryGetAmountUzs(payment.Currency, payment.TotalAmount, out var amountUzs))
-            {
-                logger.LogWarning("Ignored Telegram payment with an unexpected amount or currency.");
-                return Ok();
-            }
-
-            await mediator.Send(
-                new ConfirmContactUnlockPaymentCommand(payment.InvoicePayload, payment.TelegramPaymentChargeId, amountUzs, payer.Id),
-                cancellationToken);
         }
 
         return Ok();

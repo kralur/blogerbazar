@@ -16,7 +16,7 @@ The repository has no Node.js backend or Prisma dependency. EF Core migrations i
 - Blogger and business profiles, portfolio and social-platform links.
 - Blogger search, campaign publishing, campaign applications and direct collaboration requests.
 - Deals, post-deal reviews, profile moderation and administration.
-- Public profile contacts, plus legacy contact-unlock and wallet APIs retained only for existing clients.
+- Partner contacts after a deal (D31); the paid contact-unlock and wallet APIs were removed (2026-10-12).
 - Server-side Telegram `initData` validation, webhook authentication and rate limiting.
 
 ## Run with Docker Compose
@@ -57,27 +57,21 @@ dotnet ef database update --project src/BloggerBazar.Infrastructure --startup-pr
 
 ## Telegram Bot Webhook
 
-Telegram delivers bot commands and payment-related updates to the single endpoint `/api/webhooks/telegram`. Configure it with the same `TELEGRAM_WEBHOOK_SECRET` value:
+Telegram delivers bot commands and shared contacts to the single endpoint `/api/webhooks/telegram`. Configure it with the same `TELEGRAM_WEBHOOK_SECRET` value:
 
 ```powershell
 curl.exe -X POST "https://api.telegram.org/bot$env:TELEGRAM_BOT_TOKEN/setWebhook" `
   -d "url=https://your-api.example.com/api/webhooks/telegram" `
   -d "secret_token=$env:TELEGRAM_WEBHOOK_SECRET" `
-  -d "allowed_updates=[\"pre_checkout_query\",\"message\"]"
+  -d "allowed_updates=[\"message\"]"
 ```
 
-## Deprecated Contact-Unlock APIs
+## Contacts
 
-Contacts are public in BloggerBazar v1. New clients must read them through `GET /api/contacts/{targetType}/{targetId}` and must not use the contact-unlock payment flow.
-
-The following endpoints remain available only for backward compatibility and are marked **Deprecated** in Swagger/OpenAPI:
-
-- `POST /api/payments/contact-unlocks`
-- `POST /api/payments/contact-unlocks/{reference}/invoice`
-- `GET /api/payments/contact-unlocks/{targetType}/{targetId}`
-- `POST /api/wallet/contact-unlocks`
-
-They are not used anywhere in the current React user interface. Existing integrations continue to receive the same routes and responses; no new integration should depend on them.
+Personal contacts are visible only to the partner in a deal: `GET /api/contacts/{targetType}/{targetId}` and
+`GET /api/deals/me/{id}/contact`. The paid contact-unlock endpoints (`/api/payments/*`, `/api/wallet/*`,
+`/api/admin/credits/*`) were removed; the old `payment_orders`, `contact_unlocks` and credit tables stay as history,
+and earlier paid unlocks keep working.
 
 ## Validation
 
