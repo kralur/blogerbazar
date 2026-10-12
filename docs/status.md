@@ -199,8 +199,8 @@ git diff --check: passed; secret scan: no matches; migration: none
 и не были видны `Program` до `builder.Build()`. Исправлено через `UseSetting` (только тесты).
 Прежние результаты «210 passed / 13 skipped» были локальными прогонами без integration-тестов.
 
-Деплой: Railway автоматически деплоит при push в `main` (подтверждено владельцем). Дополнительно
-`deploy-railway.yml` деплоит после зелёного CI на `main` — до этого он не срабатывал, т.к. CI был красный.
+Деплой: Railway автоматически деплоит при push в `main` (подтверждено владельцем). Workflow
+`deploy-railway.yml` удалён 2026-10-12 (решение владельца): с 8 окт. он падал на первом шаге без `RAILWAY_TOKEN`.
 
 ### Phase 3F-A (перед публикацией `313d26f`, выполнял Codex — историческое)
 

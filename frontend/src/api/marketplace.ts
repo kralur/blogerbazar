@@ -838,7 +838,7 @@ export async function getAdminDashboard() {
 }
 
 export async function getAdminBloggers() {
-  return api<AdminBloggerProfile[]>("/api/admin/marketplace/bloggers");
+  return api<AdminBloggerProfile[]>("/api/admin/bloggers");
 }
 
 export async function getAdminUsers() {

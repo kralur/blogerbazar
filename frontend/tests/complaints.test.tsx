@@ -100,4 +100,20 @@ describe("Complaints (D52)", () => {
     await waitFor(() => expect(api.closeAdminComplaint).toHaveBeenCalledWith("c1", "resolved"));
     expect(await screen.findByText(ru("admin.complaintsEmpty"))).toBeInTheDocument();
   });
+
+  it("says access is denied only when the server refuses, and shows a load error otherwise", async () => {
+    api.getAdminUsers.mockResolvedValue([]);
+    api.getAdminAuditLogs.mockResolvedValue([]);
+    api.getAdminBloggers.mockResolvedValue([]);
+    api.getAdminComplaints.mockResolvedValue([]);
+    api.getAdminDashboard.mockRejectedValue(new ApiError(403, "access_denied"));
+    const denied = render(<I18nProvider><Admin /></I18nProvider>);
+    expect(await screen.findByText(ru("ui.accessDenied"))).toBeInTheDocument();
+    denied.unmount();
+
+    api.getAdminDashboard.mockRejectedValue(new ApiError(500, "server_error"));
+    render(<I18nProvider><Admin /></I18nProvider>);
+    expect(await screen.findByText(ru("common.openFailed"))).toBeInTheDocument();
+    expect(screen.queryByText(ru("ui.accessDenied"))).not.toBeInTheDocument();
+  });
 });

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ApiError } from "../api/client";
 import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminComplaints, getAdminDashboard, getAdminUsers, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminComplaint, type AdminDashboard, type AdminPlatformUser } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, StatsCard, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -20,13 +21,21 @@ export function Admin() {
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
   const roleLabels = useMemo(() => roleKeys.map((key) => t(key)), [t]);
+  // Only a refused dashboard means "no access"; any other failure is a load error, and sections that did load still show.
+  const [denied, setDenied] = useState(false);
   const load = useCallback(() => {
     setFailed(false);
-    Promise.all([getAdminDashboard(), getAdminUsers(), getAdminAuditLogs(), getAdminBloggers()])
-      .then(([nextDashboard, nextUsers, nextLogs, nextBloggers]) => { setDashboard(nextDashboard); setUsers(nextUsers); setAuditLogs(nextLogs); setBloggers(nextBloggers); })
-      .catch(() => setFailed(true));
-    // An older API has no complaint queue; the rest of the page still works.
-    getAdminComplaints().then(setComplaints).catch(() => setComplaints([]));
+    setDenied(false);
+    void Promise.allSettled([getAdminDashboard(), getAdminUsers(), getAdminAuditLogs(), getAdminBloggers(), getAdminComplaints()])
+      .then(([nextDashboard, nextUsers, nextLogs, nextBloggers, nextComplaints]) => {
+        if (nextDashboard.status === "fulfilled") setDashboard(nextDashboard.value);
+        else if (nextDashboard.reason instanceof ApiError && (nextDashboard.reason.status === 401 || nextDashboard.reason.status === 403)) setDenied(true);
+        else setFailed(true);
+        if (nextUsers.status === "fulfilled") setUsers(nextUsers.value);
+        if (nextLogs.status === "fulfilled") setAuditLogs(nextLogs.value);
+        if (nextBloggers.status === "fulfilled") setBloggers(nextBloggers.value);
+        setComplaints(nextComplaints.status === "fulfilled" ? nextComplaints.value : []);
+      });
   }, []);
   useEffect(load, []);
   useProfileDataRefresh(load);
@@ -58,8 +67,9 @@ export function Admin() {
     } catch { setToastTone("error"); setToast(t("admin.complaintFailed")); }
     finally { setClosing(null); }
   };
-  if (!dashboard && !failed) return <div className="screen screen--with-nav"><LoadingState /><BottomNav /></div>;
-  if (failed || !dashboard) return <div className="screen screen--with-nav"><ErrorState onRetry={load} subtitle={t("ui.accessDeniedSubtitle")} title={t("ui.accessDenied")} /><BottomNav /></div>;
+  if (!dashboard && !failed && !denied) return <div className="screen screen--with-nav"><LoadingState /><BottomNav /></div>;
+  if (denied) return <div className="screen screen--with-nav"><ErrorState onRetry={load} subtitle={t("ui.accessDeniedSubtitle")} title={t("ui.accessDenied")} /><BottomNav /></div>;
+  if (failed || !dashboard) return <div className="screen screen--with-nav"><ErrorState onRetry={load} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   return <div className="screen screen--with-nav space-y-5 pt-5">
     <PageHeader eyebrow={t("common.appName")} title={t("admin.dashboardTitle")} />
     <Card><p className="text-sm leading-6 text-brand-muted">{t("admin.dashboardDescription")}</p></Card>
