@@ -23,8 +23,9 @@ internal sealed class ComplaintRepository(BloggerBazarDbContext dbContext) : ICo
         dbContext.Complaints.CountAsync(complaint => complaint.Status == Complaint.OpenStatus, cancellationToken);
 
     // The admin sees what was reported by name, newest first; offers and deals show both sides.
-    public async Task<IReadOnlyList<AdminComplaintDto>> ListForAdminAsync(string? status, int take, CancellationToken cancellationToken) =>
-        await dbContext.Complaints.AsNoTracking()
+    public async Task<IReadOnlyList<AdminComplaintDto>> ListForAdminAsync(string? status, int take, CancellationToken cancellationToken)
+    {
+        var items = await dbContext.Complaints.AsNoTracking()
             .Where(complaint => status == null || complaint.Status == status)
             .OrderByDescending(complaint => complaint.CreatedAtUtc)
             .ThenByDescending(complaint => complaint.Id)
@@ -50,6 +51,27 @@ internal sealed class ComplaintRepository(BloggerBazarDbContext dbContext) : ICo
                 (int)complaint.ReporterRole,
                 complaint.CreatedAtUtc,
                 complaint.ResolvedAtUtc,
-                complaint.ResolutionNote))
+                complaint.ResolutionNote,
+                complaint.TargetType == ComplaintTargets.Blogger ? dbContext.BloggerProfiles.IgnoreQueryFilters().Where(profile => profile.Id == complaint.TargetId).Select(profile => (long?)profile.TelegramUserId).FirstOrDefault()
+                    : complaint.TargetType == ComplaintTargets.BrandFace ? dbContext.BrandFaceProfiles.IgnoreQueryFilters().Where(profile => profile.Id == complaint.TargetId).Select(profile => (long?)profile.TelegramUserId).FirstOrDefault()
+                    : complaint.TargetType == ComplaintTargets.Business ? dbContext.BusinessProfiles.IgnoreQueryFilters().Where(profile => profile.Id == complaint.TargetId).Select(profile => (long?)profile.TelegramUserId).FirstOrDefault()
+                    : complaint.TargetType == ComplaintTargets.Campaign ? dbContext.BusinessProfiles.IgnoreQueryFilters()
+                        .Where(profile => dbContext.Campaigns.IgnoreQueryFilters().Any(campaign => campaign.Id == complaint.TargetId && campaign.BusinessId == profile.Id))
+                        .Select(profile => (long?)profile.TelegramUserId).FirstOrDefault()
+                    : null,
+                false))
             .ToArrayAsync(cancellationToken);
+
+        var ownerIds = items.Where(item => item.OwnerTelegramUserId != null).Select(item => item.OwnerTelegramUserId!.Value).Distinct().ToArray();
+        if (ownerIds.Length == 0)
+        {
+            return items;
+        }
+
+        var blocked = (await dbContext.PlatformUsers.AsNoTracking()
+            .Where(user => ownerIds.Contains(user.TelegramUserId) && user.IsBlocked)
+            .Select(user => user.TelegramUserId)
+            .ToArrayAsync(cancellationToken)).ToHashSet();
+        return items.Select(item => item.OwnerTelegramUserId is { } owner && blocked.Contains(owner) ? item with { OwnerIsBlocked = true } : item).ToArray();
+    }
 }

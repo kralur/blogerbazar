@@ -5,7 +5,7 @@ import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({
   createComplaint: vi.fn(), getAdminComplaints: vi.fn(), closeAdminComplaint: vi.fn(),
-  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), getAdminCampaigns: vi.fn()
+  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), getAdminCampaigns: vi.fn(), setAdminUserBlocked: vi.fn()
 }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({ ...(await importOriginal<typeof import("../src/api/marketplace")>()), ...api }));
@@ -101,6 +101,26 @@ describe("Complaints (D52)", () => {
 
     await waitFor(() => expect(api.closeAdminComplaint).toHaveBeenCalledWith("c1", "resolved"));
     expect(await screen.findByText(ru("admin.complaintsEmpty"))).toBeInTheDocument();
+  });
+
+  it("opens the reported profile, blocks its owner and shows closed complaints", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 1, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, openComplaints: 1 });
+    const complaint = { id: "c1", targetType: "blogger", targetId: "b1", targetName: "Madina", reason: "fake", status: "open", reporterTelegramUserId: 22, reporterRole: 1, createdAtUtc: "2026-10-12T08:00:00Z", ownerTelegramUserId: 5, ownerIsBlocked: false };
+    api.getAdminComplaints.mockResolvedValue([complaint]);
+    api.setAdminUserBlocked.mockResolvedValue({ telegramUserId: 5, firstName: "Madina", role: 0, isBlocked: true, isDeleted: false, createdAtUtc: "2026-10-01T00:00:00Z" });
+    render(<I18nProvider><Admin section="complaints" /></I18nProvider>);
+
+    expect(await screen.findByRole("link", { name: ru("admin.complaintOpenTarget") })).toHaveAttribute("href", "#/blogger/b1");
+    fireEvent.click(screen.getByRole("button", { name: ru("admin.complaintBlockOwner") }));
+    await waitFor(() => expect(api.setAdminUserBlocked).toHaveBeenCalledWith(5, true));
+    expect(await screen.findByRole("button", { name: ru("admin.complaintUnblockOwner") })).toBeInTheDocument();
+
+    api.getAdminComplaints.mockResolvedValue([{ ...complaint, id: "c2", status: "resolved", resolvedAtUtc: "2026-10-12T09:00:00Z", targetType: "deal", ownerTelegramUserId: null }]);
+    fireEvent.click(screen.getByRole("button", { name: ru("admin.complaintStatus.resolved") }));
+    await waitFor(() => expect(api.getAdminComplaints).toHaveBeenLastCalledWith("resolved"));
+    expect(await screen.findByText(ru("admin.complaintTarget.deal"), { exact: false })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: ru("admin.complaintResolve") })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: ru("admin.complaintOpenTarget") })).not.toBeInTheDocument();
   });
 
   it("says access is denied only when the server refuses, and shows a load error otherwise", async () => {

@@ -22,7 +22,8 @@ public sealed record DealReminderCandidate(
     string? BloggerName = null,
     string? BusinessName = null,
     string? CampaignTitle = null,
-    CollaborationFormat? Format = null);
+    CollaborationFormat? Format = null,
+    bool HasPublications = true);
 
 public sealed record DueDealReminder(DealReminderKind Kind, MarketplaceRole RecipientRole, long ChatId);
 
@@ -39,6 +40,10 @@ public static class DealReminderSchedule
 
     private static readonly (int Days, DealReminderKind Kind)[] CompletionStages =
         [(14, DealReminderKind.CompleteDay14), (7, DealReminderKind.CompleteDay7)];
+
+    // D51: two days after completion the creator is asked once for the publication link, if none was added.
+    // Day 2 keeps it apart from the review reminders on days 1 and 3.
+    private const int ResultsReminderDay = 2;
 
     public static bool IsDeliveryTime(DateTime nowUtc)
     {
@@ -67,15 +72,18 @@ public static class DealReminderSchedule
             return [];
         }
 
-        var reviewKind = LatestDue(ReviewStages, completedAtUtc, nowUtc);
-        if (reviewKind is null)
+        var due = new List<DueDealReminder>(3);
+        if (LatestDue(ReviewStages, completedAtUtc, nowUtc) is { } reviewKind)
         {
-            return [];
+            if (!deal.BloggerHasReviewed) due.Add(new DueDealReminder(reviewKind, MarketplaceRole.Blogger, deal.BloggerTelegramUserId));
+            if (!deal.BusinessHasReviewed) due.Add(new DueDealReminder(reviewKind, MarketplaceRole.Business, deal.BusinessTelegramUserId));
         }
 
-        var due = new List<DueDealReminder>(2);
-        if (!deal.BloggerHasReviewed) due.Add(new DueDealReminder(reviewKind.Value, MarketplaceRole.Blogger, deal.BloggerTelegramUserId));
-        if (!deal.BusinessHasReviewed) due.Add(new DueDealReminder(reviewKind.Value, MarketplaceRole.Business, deal.BusinessTelegramUserId));
+        if (!deal.HasPublications && completedAtUtc.AddDays(ResultsReminderDay) <= nowUtc)
+        {
+            due.Add(new DueDealReminder(DealReminderKind.ResultsDay2, MarketplaceRole.Blogger, deal.BloggerTelegramUserId));
+        }
+
         return due;
     }
 
@@ -99,6 +107,7 @@ public static class DealReminderSchedule
         {
             DealReminderKind.ReviewDay7 => BotMessages.ReviewReminderLastWeek(partner, topic),
             DealReminderKind.ReviewDay1 or DealReminderKind.ReviewDay3 => BotMessages.ReviewReminder(partner, topic),
+            DealReminderKind.ResultsDay2 => BotMessages.ResultsReminder(partner, topic),
             _ => BotMessages.CompletionReminder(partner, topic)
         };
     }

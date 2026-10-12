@@ -823,4 +823,12 @@
   ,"admin.writeInTelegram": "Написать в Telegram"
   ,"admin.userFilter.new": "Новые (7 дней)"
   ,"admin.registeredAt": "Регистрация: {date}"
+  ,"admin.complaintOpenTarget": "Открыть"
+  ,"admin.complaintBlockOwner": "Заблокировать пользователя"
+  ,"admin.complaintUnblockOwner": "Разблокировать пользователя"
+  ,"admin.complaintStatusFilter": "Статус жалоб"
+  ,"admin.complaintStatus.open": "Открытые"
+  ,"admin.complaintStatus.resolved": "Решённые"
+  ,"admin.complaintStatus.dismissed": "Отклонённые"
+  ,"admin.complaintClosedAt": "Закрыта: {date}"
 }

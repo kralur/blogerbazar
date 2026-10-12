@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminDashboard, getAdminUsers, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
+import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminDashboard, getAdminUsers, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/currency";
@@ -20,6 +20,9 @@ const isSection = (value?: string): value is Section => Boolean(value && (sectio
 type Lists = { users: AdminPlatformUser[]; bloggers: AdminBloggerProfile[]; businesses: AdminBusiness[]; campaigns: AdminCampaign[]; complaints: AdminComplaint[]; log: AdminAuditLog[] };
 const emptyLists: Lists = { users: [], bloggers: [], businesses: [], campaigns: [], complaints: [], log: [] };
 const userFilters: AdminUserFilter[] = ["all", "new", "bloggers", "businesses", "brandFaces", "admins", "blocked", "deleted"];
+const complaintStatuses: AdminComplaintStatus[] = ["open", "resolved", "dismissed"];
+// Public things open from the case; offers and deals are private to their two sides, so they have no link.
+const complaintTargetRoutes: Partial<Record<AdminComplaint["targetType"], string>> = { blogger: "#/blogger/", brandFace: "#/brand-face-detail/", business: "#/company/", campaign: "#/campaign/" };
 
 // The admin home is a grid of tiles; each tile opens its own list at #/admin/<section>, so nothing needs long scrolling.
 export function Admin({ section: rawSection }: { section?: string }) {
@@ -44,6 +47,9 @@ export function Admin({ section: rawSection }: { section?: string }) {
   useEffect(() => { if (section === "users") setUserFilter(filterFromHash()); }, [section]);
   const userQuery = useRef({ search: "", filter: "all" as AdminUserFilter });
   userQuery.current = { search: userSearch, filter: userFilter };
+  const [complaintStatus, setComplaintStatus] = useState<AdminComplaintStatus>("open");
+  const complaintQuery = useRef<AdminComplaintStatus>("open");
+  complaintQuery.current = complaintStatus;
 
   const loadSection = useCallback(async (target: Section | null) => {
     if (!target) return;
@@ -53,7 +59,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
       if (target === "bloggers") { const bloggers = await getAdminBloggers(); setLists((current) => ({ ...current, bloggers })); }
       if (target === "businesses") { const businesses = await getAdminBusinesses(); setLists((current) => ({ ...current, businesses })); }
       if (target === "campaigns") { const campaigns = await getAdminCampaigns(); setLists((current) => ({ ...current, campaigns })); }
-      if (target === "complaints") { const complaints = await getAdminComplaints(); setLists((current) => ({ ...current, complaints })); }
+      if (target === "complaints") { const complaints = await getAdminComplaints(complaintQuery.current); setLists((current) => ({ ...current, complaints })); }
       // The journal names people, so it needs the user list too.
       if (target === "log") { const [log, users] = await Promise.all([getAdminAuditLogs(), getAdminUsers().catch(() => [] as AdminPlatformUser[])]); setLists((current) => ({ ...current, log, users })); }
     } catch {
@@ -79,6 +85,14 @@ export function Admin({ section: rawSection }: { section?: string }) {
     const timer = window.setTimeout(() => void loadSection("users"), 300);
     return () => window.clearTimeout(timer);
   }, [loadSection, section, userFilter, userSearch]);
+  // A status chip asks the server again; the first visit is loaded by load() above.
+  const complaintStatusShown = useRef<AdminComplaintStatus>("open");
+  useEffect(() => {
+    if (section !== "complaints" || complaintStatusShown.current === complaintStatus) return;
+    complaintStatusShown.current = complaintStatus;
+    setLists((current) => ({ ...current, complaints: [] }));
+    void loadSection("complaints");
+  }, [complaintStatus, loadSection, section]);
 
   const updateRole = async (telegramUserId: number, role: number) => {
     try {
@@ -92,6 +106,16 @@ export function Admin({ section: rawSection }: { section?: string }) {
     try {
       const updated = await setAdminUserBlocked(user.telegramUserId, !user.isBlocked);
       setLists((current) => ({ ...current, users: current.users.map((item) => item.telegramUserId === updated.telegramUserId ? updated : item) }));
+      setToastTone("success");
+      setToast(updated.isBlocked ? t("admin.userBlocked") : t("admin.userUnblocked"));
+    } catch { setToastTone("error"); setToast(t("admin.userUpdateDenied")); }
+  };
+  // Blocking from a case: only the owner may block (the server checks), and every case of the same person shows the new state.
+  const toggleOwnerBlock = async (complaint: AdminComplaint) => {
+    if (!complaint.ownerTelegramUserId) return;
+    try {
+      const updated = await setAdminUserBlocked(complaint.ownerTelegramUserId, !complaint.ownerIsBlocked);
+      setLists((current) => ({ ...current, complaints: current.complaints.map((item) => item.ownerTelegramUserId === updated.telegramUserId ? { ...item, ownerIsBlocked: updated.isBlocked } : item) }));
       setToastTone("success");
       setToast(updated.isBlocked ? t("admin.userBlocked") : t("admin.userUnblocked"));
     } catch { setToastTone("error"); setToast(t("admin.userUpdateDenied")); }
@@ -141,7 +165,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
 
   const usersById = new Map(lists.users.map((user) => [String(user.telegramUserId), user]));
   const titleKey = section === "log" ? "admin.logTitle" : section === "campaigns" ? "admin.campaigns" : `admin.${section}`;
-  const empty = <Card><p className="text-sm text-brand-muted">{t(section === "complaints" ? "admin.complaintsEmpty" : "admin.listEmpty")}</p></Card>;
+  const empty = <Card><p className="text-sm text-brand-muted">{t(section === "complaints" && complaintStatus === "open" ? "admin.complaintsEmpty" : "admin.listEmpty")}</p></Card>;
   const items = lists[section];
 
   return <div className="screen screen--with-nav space-y-4 pt-5">
@@ -151,6 +175,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
       <input aria-label={t("admin.userSearch")} className="ds-field w-full px-4" inputMode="search" onChange={(event) => setUserSearch(event.target.value)} placeholder={t("admin.userSearch")} type="search" value={userSearch} />
       <div aria-label={t("admin.userFilter")} className="admin-filters no-scrollbar" role="group">{userFilters.map((value) => <button aria-pressed={userFilter === value} className="admin-filter" key={value} onClick={() => setUserFilter(value)} type="button">{t(`admin.userFilter.${value}`)}</button>)}</div>
     </div>}
+    {section === "complaints" && <div aria-label={t("admin.complaintStatusFilter")} className="admin-filters no-scrollbar" role="group">{complaintStatuses.map((value) => <button aria-pressed={complaintStatus === value} className="admin-filter" key={value} onClick={() => setComplaintStatus(value)} type="button">{t(`admin.complaintStatus.${value}`)}</button>)}</div>}
     {listLoading && items.length === 0 ? <LoadingState /> : items.length === 0 ? empty : <div className="grid gap-2">
       {section === "users" && lists.users.map((user) => {
         const profiles = [user.hasBloggerProfile && t("admin.userFilter.bloggers"), user.hasBusinessProfile && t("admin.userFilter.businesses"), user.hasBrandFaceProfile && t("admin.userFilter.brandFaces")].filter(Boolean).join(" · ");
@@ -168,7 +193,12 @@ export function Admin({ section: rawSection }: { section?: string }) {
         <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate font-extrabold">{complaint.targetName || t("common.deletedAccount")}</p><p className="text-xs text-brand-muted">{t(`admin.complaintTarget.${complaint.targetType}`)} · {formatDate(complaint.createdAtUtc)}</p></div><Badge tone="red">{t(`report.reason.${complaint.reason}`)}</Badge></div>
         {complaint.comment && <p className="mt-2 whitespace-pre-line text-sm leading-6 text-brand-muted">{complaint.comment}</p>}
         <p className="mt-2 text-xs text-brand-muted">{t("admin.complaintReporter", { name: complaint.reporterName || String(complaint.reporterTelegramUserId), id: complaint.reporterTelegramUserId })}</p>
-        <div className="mt-3 grid grid-cols-2 gap-2"><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "resolved")} type="button">{t("admin.complaintResolve")}</Button><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "dismissed")} type="button" variant="secondary">{t("admin.complaintDismiss")}</Button></div>
+        {complaint.status !== "open" && <p className="mt-1 text-xs text-brand-muted">{t("admin.complaintClosedAt", { date: formatDate(complaint.resolvedAtUtc) })}</p>}
+        {(complaintTargetRoutes[complaint.targetType] || complaint.ownerTelegramUserId) && <div className="mt-3 flex gap-2">
+          {complaintTargetRoutes[complaint.targetType] && <a className="ds-button ds-button--secondary tap-target inline-flex flex-1 items-center justify-center px-5" href={`${complaintTargetRoutes[complaint.targetType]}${complaint.targetId}`}>{t("admin.complaintOpenTarget")}</a>}
+          {complaint.ownerTelegramUserId && <Button className="flex-1" onClick={() => void toggleOwnerBlock(complaint)} type="button" variant={complaint.ownerIsBlocked ? "secondary" : "danger"}>{t(complaint.ownerIsBlocked ? "admin.complaintUnblockOwner" : "admin.complaintBlockOwner")}</Button>}
+        </div>}
+        {complaint.status === "open" && <div className="mt-2 grid grid-cols-2 gap-2"><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "resolved")} type="button">{t("admin.complaintResolve")}</Button><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "dismissed")} type="button" variant="secondary">{t("admin.complaintDismiss")}</Button></div>}
       </Card>)}
       {section === "log" && lists.log.map((entry) => {
         const actor = usersById.get(String(entry.actorTelegramUserId));

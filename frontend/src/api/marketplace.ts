@@ -185,7 +185,9 @@ export type AdminComplaint = {
   id: string; targetType: ComplaintTarget; targetId: string; targetName?: string | null; reason: ComplaintReason; comment?: string | null;
   status: "open" | "resolved" | "dismissed"; reporterTelegramUserId: number; reporterName?: string | null; reporterRole: number;
   createdAtUtc: string; resolvedAtUtc?: string | null; resolutionNote?: string | null;
+  ownerTelegramUserId?: number | null; ownerIsBlocked?: boolean;
 };
+export type AdminComplaintStatus = AdminComplaint["status"];
 export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; isDeleted: boolean; deletedAtUtc?: string | null; deletedByTelegramUserId?: number | null; createdAtUtc: string; verifiedPhone?: string | null; hasBloggerProfile?: boolean; hasBusinessProfile?: boolean; hasBrandFaceProfile?: boolean };
 export type AdminUserFilter = "all" | "new" | "bloggers" | "businesses" | "brandFaces" | "admins" | "blocked" | "deleted";
 export type AdminBloggerProfile = { id: string; name: string; city: string; categories: string[]; avatarUrl?: string | null; totalFollowers: number; status: number; createdAtUtc: string };
@@ -828,7 +830,7 @@ export async function createComplaint(targetType: ComplaintTarget, targetId: str
   return api<ComplaintResult>("/api/complaints", { method: "POST", body: JSON.stringify({ targetType, targetId, reason, comment: comment?.trim() || undefined }) });
 }
 
-export async function getAdminComplaints(status: "open" | "resolved" | "dismissed" = "open") {
+export async function getAdminComplaints(status: AdminComplaintStatus = "open") {
   return api<AdminComplaint[]>(`/api/admin/complaints?status=${status}`);
 }
 

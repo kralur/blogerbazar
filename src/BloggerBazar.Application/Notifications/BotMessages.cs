@@ -139,6 +139,11 @@ internal static class BotMessages
         $"Сделка{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)} всё ещё активна. Если сотрудничество завершено, отметьте это в приложении.",
         $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "i", "")} hali faol. Hamkorlik yakunlangan bo‘lsa, buni ilovada belgilang.") with { Button = OpenDealButton };
 
+    // D51: results stay optional, so the text asks only if there was a publication.
+    public static BotText ResultsReminder(string? partner, DealTopic topic) => Bilingual(
+        $"Если по сделке{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)} вышла публикация, добавьте ссылку и просмотры. Так бизнес увидит результат, а ваш профиль станет сильнее.",
+        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "i", "")} bo‘yicha e’lon chiqqan bo‘lsa, havolasini va ko‘rishlar sonini qo‘shing. Biznes natijani ko‘radi, profilingiz esa kuchliroq bo‘ladi.") with { Button = OpenDealButton };
+
     public static BotText BloggerProfileApproved => Bilingual(
         "🎉 Ваш профиль прошёл проверку и доступен пользователям BloggerBazar.",
         "🎉 Profilingiz tekshiruvdan o‘tdi va BloggerBazar foydalanuvchilariga ko‘rinadi.");

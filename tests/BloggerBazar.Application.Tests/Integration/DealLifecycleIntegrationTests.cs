@@ -320,10 +320,39 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var reviewedCandidate = Assert.Single(candidates, candidate => candidate.DealId == reviewed.DealId);
         Assert.True(reviewedCandidate.BloggerHasReviewed);
         Assert.False(reviewedCandidate.BusinessHasReviewed);
-        Assert.Equal(reviewed.BusinessTelegramUserId, Assert.Single(DealReminderSchedule.Due(reviewedCandidate, nowUtc)).ChatId);
+        Assert.False(reviewedCandidate.HasPublications);
+        // Two days after completion: the business still owes a review, and the blogger is asked for the publication link.
+        Assert.Equal(
+            [(reviewed.BusinessTelegramUserId, DealReminderKind.ReviewDay1), (reviewed.BloggerTelegramUserId, DealReminderKind.ResultsDay2)],
+            DealReminderSchedule.Due(reviewedCandidate, nowUtc).Select(reminder => (reminder.ChatId, reminder.Kind)));
         Assert.True(firstClaim);
         Assert.False(secondClaim);
         Assert.True(otherSide);
+    }
+
+    [IntegrationFact]
+    public async Task Reviewed_deal_without_publication_stays_a_candidate_until_the_results_reminder_is_claimed()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_107, 1_100_108, complete: true);
+        var nowUtc = DateTime.UtcNow;
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        await dbContext.Deals.Where(deal => deal.Id == seed.DealId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(deal => deal.CompletedAtUtc, (DateTime?)nowUtc.AddDays(-3)));
+        using (var bloggerClient = CreateClient(seed.BloggerTelegramUserId))
+        using (var businessClient = CreateClient(seed.BusinessTelegramUserId))
+        {
+            Assert.Equal(HttpStatusCode.Created, (await bloggerClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5 })).StatusCode);
+            Assert.Equal(HttpStatusCode.Created, (await businessClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5 })).StatusCode);
+        }
+
+        var reminders = scope.ServiceProvider.GetRequiredService<IDealReminderRepository>();
+        var candidate = Assert.Single(await reminders.GetCandidatesAsync(nowUtc, CancellationToken.None), item => item.DealId == seed.DealId);
+        var due = Assert.Single(DealReminderSchedule.Due(candidate, nowUtc));
+        Assert.Equal((seed.BloggerTelegramUserId, DealReminderKind.ResultsDay2), (due.ChatId, due.Kind));
+
+        Assert.True(await reminders.TryClaimAsync(seed.DealId, DealReminderKind.ResultsDay2, MarketplaceRole.Blogger, nowUtc, CancellationToken.None));
+        Assert.DoesNotContain(await reminders.GetCandidatesAsync(nowUtc, CancellationToken.None), item => item.DealId == seed.DealId);
     }
 
     // D46: a brand face goes through the same cycle as a blogger: apply, accept, deal, complete, reviews.
@@ -543,6 +572,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var queue = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/complaints");
         var item = Assert.Single(queue.EnumerateArray(), entry => entry.GetProperty("id").GetGuid() == created.GetProperty("id").GetGuid());
         Assert.Equal("Integration blogger", item.GetProperty("targetName").GetString());
+        Assert.Equal(seed.BloggerTelegramUserId, item.GetProperty("ownerTelegramUserId").GetInt64());
+        Assert.False(item.GetProperty("ownerIsBlocked").GetBoolean());
         var dashboard = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/dashboard");
         Assert.True(dashboard.GetProperty("openComplaints").GetInt32() >= 1);
         var businesses = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/businesses");
@@ -553,6 +584,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var close = await adminClient.PatchAsJsonAsync($"/api/admin/complaints/{item.GetProperty("id").GetGuid()}", new { status = "resolved", note = "Checked" });
         Assert.Equal(HttpStatusCode.OK, close.StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await adminClient.PatchAsJsonAsync($"/api/admin/complaints/{item.GetProperty("id").GetGuid()}", new { status = "dismissed" })).StatusCode);
+        var resolved = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/complaints?status=resolved");
+        Assert.Contains(resolved.EnumerateArray(), entry => entry.GetProperty("id").GetGuid() == created.GetProperty("id").GetGuid());
     }
 
     [IntegrationFact]

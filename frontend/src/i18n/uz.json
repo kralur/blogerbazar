@@ -822,4 +822,12 @@
   ,"admin.writeInTelegram": "Telegramda yozish"
   ,"admin.userFilter.new": "Yangilar (7 kun)"
   ,"admin.registeredAt": "Ro‘yxatdan o‘tgan: {date}"
+  ,"admin.complaintOpenTarget": "Ochish"
+  ,"admin.complaintBlockOwner": "Foydalanuvchini bloklash"
+  ,"admin.complaintUnblockOwner": "Foydalanuvchini blokdan chiqarish"
+  ,"admin.complaintStatusFilter": "Shikoyatlar holati"
+  ,"admin.complaintStatus.open": "Ochiq"
+  ,"admin.complaintStatus.resolved": "Hal qilingan"
+  ,"admin.complaintStatus.dismissed": "Rad etilgan"
+  ,"admin.complaintClosedAt": "Yopilgan: {date}"
 }

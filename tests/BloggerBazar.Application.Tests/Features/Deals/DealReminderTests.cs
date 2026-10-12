@@ -59,6 +59,33 @@ public sealed class DealReminderTests
         Assert.Empty(DealReminderSchedule.Due(Completed(Daytime.AddDays(-3)) with { BloggerHasReviewed = true, BusinessHasReviewed = true }, Daytime));
 
     [Theory]
+    [InlineData(1.9, false)]
+    [InlineData(2.0, true)]
+    [InlineData(13.9, true)]
+    [InlineData(14.0, false)]
+    public void Creator_without_a_publication_is_asked_for_the_link_from_day_two(double daysSinceCompletion, bool expected)
+    {
+        var deal = Completed(Daytime.AddDays(-daysSinceCompletion)) with { BloggerHasReviewed = true, BusinessHasReviewed = true, HasPublications = false };
+
+        var due = DealReminderSchedule.Due(deal, Daytime);
+
+        if (!expected)
+        {
+            Assert.Empty(due);
+            return;
+        }
+
+        var reminder = Assert.Single(due);
+        Assert.Equal(DealReminderKind.ResultsDay2, reminder.Kind);
+        Assert.Equal(MarketplaceRole.Blogger, reminder.RecipientRole);
+        Assert.Equal(10, reminder.ChatId);
+    }
+
+    [Fact]
+    public void Added_publication_means_no_results_reminder() =>
+        Assert.Empty(DealReminderSchedule.Due(Completed(Daytime.AddDays(-4)) with { BloggerHasReviewed = true, BusinessHasReviewed = true, HasPublications = true }, Daytime));
+
+    [Theory]
     [InlineData(6.9, null)]
     [InlineData(7.0, DealReminderKind.CompleteDay7)]
     [InlineData(14.0, DealReminderKind.CompleteDay14)]

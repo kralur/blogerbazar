@@ -23,7 +23,9 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
                 (deal.Status == DealStatus.Active && deal.CreatedAtUtc <= staleCreatedBefore
                     && dbContext.DealReminders.Count(reminder => reminder.DealId == deal.Id && reminder.Kind == DealReminderKind.CompleteDay14) < 2)
                 || (deal.Status == DealStatus.Completed && deal.CompletedAtUtc > reviewWindowStart && deal.CompletedAtUtc <= firstReviewReminderAt
-                    && deal.Reviews.Count() < 2))
+                    && (deal.Reviews.Count() < 2
+                        || (!dbContext.DealPublications.Any(publication => publication.DealId == deal.Id)
+                            && !dbContext.DealReminders.Any(reminder => reminder.DealId == deal.Id && reminder.Kind == DealReminderKind.ResultsDay2)))))
             .OrderBy(deal => deal.CreatedAtUtc)
             .ThenBy(deal => deal.Id)
             .Take(MaxCandidatesPerRun)
@@ -39,7 +41,8 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
                 deal.BloggerId != null ? deal.Blogger!.Name : deal.BrandFace!.Name,
                 deal.Business.Name,
                 deal.CampaignTitleSnapshot,
-                deal.CollaborationRequest != null ? deal.CollaborationRequest.Format : null))
+                deal.CollaborationRequest != null ? deal.CollaborationRequest.Format : null,
+                dbContext.DealPublications.Any(publication => publication.DealId == deal.Id)))
             .ToArrayAsync(cancellationToken);
     }
 

@@ -59,7 +59,10 @@ public sealed record AdminComplaintDto(
     int ReporterRole,
     DateTime CreatedAtUtc,
     DateTime? ResolvedAtUtc,
-    string? ResolutionNote);
+    string? ResolutionNote,
+    // Who answers for a profile or campaign, so the admin can block them from the case; null for offers and deals (two sides).
+    long? OwnerTelegramUserId = null,
+    bool OwnerIsBlocked = false);
 
 public sealed record CreateComplaintCommand(long TelegramUserId, string TargetType, Guid TargetId, string Reason, string? Comment) : IRequest<ComplaintDto>;
 public sealed record GetAdminComplaintsQuery(long ActorTelegramUserId, string? Status = ComplaintStatuses.Open, int Take = 100) : IRequest<IReadOnlyList<AdminComplaintDto>>;
