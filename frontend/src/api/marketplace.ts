@@ -286,7 +286,7 @@ export type MarketplaceBusiness = {
   completedDealsCount: number;
   rating?: number | null;
 };
-export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; instagram?: string | null; telegram?: string | null; portfolioUrl?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean; age?: number | null; gender?: string | null; formats?: BrandFaceFormat[]; showreelUrl?: string | null; photoUrls?: string[]; isHidden?: boolean };
+export type BrandFaceCard = { id: string; name: string; city: string; languages: string[]; categories: string[]; experience?: string | null; instagram?: string | null; portfolioUrl?: string | null; collaborationPrice?: number | null; description?: string | null; avatarUrl?: string | null; isPromoted: boolean; age?: number | null; gender?: string | null; formats?: BrandFaceFormat[]; showreelUrl?: string | null; photoUrls?: string[]; isHidden?: boolean };
 export type BrandFaceDetails = BrandFaceCard;
 export type BrandFaceCatalogSort = "promoted" | "newest" | "price_asc" | "price_desc";
 export type BrandFaceCatalogFilters = {
@@ -803,7 +803,7 @@ export async function createDealReview(id: string, rating: number, comment: stri
   return api(`/api/deals/${id}/reviews`, { method: "POST", body: JSON.stringify({ rating, comment: comment.trim() || undefined }) });
 }
 
-export async function getPublicContact(targetType: "Blogger" | "Business", targetId: string) {
+export async function getPublicContact(targetType: "Blogger" | "Business" | "BrandFace", targetId: string) {
   return api<ContactDetails>(`/api/contacts/${targetType}/${targetId}`);
 }
 

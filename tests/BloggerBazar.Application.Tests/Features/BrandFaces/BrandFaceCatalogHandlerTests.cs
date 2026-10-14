@@ -7,7 +7,8 @@ namespace BloggerBazar.Application.Tests.Features.BrandFaces;
 public sealed class BrandFaceCatalogHandlerTests
 {
     [Fact]
-    public async Task Public_detail_exposes_the_brand_face_contact()
+    // D31: Instagram is public, Telegram is a personal contact only for the business in a deal.
+    public async Task Public_detail_keeps_instagram_but_not_telegram()
     {
         var profile = BrandFaceProfile.Create(11, "Madina", "tashkent", ["beauty"]);
         profile.Update("Madina", "tashkent", null, null, ["ru", "uz"], ["beauty"], null, "@madina_inst", "@private_telegram", null, 500000, "Creator", null);
@@ -17,7 +18,8 @@ public sealed class BrandFaceCatalogHandlerTests
 
         Assert.NotNull(result);
         Assert.Equal("Madina", result.Name);
-        Assert.Equal("@private_telegram", result.Telegram);
+        Assert.Equal("@madina_inst", result.Instagram);
+        Assert.DoesNotContain(typeof(BrandFacePublicDto).GetProperties(), property => property.Name == "Telegram");
     }
 
     private sealed class InMemoryBrandFaceRepository(params BrandFaceProfile[] profiles) : IBrandFaceProfileRepository

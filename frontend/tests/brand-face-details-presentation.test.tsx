@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider, translate } from "../src/i18n";
 
-const api = vi.hoisted(() => ({ getBrandFace: vi.fn(), getBrandFaceReviews: vi.fn(), getCurrentPlatformUser: vi.fn(), createOffer: vi.fn(), getMyCampaigns: vi.fn() }));
+const api = vi.hoisted(() => ({ getBrandFace: vi.fn(), getBrandFaceReviews: vi.fn(), getCurrentPlatformUser: vi.fn(), createOffer: vi.fn(), getMyCampaigns: vi.fn(), getPublicContact: vi.fn() }));
 const telegram = vi.hoisted(() => ({ openLink: vi.fn(), haptic: { success: vi.fn(), selection: vi.fn(), error: vi.fn() }, registerBackButtonHandler: vi.fn(() => vi.fn()), setBackButtonHandler: vi.fn() }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({
@@ -11,11 +11,15 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getBrandFaceReviews: api.getBrandFaceReviews,
   getCurrentPlatformUser: api.getCurrentPlatformUser,
   createOffer: api.createOffer,
-  getMyCampaigns: api.getMyCampaigns
+  getMyCampaigns: api.getMyCampaigns,
+  getPublicContact: api.getPublicContact
 }));
 vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => telegram }));
 vi.mock("../src/components/FavoriteButton", () => ({ FavoriteButton: () => null }));
-vi.mock("../src/components/ContactList", () => ({ ContactList: () => null, hasContacts: () => false }));
+vi.mock("../src/components/ContactList", () => ({
+  ContactList: ({ items }: { items: Array<{ kind: string; value: string }> }) => <ul>{items.map((item) => <li key={item.kind}>{item.kind}:{item.value}</li>)}</ul>,
+  hasContacts: (items: unknown[]) => items.length > 0
+}));
 vi.mock("../src/hooks/useProfileDataRefresh", () => ({ useProfileDataRefresh: vi.fn() }));
 
 import { BrandFaceDetails } from "../src/pages/BrandFaceDetails";
@@ -35,6 +39,21 @@ describe("Brand face public page", () => {
     api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "Business" });
     api.getMyCampaigns.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20, hasMore: false });
     api.createOffer.mockResolvedValue({ id: "offer-a" });
+    api.getPublicContact.mockRejectedValue(new Error("not found"));
+  });
+
+  // D31: Telegram is a personal contact; only the business in a deal gets it (the API answers 404 to everyone else).
+  it("shows Telegram and phone only when the deal contact is available", async () => {
+    render(<I18nProvider><BrandFaceDetails id="face-a" /></I18nProvider>);
+    expect(await screen.findByText("instagram:@dilnoza.face")).toBeInTheDocument();
+    expect(api.getPublicContact).toHaveBeenCalledWith("BrandFace", "face-a");
+    expect(screen.queryByText(/^telegram:/)).not.toBeInTheDocument();
+    cleanup();
+
+    api.getPublicContact.mockResolvedValue({ telegram: "@dilnoza", phone: "+998901112233" });
+    render(<I18nProvider><BrandFaceDetails id="face-a" /></I18nProvider>);
+    expect(await screen.findByText("telegram:@dilnoza")).toBeInTheDocument();
+    expect(screen.getByText("phone:+998901112233")).toBeInTheDocument();
   });
 
   // D48: a business offers a brand face cooperation in brand face formats; other roles see no button.

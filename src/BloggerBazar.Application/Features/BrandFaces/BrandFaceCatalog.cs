@@ -3,15 +3,16 @@ using MediatR;
 
 namespace BloggerBazar.Application.Features.BrandFaces;
 
+// No Telegram here (D31): it is a personal contact, shown only to the business in a deal (GET /api/contacts/BrandFace/{id}).
 public sealed record BrandFacePublicDto(
     Guid Id, string Name, string City, IReadOnlyCollection<string> Languages, IReadOnlyCollection<string> Categories,
-    string? Experience, string? Instagram, string? Telegram, string? PortfolioUrl, int? CollaborationPrice, string? Description,
+    string? Experience, string? Instagram, string? PortfolioUrl, int? CollaborationPrice, string? Description,
     string? AvatarUrl, bool IsPromoted, DateTime CreatedAtUtc,
     int? Age = null, string? Gender = null, IReadOnlyCollection<string>? Formats = null, string? ShowreelUrl = null, IReadOnlyCollection<string>? PhotoUrls = null, bool IsHidden = false)
 {
     public static BrandFacePublicDto From(BloggerBazar.Domain.Entities.BrandFaceProfile profile) => new(
         profile.Id, profile.Name, profile.City, profile.Languages, profile.Categories, profile.Experience,
-        profile.Instagram, profile.Telegram, profile.PortfolioUrl, profile.CollaborationPrice, profile.Description, profile.AvatarUrl,
+        profile.Instagram, profile.PortfolioUrl, profile.CollaborationPrice, profile.Description, profile.AvatarUrl,
         profile.IsPromoted, profile.CreatedAtUtc, profile.Age, profile.Gender, profile.Formats, profile.ShowreelUrl, profile.PhotoUrls, profile.IsHidden);
 }
 

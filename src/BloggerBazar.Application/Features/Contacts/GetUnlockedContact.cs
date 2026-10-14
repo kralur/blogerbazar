@@ -43,6 +43,10 @@ public sealed class GetUnlockedContactHandler(
         {
             ContactTargetType.Blogger => await bloggers.GetByIdAsync(query.TargetId, cancellationToken) is { } blogger ? ContactDetailsDto.From(blogger) : null,
             ContactTargetType.Business => await businesses.GetByIdAsync(query.TargetId, cancellationToken) is { } business ? ContactDetailsDto.From(business) : null,
+            // A brand face profile keeps no phone of its own: the number is the one Telegram verified for the account.
+            ContactTargetType.BrandFace => brandFaces is not null && await brandFaces.GetByIdAsync(query.TargetId, cancellationToken) is { } brandFace
+                ? ContactDetailsDto.From(brandFace, (await users.GetByTelegramUserIdAsync(brandFace.TelegramUserId, cancellationToken))?.VerifiedPhone)
+                : null,
             _ => null
         } ?? throw NotFound();
 
@@ -67,6 +71,8 @@ public sealed class GetUnlockedContactHandler(
         {
             (MarketplaceRole.Business, ContactTargetType.Blogger) => await deals.ExistsBetweenAsync(query.TargetId, participant.ProfileId, cancellationToken),
             (MarketplaceRole.Blogger, ContactTargetType.Business) => await deals.ExistsBetweenAsync(participant.ProfileId, query.TargetId, cancellationToken),
+            // D31: a brand face's Telegram and phone, like a blogger's, only for the business it has a deal with.
+            (MarketplaceRole.Business, ContactTargetType.BrandFace) => await deals.ExistsBetweenBrandFaceAsync(query.TargetId, participant.ProfileId, cancellationToken),
             // D46: a brand face in a deal sees the business contact exactly like a blogger.
             (MarketplaceRole.BrandFace, ContactTargetType.Business) => await deals.ExistsBetweenBrandFaceAsync(participant.ProfileId, query.TargetId, cancellationToken),
             _ => false

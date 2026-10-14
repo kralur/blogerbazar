@@ -58,6 +58,27 @@ public sealed class GetUnlockedContactHandlerTests
     }
 
     [Fact]
+    public async Task Business_in_a_deal_sees_the_brand_face_telegram_and_phone_and_nobody_else_does()
+    {
+        var business = Business(303);
+        var stranger = Business(505);
+        var brandFace = BrandFaceProfile.Create(606, "Face", "tashkent", ["beauty"]);
+        brandFace.Update("Face", "tashkent", null, null, [], ["beauty"], null, "@face.insta", "@face", null, null, null, null);
+        var account = User(606, MarketplaceRole.BrandFace);
+        account.VerifyPhone("+998907776655", DateTime.UtcNow);
+        var deal = Deal.CreateFromCollaborationRequest(Guid.NewGuid(), MarketplaceRole.BrandFace, brandFace.Id, business.Id);
+        GetUnlockedContactHandler For() => new(new FakeBloggers(), new FakeBusinesses(business, stranger),
+            new FakeUsers(account, User(303, MarketplaceRole.Business), User(505, MarketplaceRole.Business)), new SharedDeals(deal), new Unlocks(), new FakeBrandFaces(brandFace));
+
+        var result = await For().Handle(new GetUnlockedContactQuery(ContactTargetType.BrandFace, brandFace.Id, 303), CancellationToken.None);
+
+        Assert.Equal("@face", result.Telegram);
+        Assert.Equal("+998907776655", result.Phone);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            For().Handle(new GetUnlockedContactQuery(ContactTargetType.BrandFace, brandFace.Id, 505), CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Contact_is_hidden_without_a_shared_deal()
     {
         var blogger = BloggerWithContact();

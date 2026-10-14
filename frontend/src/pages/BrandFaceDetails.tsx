@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getBrandFace, getBrandFaceReviews, getCurrentPlatformUser, normalizeMarketplaceRole, type MarketplaceRole, type BrandFaceDetails as BrandFaceDetailsModel, type BusinessReviews } from "../api/marketplace";
+import { getBrandFace, getBrandFaceReviews, getCurrentPlatformUser, getPublicContact, normalizeMarketplaceRole, type ContactDetails, type MarketplaceRole, type BrandFaceDetails as BrandFaceDetailsModel, type BusinessReviews } from "../api/marketplace";
 import { Avatar, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Rating, Toast } from "../components/ui";
 import { OfferForm } from "../components/OfferForm";
 import { ChipList, DetailSection, FactGrid, ReviewsSection, reviewCarouselLimit } from "../components/details/DetailBlocks";
@@ -24,6 +24,13 @@ export function BrandFaceDetails({ id }: { id: string }) {
   const [failed, setFailed] = useState(false);
   const [reviews, setReviews] = useState<BusinessReviews | null>(null);
   const [role, setRole] = useState<MarketplaceRole>();
+  // D31: Telegram and phone come only for the business in a deal with this brand face; everyone else gets 404.
+  const [contact, setContact] = useState<ContactDetails | null>(null);
+  useEffect(() => {
+    let active = true;
+    getPublicContact("BrandFace", id).then((value) => { if (active) setContact(value); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [id]);
   const [offerOpen, setOfferOpen] = useState(false);
   const [toast, setToast] = useState("");
   // A business offers a brand face cooperation the same way it offers a blogger (D48).
@@ -66,7 +73,8 @@ export function BrandFaceDetails({ id }: { id: string }) {
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
   if (!profile) return <div className="screen screen--with-nav"><ErrorState onRetry={load} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   const contacts = [
-    profile.telegram ? { kind: "telegram" as const, value: profile.telegram } : null,
+    contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
+    contact?.telegram ? { kind: "telegram" as const, value: contact.telegram } : null,
     profile.instagram ? { kind: "instagram" as const, value: profile.instagram } : null,
     profile.portfolioUrl ? { kind: "website" as const, value: profile.portfolioUrl } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);

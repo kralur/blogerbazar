@@ -603,6 +603,7 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
             var businessUser = PlatformUser.Create(businessTelegramUserId, "Business", null);
             businessUser.SelectMarketplaceRole(MarketplaceRole.Business);
             var brandFace = BrandFaceProfile.Create(brandFaceTelegramUserId, "Offer brand face", "tashkent", ["beauty"]);
+            brandFace.Update("Offer brand face", "tashkent", null, null, [], ["beauty"], null, "@face.insta", "@face_tg", null, null, null, null);
             var business = BusinessProfile.Create(businessTelegramUserId, "Offer business for face", "tashkent");
             business.Approve();
             dbContext.AddRange(brandFaceUser, businessUser, brandFace, business);
@@ -612,6 +613,12 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
 
         using var businessClient = CreateClient(businessTelegramUserId);
         using var brandFaceClient = CreateClient(brandFaceTelegramUserId);
+
+        // D31: the public page keeps Instagram but not Telegram; the contact waits for a deal.
+        var publicPage = await businessClient.GetFromJsonAsync<JsonElement>($"/api/brand-faces/{brandFaceId}");
+        Assert.Equal("@face.insta", publicPage.GetProperty("instagram").GetString());
+        Assert.False(publicPage.TryGetProperty("telegram", out _));
+        Assert.Equal(HttpStatusCode.NotFound, (await businessClient.GetAsync($"/api/contacts/BrandFace/{brandFaceId}")).StatusCode);
 
         var wrongFormat = await businessClient.PostAsJsonAsync("/api/offers", new { brandFaceId, format = "reels", message = "Reel" });
         var sent = await businessClient.PostAsJsonAsync("/api/offers", new { brandFaceId, format = "photoShoot", offeredBudget = 500000, message = "Spring shoot" });
@@ -634,6 +641,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal("brandFace", businessDeal.GetProperty("counterpartyRole").GetString());
         Assert.Equal(brandFaceId, businessDeal.GetProperty("counterpartyProfileId").GetGuid());
         Assert.Equal("photoShoot", businessDeal.GetProperty("offer").GetProperty("format").GetString());
+        var contact = await businessClient.GetFromJsonAsync<JsonElement>($"/api/contacts/BrandFace/{brandFaceId}");
+        Assert.Equal("@face_tg", contact.GetProperty("telegram").GetString());
     }
 
     // D50: a paused blogger leaves the catalog, keeps the page by link and receives no new offers; resuming brings it back.
