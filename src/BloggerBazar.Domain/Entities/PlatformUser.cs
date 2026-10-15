@@ -35,6 +35,9 @@ public sealed class PlatformUser
     public bool TipsDisabled { get; private set; }
     public int? LastTipNumber { get; private set; }
     public DateTime? LastTipSentAtUtc { get; private set; }
+    // Analytics: the last app open (kept at most hourly) and the ad label of the link the account first came from.
+    public DateTime? LastSeenAtUtc { get; private set; }
+    public string? Source { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
 
@@ -68,6 +71,22 @@ public sealed class PlatformUser
     // An admin preview moves the admin's own rotation on; the daily send mark (LastTipSentAtUtc) stays untouched.
     public void SetLastTipNumber(int number) { LastTipNumber = number; UpdatedAtUtc = DateTime.UtcNow; }
     public void SetBlocked(bool isBlocked) { IsBlocked = isBlocked; UpdatedAtUtc = DateTime.UtcNow; }
+
+    // At most one write an hour: "who came today / this week" does not need every request.
+    public void MarkSeen(DateTime utcNow)
+    {
+        if (LastSeenAtUtc is { } last && utcNow - last < TimeSpan.FromHours(1)) return;
+        LastSeenAtUtc = utcNow;
+    }
+
+    // Only the first label counts: it says where the person came from, later links do not change it.
+    public void SetSourceOnce(string? source)
+    {
+        if (Source is null && IsValidSource(source)) Source = source;
+    }
+
+    public static bool IsValidSource(string? source) =>
+        source is { Length: >= 1 and <= 32 } && source.All(character => character is >= 'a' and <= 'z' or >= '0' and <= '9' or '_' or '-');
     public void SoftDelete(long deletedByTelegramUserId) { IsDeleted = true; DeletedAtUtc = DateTime.UtcNow; DeletedByTelegramUserId = deletedByTelegramUserId; UpdatedAtUtc = DeletedAtUtc.Value; }
     public void RestoreForNewOnboarding(string firstName, string? username)
     {

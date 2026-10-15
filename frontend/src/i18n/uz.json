@@ -876,4 +876,8 @@
   ,"admin.funnelShare": "Ochganlarning {share}%"
   ,"admin.funnelBiggestDrop": "Eng ko‘p shu yerda ketishadi"
   ,"admin.funnelEmpty": "Bu davrda yangi odamlar bo‘lmadi"
+  ,"admin.activityActive": "Ilovaga kirganlar: bugun {today}, 7 kunda {week}"
+  ,"admin.sourcesTitle": "Qayerdan kelishdi"
+  ,"admin.sourcesHint": "Har bir belgi bo‘yicha nechta odam kelgani. Belgi bot havolasiga ?start= orqali qo‘shiladi, masalan t.me/sizning_bot?start=insta."
+  ,"admin.sourcesEmpty": "Hozircha belgili havola orqali hech kim kelmadi"
 }

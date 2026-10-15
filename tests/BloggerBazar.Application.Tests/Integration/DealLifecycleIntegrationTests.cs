@@ -921,6 +921,33 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task Ad_label_and_app_opens_reach_the_admin_dashboard()
+    {
+        const long adminTelegramUserId = 1_100_980;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var admin = PlatformUser.Create(adminTelegramUserId, "Activity admin", null);
+            admin.SetRole(PlatformRole.Admin);
+            dbContext.Add(admin);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var newcomer = CreateClient(1_100_981);
+        Assert.Equal(HttpStatusCode.OK, (await newcomer.GetAsync("/api/users/me?source=ci_label")).StatusCode);
+        // A second link later does not move the account to another label.
+        Assert.Equal(HttpStatusCode.OK, (await newcomer.GetAsync("/api/users/me?source=other_label")).StatusCode);
+
+        using var adminClient = CreateClient(adminTelegramUserId);
+        var dashboard = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/dashboard");
+        var sources = dashboard.GetProperty("sources").EnumerateArray().ToDictionary(item => item.GetProperty("source").GetString()!, item => item.GetProperty("users").GetInt32());
+        Assert.Equal(1, sources["ci_label"]);
+        Assert.False(sources.ContainsKey("other_label"));
+        Assert.True(dashboard.GetProperty("activeToday").GetInt32() >= 1);
+        Assert.True(dashboard.GetProperty("activeWeek").GetInt32() >= dashboard.GetProperty("activeToday").GetInt32());
+    }
+
+    [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {
         var seed = await SeedCampaignDealAsync(1_100_311, 1_100_312);

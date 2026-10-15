@@ -151,8 +151,19 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
         var newUsersWeek = await dbContext.PlatformUsers.AsNoTracking().CountAsync(user => user.CreatedAtUtc >= weekAgo, cancellationToken);
         var newDealsWeek = await dbContext.Deals.AsNoTracking().CountAsync(deal => deal.CreatedAtUtc >= weekAgo, cancellationToken);
         var completedDealsWeek = await dbContext.Deals.AsNoTracking().CountAsync(deal => deal.CompletedAtUtc >= weekAgo, cancellationToken);
+        var activeToday = await dbContext.PlatformUsers.AsNoTracking().CountAsync(user => user.LastSeenAtUtc >= today, cancellationToken);
+        var activeWeek = await dbContext.PlatformUsers.AsNoTracking().CountAsync(user => user.LastSeenAtUtc >= weekAgo, cancellationToken);
+        var sources = (await dbContext.PlatformUsers.AsNoTracking()
+            .Where(user => user.Source != null)
+            .GroupBy(user => user.Source!)
+            .Select(group => new { Source = group.Key, Users = group.Count() })
+            .OrderByDescending(source => source.Users).ThenBy(source => source.Source)
+            .Take(10)
+            .ToArrayAsync(cancellationToken))
+            .Select(source => new AdminSourceDto(source.Source, source.Users))
+            .ToArray();
         return new AdminDashboardDto(users, bloggers, businesses, publishedCampaigns, completedDeals, promotedBloggers, promotedCampaigns, openComplaints,
-            newUsersToday, newUsersWeek, newDealsWeek, completedDealsWeek);
+            newUsersToday, newUsersWeek, newDealsWeek, completedDealsWeek, activeToday, activeWeek, sources);
     }
 
     // The cohort is everyone whose first app open (PlatformUser.CreatedAtUtc) is in the period, deleted and blocked people

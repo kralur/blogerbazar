@@ -3,6 +3,8 @@ namespace BloggerBazar.Application.Abstractions.Telegram;
 public interface ITelegramBotClient
 {
     Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken);
+    // Source: the ad label from t.me/bot?start=<label>; the Mini App button carries it as bb_src for analytics.
+    Task SendStartMessageAsync(long chatId, string? source, CancellationToken cancellationToken) => SendStartMessageAsync(chatId, cancellationToken);
 
     // /phone and a rejected contact: a keyboard button that shares the sender's own number (D41).
     Task SendPhoneRequestAsync(long chatId, bool rejectedContact, CancellationToken cancellationToken) => Task.CompletedTask;

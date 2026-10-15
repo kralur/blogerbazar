@@ -18,7 +18,8 @@ public sealed record CurrentPlatformUserDto(
     string? VerifiedPhone = null,
     bool TipsEnabled = true);
 
-public sealed record GetCurrentPlatformUserCommand(long TelegramUserId, string FirstName, string? Username) : IRequest<CurrentPlatformUserDto>;
+// Source: the ad label of the link that opened the app (bb_src); kept only for an account seen for the first time.
+public sealed record GetCurrentPlatformUserCommand(long TelegramUserId, string FirstName, string? Username, string? Source = null) : IRequest<CurrentPlatformUserDto>;
 
 public sealed class GetCurrentPlatformUserValidator : AbstractValidator<GetCurrentPlatformUserCommand>
 {
@@ -39,6 +40,7 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
         if (user is null)
         {
             user = PlatformUser.Create(command.TelegramUserId, command.FirstName.Trim(), NormalizeUsername(command.Username));
+            user.SetSourceOnce(command.Source?.Trim().ToLowerInvariant());
             await users.AddAsync(user, cancellationToken);
         }
         else
@@ -64,6 +66,7 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
             user.SetRole(PlatformRole.Owner);
         }
 
+        user.MarkSeen(DateTime.UtcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ToDto(user);
     }

@@ -12,10 +12,10 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class UsersController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet]
-    public async Task<ActionResult<CurrentPlatformUserDto>> GetCurrent(CancellationToken cancellationToken)
+    public async Task<ActionResult<CurrentPlatformUserDto>> GetCurrent([FromQuery] string? source = null, CancellationToken cancellationToken = default)
     {
         var telegramUser = GetTelegramIdentity();
-        return Ok(await sender.Send(new GetCurrentPlatformUserCommand(telegramUser.Id, telegramUser.FirstName, telegramUser.Username), cancellationToken));
+        return Ok(await sender.Send(new GetCurrentPlatformUserCommand(telegramUser.Id, telegramUser.FirstName, telegramUser.Username, source), cancellationToken));
     }
 
     [HttpDelete]

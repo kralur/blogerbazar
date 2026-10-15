@@ -1,3 +1,4 @@
+using BloggerBazar.Domain.Entities;
 using System.Net.Http.Json;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Infrastructure.Security;
@@ -37,7 +38,9 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
     internal static string ButtonLabel(BotText label, string? language) =>
         language is null ? $"{label.Russian} / {label.Uzbek}" : label.For(language);
 
-    public async Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken)
+    public Task SendStartMessageAsync(long chatId, CancellationToken cancellationToken) => SendStartMessageAsync(chatId, null, cancellationToken);
+
+    public async Task SendStartMessageAsync(long chatId, string? source, CancellationToken cancellationToken)
     {
         var telegram = options.Value;
         var botToken = telegram.BotToken;
@@ -56,13 +59,24 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
                 {
                     inline_keyboard = new[]
                     {
-                        new[] { new { text = ButtonLabel(StartButton, language), web_app = new { url = miniAppUrl.ToString() } }
+                        new[] { new { text = ButtonLabel(StartButton, language), web_app = new { url = WithSource(miniAppUrl, source) } }
                     }
                     }
                 }
                 : null
         }, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    // A valid ad label rides on the Mini App link as bb_src; anything else is dropped.
+    internal static string WithSource(Uri miniAppUrl, string? source)
+    {
+        var label = source?.Trim().ToLowerInvariant();
+        if (!PlatformUser.IsValidSource(label)) return miniAppUrl.ToString();
+        var builder = new UriBuilder(miniAppUrl);
+        var query = builder.Query.TrimStart('?');
+        builder.Query = (query.Length > 0 ? query + "&" : "") + "bb_src=" + label;
+        return builder.Uri.ToString();
     }
 
     public async Task SendPhoneRequestAsync(long chatId, bool rejectedContact, CancellationToken cancellationToken)

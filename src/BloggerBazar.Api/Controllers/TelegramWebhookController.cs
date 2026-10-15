@@ -33,7 +33,7 @@ public sealed class TelegramWebhookController(
             {
                 try
                 {
-                    await botClient.SendStartMessageAsync(chat.Id, cancellationToken);
+                    await botClient.SendStartMessageAsync(chat.Id, StartPayload(message.Text), cancellationToken);
                 }
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
@@ -89,9 +89,15 @@ public sealed class TelegramWebhookController(
             && string.Equals(first, $"{command}@{normalizedUsername}", StringComparison.OrdinalIgnoreCase);
     }
 
+    internal static string? StartPayload(string? text)
+    {
+        var parts = text?.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts is { Length: 2 } ? parts[1] : null;
+    }
+
     internal static bool IsStartCommand(string? text, string botUsername)
     {
-        // A deep link (t.me/bot?start=payload) sends "/start payload"; the payload is not used yet.
+        // A deep link (t.me/bot?start=payload) sends "/start payload"; the payload is the ad label (StartPayload).
         var command = text?.Split(' ', 2)[0];
         if (string.Equals(command, "/start", StringComparison.Ordinal))
         {

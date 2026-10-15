@@ -176,7 +176,7 @@ type ApiCampaign = {
 };
 
 export type ContactDetails = { phone?: string | null; email?: string | null; telegram?: string | null; websiteUrl?: string | null };
-export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number; openComplaints?: number; newUsersToday?: number; newUsersWeek?: number; newDealsWeek?: number; completedDealsWeek?: number };
+export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number; openComplaints?: number; newUsersToday?: number; newUsersWeek?: number; newDealsWeek?: number; completedDealsWeek?: number; activeToday?: number; activeWeek?: number; sources?: Array<{ source: string; users: number }> };
 // Admin funnel: people who first opened the app in the period and how many of them reached each step since then.
 export type AdminFunnelPeriod = "7d" | "30d" | "all";
 export type AdminFunnelRole = "blogger" | "brandFace" | "business";
@@ -818,8 +818,16 @@ export function forgetSessionData() {
   lastAdminDashboard = null;
 }
 
+// The ad label of the link that opened the app (the bot adds bb_src from t.me/bot?start=<label>). The server keeps it only
+// for an account it sees for the first time.
+const launchSource = (() => {
+  if (typeof window === "undefined") return null;
+  const value = new URLSearchParams(window.location.search).get("bb_src")?.toLowerCase() ?? null;
+  return value && /^[a-z0-9_-]{1,32}$/.test(value) ? value : null;
+})();
+
 export async function getCurrentPlatformUser() {
-  const user = await api<CurrentPlatformUser>("/api/users/me");
+  const user = await api<CurrentPlatformUser>(launchSource ? `/api/users/me?source=${launchSource}` : "/api/users/me");
   lastCurrentPlatformUser = user;
   return user;
 }

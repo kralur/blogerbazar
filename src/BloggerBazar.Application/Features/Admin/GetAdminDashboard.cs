@@ -17,7 +17,14 @@ public sealed record AdminDashboardDto(
     int NewUsersToday = 0,
     int NewUsersWeek = 0,
     int NewDealsWeek = 0,
-    int CompletedDealsWeek = 0);
+    int CompletedDealsWeek = 0,
+    // People who opened the app today (UTC day) and in the last 7 days.
+    int ActiveToday = 0,
+    int ActiveWeek = 0,
+    // Accounts per ad label (t.me/bot?start=<label>), the ten biggest.
+    IReadOnlyList<AdminSourceDto>? Sources = null);
+
+public sealed record AdminSourceDto(string Source, int Users);
 
 public sealed record GetAdminDashboardQuery(long TelegramUserId) : IRequest<AdminDashboardDto>;
 

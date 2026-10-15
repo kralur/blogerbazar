@@ -22,6 +22,22 @@ public sealed class TelegramBotClientTests
     public void No_button_without_a_valid_https_mini_app_url_or_route(string miniAppUrl, string? route) =>
         Assert.Null(TelegramBotClient.MiniAppRouteUrl(miniAppUrl, route));
 
+    // Ad links: t.me/bot?start=<label> -> the start button opens the app with bb_src=<label>.
+    [Theory]
+    [InlineData("https://app.example/", "Insta", "https://app.example/?bb_src=insta")]
+    [InlineData("https://app.example/mini?mode=tg", "blogger_madina", "https://app.example/mini?mode=tg&bb_src=blogger_madina")]
+    [InlineData("https://app.example/", "bad label", "https://app.example/")]
+    [InlineData("https://app.example/", null, "https://app.example/")]
+    public void Start_button_carries_a_valid_ad_label(string miniAppUrl, string? source, string expected) =>
+        Assert.Equal(expected, TelegramBotClient.WithSource(new Uri(miniAppUrl), source));
+
+    [Theory]
+    [InlineData("/start insta", "insta")]
+    [InlineData("/start", null)]
+    [InlineData("/start@BloggerBazarBot blogger_madina", "blogger_madina")]
+    public void Start_payload_is_the_text_after_the_command(string text, string? expected) =>
+        Assert.Equal(expected, TelegramWebhookController.StartPayload(text));
+
     [Theory]
     [InlineData("sendMessage")]
     [InlineData("answerPreCheckoutQuery")]

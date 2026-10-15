@@ -877,4 +877,8 @@
   ,"admin.funnelShare": "{share}% от открывших"
   ,"admin.funnelBiggestDrop": "Больше всего уходят здесь"
   ,"admin.funnelEmpty": "За этот период новых людей не было"
+  ,"admin.activityActive": "Заходили в приложение: сегодня {today}, за 7 дней {week}"
+  ,"admin.sourcesTitle": "Откуда пришли"
+  ,"admin.sourcesHint": "Сколько людей пришло по каждой метке. Метка ставится в ссылку на бота через ?start=, например t.me/ваш_бот?start=insta."
+  ,"admin.sourcesEmpty": "Пока никто не пришёл по ссылке с меткой"
 }

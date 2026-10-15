@@ -103,6 +103,23 @@ describe("Complaints (D52)", () => {
     expect(await screen.findByText(ru("admin.complaintsEmpty"))).toBeInTheDocument();
   });
 
+  it("shows who opened the app and where people came from", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 3, bloggers: 1, businesses: 1, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, activeToday: 2, activeWeek: 3, sources: [{ source: "insta", users: 12 }, { source: "blogger_madina", users: 5 }] });
+    render(<I18nProvider><Admin /></I18nProvider>);
+
+    expect(await screen.findByText(ru("admin.activityActive", { today: 2, week: 3 }))).toBeInTheDocument();
+    expect(screen.getByText("insta")).toBeInTheDocument();
+    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.getByText("blogger_madina")).toBeInTheDocument();
+  });
+
+  it("says nobody came by a labelled link yet", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
+    render(<I18nProvider><Admin /></I18nProvider>);
+
+    expect(await screen.findByText(ru("admin.sourcesEmpty"))).toBeInTheDocument();
+  });
+
   it("sends the admin the next bot tip from the admin home", async () => {
     api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
     api.sendAdminTipPreview.mockResolvedValue({ number: 2, total: 14, sent: true });
