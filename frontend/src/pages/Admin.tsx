@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminDashboard, getAdminUsers, peekAdminDashboard, sendAdminTipPreview, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
+import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminCspReports, getAdminDashboard, getAdminUsers, peekAdminDashboard, sendAdminTipPreview, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminCspReport, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/currency";
@@ -11,7 +11,7 @@ import { adminFunnelHref } from "./AdminFunnel";
 import { adminUserCardHref } from "./AdminUserCard";
 
 const roleKeys = ["admin.role.member", "admin.role.support", "admin.role.moderator", "admin.role.admin", "admin.role.owner"];
-const sections = ["users", "bloggers", "businesses", "campaigns", "complaints", "log"] as const;
+const sections = ["users", "bloggers", "businesses", "campaigns", "complaints", "log", "security"] as const;
 type Section = typeof sections[number];
 const filterFromHash = (): AdminUserFilter => {
   const requested = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("filter");
@@ -19,8 +19,8 @@ const filterFromHash = (): AdminUserFilter => {
 };
 const isSection = (value?: string): value is Section => Boolean(value && (sections as readonly string[]).includes(value));
 
-type Lists = { users: AdminPlatformUser[]; bloggers: AdminBloggerProfile[]; businesses: AdminBusiness[]; campaigns: AdminCampaign[]; complaints: AdminComplaint[]; log: AdminAuditLog[] };
-const emptyLists: Lists = { users: [], bloggers: [], businesses: [], campaigns: [], complaints: [], log: [] };
+type Lists = { users: AdminPlatformUser[]; bloggers: AdminBloggerProfile[]; businesses: AdminBusiness[]; campaigns: AdminCampaign[]; complaints: AdminComplaint[]; log: AdminAuditLog[]; security: AdminCspReport[] };
+const emptyLists: Lists = { users: [], bloggers: [], businesses: [], campaigns: [], complaints: [], log: [], security: [] };
 const userFilters: AdminUserFilter[] = ["all", "new", "bloggers", "businesses", "brandFaces", "admins", "blocked", "deleted"];
 const complaintStatuses: AdminComplaintStatus[] = ["open", "resolved", "dismissed"];
 // Public things open from the case; offers and deals are private to their two sides, so they have no link.
@@ -63,6 +63,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
       if (target === "campaigns") { const campaigns = await getAdminCampaigns(); setLists((current) => ({ ...current, campaigns })); }
       if (target === "complaints") { const complaints = await getAdminComplaints(complaintQuery.current); setLists((current) => ({ ...current, complaints })); }
       // The journal names people, so it needs the user list too.
+      if (target === "security") { const security = await getAdminCspReports(); setLists((current) => ({ ...current, security })); }
       if (target === "log") { const [log, users] = await Promise.all([getAdminAuditLogs(), getAdminUsers().catch(() => [] as AdminPlatformUser[])]); setLists((current) => ({ ...current, log, users })); }
     } catch {
       setToastTone("error");
@@ -173,6 +174,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
       <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.sourcesTitle")}</h2><p className="mt-1 text-sm text-brand-muted">{t("admin.sourcesHint")}</p>{(dashboard.sources ?? []).length > 0 ? <ul className="mt-2 grid gap-1">{(dashboard.sources ?? []).map((item) => <li className="flex justify-between gap-3 text-sm" key={item.source}><span className="min-w-0 break-all font-semibold">{item.source}</span><span className="font-extrabold">{item.users}</span></li>)}</ul> : <p className="mt-2 text-sm font-semibold">{t("admin.sourcesEmpty")}</p>}</Card>
       <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.tipsTitle")}</h2><p className="mt-1 text-sm text-brand-muted">{t("admin.tipsHint")}</p><Button className="mt-3 w-full" disabled={tipSending} onClick={() => void previewTip()} type="button" variant="secondary">{t("admin.tipPreview")}</Button></Card>
       <a className="admin-log-link" href={adminFunnelHref}><span><strong>{t("admin.funnelTitle")}</strong><span>{t("admin.funnelLinkHint")}</span></span><span aria-hidden="true">›</span></a>
+      <a className="admin-log-link" href="#/admin/security"><span><strong>{t("admin.securityTitle")}</strong><span>{t("admin.securityHint")}</span></span><span aria-hidden="true">›</span></a>
       <a className="admin-log-link" href="#/admin/log"><span><strong>{t("admin.logTitle")}</strong><span>{t("admin.logHint")}</span></span><span aria-hidden="true">›</span></a>
       <Toast message={toast} tone={toastTone} />
       <BottomNav />
@@ -180,8 +182,8 @@ export function Admin({ section: rawSection }: { section?: string }) {
   }
 
   const usersById = new Map(lists.users.map((user) => [String(user.telegramUserId), user]));
-  const titleKey = section === "log" ? "admin.logTitle" : section === "campaigns" ? "admin.campaigns" : `admin.${section}`;
-  const empty = <Card><p className="text-sm text-brand-muted">{t(section === "complaints" && complaintStatus === "open" ? "admin.complaintsEmpty" : "admin.listEmpty")}</p></Card>;
+  const titleKey = section === "log" ? "admin.logTitle" : section === "security" ? "admin.securityTitle" : section === "campaigns" ? "admin.campaigns" : `admin.${section}`;
+  const empty = <Card><p className="text-sm text-brand-muted">{t(section === "complaints" && complaintStatus === "open" ? "admin.complaintsEmpty" : section === "security" ? "admin.securityEmpty" : "admin.listEmpty")}</p></Card>;
   const items = lists[section];
 
   return <div className="screen screen--with-nav space-y-4 pt-5">
@@ -218,6 +220,10 @@ export function Admin({ section: rawSection }: { section?: string }) {
           {complaint.ownerTelegramUserId && !complaint.ownerIsPlatformOwner && <Button className="flex-auto" onClick={() => void toggleOwnerBlock(complaint)} type="button" variant={complaint.ownerIsBlocked ? "secondary" : "danger"}>{t(complaint.ownerIsBlocked ? "common.unblock" : "common.block")}</Button>}
         </div>}
         {complaint.status === "open" && <div className="mt-2 grid grid-cols-2 gap-2"><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "resolved")} type="button">{t("admin.complaintResolve")}</Button><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "dismissed")} type="button" variant="secondary">{t("admin.complaintDismiss")}</Button></div>}
+      </Card>)}
+      {section === "security" && lists.security.map((entry) => <Card className="p-3" key={`${entry.directive}|${entry.blocked}|${entry.source}`}>
+        <p className="break-all text-sm font-bold">{entry.directive} · {entry.blocked || "inline"}</p>
+        <p className="mt-1 break-all text-xs text-brand-muted">{t("admin.securityCount", { count: entry.count, date: formatDate(entry.lastSeenAtUtc) })}{entry.source ? ` · ${entry.source}` : ""}</p>
       </Card>)}
       {section === "log" && lists.log.map((entry) => {
         const actor = usersById.get(String(entry.actorTelegramUserId));

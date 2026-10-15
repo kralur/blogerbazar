@@ -880,4 +880,8 @@
   ,"admin.sourcesTitle": "Qayerdan kelishdi"
   ,"admin.sourcesHint": "Har bir belgi bo‘yicha nechta odam kelgani. Belgi bot havolasiga ?start= orqali qo‘shiladi, masalan t.me/sizning_bot?start=insta."
   ,"admin.sourcesEmpty": "Hozircha belgili havola orqali hech kim kelmadi"
+  ,"admin.securityTitle": "Sahifalar himoyasi"
+  ,"admin.securityHint": "Sahifalar himoyasi (CSP) ilovada nimani to‘sib qo‘ygan bo‘lardi. Bo‘sh bo‘lsa, uni qat’iy yoqish mumkin."
+  ,"admin.securityCount": "{count} marta, oxirgisi {date}"
+  ,"admin.securityEmpty": "Buzilishlar yo‘q"
 }

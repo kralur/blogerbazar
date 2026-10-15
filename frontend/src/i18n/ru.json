@@ -881,4 +881,8 @@
   ,"admin.sourcesTitle": "Откуда пришли"
   ,"admin.sourcesHint": "Сколько людей пришло по каждой метке. Метка ставится в ссылку на бота через ?start=, например t.me/ваш_бот?start=insta."
   ,"admin.sourcesEmpty": "Пока никто не пришёл по ссылке с меткой"
+  ,"admin.securityTitle": "Защита страниц"
+  ,"admin.securityHint": "Что защита страниц (CSP) заблокировала бы в приложении. Если пусто, её можно включать строго."
+  ,"admin.securityCount": "{count} раз, последний {date}"
+  ,"admin.securityEmpty": "Нарушений нет"
 }

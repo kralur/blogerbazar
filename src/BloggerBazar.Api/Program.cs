@@ -75,6 +75,7 @@ try
         throw new InvalidOperationException("Rate limiting values must be positive.");
     }
 
+    builder.Services.AddSingleton<BloggerBazar.Api.Security.CspReportLog>();
     builder.Services.AddSingleton(serviceProvider => new RateLimitPartitionKeyResolver(
         serviceProvider.GetRequiredService<BloggerBazar.Application.Abstractions.Security.ITelegramWebAppValidator>(),
         maxIpPartitions,

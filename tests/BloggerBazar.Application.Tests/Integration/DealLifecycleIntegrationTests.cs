@@ -948,6 +948,29 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
     }
 
     [IntegrationFact]
+    public async Task Csp_reports_reach_only_admins()
+    {
+        const long adminTelegramUserId = 1_100_990;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var admin = PlatformUser.Create(adminTelegramUserId, "Csp admin", null);
+            admin.SetRole(PlatformRole.Admin);
+            dbContext.AddRange(admin, PlatformUser.Create(1_100_991, "Csp member", null));
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var member = CreateClient(1_100_991);
+        var sent = await member.PostAsJsonAsync("/api/csp-reports", new { directive = "script-src-elem", blocked = "https://evil.example/x.js?k=1", source = "https://app.example/" });
+        Assert.Equal(HttpStatusCode.NoContent, sent.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await member.GetAsync("/api/admin/csp-reports")).StatusCode);
+
+        using var adminClient = CreateClient(adminTelegramUserId);
+        var reports = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/csp-reports");
+        Assert.Contains(reports.EnumerateArray(), report => report.GetProperty("blocked").GetString() == "https://evil.example/x.js");
+    }
+
+    [IntegrationFact]
     public async Task Database_rejects_a_deal_without_exactly_one_creator()
     {
         var seed = await SeedCampaignDealAsync(1_100_311, 1_100_312);

@@ -881,6 +881,12 @@ export async function sendAdminTipPreview() {
   return api<{ number: number; total: number; sent: boolean }>("/api/admin/tips/preview", { method: "POST" });
 }
 
+// Security B4: what the report-only Content-Security-Policy would have blocked (this server instance, since its start).
+export type AdminCspReport = { directive: string; blocked: string; source: string; count: number; firstSeenAtUtc: string; lastSeenAtUtc: string };
+export async function getAdminCspReports() {
+  return api<AdminCspReport[]>("/api/admin/csp-reports");
+}
+
 export async function getAdminDashboard() {
   const dashboard = await api<AdminDashboard>("/api/admin/dashboard");
   lastAdminDashboard = dashboard;

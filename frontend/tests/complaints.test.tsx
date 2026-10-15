@@ -5,7 +5,7 @@ import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({
   createComplaint: vi.fn(), getAdminComplaints: vi.fn(), closeAdminComplaint: vi.fn(),
-  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), getAdminCampaigns: vi.fn(), setAdminUserBlocked: vi.fn(), sendAdminTipPreview: vi.fn()
+  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), getAdminCampaigns: vi.fn(), setAdminUserBlocked: vi.fn(), sendAdminTipPreview: vi.fn(), getAdminCspReports: vi.fn()
 }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({ ...(await importOriginal<typeof import("../src/api/marketplace")>()), ...api }));
@@ -101,6 +101,20 @@ describe("Complaints (D52)", () => {
 
     await waitFor(() => expect(api.closeAdminComplaint).toHaveBeenCalledWith("c1", "resolved"));
     expect(await screen.findByText(ru("admin.complaintsEmpty"))).toBeInTheDocument();
+  });
+
+  // Security B4: what the report-only policy would block, for the admin to clear before making it strict.
+  it("lists what the page protection would block, or says there is nothing", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
+    api.getAdminCspReports.mockResolvedValue([{ directive: "script-src-elem", blocked: "https://evil.example/x.js", source: "https://app.example/", count: 3, firstSeenAtUtc: "2026-10-15T08:00:00Z", lastSeenAtUtc: "2026-10-15T09:00:00Z" }]);
+    const { unmount } = render(<I18nProvider><Admin section="security" /></I18nProvider>);
+
+    expect(await screen.findByText("script-src-elem · https://evil.example/x.js")).toBeInTheDocument();
+    unmount();
+
+    api.getAdminCspReports.mockResolvedValue([]);
+    render(<I18nProvider><Admin section="security" /></I18nProvider>);
+    expect(await screen.findByText(ru("admin.securityEmpty"))).toBeInTheDocument();
   });
 
   it("shows who opened the app and where people came from", async () => {

@@ -5,7 +5,10 @@ import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { I18nProvider } from "./i18n";
 import { VirtualKeyboardProvider } from "./layout/VirtualKeyboardProvider";
 import { TelegramProvider } from "./telegram/TelegramProvider";
+import { installCspReporter } from "./security/cspReporter";
 import "./styles.css";
+
+installCspReporter();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
