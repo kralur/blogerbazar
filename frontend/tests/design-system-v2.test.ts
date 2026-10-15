@@ -5,6 +5,9 @@ const styles = readFileSync("src/styles.css", "utf8");
 const ui = readFileSync("src/components/ui.tsx", "utf8");
 const tailwind = readFileSync("tailwind.config.js", "utf8");
 const i18n = readFileSync("src/i18n/index.tsx", "utf8");
+// The tokens and Tailwind aliases live in the shared workspace (also used by admin-web); the Mini App imports them.
+const tokens = readFileSync("../shared/tokens.css", "utf8");
+const tailwindPreset = readFileSync("../shared/tailwind-preset.js", "utf8");
 
 describe("Design System v2 contract", () => {
   it("defines semantic light and dark theme foundations", () => {
@@ -22,16 +25,18 @@ describe("Design System v2 contract", () => {
       "--bb-radius-control",
       "--bb-shadow-overlay"
     ]) {
-      expect(styles).toContain(token);
+      expect(tokens).toContain(`${token}:`);
     }
 
-    expect(styles).toContain('html[data-telegram-theme="dark"]');
+    expect(tokens).toContain('html[data-telegram-theme="dark"]');
+    expect(styles).toContain('@import "@bloggerbazar/shared/tokens.css";');
   });
 
   it("routes legacy Tailwind brand aliases through semantic tokens", () => {
-    expect(tailwind).toContain('blue: "var(--bb-action)"');
-    expect(tailwind).toContain('cyan: "var(--bb-accent)"');
-    expect(tailwind).toContain('card: "var(--bb-shadow-card)"');
+    expect(tailwindPreset).toContain('blue: "var(--bb-action)"');
+    expect(tailwindPreset).toContain('cyan: "var(--bb-accent)"');
+    expect(tailwindPreset).toContain('card: "var(--bb-shadow-card)"');
+    expect(tailwind).toContain("presets: [designSystem]");
   });
 
   it("uses shared primitive classes for controls, states, and overlays", () => {

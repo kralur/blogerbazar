@@ -1,33 +1,12 @@
+import designSystem from "@bloggerbazar/shared/tailwind-preset";
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Token colors, font and shadows come from the shared Design System v2 preset (also used by admin-web).
+  presets: [designSystem],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
-      colors: {
-        brand: {
-          blue: "var(--bb-action)",
-          cyan: "var(--bb-accent)",
-          premium: "var(--bb-premium)",
-          ink: "var(--bb-text)",
-          surface: "var(--bb-surface)",
-          soft: "var(--bb-surface-secondary)",
-          accent: "var(--bb-accent)",
-          muted: "var(--bb-text-secondary)",
-          bg: "var(--bb-background)",
-          line: "var(--bb-border)",
-          success: "var(--bb-success)",
-          warning: "var(--bb-warning)",
-          danger: "var(--bb-error)"
-        }
-      },
-      fontFamily: {
-        sans: ["Inter", "SF Pro Display", "ui-sans-serif", "system-ui", "sans-serif"]
-      },
-      boxShadow: {
-        soft: "var(--bb-shadow-overlay)",
-        card: "var(--bb-shadow-card)",
-        glow: "var(--bb-shadow-action)"
-      },
       borderRadius: {
         "4xl": "2rem",
         "5xl": "2.5rem"

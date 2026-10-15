@@ -10,6 +10,7 @@ using BloggerBazar.Infrastructure;
 using BloggerBazar.Infrastructure.Caching;
 using BloggerBazar.Infrastructure.Configuration;
 using BloggerBazar.Infrastructure.Persistence;
+using BloggerBazar.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
@@ -69,7 +70,9 @@ try
     // Security B4: changes (create, edit, upload) get their own, tighter budget per user, so a script cannot flood
     // the catalog with campaigns, applications or photos while reading stays at the general limit.
     var writePermitLimit = builder.Configuration.GetValue("RateLimiting:WritePermitLimit", 30);
-    if (writePermitLimit <= 0 || permitLimit <= 0 || windowSeconds <= 0 || webhookPermitLimit <= 0 || webhookWindowSeconds <= 0
+    // Web admin sign-in: a few attempts a minute per client address; a person needs one.
+    var adminWebSignInPermitLimit = builder.Configuration.GetValue("RateLimiting:AdminWebSignIn:PermitLimit", 5);
+    if (adminWebSignInPermitLimit <= 0 || writePermitLimit <= 0 || permitLimit <= 0 || windowSeconds <= 0 || webhookPermitLimit <= 0 || webhookWindowSeconds <= 0
         || globalConcurrentPermitLimit <= 0 || globalQueueLimit < 0 || maxIpPartitions <= 0 || maxTelegramUserPartitions <= 0)
     {
         throw new InvalidOperationException("Rate limiting values must be positive.");
@@ -107,6 +110,17 @@ try
         options.AddPolicy("api", context =>
         {
             var resolver = context.RequestServices.GetRequiredService<RateLimitPartitionKeyResolver>();
+            if (context.GetEndpoint()?.Metadata.GetMetadata<AdminWebSignInLimitAttribute>() is not null)
+            {
+                return RateLimitPartition.GetFixedWindowLimiter(resolver.ResolveForwardedIpPartitionKey(context, "admin-web-sign-in"), _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = adminWebSignInPermitLimit,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                });
+            }
+
             var partitionKey = context.Request.Path.StartsWithSegments("/api/webhooks/telegram")
                 ? resolver.ResolveIpPartitionKey(context, "telegram-webhook")
                 : resolver.ResolveApiPartitionKey(context);
@@ -141,6 +155,7 @@ try
     });
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddScoped<AdminWebRequestGuard>();
     if (builder.Configuration.GetValue("DealReminders:Enabled", true))
     {
         builder.Services.AddHostedService<DealReminderWorker>();
@@ -157,6 +172,16 @@ try
 
     var app = builder.Build();
     app.Logger.LogInformation("Starting BloggerBazar API. Environment {Environment}; Version {Version}", app.Environment.EnvironmentName, typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown");
+    // A wrong AdminWeb:Origin only keeps the web sign-in off; it never stops the API (and the Mini App).
+    var adminWebOrigin = builder.Configuration.GetValue<string>("AdminWeb:Origin");
+    if (AdminWebOptions.NormalizeOrigin(adminWebOrigin) is { } adminWebSite)
+    {
+        app.Logger.LogInformation("Web admin sign-in is on for {AdminWebOrigin}", adminWebSite);
+    }
+    else if (!string.IsNullOrWhiteSpace(adminWebOrigin))
+    {
+        app.Logger.LogError("AdminWeb:Origin is not a valid site address (https://host); web admin sign-in stays off");
+    }
     if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
     {
         using var scope = app.Services.CreateScope();

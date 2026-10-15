@@ -18,10 +18,10 @@ public sealed class CspReportsController(CspReportLog log, IAdminAccessPolicy ad
     }
 
     [HttpGet("admin/csp-reports")]
-    public ActionResult<IReadOnlyList<CspReportEntry>> List()
+    public async Task<ActionResult<IReadOnlyList<CspReportEntry>>> List(CancellationToken cancellationToken)
     {
-        var actor = GetTelegramUser();
-        adminAccess.EnsureAllowed(actor.Id);
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        adminAccess.EnsureAllowed(actorId);
         return Ok(log.Snapshot());
     }
 }

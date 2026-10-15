@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { formatMessage, russianPluralForm, type Dictionary, type Language, type MessageValues as Values } from "@bloggerbazar/shared/i18n";
 import ru from "./ru.json";
 import uz from "./uz.json";
 
-export type Language = "ru" | "uz";
-type Dictionary = Record<string, string>;
-type Values = Record<string, string | number>;
+export type { Language };
+export { russianPluralForm };
 const dictionaries: Record<Language, Dictionary> = { ru, uz };
 const storageKey = "bloggerbazar.language";
 
@@ -30,22 +30,9 @@ export function currentLanguage(): Language {
   return storedLanguage() ?? telegramLanguage() ?? "ru";
 }
 
-// Russian nouns after a number take one of three forms (1 отзыв, 2 отзыва, 5 отзывов). A text with {count}
-// may have "<key>_one" and "<key>_few" variants; the base key holds the "many" form. Uzbek does not inflect.
-export function russianPluralForm(count: number): "one" | "few" | "many" {
-  const lastTwo = Math.abs(count) % 100;
-  const last = lastTwo % 10;
-  if (lastTwo >= 11 && lastTwo <= 14) return "many";
-  if (last === 1) return "one";
-  if (last >= 2 && last <= 4) return "few";
-  return "many";
-}
-
+// Plural forms and {param} placeholders: the shared i18n core (shared/i18n.ts).
 export function translate(key: string, values?: Values, language = currentLanguage()) {
-  const form = language === "ru" && typeof values?.count === "number" ? russianPluralForm(values.count) : "many";
-  const pluralKey = form === "many" ? key : `${key}_${form}`;
-  const template = dictionaries[language][pluralKey] ?? dictionaries[language][key] ?? dictionaries.ru[key] ?? key;
-  return values ? template.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? `{${name}}`)) : template;
+  return formatMessage(dictionaries, language, key, values);
 }
 
 const categoryAliases: Record<string, string> = {

@@ -3,13 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "workspaces": [
-    "frontend"
+    "shared",
+    "frontend",
+    "admin-web"
   ],
   "scripts": {
     "dev": "npm --workspace frontend run dev",
     "dev:frontend": "npm --workspace frontend run dev",
-    "build": "npm --workspace frontend run build",
-    "test": "npm --workspace frontend run test",
+    "dev:admin": "npm --workspace admin-web run dev",
+    "build": "npm --workspace frontend run build && npm --workspace admin-web run build",
+    "test": "npm --workspace frontend run test && npm --workspace admin-web run test",
     "test:i18n": "node scripts/check-i18n.mjs",
     "i18n:audit": "node scripts/check-i18n.mjs"
   }

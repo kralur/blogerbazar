@@ -3,14 +3,14 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-14, Telegram бренд-фейса опубликован (`2f30ca9`); проверка экранов в CI в review._
+_Последнее обновление: 2026-10-15, сайт-админка, фаза 1 (вход, D57) в review; Б4 опубликован (`0a37df8`)._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | `e8363e0` D52 жалобы + очистка оплаты (до этого `f0cd8bb` D51, `46b6320` D50, `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
-| Рабочая ветка Claude | `claude/pensive-fermat-rp0p5w` (сохраняется) |
+| Published `main` / `origin/main` | `0a37df8` Б4 CSP report-only (до этого `880c553` D56, `e6dd11d`, `14db7da`, `0f25c80`, `2f30ca9`, `88b664f`, `450bf55`, `5250b46`, `07f7b23`, `11d672d`, `b849656`, `4b22bf8`, `17a8c07`, `5de31b5`, `e8363e0` D52 жалобы + очистка оплаты, `f0cd8bb` D51, `46b6320` D50, `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Рабочая ветка Claude | `claude/new-session-di2yul` (сайт-админка; прежняя `claude/pensive-fermat-rp0p5w` сохраняется) |
 | CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 · R2b: https://github.com/kralur/blogerbazar/pull/7 · R3: https://github.com/kralur/blogerbazar/pull/8 · R4: https://github.com/kralur/blogerbazar/pull/9 · R5: https://github.com/kralur/blogerbazar/pull/10 |
 
 ## Текущая фаза
@@ -88,12 +88,39 @@ _Последнее обновление: 2026-10-14, Telegram бренд-фей
 - **D56 счётчики**: опубликовано (`880c553`, миграция `AddPlatformUserActivity` одобрена владельцем): последний вход (не чаще раза
   в час) и метка рекламной ссылки `?start=<метка>`; админка: «Заходили в приложение», «Откуда пришли». Сайт-админка
   для полной аналитики записана в roadmap (после запуска).
-- **Б4 защита страниц** (в review, без миграции): CSP в режиме Report-Only в `frontend/nginx.conf` (+`nosniff`,
+- **Б4 защита страниц** (опубликовано, `0a37df8`, без миграции): CSP в режиме Report-Only в `frontend/nginx.conf` (+`nosniff`,
   `Referrer-Policy`), приложение шлёт нарушения на `POST /api/csp-reports`, админка → «Защита страниц»; тест держит
   хеш встроенного скрипта в шаге с `index.html`. Строгий режим — после недели без нарушений (Q56).
 - **Рабочие пространства бизнеса**: аудит этапа 0 сделан (roadmap, п. 8), реализация ждёт подтверждения спроса.
+- **Сайт-админка, фаза 1: вход (D57)** (в review, без миграции): `POST/GET /api/admin-web/session`,
+  `POST /api/admin-web/logout`, `GET /api/admin-web/config`; вход Telegram Login Widget, cookie `__Host-bb_admin` и сессия
+  в Redis (8 ч, час простоя); все `/api/admin/*` принимают `tma` или cookie (проверка Origin на изменениях); каркас
+  `admin-web/` (вход, меню, пустой «Обзор», RU/UZ, темы), общий `shared/` (токены DS v2, пресет Tailwind, ядро i18n),
+  Dockerfile и nginx со строгим CSP, job в CI. Включается переменной `AdminWeb__Origin`; шаги владельца —
+  `docs/admin-web.md`. Попутно: проверка i18n ловит дубли ключей и в строках с несколькими ключами (убраны два
+  перекрытых дубля `form.success*` в словарях Mini App, тексты не изменились).
 
 ## Последние результаты gates
+
+### Сайт-админка, фаза 1 (локально, до review, 2026-10-15)
+
+```text
+dotnet build: passed (0 errors, 1 старое предупреждение CS0618 в ImageOrientation); dotnet test: 621 total, 568 passed, 53 skipped (integration без Docker, из них 7 новых)
+  было до фазы: 559 total, 513 passed, 46 skipped
+RUN_INTEGRATION_TESTS=true: NOT RUN локально (нет Docker daemon) — через CI на draft PR
+EF has-pending-model-changes: No changes have been made to the model since the last migration
+dotnet list package --vulnerable (src): нет уязвимых пакетов
+npm test: frontend 74 files, 479 passed (как до фазы); admin-web 5 files, 26 passed
+npm run build: frontend и admin-web passed; npm run i18n:audit: passed (frontend 1145 keys, admin-web 47 keys)
+npm audit --omit=dev --audit-level=high: 0 vulnerabilities
+Mini App CSS до/после выноса токенов: все правила и 67 токенов совпадают (меняется только группировка)
+Сборка образов (симуляция шагов Dockerfile без Docker): frontend и admin-web — npm ci + build passed;
+  без правки frontend/Dockerfile сборка Mini App падала бы (нет shared/)
+admin-web в Chromium под CSP из nginx: 19 экранов (1280/1024/360/320, RU/UZ, светлая/тёмная, меню, возврат из
+  Telegram): 0 нарушений CSP, 0 горизонтальной прокрутки, контраст текста ≥ 4.5:1
+nginx -t: NOT RUN локально (нет nginx) — шаг в CI
+git diff --check: clean; secret scan изменённых файлов: только заведомо тестовые токены вида 123456:...
+```
 
 ### Мелочи QA + Б4 + админка 3 + аудит бэкенда + проверка экранов + воронка (локально, до review, 2026-10-12)
 
@@ -309,7 +336,8 @@ git diff --check: passed
 
 ## Среда Claude Code (cloud)
 
-- `dotnet`: отсутствует (`command not found`).
+- `dotnet`: в базовой среде отсутствует. В сессии 2026-10-15 .NET SDK 9.0.319 поставлен с разрешения владельца
+  (официальный образ `mcr.microsoft.com/dotnet/sdk:9.0`, только в среде сессии; в apt для Ubuntu 24.04 его нет).
 - Docker: CLI есть (29.6.2), daemon недоступен (`/var/run/docker.sock` отсутствует) → Testcontainers не запустятся.
 - Node: `/opt/node22` (npm доступен); `node_modules` не установлены.
 - CI (`.github/workflows/ci.yml`): backend с `RUN_INTEGRATION_TESTS=true` + frontend на PR/push в `main` — путь получить реальные gates.

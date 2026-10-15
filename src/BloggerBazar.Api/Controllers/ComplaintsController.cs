@@ -23,14 +23,14 @@ public sealed class ComplaintsController(ISender sender, ITelegramWebAppValidato
     [HttpGet("api/admin/complaints")]
     public async Task<ActionResult<IReadOnlyList<AdminComplaintDto>>> GetForAdmin([FromQuery] string? status = ComplaintStatuses.Open, [FromQuery] int take = 100, CancellationToken cancellationToken = default)
     {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new GetAdminComplaintsQuery(actor.Id, status, take), cancellationToken));
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new GetAdminComplaintsQuery(actorId, status, take), cancellationToken));
     }
 
     [HttpPatch("api/admin/complaints/{complaintId:guid}")]
     public async Task<ActionResult<ComplaintDto>> Close(Guid complaintId, CloseComplaintRequest request, CancellationToken cancellationToken)
     {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new CloseComplaintCommand(actor.Id, complaintId, request.Status, request.Note), cancellationToken));
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new CloseComplaintCommand(actorId, complaintId, request.Status, request.Note), cancellationToken));
     }
 }

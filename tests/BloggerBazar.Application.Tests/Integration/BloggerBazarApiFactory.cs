@@ -10,6 +10,7 @@ namespace BloggerBazar.Application.Tests.Integration;
 public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string BotToken = "123456:integration-test-token";
+    public const string AdminWebOrigin = "https://admin.integration.test";
 
     private readonly PostgreSqlContainer postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -44,5 +45,8 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         builder.UseSetting("DealReminders:Enabled", "false");
         builder.UseSetting("Telegram:BotToken", BotToken);
         builder.UseSetting("Telegram:WebhookSecret", "integration-webhook-secret");
+        // Web admin on, with room for every sign-in of a test class (the test server has no client address).
+        builder.UseSetting("AdminWeb:Origin", AdminWebOrigin);
+        builder.UseSetting("RateLimiting:AdminWebSignIn:PermitLimit", "1000");
     }
 }

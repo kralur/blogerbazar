@@ -1,0 +1,48 @@
+# Сайт-админка (admin-web): запуск и настройка
+
+Админка в браузере для владельца и администраторов (решение D57). Код: `admin-web/` (сайт), `shared/` (общие токены
+дизайна и переводов), backend: `/api/admin-web/*` и cookie-вход на `/api/admin/*`.
+
+## Что сделать владельцу один раз (Railway и BotFather)
+
+Токен бота и webhook secret никому не отправлять, в том числе Claude. Они остаются только в переменных Railway.
+
+1. **Railway → New → GitHub Repo → `kralur/blogerbazar`** (новый сервис, например `admin-web`).
+   - Settings → Build: **Dockerfile Path** = `admin-web/Dockerfile` (корень сборки — весь репозиторий).
+   - Settings → Networking → **Generate Domain**. Получится адрес вида `admin-web-production.up.railway.app`.
+     Если Railway спросит порт: `8080`.
+   - Variables: `API_UPSTREAM` = `http://${{<имя сервиса API>.RAILWAY_PRIVATE_DOMAIN}}:8080`
+     (Railway сам подставит внутренний адрес API; имя сервиса API видно в проекте).
+2. **Railway → сервис API → Variables:**
+   - `AdminWeb__Origin` = `https://<адрес из шага 1>` (без `/` в конце).
+   - Проверить, что есть `Telegram__BotUsername` (имя бота без `@`, это не секрет).
+3. **BotFather → `/setdomain`** → выбрать бота → отправить адрес из шага 1 без `https://`.
+   Это домен только для кнопки входа на сайте; Mini App он не затрагивает.
+4. Открыть `https://<адрес>/login` → «Log in with Telegram» → подтвердить вход в Telegram → откроется «Обзор».
+   При первом входе Telegram попросит номер телефона на своей странице, сайт номер не получает.
+
+Пока `AdminWeb__Origin` не задан, вход через сайт выключен, а API работает как раньше.
+
+## Как устроено
+
+- Вход: Telegram Login Widget возвращает браузер на `/auth/telegram`, страница отправляет данные в
+  `POST /api/admin-web/session`. Сервер проверяет подпись, срок (5 минут), что данные не использовались, и права
+  (Owner/Admin, не заблокирован, не удалён).
+- Сессия: cookie `__Host-bb_admin` (HttpOnly, Secure, SameSite=Strict), на сервере в Redis хранится только хеш.
+  8 часов от входа, раньше после часа без действий. «Выйти» удаляет сессию. Сняли роль или заблокировали →
+  доступ закрывается на следующем запросе. Без Redis сессии живут в памяти API и сбрасываются при деплое.
+- nginx сайта пересылает `/api` в API по внутренней сети Railway: для браузера один адрес, CORS не нужен.
+  Строгий CSP; скрипт Telegram разрешён только на странице `/login`.
+- Журнал действий: `admin-web.signed-in`, `admin-web.signed-out`, `admin-web.sign-in-denied`.
+
+## Разработка
+
+```bash
+npm ci
+AdminWeb__Origin=http://localhost:5174 dotnet run --project src/BloggerBazar.Api
+npm --workspace admin-web run dev      # http://localhost:5174, /api проксируется на :8080
+npm --workspace admin-web run test
+```
+
+Кнопка Telegram работает только на домене, заданном в `/setdomain`, поэтому локально вход проверяется тестами
+(`tests/.../AdminWeb*`, `admin-web/tests`).

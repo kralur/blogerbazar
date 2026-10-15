@@ -13,26 +13,26 @@ public sealed class AdminBusinessesController(ISender sender, ITelegramWebAppVal
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AdminBusinessDto>>> GetAll([FromQuery] int take = 100, CancellationToken cancellationToken = default)
     {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new GetAdminBusinessesQuery(actor.Id, take), cancellationToken));
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new GetAdminBusinessesQuery(actorId, take), cancellationToken));
     }
 
     [HttpGet("pending")]
     public async Task<ActionResult<IReadOnlyList<BusinessProfileDto>>> GetPending(CancellationToken cancellationToken)
     {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new GetPendingBusinessProfilesQuery(actor.Id), cancellationToken));
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new GetPendingBusinessProfilesQuery(actorId), cancellationToken));
     }
 
     [HttpPost("{businessId:guid}/{decision}")]
     public async Task<ActionResult<BusinessProfileDto>> Moderate(Guid businessId, string decision, CancellationToken cancellationToken)
     {
-        var actor = GetTelegramUser();
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
         return decision switch
         {
-            "approve" => Ok(await sender.Send(new ModerateBusinessProfileCommand(businessId, actor.Id, true), cancellationToken)),
-            "reject" => Ok(await sender.Send(new ModerateBusinessProfileCommand(businessId, actor.Id, false), cancellationToken)),
-            "needs-changes" => Ok(await sender.Send(new ModerateBusinessProfileCommand(businessId, actor.Id, false, true), cancellationToken)),
+            "approve" => Ok(await sender.Send(new ModerateBusinessProfileCommand(businessId, actorId, true), cancellationToken)),
+            "reject" => Ok(await sender.Send(new ModerateBusinessProfileCommand(businessId, actorId, false), cancellationToken)),
+            "needs-changes" => Ok(await sender.Send(new ModerateBusinessProfileCommand(businessId, actorId, false, true), cancellationToken)),
             _ => BadRequest()
         };
     }

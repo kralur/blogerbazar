@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Users;
 using MediatR;
@@ -14,6 +15,19 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
         var user = GetTelegramIdentity();
         HttpContext.RequestServices.GetRequiredService<IPlatformUserAccessPolicy>().EnsureActive(user.Id);
         return user;
+    }
+
+    // Admin actions only: the Mini App signs every request with initData (unchanged); the web admin sends its session
+    // cookie instead. Every other endpoint keeps accepting initData only. The handlers still check IAdminAccessPolicy.
+    protected async Task<long> GetAdminActorIdAsync(CancellationToken cancellationToken)
+    {
+        if (AdminWebRequestGuard.HasMiniAppAuthorization(Request))
+        {
+            return GetTelegramUser().Id;
+        }
+
+        var actorId = await HttpContext.RequestServices.GetRequiredService<AdminWebRequestGuard>().TryAuthenticateAsync(HttpContext, cancellationToken);
+        return actorId ?? throw new AuthenticationException("Telegram initData authorization is required.");
     }
 
     // The phone on a profile is the one Telegram confirmed for this user, never the form value (D41).

@@ -3,51 +3,82 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const sourceRoot = join(root, "frontend", "src");
-const dictionaryRoot = join(sourceRoot, "i18n");
-const readDictionary = (language) => JSON.parse(readFileSync(join(dictionaryRoot, `${language}.json`), "utf8"));
+// Each app keeps its own RU/UZ dictionaries in src/i18n; the same rules apply to both.
+const apps = [
+  { name: "frontend", alwaysReferenced: ["taxonomy.category.", "taxonomy.city.", "admin.role."] },
+  { name: "admin-web", alwaysReferenced: [] }
+];
+
 const flatten = (value, prefix = "") => Object.entries(value).flatMap(([key, item]) =>
   item && typeof item === "object" && !Array.isArray(item) ? flatten(item, `${prefix}${key}.`) : [`${prefix}${key}`]);
 const files = (directory) => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
   const path = join(directory, entry.name);
   return entry.isDirectory() ? files(path) : /\.(ts|tsx)$/.test(entry.name) ? [path] : [];
 });
+// Every JSON key in file order, also when several share a line; JSON.parse would silently keep only the last.
+const keysInOrder = (text) => {
+  const keys = [];
+  for (let index = 0; index < text.length; index++) {
+    if (text[index] !== "\"") continue;
+    let end = index + 1;
+    while (text[end] !== "\"") end += text[end] === "\\" ? 2 : 1;
+    let next = end + 1;
+    while (/\s/.test(text[next] ?? "")) next++;
+    if (text[next] === ":") keys.push(JSON.parse(text.slice(index, end + 1)));
+    index = end;
+  }
+  return keys;
+};
 const duplicateKeys = (path) => {
-  const keys = [...readFileSync(path, "utf8").matchAll(/^\s*"([^"\\]+)"\s*:/gm)].map((match) => match[1]);
+  const keys = keysInOrder(readFileSync(path, "utf8"));
   return [...new Set(keys.filter((key, index) => keys.indexOf(key) !== index))];
 };
 
-const ru = new Set(flatten(readDictionary("ru")));
-const uz = new Set(flatten(readDictionary("uz")));
-const sourceFiles = files(sourceRoot).filter((path) => !relative(sourceRoot, path).replaceAll("\\", "/").startsWith("i18n/"));
-const source = sourceFiles.map((path) => ({ path, text: readFileSync(path, "utf8") }));
-const references = new Set();
-const hardcoded = [];
-for (const key of ru) {
-  if (key.startsWith("taxonomy.category.")) references.add(key);
-  if (key.startsWith("taxonomy.city.")) references.add(key);
-  if (key.startsWith("admin.role.")) references.add(key);
-}
-
-for (const file of source) {
-  for (const match of file.text.matchAll(/(?:\bt|\btranslate)\(\s*["']([^"']+)["']/g)) references.add(match[1]);
-  for (const [lineIndex, line] of file.text.split(/\r?\n/).entries()) {
-    if (/[А-Яа-яЁёЎўҚқҒғҲҳ]/.test(line)) hardcoded.push(`${relative(root, file.path)}:${lineIndex + 1}`);
+function audit({ name, alwaysReferenced }) {
+  const sourceRoot = join(root, name, "src");
+  const dictionaryRoot = join(sourceRoot, "i18n");
+  const dictionaryPath = (language) => join(dictionaryRoot, `${language}.json`);
+  const readDictionary = (language) => JSON.parse(readFileSync(dictionaryPath(language), "utf8"));
+  const ru = new Set(flatten(readDictionary("ru")));
+  const uz = new Set(flatten(readDictionary("uz")));
+  const sourceFiles = files(sourceRoot).filter((path) => !relative(sourceRoot, path).replaceAll("\\", "/").startsWith("i18n/"));
+  const source = sourceFiles.map((path) => ({ path, text: readFileSync(path, "utf8") }));
+  const references = new Set();
+  const hardcoded = [];
+  for (const key of ru) {
+    if (alwaysReferenced.some((prefix) => key.startsWith(prefix))) references.add(key);
   }
+
+  for (const file of source) {
+    for (const match of file.text.matchAll(/(?:\bt|\btranslate)\(\s*["']([^"']+)["']/g)) references.add(match[1]);
+    for (const [lineIndex, line] of file.text.split(/\r?\n/).entries()) {
+      if (/[А-Яа-яЁёЎўҚқҒғҲҳ]/.test(line)) hardcoded.push(`${relative(root, file.path)}:${lineIndex + 1}`);
+    }
+  }
+
+  const missingInUz = [...ru].filter((key) => !uz.has(key));
+  const missingInRu = [...uz].filter((key) => !ru.has(key));
+  const missingReferences = [...references].filter((key) => !ru.has(key) || !uz.has(key));
+  const duplicates = ["ru", "uz"].flatMap((language) => duplicateKeys(dictionaryPath(language)).map((key) => `${language}:${key}`));
+  const failures = [];
+  if (missingInUz.length || missingInRu.length) failures.push(`dictionary mismatch (uz: ${missingInUz.join(", ") || "none"}; ru: ${missingInRu.join(", ") || "none"})`);
+  if (duplicates.length) failures.push(`duplicate dictionary keys: ${duplicates.join(", ")}`);
+  if (missingReferences.length) failures.push(`missing translation keys: ${missingReferences.join(", ")}`);
+  // Owner rule: user-facing texts do not use the em dash.
+  const emDashKeys = ["ru", "uz"].flatMap((language) => Object.entries(readDictionary(language))
+    .filter(([, value]) => typeof value === "string" && value.includes("\u2014")).map(([key]) => `${language}:${key}`));
+  if (emDashKeys.length) failures.push(`em dash in dictionary texts: ${emDashKeys.join(", ")}`);
+  // Owner rule: Uzbek writes o‘, g‘ and the tutuq belgisi with ‘ ’, never with ' ʻ ʼ or `.
+  const apostropheKeys = Object.entries(readDictionary("uz"))
+    .filter(([, value]) => typeof value === "string" && /\p{L}['ʻʼ`]\p{L}/u.test(value)).map(([key]) => `uz:${key}`);
+  if (apostropheKeys.length) failures.push(`Uzbek apostrophes other than ‘ ’: ${apostropheKeys.join(", ")}`);
+  if (hardcoded.length) failures.push(`hardcoded Cyrillic/Uzbek UI text outside i18n: ${hardcoded.join(", ")}`);
+  return { name, keys: ru.size, references: references.size, failures };
 }
 
-const missingInUz = [...ru].filter((key) => !uz.has(key));
-const missingInRu = [...uz].filter((key) => !ru.has(key));
-const missingReferences = [...references].filter((key) => !ru.has(key) || !uz.has(key));
-const duplicates = ["ru", "uz"].flatMap((language) => duplicateKeys(join(dictionaryRoot, `${language}.json`)).map((key) => `${language}:${key}`));
-const failures = [];
-if (missingInUz.length || missingInRu.length) failures.push(`dictionary mismatch (uz: ${missingInUz.join(", ") || "none"}; ru: ${missingInRu.join(", ") || "none"})`);
-if (duplicates.length) failures.push(`duplicate dictionary keys: ${duplicates.join(", ")}`);
-if (missingReferences.length) failures.push(`missing translation keys: ${missingReferences.join(", ")}`);
-// Owner rule: user-facing texts do not use the em dash.
-const emDashKeys = ["ru", "uz"].flatMap((language) => Object.entries(JSON.parse(readFileSync(join(dictionaryRoot, `${language}.json`), "utf8")))
-  .filter(([, value]) => typeof value === "string" && value.includes("\u2014")).map(([key]) => `${language}:${key}`));
-if (emDashKeys.length) failures.push(`em dash in dictionary texts: ${emDashKeys.join(", ")}`);
-if (hardcoded.length) failures.push(`hardcoded Cyrillic/Uzbek UI text outside i18n: ${hardcoded.join(", ")}`);
-if (failures.length) throw new Error(`i18n audit failed\n- ${failures.join("\n- ")}`);
-console.log(`i18n audit passed: ${ru.size} keys, ${references.size} references, no hardcoded RU/UZ text.`);
+const results = apps.map(audit);
+const failed = results.filter((result) => result.failures.length);
+if (failed.length) {
+  throw new Error(`i18n audit failed\n${failed.map((result) => `[${result.name}]\n- ${result.failures.join("\n- ")}`).join("\n")}`);
+}
+console.log(`i18n audit passed: ${results.map((result) => `${result.name} ${result.keys} keys, ${result.references} references`).join("; ")}; no hardcoded RU/UZ text.`);

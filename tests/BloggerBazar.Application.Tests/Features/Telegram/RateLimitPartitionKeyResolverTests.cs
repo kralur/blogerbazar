@@ -49,6 +49,51 @@ public sealed class RateLimitPartitionKeyResolverTests
         Assert.Equal("telegram:telegram-overflow", secondTelegramPartition);
     }
 
+    [Fact]
+    public void Web_admin_sign_in_uses_the_address_the_proxy_forwarded()
+    {
+        var resolver = new RateLimitPartitionKeyResolver(new FakeTelegramValidator(), 10, 10);
+        var viaPrivateProxy = CreateContext("fd12:3456::7");
+        viaPrivateProxy.Request.Headers["X-Forwarded-For"] = "198.51.100.7, 100.64.0.2";
+        var viaCarrierNat = CreateContext("100.64.12.1");
+        viaCarrierNat.Request.Headers["X-Forwarded-For"] = "198.51.100.8";
+
+        Assert.Equal("admin-web-sign-in:ip:198.51.100.7", resolver.ResolveForwardedIpPartitionKey(viaPrivateProxy, "admin-web-sign-in"));
+        Assert.Equal("admin-web-sign-in:ip:198.51.100.8", resolver.ResolveForwardedIpPartitionKey(viaCarrierNat, "admin-web-sign-in"));
+        Assert.Equal("forwarded-ip", viaPrivateProxy.Items[RateLimitPartitionKeyResolver.PartitionKindItemKey]);
+    }
+
+    [Fact]
+    public void A_direct_caller_cannot_choose_its_address_with_a_forwarded_header()
+    {
+        var resolver = new RateLimitPartitionKeyResolver(new FakeTelegramValidator(), 10, 10);
+        var direct = CreateContext("203.0.113.10");
+        direct.Request.Headers["X-Forwarded-For"] = "198.51.100.7";
+        var garbage = CreateContext("10.0.0.5");
+        garbage.Request.Headers["X-Forwarded-For"] = "not-an-address";
+
+        Assert.Equal("admin-web-sign-in:ip:203.0.113.10", resolver.ResolveForwardedIpPartitionKey(direct, "admin-web-sign-in"));
+        Assert.Equal("admin-web-sign-in:ip:10.0.0.5", resolver.ResolveForwardedIpPartitionKey(garbage, "admin-web-sign-in"));
+    }
+
+    [Fact]
+    public void Web_admin_requests_get_a_budget_per_person_behind_the_admin_site_proxy()
+    {
+        var resolver = new RateLimitPartitionKeyResolver(new FakeTelegramValidator(), 10, 10);
+        var first = CreateContext("fd12::1");
+        first.Request.Headers.Cookie = "__Host-bb_admin=abc";
+        first.Request.Headers["X-Forwarded-For"] = "198.51.100.7";
+        var second = CreateContext("fd12::1");
+        second.Request.Headers.Cookie = "__Host-bb_admin=def";
+        second.Request.Headers["X-Forwarded-For"] = "198.51.100.9";
+        var miniApp = CreateContext("fd12::1", "tma valid-init-data");
+        miniApp.Request.Headers.Cookie = "__Host-bb_admin=abc";
+
+        Assert.Equal("admin-web:ip:198.51.100.7", resolver.ResolveApiPartitionKey(first));
+        Assert.Equal("admin-web:ip:198.51.100.9", resolver.ResolveApiPartitionKey(second));
+        Assert.Equal("telegram:5044343262", resolver.ResolveApiPartitionKey(miniApp));
+    }
+
     private static DefaultHttpContext CreateContext(string address, string? authorization = null)
     {
         var context = new DefaultHttpContext();

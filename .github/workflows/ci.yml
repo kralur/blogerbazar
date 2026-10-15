@@ -57,7 +57,25 @@ jobs:
       - name: Run frontend tests when present
         run: npm --workspace frontend run test --if-present
       - name: Build frontend
-        run: npm run build
+        run: npm --workspace frontend run build
+
+  # The web admin site (admin-web): its own tests and production build; translations are audited above.
+  admin-web:
+    name: Admin web build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run admin web tests
+        run: npm --workspace admin-web run test
+      - name: Build admin web
+        run: npm --workspace admin-web run build
 
   # Every main screen at 360 and 320 px, RU/UZ, light/dark, against the API with the development seed:
   # fails on content outside the screen, cut-off labels and text below 3:1 contrast (frontend/e2e/screen-check.mjs).
@@ -122,7 +140,7 @@ jobs:
 
   docker:
     name: Production Docker build validation
-    needs: [backend, frontend]
+    needs: [backend, frontend, admin-web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,3 +148,8 @@ jobs:
         run: docker build --file src/BloggerBazar.Api/Dockerfile --tag bloggerbazar-api:ci .
       - name: Build frontend production image
         run: docker build --file frontend/Dockerfile --build-arg VITE_API_URL="" --tag bloggerbazar-frontend:ci .
+      - name: Build admin site production image
+        run: docker build --file admin-web/Dockerfile --tag bloggerbazar-admin-web:ci .
+      # The image's entrypoint renders the nginx template from the environment, then nginx checks the result.
+      - name: Check the admin site nginx configuration
+        run: docker run --rm bloggerbazar-admin-web:ci nginx -t

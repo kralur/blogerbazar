@@ -46,6 +46,10 @@ npm --workspace frontend run dev
 
 Vite proxies `/api` and `/health` to `VITE_DEV_API_URL` or `http://localhost:8080`.
 
+The web admin for owners and administrators lives in `admin-web/` (`npm --workspace admin-web run dev`, port 5174;
+the API needs `AdminWeb__Origin=http://localhost:5174`). Setup on Railway and BotFather: `docs/admin-web.md`.
+Design tokens, the Tailwind preset and the i18n core shared by both apps are in `shared/`.
+
 ## Database Migrations
 
 For a single API instance, Docker Compose applies migrations at startup. For multi-replica deployments, disable `Database__ApplyMigrationsOnStartup` and apply migrations as a dedicated release step:

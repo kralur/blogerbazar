@@ -13,32 +13,32 @@ public sealed class AdminBloggersController(ISender sender, ITelegramWebAppValid
     [ProducesResponseType<IReadOnlyList<AdminBloggerProfileDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AdminBloggerProfileDto>>> GetPending([FromQuery] int take = 50, CancellationToken cancellationToken = default)
     {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new GetPendingBloggerProfilesQuery(actor.Id, take), cancellationToken));
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new GetPendingBloggerProfilesQuery(actorId, take), cancellationToken));
     }
 
     [HttpPost("{bloggerId:guid}/approve")]
     [ProducesResponseType<AdminBloggerProfileDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<AdminBloggerProfileDto>> Approve(Guid bloggerId, CancellationToken cancellationToken)
     {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new ModerateBloggerProfileCommand(bloggerId, actor.Id, true), cancellationToken));
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new ModerateBloggerProfileCommand(bloggerId, actorId, true), cancellationToken));
     }
 
     [HttpPost("{bloggerId:guid}/reject")]
     [ProducesResponseType<AdminBloggerProfileDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<AdminBloggerProfileDto>> Reject(Guid bloggerId, CancellationToken cancellationToken)
     {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new ModerateBloggerProfileCommand(bloggerId, actor.Id, false), cancellationToken));
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new ModerateBloggerProfileCommand(bloggerId, actorId, false), cancellationToken));
     }
 
     [HttpPost("{bloggerId:guid}/needs-changes")]
     [ProducesResponseType<AdminBloggerProfileDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<AdminBloggerProfileDto>> NeedsChanges(Guid bloggerId, CancellationToken cancellationToken)
     {
-        var actor = GetTelegramUser();
-        return Ok(await sender.Send(new ModerateBloggerProfileCommand(bloggerId, actor.Id, false, true), cancellationToken));
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new ModerateBloggerProfileCommand(bloggerId, actorId, false, true), cancellationToken));
     }
 
 }
