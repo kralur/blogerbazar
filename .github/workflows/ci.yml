@@ -59,6 +59,67 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+  # Every main screen at 360 and 320 px, RU/UZ, light/dark, against the API with the development seed:
+  # fails on content outside the screen, cut-off labels and text below 3:1 contrast (frontend/e2e/screen-check.mjs).
+  # The bot token and webhook secret below are throwaway values for this job's own API, not production secrets.
+  screens:
+    name: Phone screen check
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bb
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: bloggerbazar
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U bb" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://localhost:8080
+      ConnectionStrings__Postgres: Host=localhost;Port=5432;Database=bloggerbazar;Username=bb;Password=ci
+      Database__ApplyMigrationsOnStartup: "true"
+      DevelopmentData__Seed: "true"
+      Telegram__BotToken: "123456:CI-SCREEN-CHECK"
+      Telegram__WebhookSecret: ci-screen-check-secret
+      DealReminders__Enabled: "false"
+      BotTips__Enabled: "false"
+      RateLimiting__PermitLimit: "100000"
+      RateLimiting__WritePermitLimit: "100000"
+      SCREEN_CHECK_BOT_TOKEN: "123456:CI-SCREEN-CHECK"
+      SCREEN_CHECK_WEBHOOK_SECRET: ci-screen-check-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start API and frontend
+        run: |
+          dotnet build src/BloggerBazar.Api --configuration Release
+          nohup dotnet run --project src/BloggerBazar.Api --configuration Release --no-build --no-launch-profile > api.log 2>&1 &
+          nohup npm --workspace frontend run dev -- --host 127.0.0.1 --port 5173 --strictPort > vite.log 2>&1 &
+          for i in $(seq 1 90); do curl -sf http://localhost:8080/health > /dev/null && curl -sf http://127.0.0.1:5173/ > /dev/null && exit 0; sleep 2; done
+          cat api.log vite.log; exit 1
+      - name: Check screens
+        run: npm --workspace frontend run screen-check
+      - name: Upload screenshots of problems
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-check
+          path: |
+            frontend/e2e/output/
+            api.log
+
   docker:
     name: Production Docker build validation
     needs: [backend, frontend]

@@ -11,3 +11,4 @@ work/
 **/bin/
 **/obj/
 .DS_Store
+frontend/e2e/output/

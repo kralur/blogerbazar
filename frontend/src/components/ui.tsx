@@ -214,7 +214,7 @@ export function Rating({ value, count }: { value?: number | null; count?: number
   const { t } = useI18n();
   return (
     <div className="inline-flex items-center gap-1 text-[13px] font-semibold">
-      <span className="text-brand-warning">★</span>
+      <span aria-hidden="true" className="text-brand-warning">★</span>
       <span>{value == null ? "-" : formatRating(value)}</span>
       {count !== undefined && <span className="font-normal text-brand-muted">({t("common.reviews", { count })})</span>}
     </div>
