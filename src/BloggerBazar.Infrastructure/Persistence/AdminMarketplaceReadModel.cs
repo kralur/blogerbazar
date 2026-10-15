@@ -134,8 +134,10 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
     public async Task<AdminDashboardDto> GetDashboardAsync(CancellationToken cancellationToken)
     {
         var users = await dbContext.PlatformUsers.AsNoTracking().CountAsync(user => !user.IsBlocked && !user.IsDeleted, cancellationToken);
-        var bloggers = await dbContext.BloggerProfiles.AsNoTracking().CountAsync(cancellationToken);
-        var businesses = await dbContext.BusinessProfiles.AsNoTracking().CountAsync(cancellationToken);
+        // Profiles of deleted accounts are kept for their deals (D43) but are no longer bloggers or companies here,
+        // the same way deleted and blocked people are not counted as users.
+        var bloggers = await dbContext.BloggerProfiles.AsNoTracking().CountAsync(profile => !profile.IsDeleted, cancellationToken);
+        var businesses = await dbContext.BusinessProfiles.AsNoTracking().CountAsync(profile => !profile.IsDeleted, cancellationToken);
         var publishedCampaigns = await dbContext.Campaigns.AsNoTracking().CountAsync(campaign => campaign.Status == CampaignStatus.Published, cancellationToken);
         var completedDeals = await dbContext.Deals.AsNoTracking().CountAsync(deal => deal.Status == DealStatus.Completed, cancellationToken);
         var promotedBloggers = await dbContext.BloggerProfiles.AsNoTracking().CountAsync(profile => profile.IsPromoted, cancellationToken);

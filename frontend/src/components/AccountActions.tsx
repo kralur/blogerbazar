@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getApiErrorMessage } from "../api/client";
-import { deleteCurrentAccount } from "../api/marketplace";
+import { deleteCurrentAccount, forgetSessionData } from "../api/marketplace";
 import { useI18n } from "../i18n";
 import { themePreferenceChangedEvent } from "../lib/themePreference";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -16,6 +16,7 @@ export function AccountActions({ onSessionReset }: { onSessionReset?: () => void
   const [toast, setToast] = useState("");
 
   const resetLocalSession = () => {
+    forgetSessionData();
     [localStorage, sessionStorage].forEach((storage) => {
       for (let index = storage.length - 1; index >= 0; index -= 1) {
         const key = storage.key(index);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCurrentPlatformUser, setBotTips } from "../api/marketplace";
+import { getCurrentPlatformUser, peekCurrentPlatformUser, setBotTips } from "../api/marketplace";
 import { AccountActions } from "../components/AccountActions";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { PageHeader } from "../components/PageHeader";
@@ -19,9 +19,11 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
   const { haptic } = useTelegram();
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
   // Owners and admins (platform roles 3 and 4) get the way into the admin panel; nobody else sees it.
-  const [isAdmin, setIsAdmin] = useState(false);
-  // D54: bot tips; null until the account is loaded, so the switch never shows a guess.
-  const [tipsEnabled, setTipsEnabled] = useState<boolean | null>(null);
+  // The account loaded at app start draws these rows at once (no jump a second later); the request below refreshes them.
+  const known = peekCurrentPlatformUser();
+  const [isAdmin, setIsAdmin] = useState(() => Boolean(known && known.role >= 3 && !known.isBlocked));
+  // D54: bot tips; null until the account is known, so the switch never shows a guess.
+  const [tipsEnabled, setTipsEnabled] = useState<boolean | null>(() => known ? known.tipsEnabled ?? true : null);
   const [toast, setToast] = useState("");
   useEffect(() => {
     let active = true;

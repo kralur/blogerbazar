@@ -1,4 +1,5 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { ApiError } from "./api/client";
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, updateInterfaceLanguage, type MarketplaceRole } from "./api/marketplace";
 import { useI18n } from "./i18n";
 import { PullToRefresh } from "./components/PullToRefresh";
@@ -20,6 +21,13 @@ import { clearDealCache } from "./data/dealCache";
 import { isDeepLinkRoute } from "./lib/deepLink";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
+// The role of the last finished start. A returning user sees that role's screens at once while the account check runs
+// in the background (three trips to the server before the first screen made every start slow).
+const lastRoleKey = "bloggerbazar.lastRole";
+function rememberedRole(): MarketplaceRole | undefined {
+  const value = localStorage.getItem(lastRoleKey);
+  return value === "Blogger" || value === "BrandFace" || value === "Business" ? value : undefined;
+}
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
 type OnboardingStep = "welcome" | "telegram" | "checking" | "phone" | "role" | "profile" | "success" | "complete";
 
@@ -106,9 +114,11 @@ export function App() {
   const route = useRoute();
   const { isTelegram, setBackButtonHandler } = useTelegram();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(initialOnboardingStep);
-  const [initialDestinationResolved, setInitialDestinationResolved] = useState(false);
+  const [quickStart] = useState(() => isTelegram && localStorage.getItem(onboardingWelcomeKey) === "true"
+    && localStorage.getItem(onboardingCompletedKey) === "true" && rememberedRole() !== undefined);
+  const [initialDestinationResolved, setInitialDestinationResolved] = useState(quickStart);
   const initialBootstrapStarted = useRef(false);
-  const [selectedRole, setSelectedRole] = useState<MarketplaceRole>();
+  const [selectedRole, setSelectedRole] = useState<MarketplaceRole | undefined>(() => quickStart ? rememberedRole() : undefined);
   const [authorizationFailed, setAuthorizationFailed] = useState(false);
   const [visitedRootRoutes, setVisitedRootRoutes] = useState<Set<string>>(() => new Set(rootRoutes.includes(route.path) ? [route.path] : ["/"]));
   const [visitedMyCampaigns, setVisitedMyCampaigns] = useState(() => ["/my-campaigns", "/my-campaign", "/my-campaign-edit"].includes(route.path));
@@ -124,6 +134,10 @@ export function App() {
   useEffect(() => {
     if (onboardingStep === "complete") telegramBridge.requestBotMessages();
   }, [onboardingStep]);
+
+  useEffect(() => {
+    if (onboardingStep === "complete" && selectedRole) localStorage.setItem(lastRoleKey, selectedRole);
+  }, [onboardingStep, selectedRole]);
 
   // Back in the app after a while: data other people changed meanwhile is reloaded without a gesture.
   useEffect(() => {
@@ -154,7 +168,8 @@ export function App() {
     if (onboardingStep === "complete" && route.path === "/favorites") setVisitedFavorites(true);
   }, [onboardingStep, route.path]);
 
-  const resolveDestination = useCallback(async () => {
+  // quiet: the screens are already shown (quick start), so only a different answer changes them.
+  const resolveDestination = useCallback(async ({ quiet = false }: { quiet?: boolean } = {}) => {
     setAuthorizationFailed(false);
     if (!isTelegram) {
       setOnboardingStep("telegram");
@@ -162,7 +177,7 @@ export function App() {
     }
 
     try {
-      setOnboardingStep("checking");
+      if (!quiet) setOnboardingStep("checking");
       const user = await getCurrentPlatformUser();
       // Everyone, new or returning, confirms the phone from Telegram once before anything else (D41).
       if (!user.verifiedPhone) {
@@ -179,13 +194,16 @@ export function App() {
         setSelectedRole(marketplaceRole);
         localStorage.setItem(onboardingCompletedKey, "true");
         setOnboardingStep("complete");
-        window.location.hash = initialDeepLink ?? "/";
+        // Quick start already opened the first screen; the user may have moved on since.
+        if (!quiet) window.location.hash = initialDeepLink ?? "/";
         return;
       }
 
       setSelectedRole(undefined);
       setOnboardingStep("role");
-    } catch {
+    } catch (error) {
+      // A network hiccup during a quick start keeps the screens; each one shows its own retry.
+      if (quiet && !(error instanceof ApiError && (error.status === 401 || error.status === 403))) return;
       setAuthorizationFailed(true);
       setOnboardingStep("telegram");
     }
@@ -201,8 +219,9 @@ export function App() {
       return;
     }
 
-    void resolveDestination().finally(() => setInitialDestinationResolved(true));
-  }, [resolveDestination]);
+    if (quickStart && initialDeepLink) window.location.hash = initialDeepLink;
+    void resolveDestination({ quiet: quickStart }).finally(() => setInitialDestinationResolved(true));
+  }, [quickStart, resolveDestination]);
 
   const authorize = async () => {
     await resolveDestination();

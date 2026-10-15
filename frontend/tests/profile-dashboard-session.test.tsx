@@ -6,6 +6,8 @@ import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({
   deleteCurrentAccount: vi.fn(),
+  forgetSessionData: vi.fn(),
+  peekCurrentPlatformUser: vi.fn(() => null),
   deleteProfileImage: vi.fn(),
   getCurrentPlatformUser: vi.fn(),
   getMyBloggerProfile: vi.fn(),

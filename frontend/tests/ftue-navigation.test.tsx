@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "../src/api/client";
 import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({
@@ -107,5 +108,39 @@ describe("FTUE navigation", () => {
 
     expect(await screen.findByRole("heading", { name: translate("firstRun.authFailedTitle", undefined, "ru") })).toBeInTheDocument();
     expect(screen.queryByRole("main", { name: translate("firstRun.launchLoading", undefined, "ru") })).not.toBeInTheDocument();
+  });
+  // QA 2026-10-15: a returning user waited for three trips to the server before anything appeared.
+  describe("quick start of a returning user", () => {
+    beforeEach(() => {
+      localStorage.setItem("bloggerbazar.onboarding.completed", "true");
+      localStorage.setItem("bloggerbazar.lastRole", "BrandFace");
+    });
+
+    it("shows Home at once while the account check is still running", async () => {
+      api.getCurrentPlatformUser.mockImplementation(() => new Promise(() => {}));
+      render(<I18nProvider><App /></I18nProvider>);
+
+      expect(await screen.findByRole("heading", { name: "Home screen" })).toBeInTheDocument();
+      expect(screen.queryByRole("main", { name: translate("firstRun.launchLoading", undefined, "ru") })).not.toBeInTheDocument();
+    });
+
+    it("still sends a refused account to the authorization screen", async () => {
+      api.getCurrentPlatformUser.mockRejectedValue(new ApiError(403, "access_denied"));
+      render(<I18nProvider><App /></I18nProvider>);
+
+      expect(await screen.findByRole("heading", { name: translate("firstRun.authFailedTitle", undefined, "ru") })).toBeInTheDocument();
+    });
+
+    it("keeps Home on a network hiccup and still asks for a missing phone", async () => {
+      api.getCurrentPlatformUser.mockRejectedValueOnce(new Error("offline"));
+      const { unmount } = render(<I18nProvider><App /></I18nProvider>);
+      await waitFor(() => expect(api.getCurrentPlatformUser).toHaveBeenCalled());
+      expect(screen.getByRole("heading", { name: "Home screen" })).toBeInTheDocument();
+      unmount();
+
+      api.getCurrentPlatformUser.mockResolvedValue({ selectedMarketplaceRole: "BrandFace", verifiedPhone: null });
+      render(<I18nProvider><App /></I18nProvider>);
+      expect(await screen.findByRole("heading", { name: translate("phone.title", undefined, "ru") })).toBeInTheDocument();
+    });
   });
 });

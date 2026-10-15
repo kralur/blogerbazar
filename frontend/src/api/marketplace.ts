@@ -190,7 +190,7 @@ export type AdminComplaint = {
   id: string; targetType: ComplaintTarget; targetId: string; targetName?: string | null; reason: ComplaintReason; comment?: string | null;
   status: "open" | "resolved" | "dismissed"; reporterTelegramUserId: number; reporterName?: string | null; reporterRole: number;
   createdAtUtc: string; resolvedAtUtc?: string | null; resolutionNote?: string | null;
-  ownerTelegramUserId?: number | null; ownerIsBlocked?: boolean;
+  ownerTelegramUserId?: number | null; ownerIsBlocked?: boolean; ownerIsPlatformOwner?: boolean;
 };
 export type AdminComplaintStatus = AdminComplaint["status"];
 export type AdminPlatformUser = { telegramUserId: number; firstName: string; username?: string | null; role: number; isBlocked: boolean; isDeleted: boolean; deletedAtUtc?: string | null; deletedByTelegramUserId?: number | null; createdAtUtc: string; verifiedPhone?: string | null; hasBloggerProfile?: boolean; hasBusinessProfile?: boolean; hasBrandFaceProfile?: boolean };
@@ -807,8 +807,21 @@ export async function getPublicContact(targetType: "Blogger" | "Business" | "Bra
   return api<ContactDetails>(`/api/contacts/${targetType}/${targetId}`);
 }
 
+// The last account and admin dashboard the server returned, so a screen opened later draws at once and refreshes
+// quietly. Memory only, for this app session; logging out forgets them.
+let lastCurrentPlatformUser: CurrentPlatformUser | null = null;
+let lastAdminDashboard: AdminDashboard | null = null;
+export const peekCurrentPlatformUser = () => lastCurrentPlatformUser;
+export const peekAdminDashboard = () => lastAdminDashboard;
+export function forgetSessionData() {
+  lastCurrentPlatformUser = null;
+  lastAdminDashboard = null;
+}
+
 export async function getCurrentPlatformUser() {
-  return api<CurrentPlatformUser>("/api/users/me");
+  const user = await api<CurrentPlatformUser>("/api/users/me");
+  lastCurrentPlatformUser = user;
+  return user;
 }
 
 export async function getFavorites(page = 1, pageSize = 50) {
@@ -861,7 +874,9 @@ export async function sendAdminTipPreview() {
 }
 
 export async function getAdminDashboard() {
-  return api<AdminDashboard>("/api/admin/dashboard");
+  const dashboard = await api<AdminDashboard>("/api/admin/dashboard");
+  lastAdminDashboard = dashboard;
+  return dashboard;
 }
 
 export async function getAdminFunnel(period: AdminFunnelPeriod) {
@@ -902,7 +917,9 @@ export async function setAdminUserBlocked(telegramUserId: number, isBlocked: boo
 
 // D54: bot tips on or off.
 export async function setBotTips(enabled: boolean) {
-  return api<CurrentPlatformUser>("/api/users/me/tips", { method: "PUT", body: JSON.stringify({ enabled }) });
+  const user = await api<CurrentPlatformUser>("/api/users/me/tips", { method: "PUT", body: JSON.stringify({ enabled }) });
+  lastCurrentPlatformUser = user;
+  return user;
 }
 
 // Bot messages use the language stored here (D39).

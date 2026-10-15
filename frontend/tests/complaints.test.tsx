@@ -114,6 +114,16 @@ describe("Complaints (D52)", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("2");
   });
 
+  // QA 2026-10-15: the owner can never be blocked, so a case about the owner's own profile offers no block button.
+  it("offers no block button when the profile belongs to the platform owner", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 1, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
+    api.getAdminComplaints.mockResolvedValue([{ id: "c9", targetType: "blogger", targetId: "b9", targetName: "Owner blog", reason: "spam", status: "open", reporterTelegramUserId: 22, reporterRole: 1, createdAtUtc: "2026-10-12T08:00:00Z", ownerTelegramUserId: 4, ownerIsBlocked: false, ownerIsPlatformOwner: true }]);
+    render(<I18nProvider><Admin section="complaints" /></I18nProvider>);
+
+    expect(await screen.findByRole("link", { name: ru("admin.complaintOpenTarget") })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: ru("common.block") })).not.toBeInTheDocument();
+  });
+
   it("opens the reported profile, blocks its owner and shows closed complaints", async () => {
     api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 1, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, openComplaints: 1 });
     const complaint = { id: "c1", targetType: "blogger", targetId: "b1", targetName: "Madina", reason: "fake", status: "open", reporterTelegramUserId: 22, reporterRole: 1, createdAtUtc: "2026-10-12T08:00:00Z", ownerTelegramUserId: 5, ownerIsBlocked: false };

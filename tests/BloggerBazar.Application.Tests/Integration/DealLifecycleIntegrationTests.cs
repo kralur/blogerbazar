@@ -742,6 +742,7 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal("Integration blogger", item.GetProperty("targetName").GetString());
         Assert.Equal(seed.BloggerTelegramUserId, item.GetProperty("ownerTelegramUserId").GetInt64());
         Assert.False(item.GetProperty("ownerIsBlocked").GetBoolean());
+        Assert.False(item.GetProperty("ownerIsPlatformOwner").GetBoolean());
         var dashboard = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/dashboard");
         Assert.True(dashboard.GetProperty("openComplaints").GetInt32() >= 1);
         var businesses = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/businesses");

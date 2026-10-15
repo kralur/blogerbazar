@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminDashboard, getAdminUsers, sendAdminTipPreview, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
+import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminDashboard, getAdminUsers, peekAdminDashboard, sendAdminTipPreview, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/currency";
@@ -30,7 +30,7 @@ const complaintTargetRoutes: Partial<Record<AdminComplaint["targetType"], string
 export function Admin({ section: rawSection }: { section?: string }) {
   const { t } = useI18n();
   const section = isSection(rawSection) ? rawSection : null;
-  const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
+  const [dashboard, setDashboard] = useState<AdminDashboard | null>(peekAdminDashboard);
   const [lists, setLists] = useState<Lists>(emptyLists);
   const [listLoading, setListLoading] = useState(false);
   const [closing, setClosing] = useState<string | null>(null);
@@ -214,7 +214,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
         {complaint.status !== "open" && <p className="mt-1 text-xs text-brand-muted">{t("admin.complaintClosedAt", { date: formatDate(complaint.resolvedAtUtc) })}</p>}
         {(complaintTargetRoutes[complaint.targetType] || complaint.ownerTelegramUserId) && <div className="mt-3 flex flex-wrap gap-2">
           {complaintTargetRoutes[complaint.targetType] && <a className="ds-button ds-button--secondary tap-target inline-flex flex-auto items-center justify-center px-5" href={`${complaintTargetRoutes[complaint.targetType]}${complaint.targetId}`}>{t("admin.complaintOpenTarget")}</a>}
-          {complaint.ownerTelegramUserId && <Button className="flex-auto" onClick={() => void toggleOwnerBlock(complaint)} type="button" variant={complaint.ownerIsBlocked ? "secondary" : "danger"}>{t(complaint.ownerIsBlocked ? "common.unblock" : "common.block")}</Button>}
+          {complaint.ownerTelegramUserId && !complaint.ownerIsPlatformOwner && <Button className="flex-auto" onClick={() => void toggleOwnerBlock(complaint)} type="button" variant={complaint.ownerIsBlocked ? "secondary" : "danger"}>{t(complaint.ownerIsBlocked ? "common.unblock" : "common.block")}</Button>}
         </div>}
         {complaint.status === "open" && <div className="mt-2 grid grid-cols-2 gap-2"><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "resolved")} type="button">{t("admin.complaintResolve")}</Button><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "dismissed")} type="button" variant="secondary">{t("admin.complaintDismiss")}</Button></div>}
       </Card>)}

@@ -62,7 +62,9 @@ public sealed record AdminComplaintDto(
     string? ResolutionNote,
     // Who answers for a profile or campaign, so the admin can block them from the case; null for offers and deals (two sides).
     long? OwnerTelegramUserId = null,
-    bool OwnerIsBlocked = false);
+    bool OwnerIsBlocked = false,
+    // The platform owner can never be blocked, so the case offers no block button for them.
+    bool OwnerIsPlatformOwner = false);
 
 public sealed record CreateComplaintCommand(long TelegramUserId, string TargetType, Guid TargetId, string Reason, string? Comment) : IRequest<ComplaintDto>;
 public sealed record GetAdminComplaintsQuery(long ActorTelegramUserId, string? Status = ComplaintStatuses.Open, int Take = 100) : IRequest<IReadOnlyList<AdminComplaintDto>>;

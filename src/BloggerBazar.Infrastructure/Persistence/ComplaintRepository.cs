@@ -1,6 +1,7 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Complaints;
 using BloggerBazar.Domain.Entities;
+using BloggerBazar.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace BloggerBazar.Infrastructure.Persistence;
@@ -59,6 +60,7 @@ internal sealed class ComplaintRepository(BloggerBazarDbContext dbContext) : ICo
                         .Where(profile => dbContext.Campaigns.IgnoreQueryFilters().Any(campaign => campaign.Id == complaint.TargetId && campaign.BusinessId == profile.Id))
                         .Select(profile => (long?)profile.TelegramUserId).FirstOrDefault()
                     : null,
+                false,
                 false))
             .ToArrayAsync(cancellationToken);
 
@@ -68,10 +70,12 @@ internal sealed class ComplaintRepository(BloggerBazarDbContext dbContext) : ICo
             return items;
         }
 
-        var blocked = (await dbContext.PlatformUsers.AsNoTracking()
-            .Where(user => ownerIds.Contains(user.TelegramUserId) && user.IsBlocked)
-            .Select(user => user.TelegramUserId)
-            .ToArrayAsync(cancellationToken)).ToHashSet();
-        return items.Select(item => item.OwnerTelegramUserId is { } owner && blocked.Contains(owner) ? item with { OwnerIsBlocked = true } : item).ToArray();
+        var owners = await dbContext.PlatformUsers.AsNoTracking()
+            .Where(user => ownerIds.Contains(user.TelegramUserId))
+            .Select(user => new { user.TelegramUserId, user.IsBlocked, IsOwner = user.Role == PlatformRole.Owner })
+            .ToDictionaryAsync(user => user.TelegramUserId, cancellationToken);
+        return items.Select(item => item.OwnerTelegramUserId is { } owner && owners.TryGetValue(owner, out var account)
+            ? item with { OwnerIsBlocked = account.IsBlocked, OwnerIsPlatformOwner = account.IsOwner }
+            : item).ToArray();
     }
 }
