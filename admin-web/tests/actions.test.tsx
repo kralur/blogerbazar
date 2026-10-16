@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 import { I18nProvider } from "../src/i18n";
 import { tashkentDate } from "../src/lib/format";
@@ -335,6 +335,47 @@ describe("Deals, journal and security", () => {
     const row = (await screen.findByRole("rowheader", { name: "script-src" })).closest("tr")!;
     expect(row).toHaveTextContent("https://evil.example/x.js");
     expect(row).toHaveTextContent("16.10.2026 00:05");
+  });
+});
+
+describe("CSV export", () => {
+  function captureDownloads() {
+    const files: { name: string; blob: Blob }[] = [];
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: (blob: Blob) => { files.push({ name: "", blob }); return "blob:test"; }, revokeObjectURL: () => undefined }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) { files[files.length - 1].name = this.download; });
+    return { files, click };
+  }
+
+  it("warns about people's data, writes the journal entry first and marks those columns", async () => {
+    const downloads = captureDownloads();
+    const { calls } = open("/users", { "GET /api/admin/users": { status: 200, body: [member] }, "POST /api/admin-web/exports": { status: 204 } });
+    await screen.findByRole("link", { name: "Madina" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Скачать CSV" }));
+    const dialog = screen.getByRole("dialog", { name: "Скачать файл с персональными данными?" });
+    expect(dialog).toHaveTextContent("Строк: 1.");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Скачать" }));
+
+    expect(await screen.findByText("Файл скачан")).toBeInTheDocument();
+    expect(requests(calls, "POST", "/api/admin-web/exports")[0].body).toEqual({ kind: "users", rows: 1 });
+    expect(downloads.files[0].name).toMatch(/^bloggerbazar-users-personal-data-\d{4}-\d{2}-\d{2}\.csv$/);
+    const bytes = new Uint8Array(await downloads.files[0].blob.arrayBuffer());
+    // UTF-8 byte order mark first, so Excel reads Cyrillic correctly.
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    const text = new TextDecoder().decode(bytes);
+    expect(text.split("\r\n")[0]).toBe("Имя;Ник (ПД);Telegram id (ПД);Телефон из Telegram (ПД);Роль;Профили;Регистрация;Последний заход;Метка, по которой пришёл;Состояние");
+    expect(text.split("\r\n")[1]).toBe("Madina;'@madina;42;'+998901234567;Участник;Блогер;01.10.2026 15:00;16.10.2026 00:05;insta;активен");
+  });
+
+  it("saves nothing when the journal entry is refused", async () => {
+    const downloads = captureDownloads();
+    open("/deals", { "GET /api/admin/deals": { status: 200, body: [] }, "POST /api/admin-web/exports": { status: 403 } });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Скачать CSV" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Скачать" }));
+
+    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent("Недостаточно прав");
+    expect(downloads.click).not.toHaveBeenCalled();
   });
 });
 

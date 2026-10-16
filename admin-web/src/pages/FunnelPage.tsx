@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getFunnel, type FunnelPeriod, type FunnelRole } from "../api/analytics";
+import { ExportButton } from "../components/ExportButton";
 import { Report } from "../components/Report";
 import { Badge, Choice, Table } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -43,7 +44,17 @@ export function FunnelPage() {
         hint={t("admin.funnelHint")}
         loaded={state}
         onRetry={reload}
-        actions={<Choice label={t("report.view")} value={view} onChange={setView} options={[{ value: "chart", label: t("report.viewChart") }, { value: "table", label: t("report.viewTable") }]} />}
+        actions={<div className="flex flex-wrap gap-2">
+          <Choice label={t("report.view")} value={view} onChange={setView} options={[{ value: "chart", label: t("report.viewChart") }, { value: "table", label: t("report.viewTable") }]} />
+          {state.status === "ready" && <ExportButton kind="funnel" table={() => ({
+            head: [t("admin.funnelRoleLabel"), t("funnel.step"), t("funnel.people"), t("funnel.ofOpened"), t("funnel.ofPrevious")],
+            rows: state.data.roles.flatMap((item) => item.steps.map((step, index) => [
+              t(`admin.funnelRole.${item.role}`), t(`admin.funnelStep.${step.key}`), step.count,
+              item.steps[0].count > 0 ? `${share(step.count, item.steps[0].count)}%` : "",
+              index > 0 && item.steps[index - 1].count > 0 ? `${share(step.count, item.steps[index - 1].count)}%` : ""
+            ]))
+          })} />}
+        </div>}
       >
         {(funnel) => {
           const steps = funnel.roles.find((item) => item.role === role)?.steps ?? [];

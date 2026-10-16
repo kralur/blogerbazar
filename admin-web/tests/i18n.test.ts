@@ -33,6 +33,8 @@ describe("Admin web texts", () => {
       ...complaintStatuses.flatMap((status) => [`admin.complaintStatus.${status}`, `complaints.state.${status}`]),
       ...["sent", "viewed", "accepted", "declined", "expired"].map((state) => `review.offerState.${state}`),
       ...["all", "active7", "inactive30", "never"].map((activity) => `users.activity.${activity}`),
+      ...["users", "deals", "complaints", "journal", "daily", "money", "cities", "categories", "sources", "funnel"].map((kind) => `export.kind.${kind}`),
+      "admin.log.admin-web.exported",
       ...["blogger", "brandFace", "business", "campaign", "offer", "deal"].map((target) => `admin.complaintTarget.${target}`),
       ...["spam", "fraud", "fake", "offensive", "noShow", "other"].map((reason) => `report.reason.${reason}`),
       ...["blogger", "brandFace", "business"].map((role) => `admin.userProfileRole.${role}`),

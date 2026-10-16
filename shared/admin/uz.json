@@ -57,5 +57,6 @@
   "admin.campaignStatus.0": "Qoralama",
   "admin.campaignStatus.1": "E’lon qilingan",
   "admin.campaignStatus.2": "Arxivda",
-  "admin.campaignStatus.3": "Rad etilgan"
+  "admin.campaignStatus.3": "Rad etilgan",
+  "admin.log.admin-web.exported": "CSV yuklab olindi"
 }

@@ -26,6 +26,7 @@ public static class AdminWebAuditActions
     public const string SignedOut = "admin-web.signed-out";
     public const string SignInDenied = "admin-web.sign-in-denied";
     public const string SignedOutEverywhere = "admin-web.signed-out-everywhere";
+    public const string Exported = "admin-web.exported";
 }
 
 public sealed record AdminWebSessionDto(long TelegramUserId, string FirstName, string? Username, string Role, DateTime ExpiresAtUtc)
@@ -45,6 +46,27 @@ public sealed record StartAdminWebSessionCommand(IReadOnlyDictionary<string, str
 public sealed record GetAdminWebSessionQuery(string Token) : IRequest<AdminWebSessionDto>;
 public sealed record EndAdminWebSessionCommand(string Token, string? CorrelationId = null) : IRequest;
 public sealed record EndAllAdminWebSessionsCommand(string Token, string? CorrelationId = null) : IRequest;
+
+// CSV exports are built in the browser from what the admin sees; the journal entry is written first, so a file with
+// people's data never leaves without a trace. Kind is one of AdminWebExports.Kinds (D26 strings).
+public sealed record RecordAdminWebExportCommand(string Token, string Kind, int Rows, string? CorrelationId = null) : IRequest;
+
+public static class AdminWebExports
+{
+    public const int MaxRows = 100_000;
+    // Lists with people's names, usernames, phones or Telegram ids.
+    public static readonly IReadOnlySet<string> Personal = new HashSet<string>(StringComparer.Ordinal) { "users", "deals", "complaints", "journal" };
+    public static readonly IReadOnlySet<string> Kinds = new HashSet<string>(Personal.Concat(["daily", "money", "cities", "categories", "sources", "funnel"]), StringComparer.Ordinal);
+}
+
+public sealed class RecordAdminWebExportValidator : AbstractValidator<RecordAdminWebExportCommand>
+{
+    public RecordAdminWebExportValidator()
+    {
+        RuleFor(command => command.Kind).Must(kind => kind is not null && AdminWebExports.Kinds.Contains(kind));
+        RuleFor(command => command.Rows).InclusiveBetween(0, AdminWebExports.MaxRows);
+    }
+}
 
 public sealed class StartAdminWebSessionValidator : AbstractValidator<StartAdminWebSessionCommand>
 {
@@ -176,6 +198,18 @@ public sealed class EndAllAdminWebSessionsHandler(IAdminWebSessionStore sessions
         await sessions.RemoveAllAsync(session.TelegramUserId, cancellationToken);
         await sessions.RemoveAsync(command.Token, cancellationToken);
         await auditLogs.AddAsync(AuditLog.Create(session.TelegramUserId, AdminWebAuditActions.SignedOutEverywhere, "PlatformUser", session.TelegramUserId.ToString(CultureInfo.InvariantCulture), correlationId: command.CorrelationId), cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+}
+
+public sealed class RecordAdminWebExportHandler(IAdminWebSessionStore sessions, IAdminAccessPolicy access, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork)
+    : IRequestHandler<RecordAdminWebExportCommand>
+{
+    public async Task Handle(RecordAdminWebExportCommand command, CancellationToken cancellationToken)
+    {
+        var session = await AdminWebSessionAccess.RequireAsync(sessions, access, command.Token, cancellationToken);
+        // Target id is the kind, details the number of rows; the site names both.
+        await auditLogs.AddAsync(AuditLog.Create(session.TelegramUserId, AdminWebAuditActions.Exported, "Export", command.Kind, command.Rows.ToString(CultureInfo.InvariantCulture), command.CorrelationId), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

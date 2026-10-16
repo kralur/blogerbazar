@@ -2,6 +2,7 @@ import { useState } from "react";
 import { getDaily, getGeography, getMoney, getRetention, getSources, type AdminDaily, type DailyMetric, type GeographyRow } from "../api/analytics";
 import { Chart } from "../components/Chart";
 import { asPeriod, PeriodPicker, presetPeriod, type PeriodChoice } from "../components/PeriodPicker";
+import { ExportButton } from "../components/ExportButton";
 import { Report } from "../components/Report";
 import { Choice, Table, Tile } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -66,7 +67,19 @@ function DailyReport({ period }: { period: PeriodChoice }) {
   const [view, setView] = useState<View>("chart");
   const { state, reload } = useLoad(() => getDaily(asPeriod(period)), `${period.from}|${period.to}`);
   return (
-    <Report title={t("analytics.dailyTitle")} hint={t("analytics.dailyHint")} loaded={state} onRetry={reload} actions={<ViewChoice value={view} onChange={setView} />}>
+    <Report
+      title={t("analytics.dailyTitle")}
+      hint={t("analytics.dailyHint")}
+      loaded={state}
+      onRetry={reload}
+      actions={<div className="flex flex-wrap gap-2">
+        <ViewChoice value={view} onChange={setView} />
+        {state.status === "ready" && <ExportButton kind="daily" table={() => ({
+          head: [t("report.date"), ...dailyMetrics.map((metric) => t(`analytics.metric.${metric}`))],
+          rows: state.data.days.map((day) => [day.date, ...dailyMetrics.map((metric) => day[metric])])
+        })} />}
+      </div>}
+    >
       {(daily) => view === "chart"
         ? <DailyCharts daily={daily} metrics={dailyMetrics} />
         : <Table
@@ -105,7 +118,19 @@ function MoneyReport() {
   const [view, setView] = useState<View>("chart");
   const { state, reload } = useLoad(() => getMoney(12), "12");
   return (
-    <Report title={t("money.title")} hint={t("money.hint")} loaded={state} onRetry={reload} actions={<ViewChoice value={view} onChange={setView} />}>
+    <Report
+      title={t("money.title")}
+      hint={t("money.hint")}
+      loaded={state}
+      onRetry={reload}
+      actions={<div className="flex flex-wrap gap-2">
+        <ViewChoice value={view} onChange={setView} />
+        {state.status === "ready" && <ExportButton kind="money" table={() => ({
+          head: [t("money.month"), t("money.completed"), t("money.pricedColumn"), t("money.total"), t("money.average")],
+          rows: state.data.months.map((month) => [month.month, month.completedDeals, month.pricedDeals, month.total, month.average])
+        })} />}
+      </div>}
+    >
       {({ months }) => {
         const total = months.reduce((sum, month) => sum + month.total, 0);
         const priced = months.reduce((sum, month) => sum + month.pricedDeals, 0);
@@ -164,7 +189,20 @@ function GeographyReport() {
   const { t } = useI18n();
   const { state, reload } = useLoad(getGeography, "geography");
   return (
-    <Report title={t("geography.title")} hint={t("geography.hint")} loaded={state} onRetry={reload}>
+    <Report
+      title={t("geography.title")}
+      hint={t("geography.hint")}
+      loaded={state}
+      onRetry={reload}
+      actions={state.status === "ready" ? <div className="flex flex-wrap gap-2">
+        {(["city", "category"] as const).map((kind) => (
+          <ExportButton key={kind} kind={kind === "city" ? "cities" : "categories"} table={() => ({
+            head: [kind === "city" ? t("geography.city") : t("geography.category"), t("geography.bloggers"), t("geography.brandFaces"), t("geography.campaigns"), t("geography.deals")],
+            rows: (kind === "city" ? state.data.cities : state.data.categories).map((row) => [taxonomyLabel(kind, row.key, t), row.bloggers, row.brandFaces, row.campaigns, row.deals])
+          })} />
+        ))}
+      </div> : undefined}
+    >
       {(geography) => (
         <div className="grid gap-6 lg:grid-cols-2">
           <GeographyTable kind="city" rows={geography.cities} />
@@ -179,7 +217,16 @@ function SourcesReport() {
   const { t } = useI18n();
   const { state, reload } = useLoad(getSources, "sources");
   return (
-    <Report title={t("sources.title")} hint={t("sources.hint")} loaded={state} onRetry={reload}>
+    <Report
+      title={t("sources.title")}
+      hint={t("sources.hint")}
+      loaded={state}
+      onRetry={reload}
+      actions={state.status === "ready" ? <ExportButton kind="sources" table={() => ({
+        head: [t("sources.label"), t("sources.users"), t("sources.withProfile"), t("sources.withDeal")],
+        rows: state.data.sources.map((row) => [row.source ?? t("sources.none"), row.users, row.withProfile, row.withDeal])
+      })} /> : undefined}
+    >
       {({ sources }) => (
         <Table
           caption={t("sources.title")}

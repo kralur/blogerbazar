@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { dealFilters, getDeals, type DealFilter } from "../api/admin";
 import { UserLink } from "../components/Link";
+import { ExportButton } from "../components/ExportButton";
 import { Report } from "../components/Report";
 import { Choice, Table } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatMoney } from "../lib/format";
-import { formatTashkentDate } from "../lib/time";
+import { formatTashkentDate, formatTashkentDateTime } from "../lib/time";
 import { useLoad } from "../lib/useLoad";
 
 const dealStatuses = ["active", "completed", "cancelled"];
@@ -19,7 +20,20 @@ export function DealsPage() {
   return (
     <div className="space-y-6">
       <Choice label={t("deals.filter")} value={filter} onChange={setFilter} options={dealFilters.map((value) => ({ value, label: t(`deals.filter.${value}`) }))} />
-      <Report title={t("deals.title")} hint={t("deals.hint")} loaded={state} onRetry={reload}>
+      <Report
+        title={t("deals.title")}
+        hint={t("deals.hint")}
+        loaded={state}
+        onRetry={reload}
+        actions={state.status === "ready" ? <ExportButton kind="deals" table={() => ({
+          head: [t("deals.date"), t("deals.what"), t("deals.business"), `${t("deals.business")}: ${t("users.id")}`, t("deals.creator"), `${t("deals.creator")}: ${t("users.id")}`, t("users.role"), t("deals.status"), t("deals.price"), t("deals.completedAt")],
+          personalColumns: [3, 5],
+          rows: state.data.map((deal) => [
+            formatTashkentDateTime(deal.createdAtUtc), deal.title ?? t("deals.offer"), deal.businessName, String(deal.businessTelegramUserId), deal.creatorName,
+            String(deal.creatorTelegramUserId), t(`admin.userProfileRole.${deal.creatorRole}`), dealStatusLabel(deal.status, t), deal.agreedPrice, formatTashkentDateTime(deal.completedAtUtc)
+          ])
+        })} /> : undefined}
+      >
         {(deals) => (
           <Table
             caption={t("deals.title")}

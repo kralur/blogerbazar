@@ -87,6 +87,21 @@ public sealed class AdminWebActionsIntegrationTests(BloggerBazarApiFactory facto
     }
 
     [IntegrationFact]
+    public async Task An_export_is_journaled_before_the_file_and_needs_the_admin_site_origin()
+    {
+        await SeedUserAsync(1_500_061, PlatformRole.Admin);
+        using var client = CreateClient();
+        var token = await SignInAsync(client, 1_500_061);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendJsonAsync(client, "/api/admin-web/exports", token, "https://evil.example", new { kind = "users", rows = 3 })).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await SendJsonAsync(client, "/api/admin-web/exports", token, BloggerBazarApiFactory.AdminWebOrigin, new { kind = "secrets", rows = 3 })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await SendJsonAsync(client, "/api/admin-web/exports", token, BloggerBazarApiFactory.AdminWebOrigin, new { kind = "users", rows = 3 })).StatusCode);
+
+        var entry = Assert.Single(await AuditEntriesAsync(1_500_061), item => item.Action == AdminWebAuditActions.Exported);
+        Assert.Equal(("users", "3"), (entry.TargetId, entry.Details));
+    }
+
+    [IntegrationFact]
     public async Task Members_cannot_list_deals()
     {
         await SeedUserAsync(1_500_011, PlatformRole.Member);
@@ -154,6 +169,14 @@ public sealed class AdminWebActionsIntegrationTests(BloggerBazarApiFactory facto
         using var request = new HttpRequestMessage(method, path);
         request.Headers.Add("Cookie", $"{CookieName}={token}");
         if (origin is not null) request.Headers.Add("Origin", origin);
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> SendJsonAsync(HttpClient client, string path, string token, string origin, object body)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body) };
+        request.Headers.Add("Cookie", $"{CookieName}={token}");
+        request.Headers.Add("Origin", origin);
         return await client.SendAsync(request);
     }
 

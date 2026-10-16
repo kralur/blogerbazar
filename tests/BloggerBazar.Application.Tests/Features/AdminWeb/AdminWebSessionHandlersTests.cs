@@ -128,6 +128,33 @@ public sealed class AdminWebSessionHandlersTests
         Assert.Empty(audit.Entries);
     }
 
+    [Fact]
+    public async Task An_export_is_written_to_the_journal_from_a_live_session_only()
+    {
+        var sessions = new FakeSessions();
+        var audit = new FakeAuditLogs();
+        var ticket = await sessions.CreateAsync(42, CancellationToken.None);
+        var handler = new RecordAdminWebExportHandler(sessions, new FakeAccess(42), audit, new SpyUnitOfWork());
+
+        await handler.Handle(new RecordAdminWebExportCommand(ticket.Token, "users", 12), CancellationToken.None);
+        await Assert.ThrowsAsync<AuthenticationException>(() => handler.Handle(new RecordAdminWebExportCommand("unknown", "users", 1), CancellationToken.None));
+
+        var entry = Assert.Single(audit.Entries);
+        Assert.Equal((AdminWebAuditActions.Exported, "Export", "users", "12", 42L), (entry.Action, entry.TargetType, entry.TargetId, entry.Details, entry.ActorTelegramUserId));
+    }
+
+    [Theory]
+    [InlineData("users", 0, true)]
+    [InlineData("funnel", 100000, true)]
+    [InlineData("passwords", 1, false)]
+    [InlineData("Users", 1, false)]
+    [InlineData("deals", -1, false)]
+    [InlineData("deals", 100001, false)]
+    public void Only_known_exports_with_a_sane_size_pass(string kind, int rows, bool valid)
+    {
+        Assert.Equal(valid, new RecordAdminWebExportValidator().Validate(new RecordAdminWebExportCommand("t", kind, rows)).IsValid);
+    }
+
     [Theory]
     [InlineData("Id")]
     [InlineData("first-name")]

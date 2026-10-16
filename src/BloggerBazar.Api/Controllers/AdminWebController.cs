@@ -69,6 +69,18 @@ public sealed class AdminWebController(
         return NoContent();
     }
 
+    // The journal entry for a CSV export the browser is about to save; no entry, no file.
+    [HttpPost("exports")]
+    [RequestSizeLimit(4_096)]
+    public async Task<IActionResult> RecordExport([FromBody] AdminWebExportRequest request, CancellationToken cancellationToken)
+    {
+        if (!guard.IsEnabled) return NotFound();
+        guard.EnsureSameOrigin(Request);
+        var token = AdminWebCookie.Read(Request) ?? throw AdminWebRequestGuard.SessionEnded();
+        await sender.Send(new RecordAdminWebExportCommand(token, request.Kind, request.Rows, CorrelationId()), cancellationToken);
+        return NoContent();
+    }
+
     // Ends this person's sessions in every browser, this one included.
     [HttpPost("logout-all")]
     public async Task<IActionResult> LogoutEverywhere(CancellationToken cancellationToken)
@@ -86,3 +98,5 @@ public sealed class AdminWebController(
 }
 
 public sealed record AdminWebConfigResponse(string BotUsername);
+
+public sealed record AdminWebExportRequest(string Kind, int Rows);

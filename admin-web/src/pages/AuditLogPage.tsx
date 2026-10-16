@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { getAuditLog, getUsers, type AdminUser, type AuditEntry } from "../api/admin";
+import { ExportButton } from "../components/ExportButton";
 import { Link, UserLink } from "../components/Link";
 import { PeriodPicker, presetPeriod, type PeriodChoice } from "../components/PeriodPicker";
 import { Report } from "../components/Report";
@@ -86,6 +87,12 @@ function Journal({ entries, users, search }: { entries: AuditEntry[]; users: Adm
     }
     const key = `journal.target.${entry.targetType}`;
     const type = t(key) === key ? entry.targetType : t(key);
+    // An export is named by its kind; its details are the number of rows.
+    if (entry.targetType === "Export") {
+      const kindKey = `export.kind.${entry.targetId}`;
+      const text = `${type}: ${t(kindKey) === kindKey ? entry.targetId : t(kindKey)}`;
+      return { entry, who: nameOf(entry.actorTelegramUserId), what, target: text, targetText: text, details: entry.details ? t("export.rows", { count: entry.details }) : "–" };
+    }
     const text = `${type} ${entry.targetId.slice(0, 8)}`;
     return { entry, who: nameOf(entry.actorTelegramUserId), what, target: text, targetText: text, details: details(entry) };
   });
@@ -109,7 +116,14 @@ function Journal({ entries, users, search }: { entries: AuditEntry[]; users: Adm
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-brand-muted">{t("journal.count", { count: shown.length })}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-brand-muted">{t("journal.count", { count: shown.length })}</p>
+        <ExportButton kind="journal" table={() => ({
+          head: [t("journal.when"), t("journal.who"), `${t("journal.who")}: ${t("users.id")}`, t("journal.what"), t("journal.target"), t("journal.details")],
+          personalColumns: [2],
+          rows: shown.map((row) => [formatTashkentDateTime(row.entry.createdAtUtc), row.who, String(row.entry.actorTelegramUserId), row.what, row.targetText, row.details === "–" ? "" : row.details])
+        })} />
+      </div>
       <Table
         caption={t("journal.title")}
         empty={t("journal.empty")}

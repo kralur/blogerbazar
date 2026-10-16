@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { getUsers, platformRoles, userFilters, type AdminUser, type UserFilter } from "../api/admin";
 import { UserLink } from "../components/Link";
+import { ExportButton } from "../components/ExportButton";
 import { Report } from "../components/Report";
 import { Badge, Choice, Table } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -83,7 +84,21 @@ export function UsersPage() {
         <Choice label={t("users.filter")} value={filter} onChange={setFilter} options={userFilters.map((value) => ({ value, label: t(`admin.userFilter.${value}`) }))} />
         <Choice label={t("users.activity")} value={activity} onChange={setActivity} options={activities.map((value) => ({ value, label: t(`users.activity.${value}`) }))} />
       </div>
-      <Report title={t("users.title")} hint={t("users.hint")} loaded={state} onRetry={reload}>
+      <Report
+        title={t("users.title")}
+        hint={t("users.hint")}
+        loaded={state}
+        onRetry={reload}
+        actions={state.status === "ready" ? <ExportButton kind="users" table={() => ({
+          head: [t("users.name"), t("users.username"), t("users.id"), t("user.phone"), t("users.role"), t("users.profiles"), t("users.registered"), t("users.lastSeen"), t("user.source"), t("users.state")],
+          personalColumns: [1, 2, 3],
+          rows: sortUsers(state.data.filter((user) => matchesActivity(user, activity)), sort.key, sort.descending).map((user) => [
+            user.firstName, user.username ? `@${user.username}` : "", String(user.telegramUserId), user.verifiedPhone, roleLabel(user.role, t), profileLabels(user, t),
+            formatTashkentDateTime(user.createdAtUtc), formatTashkentDateTime(user.lastSeenAtUtc), user.source,
+            user.isDeleted ? t("users.deleted") : user.isBlocked ? t("users.blocked") : t("users.active")
+          ])
+        })} /> : undefined}
+      >
         {(loaded) => {
           const users = sortUsers(loaded.filter((user) => matchesActivity(user, activity)), sort.key, sort.descending);
           const sortIndex = { name: 0, registered: 4, lastSeen: 5 }[sort.key];

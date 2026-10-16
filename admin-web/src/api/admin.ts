@@ -134,3 +134,7 @@ export type ComplaintReview = {
 export const getComplaintReview = (id: string) => api<ComplaintReview>(`/api/admin/complaints/${id}/review`);
 export const getCspReports = () => api<CspReport[]>("/api/admin/csp-reports");
 export const signOutEverywhere = () => api<void>("/api/admin-web/logout-all", { method: "POST" });
+
+// The journal entry for a CSV export, written before the browser saves the file.
+export type ExportKind = "users" | "deals" | "complaints" | "journal" | "daily" | "money" | "cities" | "categories" | "sources" | "funnel";
+export const recordExport = (kind: ExportKind, rows: number) => api<void>("/api/admin-web/exports", { method: "POST", body: { kind, rows } });

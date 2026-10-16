@@ -3,6 +3,7 @@ import { closeComplaint, complaintStatuses, getComplaintReview, getComplaints, m
 import type { AdminWebSession } from "../api/session";
 import { useActions } from "../components/Actions";
 import { Link, userPath } from "../components/Link";
+import { ExportButton } from "../components/ExportButton";
 import { Report } from "../components/Report";
 import { Badge, Button, Card, Choice, Table, Tile } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -67,7 +68,20 @@ export function ComplaintsPage() {
   return (
     <div className="space-y-6">
       <Choice label={t("complaints.filter")} value={status} onChange={setStatus} options={complaintStatuses.map((value) => ({ value, label: t(`admin.complaintStatus.${value}`) }))} />
-      <Report title={t("complaints.title")} hint={t("complaints.hint")} loaded={state} onRetry={reload}>
+      <Report
+        title={t("complaints.title")}
+        hint={t("complaints.hint")}
+        loaded={state}
+        onRetry={reload}
+        actions={state.status === "ready" ? <ExportButton kind="complaints" table={() => ({
+          head: [t("deals.date"), t("deals.status"), t("export.targetType"), t("export.target"), t("review.reason"), t("export.comment"), t("review.from"), `${t("review.from")}: ${t("users.id")}`, `${t("review.accused")}: ${t("users.id")}`, t("export.closedAt"), t("export.note")],
+          personalColumns: [6, 7, 8],
+          rows: state.data.map((item) => [
+            formatTashkentDateTime(item.createdAtUtc), t(`complaints.state.${item.status}`), t(`admin.complaintTarget.${item.targetType}`), item.targetName, t(`report.reason.${item.reason}`),
+            item.comment, item.reporterName, String(item.reporterTelegramUserId), item.ownerTelegramUserId === null ? "" : String(item.ownerTelegramUserId), formatTashkentDateTime(item.resolvedAtUtc), item.resolutionNote
+          ])
+        })} /> : undefined}
+      >
         {(complaints) => complaints.length === 0 ? <p className="text-sm text-brand-muted">{t("complaints.empty")}</p> : (
           <ul className="space-y-3">
             {complaints.map((complaint) => (

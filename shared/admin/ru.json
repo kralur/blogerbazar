@@ -57,5 +57,6 @@
   "admin.campaignStatus.0": "Черновик",
   "admin.campaignStatus.1": "Опубликована",
   "admin.campaignStatus.2": "В архиве",
-  "admin.campaignStatus.3": "Отклонена"
+  "admin.campaignStatus.3": "Отклонена",
+  "admin.log.admin-web.exported": "Скачана выгрузка CSV"
 }
