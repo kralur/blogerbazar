@@ -114,6 +114,8 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     const link = askLink ? completeLink.trim() : "";
     const price = askPrice ? digitsToNumber(completePrice) : null;
     if (link && !isHttpsLink(link)) { setCompleteError(t("deals.publicationLinkInvalid")); return; }
+    // The business names the price when it closes a deal without an offer budget, so the money report is complete (D51).
+    if (askPrice && price == null) { setCompleteError(t("deals.completePriceRequired")); return; }
     return runAction(async () => {
       // A retry after a failed completion finds the link already saved; that is fine, go on to complete.
       if (link) await addDealPublication(id, link).catch((error) => { if (!(error instanceof ApiError && error.code === "publication_duplicate")) throw error; });
@@ -187,8 +189,9 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     <Modal onClose={() => !busy && setCompleteOpen(false)} open={completeOpen} title={t("deals.completeTitle")}><p className="text-sm leading-6 text-brand-muted">{t("deals.completeDescription")}</p>
       {(askLink || askPrice) && <div className="mt-4 grid gap-3">
         {askLink && <Input inputMode="url" label={t("deals.completeLinkLabel")} onChange={(event) => { setCompleteLink(event.target.value); setCompleteError(""); }} placeholder="https://" type="url" value={completeLink} />}
-        {askPrice && <Input inputMode="numeric" label={t("deals.completePriceLabel")} onChange={(event) => setCompletePrice(formatNumericInput(event.target.value))} suffix={t("currency.uzs")} value={completePrice} />}
-        <p className="text-xs leading-5 text-brand-muted">{t("deals.completeResultsHint")}</p>
+        {askPrice && <Input inputMode="numeric" label={t("deals.completePriceLabel")} onChange={(event) => { setCompletePrice(formatNumericInput(event.target.value)); setCompleteError(""); }} suffix={t("currency.uzs")} value={completePrice} />}
+        {askPrice && <p className="text-xs leading-5 text-brand-muted">{t("deals.completePriceHint")}</p>}
+        {askLink && <p className="text-xs leading-5 text-brand-muted">{t("deals.completeResultsHint")}</p>}
         {completeError && <p className="text-sm font-semibold text-brand-danger" role="alert">{completeError}</p>}
       </div>}
       <div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => setCompleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={complete} type="button">{busy ? t("deals.completing") : t("requests.complete")}</Button></div></Modal>

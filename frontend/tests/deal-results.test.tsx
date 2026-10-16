@@ -106,13 +106,34 @@ describe("Deal results (D51)", () => {
     expect(api.addDealPublication.mock.invocationCallOrder[0]).toBeLessThan(api.completeDeal.mock.invocationCallOrder[0]);
   });
 
-  it("completes without results when the fields stay empty", async () => {
+  it("does not complete a business deal until the price is entered", async () => {
     api.getMyDeal.mockResolvedValue(businessDeal);
     renderDeal();
 
     fireEvent.click(await screen.findByRole("button", { name: ru("requests.complete") }));
     const dialog = screen.getByLabelText(ru("deals.completeTitle"));
-    expect(within(dialog).getByLabelText(ru("deals.completePriceLabel"))).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: ru("requests.complete") }));
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(ru("deals.completePriceRequired"));
+    expect(api.completeDeal).not.toHaveBeenCalled();
+    expect(api.setDealPrice).not.toHaveBeenCalled();
+
+    fireEvent.change(within(dialog).getByLabelText(ru("deals.completePriceLabel")), { target: { value: "0" } });
+    expect(within(dialog).queryByRole("alert")).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: ru("requests.complete") }));
+
+    await waitFor(() => expect(api.completeDeal).toHaveBeenCalledWith("deal-a"));
+    expect(api.setDealPrice).toHaveBeenCalledWith("deal-a", 0);
+    expect(api.setDealPrice.mock.invocationCallOrder[0]).toBeLessThan(api.completeDeal.mock.invocationCallOrder[0]);
+  });
+
+  it("completes a creator deal without a link", async () => {
+    api.getMyDeal.mockResolvedValue(creatorDeal);
+    renderDeal();
+
+    fireEvent.click(await screen.findByRole("button", { name: ru("requests.complete") }));
+    const dialog = screen.getByLabelText(ru("deals.completeTitle"));
+    expect(within(dialog).queryByLabelText(ru("deals.completePriceLabel"))).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: ru("requests.complete") }));
 
     await waitFor(() => expect(api.completeDeal).toHaveBeenCalledWith("deal-a"));
