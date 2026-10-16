@@ -77,7 +77,7 @@ public sealed class AdminWebActionsIntegrationTests(BloggerBazarApiFactory facto
         await SeedUserAsync(1_500_031, PlatformRole.Admin);
         using var client = CreateClient();
         var laptop = await SignInAsync(client, 1_500_031);
-        var phone = await SignInAsync(client, 1_500_031);
+        var phone = await SignInAsync(client, 1_500_031, secondsAgo: 5);
 
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, "/api/admin-web/logout-all", laptop, "https://evil.example")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, "/api/admin-web/session", phone)).StatusCode);
@@ -91,15 +91,17 @@ public sealed class AdminWebActionsIntegrationTests(BloggerBazarApiFactory facto
         Assert.Contains(await AuditEntriesAsync(1_500_031), entry => entry.Action == AdminWebAuditActions.SignedOutEverywhere);
 
         // A sign-in after that works as usual.
-        var later = await SignInAsync(client, 1_500_031);
+        var later = await SignInAsync(client, 1_500_031, secondsAgo: 10);
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, HttpMethod.Get, "/api/admin-web/session", later)).StatusCode);
     }
 
     private HttpClient CreateClient() => factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
 
-    private static async Task<string> SignInAsync(HttpClient client, long telegramUserId)
+    // Each sign-in needs its own signed data (the same data is accepted once), so the age differs per call.
+    private static async Task<string> SignInAsync(HttpClient client, long telegramUserId, int secondsAgo = 0)
     {
-        var response = await AdminWebApiTests.SignInAsync(client, LoginWidgetTestData.Signed(BloggerBazarApiFactory.BotToken, telegramUserId), BloggerBazarApiFactory.AdminWebOrigin);
+        var signed = LoginWidgetTestData.Signed(BloggerBazarApiFactory.BotToken, telegramUserId, DateTimeOffset.UtcNow.AddSeconds(-secondsAgo));
+        var response = await AdminWebApiTests.SignInAsync(client, signed, BloggerBazarApiFactory.AdminWebOrigin);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var setCookie = Assert.Single(response.Headers.GetValues("Set-Cookie"));
         return setCookie[(CookieName.Length + 1)..].Split(';')[0];
