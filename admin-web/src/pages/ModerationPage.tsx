@@ -6,7 +6,7 @@ import {
 import { useActions, type AdminAction } from "../components/Actions";
 import { UserLink } from "../components/Link";
 import { Report } from "../components/Report";
-import { Badge, Button, Table } from "../components/ui";
+import { Badge, Button, Choice, Table } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatNumber, taxonomyLabel } from "../lib/format";
 import { formatTashkentDate } from "../lib/time";
@@ -15,6 +15,40 @@ import { useLoad } from "../lib/useLoad";
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 const decisions: ModerationDecision[] = ["approve", "needs-changes", "reject"];
 const profileStatus = (status: number, t: Translate) => t(`admin.moderation.${status}`);
+const profileStatuses = ["all", "0", "1", "4", "2", "3"] as const;
+type StatusFilter = typeof profileStatuses[number];
+const matchesText = (needle: string, ...values: (string | null | undefined)[]) =>
+  !needle || values.some((value) => value?.toLocaleLowerCase().includes(needle));
+
+// Search and filters over the loaded list (up to 100, newest first). Selects stay one row above the table.
+function ListFilters({ search, onSearch, placeholder, children }: { search: string; onSearch: (value: string) => void; placeholder: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <input
+        type="search"
+        value={search}
+        onChange={(event) => onSearch(event.target.value)}
+        aria-label={placeholder}
+        placeholder={placeholder}
+        className="h-11 w-full max-w-xl rounded-[var(--bb-radius-control)] border border-brand-line bg-brand-surface px-4 text-sm text-brand-ink placeholder:text-brand-muted"
+      />
+      {children}
+    </div>
+  );
+}
+
+function OptionSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <label className="inline-grid gap-1 text-xs text-brand-muted">
+      {label}
+      <select className="h-10 min-w-[12rem] rounded-[var(--bb-radius-control)] border border-brand-line bg-brand-surface px-3 text-sm text-brand-ink" value={value} onChange={(event) => onChange(event.target.value)}>
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </label>
+  );
+}
+
+const statusOptions = (t: Translate) => profileStatuses.map((value) => ({ value, label: value === "all" ? t("filters.allStatuses") : t(`admin.moderation.${value}`) }));
 
 // The decision dialog: every decision sends the person a bot message and is written to the journal.
 function decisionAction(kind: "blogger" | "business", name: string, decision: ModerationDecision, run: () => Promise<unknown>, t: Translate): AdminAction {
@@ -52,6 +86,10 @@ export function BloggerModerationPage() {
   const { t } = useI18n();
   const pending = useLoad(getPendingBloggers, "pending-bloggers");
   const all = useLoad(getBloggers, "bloggers");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [city, setCity] = useState("all");
+  const [category, setCategory] = useState("all");
   const actions = useActions(() => { pending.refresh(); all.refresh(); });
   return (
     <div className="space-y-6">
@@ -71,7 +109,25 @@ export function BloggerModerationPage() {
         )}
       </Report>
       <Report title={t("moderation.bloggersTitle")} hint={t("moderation.listHint")} loaded={all.state} onRetry={all.reload}>
-        {(profiles) => (
+        {(loaded) => {
+          const needle = search.trim().toLocaleLowerCase();
+          const cities = [...new Set(loaded.map((profile) => profile.city.toLowerCase()))].sort();
+          const categories = [...new Set(loaded.flatMap((profile) => profile.categories.map((item) => item.toLowerCase())))].sort();
+          const profiles = loaded.filter((profile) =>
+            matchesText(needle, profile.name, taxonomyLabel("city", profile.city, t), ...profile.categories.map((item) => taxonomyLabel("category", item, t)))
+            && (status === "all" || String(profile.status) === status)
+            && (city === "all" || profile.city.toLowerCase() === city)
+            && (category === "all" || profile.categories.some((item) => item.toLowerCase() === category)));
+          return (
+          <div className="space-y-4">
+            <ListFilters search={search} onSearch={setSearch} placeholder={t("filters.searchProfiles")}>
+              <div className="flex flex-wrap gap-3">
+                <OptionSelect label={t("moderation.status")} value={status} onChange={(value) => setStatus(value as StatusFilter)} options={statusOptions(t)} />
+                <OptionSelect label={t("geography.city")} value={city} onChange={setCity} options={[{ value: "all", label: t("filters.allCities") }, ...cities.map((key) => ({ value: key, label: taxonomyLabel("city", key, t) }))]} />
+                <OptionSelect label={t("geography.category")} value={category} onChange={setCategory} options={[{ value: "all", label: t("filters.allCategories") }, ...categories.map((key) => ({ value: key, label: taxonomyLabel("category", key, t) }))]} />
+              </div>
+            </ListFilters>
+            <p className="text-sm text-brand-muted">{t("filters.shown", { shown: profiles.length, total: loaded.length })}</p>
           <Table
             caption={t("moderation.bloggersTitle")}
             empty={t("report.empty")}
@@ -86,7 +142,9 @@ export function BloggerModerationPage() {
               formatTashkentDate(profile.createdAtUtc)
             ])}
           />
-        )}
+          </div>
+          );
+        }}
       </Report>
       {actions.dialog}
     </div>
@@ -97,6 +155,10 @@ export function BusinessModerationPage() {
   const { t } = useI18n();
   const pending = useLoad(getPendingBusinesses, "pending-businesses");
   const all = useLoad(getBusinesses, "businesses");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [city, setCity] = useState("all");
+  const [visibility, setVisibility] = useState<"all" | "visible" | "hidden" | "deleted">("all");
   const actions = useActions(() => { pending.refresh(); all.refresh(); });
   return (
     <div className="space-y-6">
@@ -116,7 +178,24 @@ export function BusinessModerationPage() {
         )}
       </Report>
       <Report title={t("moderation.businessesTitle")} hint={t("moderation.listHint")} loaded={all.state} onRetry={all.reload}>
-        {(profiles) => (
+        {(loaded) => {
+          const needle = search.trim().toLocaleLowerCase();
+          const cities = [...new Set(loaded.flatMap((profile) => profile.city ? [profile.city.toLowerCase()] : []))].sort();
+          const profiles = loaded.filter((profile) =>
+            matchesText(needle, profile.name, profile.city && taxonomyLabel("city", profile.city, t))
+            && (status === "all" || String(profile.moderationStatus) === status)
+            && (city === "all" || profile.city?.toLowerCase() === city)
+            && (visibility === "all" || (visibility === "deleted" ? profile.isDeleted : visibility === "hidden" ? profile.isHidden && !profile.isDeleted : !profile.isHidden && !profile.isDeleted)));
+          return (
+          <div className="space-y-4">
+            <ListFilters search={search} onSearch={setSearch} placeholder={t("filters.searchCompanies")}>
+              <div className="flex flex-wrap gap-3">
+                <OptionSelect label={t("moderation.status")} value={status} onChange={(value) => setStatus(value as StatusFilter)} options={statusOptions(t)} />
+                <OptionSelect label={t("geography.city")} value={city} onChange={setCity} options={[{ value: "all", label: t("filters.allCities") }, ...cities.map((key) => ({ value: key, label: taxonomyLabel("city", key, t) }))]} />
+              </div>
+              <Choice label={t("filters.visibility")} value={visibility} onChange={setVisibility} options={(["all", "visible", "hidden", "deleted"] as const).map((value) => ({ value, label: t(`filters.visibility.${value}`) }))} />
+            </ListFilters>
+            <p className="text-sm text-brand-muted">{t("filters.shown", { shown: profiles.length, total: loaded.length })}</p>
           <Table
             caption={t("moderation.businessesTitle")}
             empty={t("report.empty")}
@@ -131,7 +210,9 @@ export function BusinessModerationPage() {
               formatTashkentDate(profile.createdAtUtc)
             ])}
           />
-        )}
+          </div>
+          );
+        }}
       </Report>
       {actions.dialog}
     </div>
@@ -169,6 +250,9 @@ function CampaignForm({ campaign, onChange }: { campaign: AdminCampaign; onChang
 export function CampaignModerationPage() {
   const { t } = useI18n();
   const { state, reload, refresh } = useLoad(getCampaigns, "campaigns");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [promoted, setPromoted] = useState<"all" | "promoted" | "regular">("all");
   const actions = useActions(refresh);
   const choice = useRef<CampaignChange | null>(null);
 
@@ -195,7 +279,19 @@ export function CampaignModerationPage() {
     <div className="space-y-6">
       {actions.status}
       <Report title={t("campaigns.title")} hint={t("campaigns.hint")} loaded={state} onRetry={reload}>
-        {(campaigns) => (
+        {(loaded) => {
+          const needle = search.trim().toLocaleLowerCase();
+          const campaigns = loaded.filter((campaign) =>
+            matchesText(needle, campaign.title, campaign.businessName)
+            && (status === "all" || String(campaign.status) === status)
+            && (promoted === "all" || campaign.isPromoted === (promoted === "promoted")));
+          return (
+          <div className="space-y-4">
+            <ListFilters search={search} onSearch={setSearch} placeholder={t("filters.searchCampaigns")}>
+              <Choice label={t("moderation.status")} value={status} onChange={setStatus} options={["all", ...campaignStatuses.map(String)].map((value) => ({ value, label: value === "all" ? t("filters.allStatuses") : t(`admin.campaignStatus.${value}`) }))} />
+              <Choice label={t("campaigns.promoted")} value={promoted} onChange={setPromoted} options={(["all", "promoted", "regular"] as const).map((value) => ({ value, label: t(`filters.promoted.${value}`) }))} />
+            </ListFilters>
+            <p className="text-sm text-brand-muted">{t("filters.shown", { shown: campaigns.length, total: loaded.length })}</p>
           <Table
             caption={t("campaigns.title")}
             empty={t("report.empty")}
@@ -211,7 +307,9 @@ export function CampaignModerationPage() {
               <Button key="edit" onClick={() => edit(campaign)}>{t("campaigns.edit")}</Button>
             ])}
           />
-        )}
+          </div>
+          );
+        }}
       </Report>
       {actions.dialog}
     </div>

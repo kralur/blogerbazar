@@ -55,13 +55,23 @@ export function Shell({ session, activeId, title, onNavigate, onSignOut, onSignO
         // Closed on a narrow screen the menu is also invisible, so keyboard focus and screen readers skip it.
         className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r border-brand-line bg-brand-surface transition-[transform,visibility] motion-reduce:transition-none lg:visible lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${menuOpen ? "visible translate-x-0" : "invisible -translate-x-full"}`}
       >
-        <div className="flex items-center gap-3 px-5 py-5">
+        {/* The logo goes back to the overview, like on most sites. */}
+        <a
+          href="/"
+          aria-label={t("nav.home")}
+          className="mx-2 mt-2 flex items-center gap-3 rounded-[var(--bb-radius-control)] px-3 py-3 hover:bg-brand-soft"
+          onClick={(event) => {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            navigate("/");
+          }}
+        >
           <BrandMark />
           <div className="min-w-0">
             <p className="truncate text-base font-extrabold">{t("app.name")}</p>
             <p className="truncate text-xs text-brand-muted">{t("app.admin")}</p>
           </div>
-        </div>
+        </a>
         <nav aria-label={t("nav.label")} className="flex-1 overflow-y-auto px-3 pb-6">
           <ul className="space-y-1">
             {navigation.map((item) => <NavEntry key={item.id} item={item} activeId={activeId} onNavigate={navigate} />)}
@@ -76,7 +86,7 @@ export function Shell({ session, activeId, title, onNavigate, onSignOut, onSignO
           <Preferences />
           <Button className="w-full" onClick={onSignOut} disabled={signingOut}>{signingOut ? t("header.signingOut") : t("header.signOut")}</Button>
           <Button
-            variant="ghost"
+            variant="dangerText"
             className="w-full"
             disabled={signingOut}
             onClick={() => signOutAll.ask({

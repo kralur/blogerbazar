@@ -1,12 +1,14 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 // Small Design System v2 primitives for the web admin. Colors come only from the shared --bb-* tokens.
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "dangerText";
 const buttonVariants: Record<ButtonVariant, string> = {
   primary: "bg-brand-accent text-[color:var(--bb-accent-text)] hover:bg-[color:var(--bb-accent-pressed)]",
   secondary: "border border-brand-line bg-brand-surface text-brand-ink hover:bg-brand-soft",
   ghost: "text-brand-ink hover:bg-brand-soft",
-  danger: "bg-[color:var(--bb-error-fill)] text-[color:var(--bb-error-text)] hover:opacity-90"
+  danger: "bg-[color:var(--bb-error-fill)] text-[color:var(--bb-error-text)] hover:opacity-90",
+  // A quieter dangerous action: red words, no fill.
+  dangerText: "text-[color:var(--bb-error-on-subtle)] hover:bg-[color:var(--bb-error-subtle)]"
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }>(

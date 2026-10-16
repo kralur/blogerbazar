@@ -197,6 +197,60 @@ describe("Moderation", () => {
   });
 });
 
+describe("Moderation filters", () => {
+  const blogger = (id: string, name: string, status: number, city: string, categories: string[]) =>
+    ({ id, name, city, categories, avatarUrl: null, totalFollowers: 1000, status, createdAtUtc: "2026-10-10T10:00:00Z", telegramUserId: 70 });
+  const names = () => screen.getAllByRole("rowheader").map((cell) => cell.textContent);
+
+  it("filters bloggers by search, status, city and category", async () => {
+    open("/moderation/bloggers", {
+      "GET /api/admin/bloggers/pending": { status: 200, body: [] },
+      "GET /api/admin/bloggers": { status: 200, body: [blogger("1", "Ali", 1, "tashkent", ["sport"]), blogger("2", "Lola", 4, "samarkand", ["beauty", "food"]), blogger("3", "Aziz", 1, "samarkand", ["food"])] }
+    });
+    await screen.findByRole("link", { name: "Ali" });
+
+    expect(screen.getByText("Показано 3 из 3")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Город" }), { target: { value: "samarkand" } });
+    expect(names()).toEqual(["Lola", "Aziz"]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Статус" }), { target: { value: "1" } });
+    expect(names()).toEqual(["Aziz"]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Статус" }), { target: { value: "all" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Категория" }), { target: { value: "beauty" } });
+    expect(names()).toEqual(["Lola"]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Категория" }), { target: { value: "all" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Город" }), { target: { value: "all" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Поиск: имя, город или категория" }), { target: { value: "спорт" } });
+    expect(names()).toEqual(["Ali"]);
+  });
+
+  it("filters companies by visibility and campaigns by status and promotion", async () => {
+    const company = (id: string, name: string, extra: object) => ({ id, name, city: "tashkent", logoUrl: null, moderationStatus: 1, isHidden: false, isDeleted: false, campaignsCount: 1, completedDealsCount: 0, createdAtUtc: "2026-10-10T10:00:00Z", telegramUserId: 80, ...extra });
+    open("/moderation/businesses", {
+      "GET /api/admin/businesses/pending": { status: 200, body: [] },
+      "GET /api/admin/businesses": { status: 200, body: [company("1", "Cafe", {}), company("2", "Shop", { isHidden: true }), company("3", "Gone", { isDeleted: true })] }
+    });
+    await screen.findByRole("link", { name: "Cafe" });
+    fireEvent.click(screen.getByRole("button", { name: "Скрытые" }));
+    expect(names()).toEqual(["Shop"]);
+    fireEvent.click(screen.getByRole("button", { name: "Удалённые" }));
+    expect(names()).toEqual(["Gone"]);
+  });
+
+  it("filters campaigns by status, promotion and text", async () => {
+    const campaign = (id: string, title: string, status: number, isPromoted: boolean) => ({ id, title, businessName: "Cafe", status, isPromoted, applicationsCount: 0, createdAtUtc: "2026-10-10T10:00:00Z", businessTelegramUserId: 80 });
+    open("/moderation/campaigns", { "GET /api/admin/campaigns": { status: 200, body: [campaign("1", "Launch", 1, true), campaign("2", "Draft one", 0, false), campaign("3", "Old", 2, false)] } });
+    await screen.findByText("Launch");
+    fireEvent.click(screen.getByRole("button", { name: "Черновик" }));
+    expect(names()).toEqual(["Draft one"]);
+    fireEvent.click(screen.getByRole("button", { name: "Все статусы" }));
+    fireEvent.click(screen.getByRole("button", { name: "Продвигаются" }));
+    expect(names()).toEqual(["Launch"]);
+    fireEvent.click(screen.getByRole("button", { name: "Все" }));
+    fireEvent.change(screen.getByRole("searchbox", { name: "Поиск: кампания или компания" }), { target: { value: "old" } });
+    expect(names()).toEqual(["Old"]);
+  });
+});
+
 describe("Complaints", () => {
   const complaint = {
     id: "0f8a2d4e-1b2c-4d5e-8f90-123456789abc", targetType: "blogger", targetId: "b1", targetName: "Aziz", reason: "fraud", comment: "Took money", status: "open",
@@ -380,6 +434,15 @@ describe("CSV export", () => {
 });
 
 describe("Sign out on all devices", () => {
+  it("has a red button and a logo that goes back to the overview", async () => {
+    open("/security", { "GET /api/admin/csp-reports": { status: 200, body: [] } });
+    const signOutAll = await screen.findByRole("button", { name: "Выйти на всех устройствах" });
+    expect(signOutAll.className).toContain("text-[color:var(--bb-error-on-subtle)]");
+    fireEvent.click(screen.getByRole("link", { name: "На главную: обзор" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Обзор" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/");
+  });
+
   it("asks first, ends every session on the server and opens the sign-in page", async () => {
     const { calls, navigation } = open("/security", { "GET /api/admin/csp-reports": { status: 200, body: [] }, "POST /api/admin-web/logout-all": { status: 204 } });
 
