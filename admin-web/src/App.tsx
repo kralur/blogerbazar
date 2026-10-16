@@ -7,6 +7,8 @@ import { useI18n } from "./i18n";
 import { Shell } from "./layout/Shell";
 import { browser } from "./lib/browser";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { FunnelPage } from "./pages/FunnelPage";
 import { NotFoundPage, OverviewPage } from "./pages/OverviewPage";
 
 type SessionState = { status: "loading" } | { status: "ready"; session: AdminWebSession } | { status: "error" };
@@ -74,17 +76,16 @@ function AdminApp({ path, navigate }: { path: string; navigate: (path: string) =
     );
   }
 
-  const known = path === "/";
+  const page = path === "/"
+    ? { id: "overview", title: t("overview.title"), content: <OverviewPage session={state.session} onNavigate={navigate} /> }
+    : path === "/analytics"
+      ? { id: "analytics", title: t("nav.analytics"), content: <AnalyticsPage /> }
+      : path === "/funnel"
+        ? { id: "funnel", title: t("admin.funnelTitle"), content: <FunnelPage /> }
+        : { id: "", title: t("notFound.title"), content: <NotFoundPage onBack={() => navigate("/")} /> };
   return (
-    <Shell
-      session={state.session}
-      activeId={known ? "overview" : ""}
-      title={known ? t("overview.title") : t("notFound.title")}
-      onNavigate={navigate}
-      onSignOut={() => void signOut()}
-      signingOut={signingOut}
-    >
-      {known ? <OverviewPage session={state.session} /> : <NotFoundPage onBack={() => navigate("/")} />}
+    <Shell session={state.session} activeId={page.id} title={page.title} onNavigate={navigate} onSignOut={() => void signOut()} signingOut={signingOut}>
+      {page.content}
     </Shell>
   );
 }

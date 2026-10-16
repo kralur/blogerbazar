@@ -3,10 +3,14 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Design System v2 tokens, Tailwind preset and the i18n core shared by the Mini App and the web admin.",
+  "description": "Design System v2 tokens, Tailwind preset, the i18n core and city/category names and funnel texts shared by the Mini App and the web admin.",
   "exports": {
     "./tokens.css": "./tokens.css",
     "./tailwind-preset": "./tailwind-preset.js",
-    "./i18n": "./i18n.ts"
+    "./i18n": "./i18n.ts",
+    "./taxonomy/ru.json": "./taxonomy/ru.json",
+    "./taxonomy/uz.json": "./taxonomy/uz.json",
+    "./funnel/ru.json": "./funnel/ru.json",
+    "./funnel/uz.json": "./funnel/uz.json"
   }
 }

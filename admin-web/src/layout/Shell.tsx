@@ -66,7 +66,8 @@ export function Shell({ session, activeId, title, onNavigate, onSignOut, signing
         </nav>
         <div className="space-y-3 border-t border-brand-line px-5 py-4">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{session.firstName} · {role}</p>
+            <p className="break-words text-sm font-semibold">{session.firstName}</p>
+            <p className="text-xs text-brand-muted">{role}</p>
             <p className="text-xs text-brand-muted">{t("header.sessionUntil", { time: formatTashkentTime(session.expiresAtUtc) })}</p>
           </div>
           <Preferences />

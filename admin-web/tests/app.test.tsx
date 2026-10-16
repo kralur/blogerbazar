@@ -36,8 +36,11 @@ describe("Admin pages", () => {
       expect(within(menu).getByText(label)).toBeInTheDocument();
     }
     expect(within(menu).getByRole("link", { name: "Обзор" })).toHaveAttribute("aria-current", "page");
-    expect(within(menu).getAllByText("скоро")).toHaveLength(10);
-    expect(screen.getByText("Umid · Владелец")).toBeInTheDocument();
+    expect(within(menu).getByRole("link", { name: "Аналитика" })).toHaveAttribute("href", "/analytics");
+    expect(within(menu).getByRole("link", { name: "Воронка" })).toHaveAttribute("href", "/funnel");
+    expect(within(menu).getAllByText("скоро")).toHaveLength(8);
+    expect(screen.getByText("Umid")).toBeInTheDocument();
+    expect(screen.getByText("Владелец")).toBeInTheDocument();
     // 16:30 UTC is 21:30 in Tashkent (UTC+5).
     expect(screen.getByText("Сессия до 21:30 (Ташкент)")).toBeInTheDocument();
   });
@@ -64,7 +67,7 @@ describe("Admin pages", () => {
     expect(toggle).toHaveAccessibleName("Закрыть меню");
     fireEvent.keyDown(document, { key: "Escape" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByText("Umid · Администратор")).toBeInTheDocument();
+    expect(screen.getByText("Администратор")).toBeInTheDocument();
   });
 
   it("offer a retry when the API cannot be reached", async () => {

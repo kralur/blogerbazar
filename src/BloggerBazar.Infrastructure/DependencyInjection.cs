@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<IFavoritesReadModel, FavoritesReadModel>();
         services.AddScoped<IBrandFaceFavoritesReadModel, BrandFaceFavoritesReadModel>();
         services.AddScoped<IAdminMarketplaceReadModel, AdminMarketplaceReadModel>();
+        services.AddScoped<IAdminAnalyticsReadModel, AdminAnalyticsReadModel>();
         services.AddScoped<IReviewReadModel, ReviewReadModel>();
         services.AddScoped<IPublicBusinessReadModel, PublicBusinessReadModel>();
         services.AddScoped<IDealReadModel, DealReadModel>();

@@ -6,8 +6,11 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 // Each app keeps its own RU/UZ dictionaries in src/i18n; the same rules apply to both.
 const apps = [
   { name: "frontend", alwaysReferenced: ["taxonomy.category.", "taxonomy.city.", "admin.role."] },
-  { name: "admin-web", alwaysReferenced: [] }
+  { name: "admin-web", alwaysReferenced: ["taxonomy.category.", "taxonomy.city."] }
 ];
+// City and category names (shared/taxonomy) and the admin funnel texts (shared/funnel) are merged into both apps'
+// dictionaries; an app never repeats a shared key.
+const sharedPaths = (language) => ["taxonomy", "funnel"].map((name) => join(root, "shared", name, `${language}.json`));
 
 const flatten = (value, prefix = "") => Object.entries(value).flatMap(([key, item]) =>
   item && typeof item === "object" && !Array.isArray(item) ? flatten(item, `${prefix}${key}.`) : [`${prefix}${key}`]);
@@ -38,7 +41,8 @@ function audit({ name, alwaysReferenced }) {
   const sourceRoot = join(root, name, "src");
   const dictionaryRoot = join(sourceRoot, "i18n");
   const dictionaryPath = (language) => join(dictionaryRoot, `${language}.json`);
-  const readDictionary = (language) => JSON.parse(readFileSync(dictionaryPath(language), "utf8"));
+  const readShared = (language) => Object.assign({}, ...sharedPaths(language).map((path) => JSON.parse(readFileSync(path, "utf8"))));
+  const readDictionary = (language) => ({ ...readShared(language), ...JSON.parse(readFileSync(dictionaryPath(language), "utf8")) });
   const ru = new Set(flatten(readDictionary("ru")));
   const uz = new Set(flatten(readDictionary("uz")));
   const sourceFiles = files(sourceRoot).filter((path) => !relative(sourceRoot, path).replaceAll("\\", "/").startsWith("i18n/"));
@@ -59,7 +63,15 @@ function audit({ name, alwaysReferenced }) {
   const missingInUz = [...ru].filter((key) => !uz.has(key));
   const missingInRu = [...uz].filter((key) => !ru.has(key));
   const missingReferences = [...references].filter((key) => !ru.has(key) || !uz.has(key));
-  const duplicates = ["ru", "uz"].flatMap((language) => duplicateKeys(dictionaryPath(language)).map((key) => `${language}:${key}`));
+  const duplicates = ["ru", "uz"].flatMap((language) => {
+    const shared = sharedPaths(language).flatMap((path) => keysInOrder(readFileSync(path, "utf8")));
+    return [
+      ...duplicateKeys(dictionaryPath(language)).map((key) => `${language}:${key}`),
+      ...[...new Set(shared.filter((key, index) => shared.indexOf(key) !== index))].map((key) => `shared ${language}:${key}`),
+      ...keysInOrder(readFileSync(dictionaryPath(language), "utf8")).filter((key) => key.startsWith("taxonomy.") || shared.includes(key))
+        .map((key) => `${language}:${key} (belongs in shared)`)
+    ];
+  });
   const failures = [];
   if (missingInUz.length || missingInRu.length) failures.push(`dictionary mismatch (uz: ${missingInUz.join(", ") || "none"}; ru: ${missingInRu.join(", ") || "none"})`);
   if (duplicates.length) failures.push(`duplicate dictionary keys: ${duplicates.join(", ")}`);

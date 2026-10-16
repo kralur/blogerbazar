@@ -11,7 +11,8 @@ export function fakeApi(routes: Record<string, FakeRoute>) {
     const url = typeof input === "string" ? input : input instanceof URL ? input.pathname : input.url;
     const method = init?.method ?? "GET";
     calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined, credentials: init?.credentials });
-    const route = routes[`${method} ${url}`] ?? { status: 404, body: { code: "not_found" } };
+    // An exact "METHOD /path?query" wins; otherwise "METHOD /path" answers whatever the query is.
+    const route = routes[`${method} ${url}`] ?? routes[`${method} ${url.split("?")[0]}`] ?? { status: 404, body: { code: "not_found" } };
     return new Response(route.body === undefined ? null : JSON.stringify(route.body), {
       status: route.status,
       headers: { "Content-Type": "application/json" }

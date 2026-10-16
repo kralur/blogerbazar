@@ -1,11 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { formatMessage, russianPluralForm, type Dictionary, type Language, type MessageValues as Values } from "@bloggerbazar/shared/i18n";
+import taxonomyRu from "@bloggerbazar/shared/taxonomy/ru.json";
+import taxonomyUz from "@bloggerbazar/shared/taxonomy/uz.json";
+import funnelRu from "@bloggerbazar/shared/funnel/ru.json";
+import funnelUz from "@bloggerbazar/shared/funnel/uz.json";
 import ru from "./ru.json";
 import uz from "./uz.json";
 
 export type { Language };
 export { russianPluralForm };
-const dictionaries: Record<Language, Dictionary> = { ru, uz };
+// City and category names and the funnel texts are shared with the web admin (shared/taxonomy, shared/funnel).
+const dictionaries: Record<Language, Dictionary> = { ru: { ...taxonomyRu, ...funnelRu, ...ru }, uz: { ...taxonomyUz, ...funnelUz, ...uz } };
 const storageKey = "bloggerbazar.language";
 
 function toSupportedLanguage(value?: string | null): Language | undefined {
