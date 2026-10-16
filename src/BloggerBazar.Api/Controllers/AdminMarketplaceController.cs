@@ -50,10 +50,10 @@ public sealed class AdminMarketplaceController(ISender sender, ITelegramWebAppVa
     }
 
     [HttpGet("audit-logs")]
-    public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetAuditLogs([FromQuery] int take = 100, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetAuditLogs([FromQuery] int take = 100, [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, CancellationToken cancellationToken = default)
     {
         var actorId = await GetAdminActorIdAsync(cancellationToken);
-        return Ok(await sender.Send(new GetAuditLogQuery(actorId, take), cancellationToken));
+        return Ok(await sender.Send(new GetAuditLogQuery(actorId, take, from, to), cancellationToken));
     }
 
     [HttpGet("dashboard")]

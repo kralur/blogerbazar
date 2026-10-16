@@ -112,6 +112,25 @@ export const closeComplaint = (id: string, status: Exclude<ComplaintStatus, "ope
   api<unknown>(`/api/admin/complaints/${id}`, { method: "PATCH", body: { status, note: note.trim() || null } });
 
 export const getDeals = (filter: DealFilter) => api<AdminDeal[]>(`/api/admin/deals?${query({ take: 200, status: filter === "all" ? undefined : filter })}`);
-export const getAuditLog = () => api<AuditEntry[]>("/api/admin/audit-logs?take=200");
+// Tashkent days, both included; without them the newest entries.
+export const getAuditLog = (from?: string, to?: string) => api<AuditEntry[]>(`/api/admin/audit-logs?${query({ take: 500, from, to })}`);
+
+export type ComplaintReview = {
+  complaint: AdminComplaint;
+  accusedTelegramUserId: number | null;
+  accused: AdminUserDetails | null;
+  reviews: { count: number; average: number | null; recent: { rating: number; comment: string | null; reviewerName: string | null; createdAtUtc: string; isPublished: boolean }[] };
+  otherComplaints: AdminComplaint[];
+  reporter: {
+    person: { telegramUserId: number; firstName: string; username: string | null; createdAtUtc: string; isBlocked: boolean; isDeleted: boolean } | null;
+    telegramUserId: number;
+    filed: number;
+    open: number;
+    resolved: number;
+    dismissed: number;
+  };
+  sharedHistory: { kind: "deal" | "offer"; id: string; title: string | null; status: number; createdAtUtc: string }[];
+};
+export const getComplaintReview = (id: string) => api<ComplaintReview>(`/api/admin/complaints/${id}/review`);
 export const getCspReports = () => api<CspReport[]>("/api/admin/csp-reports");
 export const signOutEverywhere = () => api<void>("/api/admin-web/logout-all", { method: "POST" });

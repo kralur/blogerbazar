@@ -95,7 +95,15 @@ export function Tile({ label, value, note }: { label: string; value: string; not
 
 // A wide table scrolls inside its own box, so the page itself never scrolls sideways.
 // Numbers line up on the right; textColumns (by index) stay on the left.
-export function Table({ caption, head, rows, empty, textColumns = [] }: { caption: string; head: string[]; rows: ReactNode[][]; empty?: string; textColumns?: number[] }) {
+// sortedBy marks the column the rows are sorted by, for screen readers (aria-sort).
+export function Table({ caption, head, rows, empty, textColumns = [], sortedBy }: {
+  caption: string;
+  head: ReactNode[];
+  rows: ReactNode[][];
+  empty?: string;
+  textColumns?: number[];
+  sortedBy?: { index: number; direction: "ascending" | "descending" };
+}) {
   const right = (index: number) => index > 0 && !textColumns.includes(index);
   if (rows.length === 0 && empty) return <p className="text-sm text-brand-muted">{empty}</p>;
   return (
@@ -104,7 +112,9 @@ export function Table({ caption, head, rows, empty, textColumns = [] }: { captio
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr className="border-b border-brand-line text-left text-xs text-brand-muted">
-            {head.map((name, index) => <th key={name} scope="col" className={`whitespace-nowrap px-3 py-2 font-semibold ${right(index) ? "text-right" : ""}`}>{name}</th>)}
+            {head.map((name, index) => (
+              <th key={index} scope="col" aria-sort={sortedBy?.index === index ? sortedBy.direction : undefined} className={`whitespace-nowrap px-3 py-2 font-semibold ${right(index) ? "text-right" : ""}`}>{name}</th>
+            ))}
           </tr>
         </thead>
         <tbody>

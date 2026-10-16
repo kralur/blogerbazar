@@ -24,10 +24,25 @@ internal sealed class ComplaintRepository(BloggerBazarDbContext dbContext) : ICo
         dbContext.Complaints.CountAsync(complaint => complaint.Status == Complaint.OpenStatus, cancellationToken);
 
     // The admin sees what was reported by name, newest first; offers and deals show both sides.
-    public async Task<IReadOnlyList<AdminComplaintDto>> ListForAdminAsync(string? status, int take, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<AdminComplaintDto>> ListForAdminAsync(string? status, int take, CancellationToken cancellationToken) =>
+        ListAsync(dbContext.Complaints.Where(complaint => status == null || complaint.Status == status), take, cancellationToken);
+
+    public async Task<AdminComplaintDto?> GetForAdminAsync(Guid id, CancellationToken cancellationToken) =>
+        (await ListAsync(dbContext.Complaints.Where(complaint => complaint.Id == id), 1, cancellationToken)).SingleOrDefault();
+
+    public Task<IReadOnlyList<AdminComplaintDto>> ListForAdminByTargetsAsync(IReadOnlyCollection<Guid> targetIds, int take, CancellationToken cancellationToken) =>
+        ListAsync(dbContext.Complaints.Where(complaint => targetIds.Contains(complaint.TargetId)), take, cancellationToken);
+
+    public async Task<IReadOnlyDictionary<string, int>> CountByReporterAsync(long reporterTelegramUserId, CancellationToken cancellationToken) =>
+        await dbContext.Complaints.AsNoTracking()
+            .Where(complaint => complaint.ReporterTelegramUserId == reporterTelegramUserId)
+            .GroupBy(complaint => complaint.Status)
+            .Select(group => new { Status = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.Status, item => item.Count, cancellationToken);
+
+    private async Task<IReadOnlyList<AdminComplaintDto>> ListAsync(IQueryable<Complaint> source, int take, CancellationToken cancellationToken)
     {
-        var items = await dbContext.Complaints.AsNoTracking()
-            .Where(complaint => status == null || complaint.Status == status)
+        var items = await source.AsNoTracking()
             .OrderByDescending(complaint => complaint.CreatedAtUtc)
             .ThenByDescending(complaint => complaint.Id)
             .Take(take)

@@ -3,13 +3,13 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-16, сайт-админка, фаза 3 (списки и действия, D57) в review; фаза 2 опубликована (`a7d9e15`)._
+_Последнее обновление: 2026-10-16, сайт-админка: доработка фазы 3 (разбор жалобы, журнал) в review; фаза 3 опубликована (`991cd4d`)._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | `a7d9e15` сайт-админка, фаза 2 (до этого `ca9b16d` фаза 1, `0a37df8` Б4 CSP report-only, `880c553` D56, `e6dd11d`, `14db7da`, `0f25c80`, `2f30ca9`, `88b664f`, `450bf55`, `5250b46`, `07f7b23`, `11d672d`, `b849656`, `4b22bf8`, `17a8c07`, `5de31b5`, `e8363e0` D52 жалобы + очистка оплаты, `f0cd8bb` D51, `46b6320` D50, `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Published `main` / `origin/main` | `991cd4d` сайт-админка, фаза 3 (до этого `a7d9e15` фаза 2, `ca9b16d` фаза 1, `0a37df8` Б4 CSP report-only, `880c553` D56, `e6dd11d`, `14db7da`, `0f25c80`, `2f30ca9`, `88b664f`, `450bf55`, `5250b46`, `07f7b23`, `11d672d`, `b849656`, `4b22bf8`, `17a8c07`, `5de31b5`, `e8363e0` D52 жалобы + очистка оплаты, `f0cd8bb` D51, `46b6320` D50, `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/new-session-di2yul` (сайт-админка; прежняя `claude/pensive-fermat-rp0p5w` сохраняется) |
 | CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 · R2b: https://github.com/kralur/blogerbazar/pull/7 · R3: https://github.com/kralur/blogerbazar/pull/8 · R4: https://github.com/kralur/blogerbazar/pull/9 · R5: https://github.com/kralur/blogerbazar/pull/10 |
 
@@ -92,7 +92,10 @@ _Последнее обновление: 2026-10-16, сайт-админка, �
   `Referrer-Policy`), приложение шлёт нарушения на `POST /api/csp-reports`, админка → «Защита страниц»; тест держит
   хеш встроенного скрипта в шаге с `index.html`. Строгий режим — после недели без нарушений (Q56).
 - **Рабочие пространства бизнеса**: аудит этапа 0 сделан (roadmap, п. 8), реализация ждёт подтверждения спроса.
-- **Сайт-админка, фаза 3: списки и действия (D57)** (в review, без миграции): страницы пользователей с карточкой,
+- **Сайт-админка, доработка фазы 3** (в review, без миграции): страница разбора жалобы с историей обоих
+  (`GET /api/admin/complaints/{id}/review`), журнал с периодом и поиском (`audit-logs?from&to`), сортировка и фильтр
+  активности в «Пользователях».
+- **Сайт-админка, фаза 3: списки и действия (D57)** (опубликовано, `991cd4d`, CI зелёный, без миграции): страницы пользователей с карточкой,
   модерации, жалоб, сделок, журнала и защиты страниц; подтверждение перед каждым изменением; `GET /api/admin/deals`,
   `POST /api/admin-web/logout-all`; модерация анкет пишется в журнал; слова ролей, статусов и журнала в `shared/admin`.
 - **Сайт-админка, фаза 2: обзор и графики (D57)** (опубликовано, `a7d9e15`, CI зелёный, без миграции): `GET /api/admin/analytics/daily`, `money`,
@@ -107,6 +110,18 @@ _Последнее обновление: 2026-10-16, сайт-админка, �
   перекрытых дубля `form.success*` в словарях Mini App, тексты не изменились).
 
 ## Последние результаты gates
+
+### Сайт-админка, доработка фазы 3 (локально, до review, 2026-10-16)
+
+```text
+dotnet build (чистая): 0 errors, 1 старое предупреждение CS0618; dotnet test: 672 total, 608 passed, 64 skipped
+  (integration без Docker, из них 2 новых); было: 661 / 599 / 62
+RUN_INTEGRATION_TESTS=true: NOT RUN локально — через CI на draft PR; разбор жалобы, 404 и журнал по дням с 422
+  проверены на локальном PostgreSQL через API
+EF has-pending-model-changes: No changes; npm test: frontend 479 passed, admin-web 62 passed; builds passed;
+i18n:audit passed (admin-web 466 keys); npm audit: 0 vulnerabilities; Chromium под CSP: 97 экранов, 0 проблем;
+git diff --check: clean; secret scan: чисто
+```
 
 ### Сайт-админка, фаза 3 (локально, до review, 2026-10-16)
 

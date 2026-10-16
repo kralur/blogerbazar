@@ -11,7 +11,7 @@ import { browser } from "./lib/browser";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
-import { ComplaintsPage } from "./pages/ComplaintsPage";
+import { ComplaintReviewPage, ComplaintsPage } from "./pages/ComplaintsPage";
 import { DealsPage } from "./pages/DealsPage";
 import { FunnelPage } from "./pages/FunnelPage";
 import { BloggerModerationPage, BusinessModerationPage, CampaignModerationPage } from "./pages/ModerationPage";
@@ -27,6 +27,8 @@ type Page = { id: string; title: string; content: React.ReactNode };
 function pageFor(path: string, session: AdminWebSession, navigate: (path: string) => void, t: (key: string) => string): Page {
   const userCard = path.match(/^\/users\/(\d{1,19})$/);
   if (userCard) return { id: "users", title: t("user.title"), content: <UserPage key={userCard[1]} telegramUserId={Number(userCard[1])} session={session} /> };
+  const complaintCase = path.match(/^\/complaints\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+  if (complaintCase) return { id: "complaints", title: t("review.title"), content: <ComplaintReviewPage key={complaintCase[1]} complaintId={complaintCase[1]} session={session} /> };
   switch (path) {
     case "/": return { id: "overview", title: t("overview.title"), content: <OverviewPage session={session} onNavigate={navigate} /> };
     case "/analytics": return { id: "analytics", title: t("nav.analytics"), content: <AnalyticsPage /> };
@@ -35,7 +37,7 @@ function pageFor(path: string, session: AdminWebSession, navigate: (path: string
     case "/moderation/bloggers": return { id: "moderation-bloggers", title: t("moderation.bloggersPage"), content: <BloggerModerationPage /> };
     case "/moderation/businesses": return { id: "moderation-businesses", title: t("moderation.businessesPage"), content: <BusinessModerationPage /> };
     case "/moderation/campaigns": return { id: "moderation-campaigns", title: t("moderation.campaignsPage"), content: <CampaignModerationPage /> };
-    case "/complaints": return { id: "complaints", title: t("nav.complaints"), content: <ComplaintsPage session={session} /> };
+    case "/complaints": return { id: "complaints", title: t("nav.complaints"), content: <ComplaintsPage /> };
     case "/deals": return { id: "deals", title: t("nav.deals"), content: <DealsPage /> };
     case "/audit-log": return { id: "audit-log", title: t("nav.auditLog"), content: <AuditLogPage /> };
     case "/security": return { id: "security", title: t("nav.security"), content: <SecurityPage /> };

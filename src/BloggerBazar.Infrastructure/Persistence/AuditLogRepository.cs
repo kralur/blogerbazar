@@ -9,9 +9,14 @@ internal sealed class AuditLogRepository(BloggerBazarDbContext dbContext) : IAud
     public async Task AddAsync(AuditLog entry, CancellationToken cancellationToken) =>
         await dbContext.AuditLogs.AddAsync(entry, cancellationToken);
 
-    public async Task<IReadOnlyList<AuditLog>> GetRecentAsync(int take, CancellationToken cancellationToken) =>
+    public Task<IReadOnlyList<AuditLog>> GetRecentAsync(int take, CancellationToken cancellationToken) =>
+        GetRecentAsync(take, null, null, cancellationToken);
+
+    public async Task<IReadOnlyList<AuditLog>> GetRecentAsync(int take, DateTime? fromUtc, DateTime? toUtc, CancellationToken cancellationToken) =>
         // The admin journal shows what matters for safety (roles, blocks, deletions, complaints, promotions); favorites are noise there.
         await dbContext.AuditLogs.AsNoTracking()
             .Where(entry => !entry.Action.StartsWith("favorite.") && !entry.Action.StartsWith("brand-face-favorite."))
+            .Where(entry => fromUtc == null || entry.CreatedAtUtc >= fromUtc)
+            .Where(entry => toUtc == null || entry.CreatedAtUtc < toUtc)
             .OrderByDescending(entry => entry.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 }

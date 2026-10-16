@@ -27,6 +27,14 @@ public sealed class ComplaintsController(ISender sender, ITelegramWebAppValidato
         return Ok(await sender.Send(new GetAdminComplaintsQuery(actorId, status, take), cancellationToken));
     }
 
+    // Web admin: one complaint with the accused's record, the reporter's history and what the two did together.
+    [HttpGet("api/admin/complaints/{complaintId:guid}/review")]
+    public async Task<ActionResult<AdminComplaintReviewDto>> GetReview(Guid complaintId, CancellationToken cancellationToken)
+    {
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new GetAdminComplaintReviewQuery(actorId, complaintId), cancellationToken));
+    }
+
     [HttpPatch("api/admin/complaints/{complaintId:guid}")]
     public async Task<ActionResult<ComplaintDto>> Close(Guid complaintId, CloseComplaintRequest request, CancellationToken cancellationToken)
     {

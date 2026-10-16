@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { describe, expect, it } from "vitest";
 import { App } from "../src/App";
 import { I18nProvider } from "../src/i18n";
+import { tashkentDate } from "../src/lib/format";
 import { fakeApi, session, watchNavigation, type FakeRoute } from "./helpers";
 
 const owner = { ...session, role: "owner" };
@@ -54,6 +55,34 @@ describe("Users", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Карточка пользователя" })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/users/42");
     expect(screen.getByRole("link", { name: "Пользователи" })).toHaveAttribute("aria-current", "page");
+  });
+});
+
+describe("Users sorting and activity", () => {
+  const recent = { ...member, telegramUserId: 1, firstName: "Bekzod", createdAtUtc: "2026-10-10T10:00:00Z", lastSeenAtUtc: new Date(Date.now() - 86_400_000).toISOString() };
+  const old = { ...member, telegramUserId: 2, firstName: "Anvar", createdAtUtc: "2026-09-01T10:00:00Z", lastSeenAtUtc: new Date(Date.now() - 40 * 86_400_000).toISOString() };
+  const never = { ...member, telegramUserId: 3, firstName: "Vali", createdAtUtc: "2026-08-01T10:00:00Z", lastSeenAtUtc: null };
+  const names = () => screen.getAllByRole("rowheader").map((cell) => within(cell).getByRole("link").textContent);
+
+  it("sorts by a column and filters by the last app open", async () => {
+    open("/users", { "GET /api/admin/users": { status: 200, body: [old, never, recent] } });
+    await screen.findByRole("link", { name: "Bekzod" });
+
+    // Newest registration first by default.
+    expect(names()).toEqual(["Bekzod", "Anvar", "Vali"]);
+    fireEvent.click(screen.getByRole("button", { name: /Имя/ }));
+    expect(names()).toEqual(["Anvar", "Bekzod", "Vali"]);
+    expect(screen.getByRole("button", { name: /Имя/ }).closest("th")).toHaveAttribute("aria-sort", "ascending");
+    fireEvent.click(screen.getByRole("button", { name: /Последний заход/ }));
+    expect(names()).toEqual(["Bekzod", "Anvar", "Vali"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Не заходили больше 30 дней" }));
+    expect(names()).toEqual(["Anvar"]);
+    fireEvent.click(screen.getByRole("button", { name: "Заходов не видно" }));
+    expect(names()).toEqual(["Vali"]);
+    fireEvent.click(screen.getByRole("button", { name: "Заходили за 7 дней" }));
+    expect(names()).toEqual(["Bekzod"]);
+    expect(screen.getByText("Найдено: 1")).toBeInTheDocument();
   });
 });
 
@@ -170,21 +199,54 @@ describe("Moderation", () => {
 
 describe("Complaints", () => {
   const complaint = {
-    id: "k1", targetType: "blogger", targetId: "b1", targetName: "Aziz", reason: "fraud", comment: "Took money", status: "open",
+    id: "0f8a2d4e-1b2c-4d5e-8f90-123456789abc", targetType: "blogger", targetId: "b1", targetName: "Aziz", reason: "fraud", comment: "Took money", status: "open",
     reporterTelegramUserId: 55, reporterName: "Dilnoza", createdAtUtc: "2026-10-10T10:00:00Z", resolvedAtUtc: null, resolutionNote: null,
     ownerTelegramUserId: 77, ownerIsBlocked: false, ownerIsPlatformOwner: false
   };
+  const casePath = `/complaints/${complaint.id}`;
+  const review = {
+    complaint,
+    accusedTelegramUserId: 77,
+    accused: details({ ...member, telegramUserId: 77, firstName: "Aziz", username: "aziz" }),
+    reviews: { count: 3, average: 2.7, recent: [{ rating: 1, comment: "Never posted", reviewerName: "Cafe", createdAtUtc: "2026-10-05T10:00:00Z", isPublished: true }] },
+    otherComplaints: [{ ...complaint, id: "11111111-2222-4333-8444-555555555555", reason: "spam", reporterName: "Bobur", status: "resolved" }],
+    reporter: { person: { telegramUserId: 55, firstName: "Dilnoza", username: "dilnoza", createdAtUtc: "2026-09-01T10:00:00Z", isBlocked: false, isDeleted: false }, telegramUserId: 55, filed: 5, open: 1, resolved: 1, dismissed: 3 },
+    sharedHistory: [
+      { kind: "deal", id: "d1", title: "Launch", status: 2, createdAtUtc: "2026-10-01T10:00:00Z" },
+      { kind: "offer", id: "o1", title: null, status: 3, createdAtUtc: "2026-09-20T10:00:00Z" }
+    ]
+  };
 
-  it("closes a case with a note after confirming and lets the owner block the person behind it", async () => {
-    const { calls } = open("/complaints", {
-      "GET /api/admin/complaints": { status: 200, body: [complaint] },
-      "PATCH /api/admin/complaints/k1": { status: 200, body: { id: "k1", status: "resolved", alreadyReported: false } }
-    });
+  it("lists cases with a link to review each one", async () => {
+    const { calls } = open("/complaints", { "GET /api/admin/complaints": { status: 200, body: [complaint] } });
 
     expect(await screen.findByText("Мошенничество")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Dilnoza" })).toHaveAttribute("href", "/users/55");
-    expect(screen.getByRole("link", { name: "Карточка владельца" })).toHaveAttribute("href", "/users/77");
-    expect(screen.getByRole("button", { name: "Заблокировать" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Разобрать жалобу" })).toHaveAttribute("href", casePath);
+    expect(screen.queryByRole("button", { name: "Решено" })).not.toBeInTheDocument();
+    expect(requests(calls, "GET", "/api/admin/complaints")[0].url).toBe("/api/admin/complaints?status=open&take=100");
+  });
+
+  it("shows the accused record, the reporter history and their shared deals, then closes the case with a note", async () => {
+    const { calls } = open(casePath, {
+      [`GET /api/admin/complaints/${complaint.id}/review`]: { status: 200, body: review },
+      [`PATCH /api/admin/complaints/${complaint.id}`]: { status: 200, body: { id: complaint.id, status: "resolved", alreadyReported: false } }
+    });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Разбор жалобы" })).toBeInTheDocument();
+    const accused = screen.getByRole("heading", { name: "На кого жалоба" }).closest("section")!;
+    expect(within(accused).getByRole("link", { name: "Aziz" })).toHaveAttribute("href", "/users/77");
+    expect(within(accused).getByText("2,7")).toBeInTheDocument();
+    expect(within(accused).getByText("1 из 5 · Cafe · 05.10.2026")).toBeInTheDocument();
+    expect(within(accused).getByRole("link", { name: "10.10.2026" })).toHaveAttribute("href", "/complaints/11111111-2222-4333-8444-555555555555");
+    const reporter = screen.getByRole("heading", { name: "Кто пожаловался" }).closest("section")!;
+    expect(within(reporter).getByText("Открытые: 1 · Решённые: 1 · Отклонённые: 3")).toBeInTheDocument();
+    expect(within(reporter).getByText("75%")).toBeInTheDocument();
+    const shared = screen.getByRole("heading", { name: "Что было между ними" }).closest("section")!;
+    expect(within(shared).getByText("Launch").closest("tr")).toHaveTextContent("отменена");
+    expect(within(shared).getByText("Предложение без сделки").closest("tr")).toHaveTextContent("отклонено");
+    expect(screen.getByRole("link", { name: "Все жалобы" })).toHaveAttribute("href", "/complaints");
+    expect(screen.getByRole("link", { name: "Жалобы" })).toHaveAttribute("aria-current", "page");
 
     fireEvent.click(screen.getByRole("button", { name: "Решено" }));
     const dialog = screen.getByRole("dialog", { name: "Закрыть жалобу как решённую?" });
@@ -193,14 +255,24 @@ describe("Complaints", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Решено" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("Жалоба закрыта как решённая");
-    expect(requests(calls, "PATCH", "/api/admin/complaints/k1")[0].body).toEqual({ status: "resolved", note: "Warned the blogger" });
-    expect(requests(calls, "GET", "/api/admin/complaints")[0].url).toBe("/api/admin/complaints?status=open&take=100");
+    expect(requests(calls, "PATCH", `/api/admin/complaints/${complaint.id}`)[0].body).toEqual({ status: "resolved", note: "Warned the blogger" });
+  });
+
+  it("lets only the owner block the accused", async () => {
+    const routes = { [`GET /api/admin/complaints/${complaint.id}/review`]: { status: 200, body: review } };
+    open(casePath, routes);
+    expect(await screen.findByRole("button", { name: "Заблокировать того, на кого жалоба" })).toBeInTheDocument();
   });
 
   it("shows no block button to an admin", async () => {
-    open("/complaints", { "GET /api/admin/complaints": { status: 200, body: [complaint] } }, admin);
+    open(casePath, { [`GET /api/admin/complaints/${complaint.id}/review`]: { status: 200, body: review } }, admin);
     expect(await screen.findByRole("button", { name: "Решено" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Заблокировать" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Заблокировать того, на кого жалоба" })).not.toBeInTheDocument();
+  });
+
+  it("explains when the accused cannot be determined", async () => {
+    open(casePath, { [`GET /api/admin/complaints/${complaint.id}/review`]: { status: 200, body: { ...review, accusedTelegramUserId: null, accused: null, otherComplaints: [], sharedHistory: [] } } });
+    expect((await screen.findAllByText("Не удалось определить человека: объект удалён или жалоба не от участника.")).length).toBeGreaterThan(0);
   });
 });
 
@@ -218,27 +290,44 @@ describe("Deals, journal and security", () => {
     await waitFor(() => expect(requests(calls, "GET", "/api/admin/deals").at(-1)?.url).toBe("/api/admin/deals?take=200&status=completed"));
   });
 
-  it("names actions, people and details in the journal and filters by section", async () => {
-    open("/audit-log", {
+  it("names actions, people and details in the journal, searches and filters by section and days", async () => {
+    const { calls } = open("/audit-log", {
       "GET /api/admin/audit-logs": { status: 200, body: [
         { id: "a1", actorTelegramUserId: 5044343262, action: "platform-user.role-updated", targetType: "PlatformUser", targetId: "42", details: "Admin", createdAtUtc: "2026-10-15T19:05:00Z" },
         { id: "a2", actorTelegramUserId: 5044343262, action: "blogger-profile.needs-changes", targetType: "BloggerProfile", targetId: "0026d75b-e3f9", details: null, createdAtUtc: "2026-10-15T18:00:00Z" },
-        { id: "a3", actorTelegramUserId: 5044343262, action: "something.new", targetType: "Thing", targetId: "x", details: "raw", createdAtUtc: "2026-10-15T17:00:00Z" }
+        { id: "a3", actorTelegramUserId: 42, action: "platform-user.account-deleted", targetType: "PlatformUser", targetId: "21382833-aaaa-bbbb-cccc-dddddddddddd", details: null, createdAtUtc: "2026-10-15T17:00:00Z" },
+        { id: "a4", actorTelegramUserId: 5044343262, action: "complaint.dismissed", targetType: "Complaint", targetId: "04d9b7a8-0000-4000-8000-000000000000", details: "blogger:0e996114", createdAtUtc: "2026-10-15T16:00:00Z" },
+        { id: "a5", actorTelegramUserId: 5044343262, action: "something.new", targetType: "Thing", targetId: "x", details: "raw", createdAtUtc: "2026-10-15T15:00:00Z" }
       ] },
-      "GET /api/admin/users": { status: 200, body: [member, { ...member, telegramUserId: 5044343262, firstName: "Umid" }] }
+      "GET /api/admin/users": { status: 200, body: [member, { ...member, telegramUserId: 5044343262, firstName: "Umid", username: "umidkb" }] }
     });
 
     const role = (await screen.findByText("Изменена роль пользователя")).closest("tr")!;
+    expect(requests(calls, "GET", "/api/admin/audit-logs")[0].url).toBe(`/api/admin/audit-logs?take=500&from=${tashkentDate(-29)}&to=${tashkentDate()}`);
     expect(role).toHaveTextContent("16.10.2026 00:05");
     expect(within(role).getByRole("link", { name: "Umid" })).toHaveAttribute("href", "/users/5044343262");
     expect(within(role).getByRole("link", { name: "Madina" })).toHaveAttribute("href", "/users/42");
     expect(role).toHaveTextContent("Администратор");
-    expect(screen.getByText("Анкета блогера отправлена на доработку").closest("tr")).toHaveTextContent("Блогер 0026d75b");
+    // A deleted account names the person, not the internal id.
+    const deleted = screen.getByText("Пользователь удалил аккаунт").closest("tr")!;
+    expect(within(deleted).getAllByRole("link", { name: "Madina" })).toHaveLength(2);
+    expect(deleted).not.toHaveTextContent("21382833");
+    const complaintRow = screen.getByText("Жалоба отклонена").closest("tr")!;
+    expect(within(complaintRow).getByRole("link", { name: "Жалоба на: Блогер" })).toHaveAttribute("href", "/complaints/04d9b7a8-0000-4000-8000-000000000000");
+    expect(complaintRow).not.toHaveTextContent("0e996114");
     expect(screen.getByText("something.new")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Поиск: имя, @ник, id или действие" }), { target: { value: "@madina" } });
+    expect(screen.getByText("Записей: 2")).toBeInTheDocument();
+    expect(screen.queryByText("Жалоба отклонена")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Поиск: имя, @ник, id или действие" }), { target: { value: "" } });
 
     fireEvent.click(screen.getByRole("button", { name: "Модерация" }));
     expect(screen.queryByText("Изменена роль пользователя")).not.toBeInTheDocument();
     expect(screen.getByText("Анкета блогера отправлена на доработку")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "7 дней" }));
+    await waitFor(() => expect(requests(calls, "GET", "/api/admin/audit-logs").at(-1)?.url).toBe(`/api/admin/audit-logs?take=500&from=${tashkentDate(-6)}&to=${tashkentDate()}`));
   });
 
   it("lists what page protection reported", async () => {

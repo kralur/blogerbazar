@@ -45,6 +45,48 @@ public sealed class AdminWebActionsIntegrationTests(BloggerBazarApiFactory facto
     }
 
     [IntegrationFact]
+    public async Task A_complaint_review_shows_the_accused_record_the_reporter_and_their_shared_deal()
+    {
+        await SeedUserAsync(1_500_041, PlatformRole.Admin);
+        var (complaintId, dealId) = await SeedComplaintCaseAsync(1_500_042, 1_500_043);
+        using var client = CreateClient();
+        var token = await SignInAsync(client, 1_500_041);
+
+        var response = await SendAsync(client, HttpMethod.Get, $"/api/admin/complaints/{complaintId}/review", token);
+        var review = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(complaintId, review.GetProperty("complaint").GetProperty("id").GetGuid());
+        Assert.Equal(1_500_042, review.GetProperty("accusedTelegramUserId").GetInt64());
+        Assert.Equal(1, review.GetProperty("accused").GetProperty("completedDeals").GetInt32());
+        Assert.Equal(1, review.GetProperty("reviews").GetProperty("count").GetInt32());
+        Assert.Equal(2, review.GetProperty("reviews").GetProperty("average").GetDouble());
+        Assert.Equal(1, review.GetProperty("otherComplaints").GetArrayLength());
+        Assert.Equal(1_500_043, review.GetProperty("reporter").GetProperty("telegramUserId").GetInt64());
+        Assert.Equal(1, review.GetProperty("reporter").GetProperty("filed").GetInt32());
+        var shared = Assert.Single(review.GetProperty("sharedHistory").EnumerateArray());
+        Assert.Equal("deal", shared.GetProperty("kind").GetString());
+        Assert.Equal(dealId, shared.GetProperty("id").GetGuid());
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(client, HttpMethod.Get, $"/api/admin/complaints/{Guid.NewGuid()}/review", token)).StatusCode);
+    }
+
+    [IntegrationFact]
+    public async Task The_journal_can_be_limited_to_tashkent_days()
+    {
+        await SeedUserAsync(1_500_051, PlatformRole.Admin);
+        using var client = CreateClient();
+        var token = await SignInAsync(client, 1_500_051);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5));
+
+        var todays = await (await SendAsync(client, HttpMethod.Get, $"/api/admin/audit-logs?take=500&from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}", token)).Content.ReadFromJsonAsync<JsonElement>();
+        var past = await (await SendAsync(client, HttpMethod.Get, "/api/admin/audit-logs?take=500&from=2020-01-01&to=2020-01-31", token)).Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Contains(todays.EnumerateArray(), entry => entry.GetProperty("actorTelegramUserId").GetInt64() == 1_500_051 && entry.GetProperty("action").GetString() == AdminWebAuditActions.SignedIn);
+        Assert.Equal(0, past.GetArrayLength());
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await SendAsync(client, HttpMethod.Get, "/api/admin/audit-logs?from=2026-10-12&to=2026-10-10", token)).StatusCode);
+    }
+
+    [IntegrationFact]
     public async Task Members_cannot_list_deals()
     {
         await SeedUserAsync(1_500_011, PlatformRole.Member);
@@ -141,6 +183,30 @@ public sealed class AdminWebActionsIntegrationTests(BloggerBazarApiFactory facto
         dbContext.AddRange(PlatformUser.Create(bloggerTelegramUserId, "Blogger", null), PlatformUser.Create(businessTelegramUserId, "Business", null), blogger, business, campaign, application, deal);
         await dbContext.SaveChangesAsync();
         return deal.Id;
+    }
+
+    // A business (reporter) and a blogger (accused) with a completed deal, a 2-star review of the blogger, the case
+    // itself and one earlier case about the same blogger from someone else.
+    private async Task<(Guid ComplaintId, Guid DealId)> SeedComplaintCaseAsync(long bloggerTelegramUserId, long businessTelegramUserId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        var blogger = BloggerProfile.Create(bloggerTelegramUserId, "Accused blogger", "tashkent", ["beauty"]);
+        blogger.Approve();
+        var business = BusinessProfile.Create(businessTelegramUserId, "Reporting business", "tashkent");
+        business.Approve();
+        var campaign = Campaign.Create(business.Id, "Review campaign", "Description", ["beauty"], null, 100, 200, "tashkent", null);
+        var application = CampaignApplication.Create(campaign.Id, blogger.Id, null);
+        application.Accept();
+        var deal = Deal.Create(application.Id, blogger.Id, business.Id, CampaignTermsSnapshot.FromCampaign(campaign));
+        deal.Complete();
+        var review = Review.ForBlogger(deal.Id, businessTelegramUserId, blogger.Id, 2, "Late");
+        var complaint = Complaint.Create(businessTelegramUserId, MarketplaceRole.Business, "blogger", blogger.Id, "noShow", "Did not post", DateTime.UtcNow);
+        var earlier = Complaint.Create(1_500_049, MarketplaceRole.Business, "blogger", blogger.Id, "spam", null, DateTime.UtcNow.AddDays(-3));
+        dbContext.AddRange(PlatformUser.Create(bloggerTelegramUserId, "Accused", null), PlatformUser.Create(businessTelegramUserId, "Reporter", null),
+            blogger, business, campaign, application, deal, review, complaint, earlier);
+        await dbContext.SaveChangesAsync();
+        return (complaint.Id, deal.Id);
     }
 
     private async Task<(Guid BloggerId, Guid BusinessId)> SeedPendingProfilesAsync(long bloggerTelegramUserId, long businessTelegramUserId)

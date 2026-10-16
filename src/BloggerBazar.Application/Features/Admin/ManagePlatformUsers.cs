@@ -3,6 +3,7 @@ using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
+using FluentValidation;
 using MediatR;
 
 namespace BloggerBazar.Application.Features.Admin;
@@ -36,7 +37,16 @@ public sealed record AuditLogDto(Guid Id, long ActorTelegramUserId, string Actio
 }
 
 public sealed record GetAdminUsersQuery(long ActorTelegramUserId, int Take = 100, string? Search = null, string? Filter = null) : IRequest<IReadOnlyList<AdminPlatformUserDto>>;
-public sealed record GetAuditLogQuery(long ActorTelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AuditLogDto>>;
+// From and To are Tashkent calendar days, both included (web admin date filter); without them the newest entries.
+public sealed record GetAuditLogQuery(long ActorTelegramUserId, int Take = 100, DateOnly? From = null, DateOnly? To = null) : IRequest<IReadOnlyList<AuditLogDto>>;
+
+public sealed class GetAuditLogValidator : AbstractValidator<GetAuditLogQuery>
+{
+    public GetAuditLogValidator()
+    {
+        RuleFor(query => query).Must(query => query.From is null || query.To is null || query.From <= query.To);
+    }
+}
 public sealed record UpdatePlatformUserRoleCommand(long ActorTelegramUserId, long TargetTelegramUserId, PlatformRole Role) : IRequest<AdminPlatformUserDto>;
 public sealed record SetPlatformUserBlockedCommand(long ActorTelegramUserId, long TargetTelegramUserId, bool IsBlocked) : IRequest<AdminPlatformUserDto>;
 
@@ -91,7 +101,11 @@ public sealed class GetAuditLogHandler(IAuditLogRepository auditLogs, BloggerBaz
     public async Task<IReadOnlyList<AuditLogDto>> Handle(GetAuditLogQuery query, CancellationToken cancellationToken)
     {
         access.EnsureAllowed(query.ActorTelegramUserId);
-        return (await auditLogs.GetRecentAsync(Math.Clamp(query.Take, 1, 200), cancellationToken)).Select(AuditLogDto.From).ToArray();
+        var take = Math.Clamp(query.Take, 1, 500);
+        if (query.From is null && query.To is null) return (await auditLogs.GetRecentAsync(take, cancellationToken)).Select(AuditLogDto.From).ToArray();
+        var fromUtc = query.From is { } from ? AdminAnalytics.StartUtc(from) : (DateTime?)null;
+        var toUtc = query.To is { } to ? AdminAnalytics.StartUtc(to.AddDays(1)) : (DateTime?)null;
+        return (await auditLogs.GetRecentAsync(take, fromUtc, toUtc, cancellationToken)).Select(AuditLogDto.From).ToArray();
     }
 }
 
