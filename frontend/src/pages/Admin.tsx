@@ -1,27 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
-import { closeAdminComplaint, getAdminAuditLogs, getAdminBloggers, getAdminBusinesses, getAdminCampaigns, getAdminComplaints, getAdminCspReports, getAdminDashboard, getAdminUsers, peekAdminDashboard, sendAdminTipPreview, setAdminUserBlocked, updateAdminUserRole, type AdminAuditLog, type AdminCspReport, type AdminBloggerProfile, type AdminBusiness, type AdminCampaign, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard, type AdminPlatformUser, type AdminUserFilter } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Toast } from "../components/ui";
+import { closeAdminComplaint, getAdminBloggers, getAdminBusinesses, getAdminComplaints, getAdminDashboard, peekAdminDashboard, sendAdminTipPreview, setAdminUserBlocked, type AdminBloggerProfile, type AdminBusiness, type AdminComplaint, type AdminComplaintStatus, type AdminDashboard } from "../api/marketplace";
+import { Avatar, BottomNav, Button, Card, ErrorState, Icon, LoadingState, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { formatDate } from "../lib/currency";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { PageHeader } from "../components/PageHeader";
 import { useTelegram } from "../telegram/TelegramProvider";
-import { adminFunnelHref } from "./AdminFunnel";
 import { adminUserCardHref } from "./AdminUserCard";
 
-const roleKeys = ["admin.role.member", "admin.role.support", "admin.role.moderator", "admin.role.admin", "admin.role.owner"];
-const sections = ["users", "bloggers", "businesses", "campaigns", "complaints", "log", "security"] as const;
+// The Mini App keeps a pocket admin for quick work from the phone (complaints, moderation, blocking);
+// lists, analytics, the funnel, the journal and security live on the admin site (D57).
+const sections = ["bloggers", "businesses", "complaints"] as const;
 type Section = typeof sections[number];
-const filterFromHash = (): AdminUserFilter => {
-  const requested = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("filter");
-  return userFilters.includes(requested as AdminUserFilter) ? requested as AdminUserFilter : "all";
-};
 const isSection = (value?: string): value is Section => Boolean(value && (sections as readonly string[]).includes(value));
 
-type Lists = { users: AdminPlatformUser[]; bloggers: AdminBloggerProfile[]; businesses: AdminBusiness[]; campaigns: AdminCampaign[]; complaints: AdminComplaint[]; log: AdminAuditLog[]; security: AdminCspReport[] };
-const emptyLists: Lists = { users: [], bloggers: [], businesses: [], campaigns: [], complaints: [], log: [], security: [] };
-const userFilters: AdminUserFilter[] = ["all", "new", "bloggers", "businesses", "brandFaces", "admins", "blocked", "deleted"];
+type Lists = { bloggers: AdminBloggerProfile[]; businesses: AdminBusiness[]; complaints: AdminComplaint[] };
+const emptyLists: Lists = { bloggers: [], businesses: [], complaints: [] };
 const complaintStatuses: AdminComplaintStatus[] = ["open", "resolved", "dismissed"];
 // Public things open from the case; offers and deals are private to their two sides, so they have no link.
 const complaintTargetRoutes: Partial<Record<AdminComplaint["targetType"], string>> = { blogger: "#/blogger/", brandFace: "#/brand-face-detail/", business: "#/company/", campaign: "#/campaign/" };
@@ -39,16 +34,7 @@ export function Admin({ section: rawSection }: { section?: string }) {
   const [denied, setDenied] = useState(false);
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
-  const roleLabels = useMemo(() => roleKeys.map((key) => t(key)), [t]);
   const { openLink } = useTelegram();
-  // User search (phone, name, @username, Telegram id) and filter; typing waits 300 ms before asking the server.
-  const [userSearch, setUserSearch] = useState("");
-  // "#/admin/users?filter=new" (the link from "Activity") opens the list already filtered.
-  const [userFilter, setUserFilter] = useState<AdminUserFilter>(() => filterFromHash());
-  // The admin page stays mounted between sections, so the link's filter is read again on each section change.
-  useEffect(() => { if (section === "users") setUserFilter(filterFromHash()); }, [section]);
-  const userQuery = useRef({ search: "", filter: "all" as AdminUserFilter });
-  userQuery.current = { search: userSearch, filter: userFilter };
   const [complaintStatus, setComplaintStatus] = useState<AdminComplaintStatus>("open");
   const complaintQuery = useRef<AdminComplaintStatus>("open");
   complaintQuery.current = complaintStatus;
@@ -57,14 +43,9 @@ export function Admin({ section: rawSection }: { section?: string }) {
     if (!target) return;
     setListLoading(true);
     try {
-      if (target === "users") { const users = await getAdminUsers(userQuery.current.search, userQuery.current.filter); setLists((current) => ({ ...current, users })); }
       if (target === "bloggers") { const bloggers = await getAdminBloggers(); setLists((current) => ({ ...current, bloggers })); }
       if (target === "businesses") { const businesses = await getAdminBusinesses(); setLists((current) => ({ ...current, businesses })); }
-      if (target === "campaigns") { const campaigns = await getAdminCampaigns(); setLists((current) => ({ ...current, campaigns })); }
       if (target === "complaints") { const complaints = await getAdminComplaints(complaintQuery.current); setLists((current) => ({ ...current, complaints })); }
-      // The journal names people, so it needs the user list too.
-      if (target === "security") { const security = await getAdminCspReports(); setLists((current) => ({ ...current, security })); }
-      if (target === "log") { const [log, users] = await Promise.all([getAdminAuditLogs(), getAdminUsers().catch(() => [] as AdminPlatformUser[])]); setLists((current) => ({ ...current, log, users })); }
     } catch {
       setToastTone("error");
       setToast(t("common.openFailed"));
@@ -83,11 +64,6 @@ export function Admin({ section: rawSection }: { section?: string }) {
   }, [loadSection, section]);
   useEffect(load, [load]);
   useProfileDataRefresh(load);
-  useEffect(() => {
-    if (section !== "users") return;
-    const timer = window.setTimeout(() => void loadSection("users"), 300);
-    return () => window.clearTimeout(timer);
-  }, [loadSection, section, userFilter, userSearch]);
   // A status chip asks the server again; the first visit is loaded by load() above.
   const complaintStatusShown = useRef<AdminComplaintStatus>("open");
   useEffect(() => {
@@ -97,22 +73,6 @@ export function Admin({ section: rawSection }: { section?: string }) {
     void loadSection("complaints");
   }, [complaintStatus, loadSection, section]);
 
-  const updateRole = async (telegramUserId: number, role: number) => {
-    try {
-      const user = await updateAdminUserRole(telegramUserId, role);
-      setLists((current) => ({ ...current, users: current.users.map((item) => item.telegramUserId === user.telegramUserId ? user : item) }));
-      setToastTone("success");
-      setToast(t("admin.roleUpdated"));
-    } catch { setToastTone("error"); setToast(t("admin.roleUpdateDenied")); }
-  };
-  const toggleBlock = async (user: AdminPlatformUser) => {
-    try {
-      const updated = await setAdminUserBlocked(user.telegramUserId, !user.isBlocked);
-      setLists((current) => ({ ...current, users: current.users.map((item) => item.telegramUserId === updated.telegramUserId ? updated : item) }));
-      setToastTone("success");
-      setToast(updated.isBlocked ? t("admin.userBlocked") : t("admin.userUnblocked"));
-    } catch { setToastTone("error"); setToast(t("admin.userUpdateDenied")); }
-  };
   // Blocking from a case: only the owner may block (the server checks), and every case of the same person shows the new state.
   const toggleOwnerBlock = async (complaint: AdminComplaint) => {
     if (!complaint.ownerTelegramUserId) return;
@@ -151,12 +111,13 @@ export function Admin({ section: rawSection }: { section?: string }) {
   if (failed && !dashboard) return <div className="screen screen--with-nav"><ErrorState onRetry={load} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   if (!dashboard) return <div className="screen screen--with-nav"><LoadingState /><BottomNav /></div>;
 
+  const adminWebUrl = dashboard.adminWebUrl ?? null;
   if (!section) {
     const tiles: Array<{ key: string; icon: string; value: number; label: string; href?: string; alert?: boolean }> = [
-      { key: "users", icon: "user", value: dashboard.users, label: t("admin.users"), href: "#/admin/users" },
+      { key: "users", icon: "user", value: dashboard.users, label: t("admin.users") },
       { key: "bloggers", icon: "user", value: dashboard.bloggers, label: t("admin.bloggers"), href: "#/admin/bloggers" },
       { key: "businesses", icon: "building", value: dashboard.businesses, label: t("admin.businesses"), href: "#/admin/businesses" },
-      { key: "campaigns", icon: "briefcase", value: dashboard.publishedCampaigns, label: t("admin.campaigns"), href: "#/admin/campaigns" },
+      { key: "campaigns", icon: "briefcase", value: dashboard.publishedCampaigns, label: t("admin.campaigns") },
       { key: "complaints", icon: "bell", value: dashboard.openComplaints ?? 0, label: t("admin.complaints"), href: "#/admin/complaints", alert: (dashboard.openComplaints ?? 0) > 0 },
       { key: "deals", icon: "check", value: dashboard.completedDeals, label: t("admin.completedDeals") }
     ];
@@ -170,43 +131,25 @@ export function Admin({ section: rawSection }: { section?: string }) {
             : <div className="admin-tile" key={tile.key}>{body}</div>;
         })}
       </section>
-      <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.activityTitle")}</h2><a className="admin-activity__link mt-2 block text-sm" href="#/admin/users?filter=new">{t("admin.activityUsers", { today: dashboard.newUsersToday ?? 0, week: dashboard.newUsersWeek ?? 0 })} ›</a><p className="mt-1 text-sm text-brand-muted">{t("admin.activityActive", { today: dashboard.activeToday ?? 0, week: dashboard.activeWeek ?? 0 })}</p><p className="mt-1 text-sm text-brand-muted">{t("admin.activityDeals", { started: dashboard.newDealsWeek ?? 0, completed: dashboard.completedDealsWeek ?? 0 })}</p></Card>
-      <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.sourcesTitle")}</h2><p className="mt-1 text-sm text-brand-muted">{t("admin.sourcesHint")}</p>{(dashboard.sources ?? []).length > 0 ? <ul className="mt-2 grid gap-1">{(dashboard.sources ?? []).map((item) => <li className="flex justify-between gap-3 text-sm" key={item.source}><span className="min-w-0 break-all font-semibold">{item.source}</span><span className="font-extrabold">{item.users}</span></li>)}</ul> : <p className="mt-2 text-sm font-semibold">{t("admin.sourcesEmpty")}</p>}</Card>
+      <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.activityTitle")}</h2><p className="mt-2 text-sm">{t("admin.activityUsers", { today: dashboard.newUsersToday ?? 0, week: dashboard.newUsersWeek ?? 0 })}</p><p className="mt-1 text-sm text-brand-muted">{t("admin.activityActive", { today: dashboard.activeToday ?? 0, week: dashboard.activeWeek ?? 0 })}</p><p className="mt-1 text-sm text-brand-muted">{t("admin.activityDeals", { started: dashboard.newDealsWeek ?? 0, completed: dashboard.completedDealsWeek ?? 0 })}</p></Card>
       <Card className="admin-activity"><h2 className="text-sm font-extrabold">{t("admin.tipsTitle")}</h2><p className="mt-1 text-sm text-brand-muted">{t("admin.tipsHint")}</p><Button className="mt-3 w-full" disabled={tipSending} onClick={() => void previewTip()} type="button" variant="secondary">{t("admin.tipPreview")}</Button></Card>
-      <a className="admin-log-link" href={adminFunnelHref}><span><strong>{t("admin.funnelTitle")}</strong><span>{t("admin.funnelLinkHint")}</span></span><span aria-hidden="true">›</span></a>
-      <a className="admin-log-link" href="#/admin/security"><span><strong>{t("admin.securityTitle")}</strong><span>{t("admin.securityHint")}</span></span><span aria-hidden="true">›</span></a>
-      <a className="admin-log-link" href="#/admin/log"><span><strong>{t("admin.logTitle")}</strong><span>{t("admin.logHint")}</span></span><span aria-hidden="true">›</span></a>
+      {/* Lists, analytics, the funnel, the journal and security are on the admin site; it opens in the browser. */}
+      {adminWebUrl && <a className="admin-log-link" href={adminWebUrl} onClick={(event) => { event.preventDefault(); openLink(adminWebUrl); }} rel="noreferrer" target="_blank"><span><strong>{t("admin.siteTitle")}</strong><span>{t("admin.siteHint")}</span></span><span aria-hidden="true">›</span></a>}
       <Toast message={toast} tone={toastTone} />
       <BottomNav />
     </div>;
   }
 
-  const usersById = new Map(lists.users.map((user) => [String(user.telegramUserId), user]));
-  const titleKey = section === "log" ? "admin.logTitle" : section === "security" ? "admin.securityTitle" : section === "campaigns" ? "admin.campaigns" : `admin.${section}`;
-  const empty = <Card><p className="text-sm text-brand-muted">{t(section === "complaints" && complaintStatus === "open" ? "admin.complaintsEmpty" : section === "security" ? "admin.securityEmpty" : "admin.listEmpty")}</p></Card>;
+  const titleKey = `admin.${section}`;
+  const empty = <Card><p className="text-sm text-brand-muted">{t(section === "complaints" && complaintStatus === "open" ? "admin.complaintsEmpty" : "admin.listEmpty")}</p></Card>;
   const items = lists[section];
 
   return <div className="screen screen--with-nav space-y-4 pt-5">
     <PageHeader back={{ href: "#/admin", label: t("admin.dashboardTitle") }} title={t(titleKey)} />
-    {section === "log" && <p className="text-sm leading-6 text-brand-muted">{t("admin.logHint")}</p>}
-    {section === "users" && <div className="grid gap-3">
-      <input aria-label={t("admin.userSearch")} className="ds-field w-full px-4" inputMode="search" onChange={(event) => setUserSearch(event.target.value)} placeholder={t("admin.userSearch")} type="search" value={userSearch} />
-      <div aria-label={t("admin.userFilter")} className="admin-filters no-scrollbar" role="group">{userFilters.map((value) => <button aria-pressed={userFilter === value} className="admin-filter" key={value} onClick={() => setUserFilter(value)} type="button">{t(`admin.userFilter.${value}`)}</button>)}</div>
-    </div>}
     {section === "complaints" && <div aria-label={t("admin.complaintStatusFilter")} className="admin-filters no-scrollbar" role="group">{complaintStatuses.map((value) => <button aria-pressed={complaintStatus === value} className="admin-filter" key={value} onClick={() => setComplaintStatus(value)} type="button">{t(`admin.complaintStatus.${value}`)}</button>)}</div>}
     {listLoading && items.length === 0 ? <LoadingState /> : items.length === 0 ? empty : <div className="grid grid-cols-1 gap-2">
-      {section === "users" && lists.users.map((user) => {
-        const profiles = [user.hasBloggerProfile && t("admin.userFilter.bloggers"), user.hasBusinessProfile && t("admin.userFilter.businesses"), user.hasBrandFaceProfile && t("admin.userFilter.brandFaces")].filter(Boolean).join(" · ");
-        return <Card className="p-3" key={user.telegramUserId}>
-          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><a className="font-extrabold underline-offset-2 hover:underline" href={adminUserCardHref(user.telegramUserId)}>{user.firstName} ›</a><p className="text-xs text-brand-muted">{user.username ? "@" + user.username : `id ${user.telegramUserId}`}{user.verifiedPhone ? ` · ${user.verifiedPhone}` : ""}</p>{profiles && <p className="mt-1 text-xs text-brand-muted">{profiles}</p>}<p className="mt-1 text-xs text-brand-muted">{t("admin.registeredAt", { date: formatDate(user.createdAtUtc) })}</p>{user.isDeleted && <p className="mt-1 text-xs text-brand-muted">{t("admin.deletedInfo", { date: formatDate(user.deletedAtUtc), actor: user.deletedByTelegramUserId ?? user.telegramUserId })}</p>}</div><Badge tone={user.isDeleted || user.isBlocked ? "gray" : "blue"}>{user.isDeleted ? t("profile.deleted") : user.isBlocked ? t("common.blocked") : roleLabels[user.role]}</Badge></div>
-          {/* A chat opens only by @username: Telegram has no link to a person without one, so the phone is shown instead. */}
-          {user.username && <Button className="mt-3 w-full" onClick={() => openLink(`https://t.me/${user.username}`)} type="button" variant="secondary">{t("admin.writeInTelegram")}</Button>}
-          <div className="mt-2 flex gap-2"><select aria-label={t("admin.userRoleAria")} className="ds-legacy-field min-h-11 min-w-0 flex-1 rounded-xl border px-2 text-sm" disabled={user.isDeleted || user.role === 4} onChange={(event) => void updateRole(user.telegramUserId, Number(event.target.value))} value={user.role}>{roleLabels.map((label, value) => (value !== 4 || user.role === 4) && <option key={roleKeys[value]} value={value}>{label}</option>)}</select><Button className="shrink-0" disabled={user.isDeleted || user.role === 4} onClick={() => void toggleBlock(user)} type="button" variant={user.isBlocked ? "secondary" : "danger"}>{user.isBlocked ? t("common.unblock") : t("common.block")}</Button></div>
-        </Card>;
-      })}
       {section === "bloggers" && lists.bloggers.map((blogger) => <a className="admin-row" href={`#/blogger/${blogger.id}`} key={blogger.id}><Avatar name={blogger.name} size="sm" src={blogger.avatarUrl} /><span className="admin-row__text"><strong>{blogger.name}</strong><span>{t(`admin.moderation.${blogger.status}`)} · {formatDate(blogger.createdAtUtc)}</span></span></a>)}
       {section === "businesses" && lists.businesses.map((business) => <a className="admin-row" href={`#/company/${business.id}`} key={business.id}><Avatar name={business.name} size="sm" src={business.logoUrl} /><span className="admin-row__text"><strong>{business.name}</strong><span>{business.isDeleted ? t("common.deletedAccount") : t(`admin.moderation.${business.moderationStatus}`)} · {t("admin.businessCounts", { campaigns: business.campaignsCount, deals: business.completedDealsCount })}</span></span></a>)}
-      {section === "campaigns" && lists.campaigns.map((campaign) => <a className="admin-row" href={`#/campaign/${campaign.id}`} key={campaign.id}><span className="admin-row__text"><strong>{campaign.title}</strong><span>{campaign.businessName} · {t(`admin.campaignStatus.${campaign.status}`)} · {t("admin.applicationsCount", { count: campaign.applicationsCount })}</span></span>{campaign.isPromoted && <Badge tone="gold">{t("campaign.promoted")}</Badge>}</a>)}
       {section === "complaints" && lists.complaints.map((complaint) => <Card className="p-3" key={complaint.id}>
         {/* The reason gets its own line: long reasons ("Spam or ...") must wrap, not push the card off the screen. */}
         <p className="truncate font-extrabold">{complaint.targetName || t("common.deletedAccount")}</p>
@@ -221,19 +164,6 @@ export function Admin({ section: rawSection }: { section?: string }) {
         </div>}
         {complaint.status === "open" && <div className="mt-2 grid grid-cols-2 gap-2"><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "resolved")} type="button">{t("admin.complaintResolve")}</Button><Button disabled={closing !== null} onClick={() => void closeComplaint(complaint, "dismissed")} type="button" variant="secondary">{t("admin.complaintDismiss")}</Button></div>}
       </Card>)}
-      {section === "security" && lists.security.map((entry) => <Card className="p-3" key={`${entry.directive}|${entry.blocked}|${entry.source}`}>
-        <p className="break-all text-sm font-bold">{entry.directive} · {entry.blocked || "inline"}</p>
-        <p className="mt-1 break-all text-xs text-brand-muted">{t("admin.securityCount", { count: entry.count, date: formatDate(entry.lastSeenAtUtc) })}{entry.source ? ` · ${entry.source}` : ""}</p>
-      </Card>)}
-      {section === "log" && lists.log.map((entry) => {
-        const actor = usersById.get(String(entry.actorTelegramUserId));
-        const target = entry.targetType === "PlatformUser" ? usersById.get(entry.targetId) : undefined;
-        const known = t(`admin.log.${entry.action}`) !== `admin.log.${entry.action}`;
-        return <Card className="p-3" key={entry.id}>
-          <p className="text-sm font-bold">{known ? t(`admin.log.${entry.action}`) : entry.action}</p>
-          <p className="mt-1 text-xs text-brand-muted">{actor?.firstName ?? entry.actorTelegramUserId}{target && target !== actor ? ` → ${target.firstName}` : ""} · {formatDate(entry.createdAtUtc)}</p>
-        </Card>;
-      })}
     </div>}
     <Toast message={toast} tone={toastTone} />
     <BottomNav />

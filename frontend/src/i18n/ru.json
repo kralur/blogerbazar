@@ -92,12 +92,9 @@
   "admin.dashboardDescription": "Реальные данные из базы. Доступ и роли контролируются на сервере.",
   "admin.users": "Пользователи",
   "admin.promotions": "Продвижения",
-  "admin.roleUpdated": "Роль обновлена",
-  "admin.roleUpdateDenied": "Недостаточно прав для изменения роли",
   "admin.userBlocked": "Пользователь заблокирован",
   "admin.userUnblocked": "Пользователь разблокирован",
   "admin.userUpdateDenied": "Недостаточно прав для изменения пользователя",
-  "admin.userRoleAria": "Роль пользователя",
   "profile.brandFaceProfile": "Профиль бренд-фейса",
   "profile.missingBrandFace": "Профиль бренд-фейса ещё не создан",
   "profile.telegramUser": "Пользователь Telegram"
@@ -148,7 +145,6 @@
   ,"profile.deleting": "Удаляем…"
   ,"profile.deleteFailed": "Не удалось удалить аккаунт. Повторите попытку."
   ,"profile.deleted": "Удалён"
-  ,"admin.deletedInfo": "Удалён {date} пользователем {actor}"
   ,"profileMedia.title": "Фото профиля"
   ,"profileMedia.helper": "JPG, PNG или WEBP до 5 МБ. Новое фото сохранится вместе с анкетой."
   ,"profileMedia.upload": "Загрузить"
@@ -758,18 +754,11 @@
   ,"settings.adminPanelHint": "Жалобы, пользователи и статистика"
   ,"admin.campaigns": "Кампании"
   ,"admin.completedDeals": "Завершённые сделки"
-  ,"admin.logTitle": "Журнал действий"
-  ,"admin.logHint": "Кто и когда менял роли, блокировал, удалял аккаунты, закрывал жалобы и продвигал кампании."
   ,"admin.listEmpty": "Пока пусто"
   ,"admin.businessCounts": "кампаний: {campaigns}, сделок: {deals}"
-  ,"admin.applicationsCount": "{count} откликов"
-  ,"admin.applicationsCount_one": "{count} отклик"
-  ,"admin.applicationsCount_few": "{count} отклика"
   ,"admin.activityTitle": "Активность"
   ,"admin.activityUsers": "Новые пользователи: сегодня {today}, за 7 дней {week}"
   ,"admin.activityDeals": "Сделки за 7 дней: начато {started}, завершено {completed}"
-  ,"admin.userSearch": "Номер телефона, имя, @ник или id"
-  ,"admin.userFilter": "Фильтр пользователей"
   ,"admin.writeInTelegram": "Написать в Telegram"
   ,"admin.registeredAt": "Регистрация: {date}"
   ,"admin.complaintOpenTarget": "Открыть"
@@ -795,13 +784,7 @@
   ,"admin.userDealCounts": "В работе: {active} · Завершены: {completed} · Отменены: {cancelled}"
   ,"admin.userNoDeals": "Сделок нет"
   ,"admin.userComplaintCounts": "На него: {against} (открытых: {open}) · Подал сам: {filed}"
-  ,"admin.funnelLinkHint": "Где люди останавливаются: от первого входа до отзыва"
   ,"admin.activityActive": "Заходили в приложение: сегодня {today}, за 7 дней {week}"
-  ,"admin.sourcesTitle": "Откуда пришли"
-  ,"admin.sourcesHint": "Сколько людей пришло по каждой метке. Метка ставится в ссылку на бота через ?start=, например t.me/ваш_бот?start=insta."
-  ,"admin.sourcesEmpty": "Пока никто не пришёл по ссылке с меткой"
-  ,"admin.securityTitle": "Защита страниц"
-  ,"admin.securityHint": "Что защита страниц (CSP) заблокировала бы в приложении. Если пусто, её можно включать строго."
-  ,"admin.securityCount": "{count} раз, последний {date}"
-  ,"admin.securityEmpty": "Нарушений нет"
+  ,"admin.siteTitle": "Полная админка"
+  ,"admin.siteHint": "Списки, аналитика, воронка, журнал и безопасность. Откроется в браузере."
 }

@@ -22,7 +22,9 @@ public sealed record AdminDashboardDto(
     int ActiveToday = 0,
     int ActiveWeek = 0,
     // Accounts per ad label (t.me/bot?start=<label>), the ten biggest.
-    IReadOnlyList<AdminSourceDto>? Sources = null);
+    IReadOnlyList<AdminSourceDto>? Sources = null,
+    // The admin site (AdminWeb:Origin), so the Mini App admin can link to the full admin; null while it is off.
+    string? AdminWebUrl = null);
 
 public sealed record AdminSourceDto(string Source, int Users);
 

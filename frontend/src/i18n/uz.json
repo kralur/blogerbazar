@@ -91,12 +91,9 @@
   "admin.dashboardDescription": "Bazadagi haqiqiy ma’lumotlar. Ruxsatlar va rollar serverda boshqariladi.",
   "admin.users": "Foydalanuvchilar",
   "admin.promotions": "Targ‘ibotlar",
-  "admin.roleUpdated": "Rol yangilandi",
-  "admin.roleUpdateDenied": "Rolni o‘zgartirish uchun ruxsat yetarli emas",
   "admin.userBlocked": "Foydalanuvchi bloklandi",
   "admin.userUnblocked": "Foydalanuvchi blokdan chiqarildi",
   "admin.userUpdateDenied": "Foydalanuvchini o‘zgartirish uchun ruxsat yetarli emas",
-  "admin.userRoleAria": "Foydalanuvchi roli",
   "profile.brandFaceProfile": "Brend-feys profili",
   "profile.missingBrandFace": "Brend-feys profili hali yaratilmagan",
   "profile.telegramUser": "Telegram foydalanuvchisi"
@@ -147,7 +144,6 @@
   ,"profile.deleting": "O‘chirilmoqda…"
   ,"profile.deleteFailed": "Akkauntni o‘chirib bo‘lmadi. Qayta urinib ko‘ring."
   ,"profile.deleted": "O‘chirilgan"
-  ,"admin.deletedInfo": "{date} kuni {actor} tomonidan o‘chirilgan"
   ,"profileMedia.title": "Profil rasmi"
   ,"profileMedia.helper": "5 MB gacha JPG, PNG yoki WEBP. Yangi rasm anketa bilan birga saqlanadi."
   ,"profileMedia.upload": "Yuklash"
@@ -757,18 +753,11 @@
   ,"settings.adminPanelHint": "Shikoyatlar, foydalanuvchilar va statistika"
   ,"admin.campaigns": "Kampaniyalar"
   ,"admin.completedDeals": "Yakunlangan bitimlar"
-  ,"admin.logTitle": "Amallar jurnali"
-  ,"admin.logHint": "Kim va qachon rollarni o‘zgartirgan, bloklagan, akkauntni o‘chirgan, shikoyatlarni yopgan va kampaniyalarni targ‘ib qilgan."
   ,"admin.listEmpty": "Hozircha bo‘sh"
   ,"admin.businessCounts": "kampaniyalar: {campaigns}, bitimlar: {deals}"
-  ,"admin.applicationsCount": "{count} ta javob"
-  ,"admin.applicationsCount_one": "{count} ta javob"
-  ,"admin.applicationsCount_few": "{count} ta javob"
   ,"admin.activityTitle": "Faollik"
   ,"admin.activityUsers": "Yangi foydalanuvchilar: bugun {today}, 7 kunda {week}"
   ,"admin.activityDeals": "7 kundagi bitimlar: boshlangan {started}, yakunlangan {completed}"
-  ,"admin.userSearch": "Telefon raqami, ism, @nik yoki id"
-  ,"admin.userFilter": "Foydalanuvchilar filtri"
   ,"admin.writeInTelegram": "Telegramda yozish"
   ,"admin.registeredAt": "Ro‘yxatdan o‘tgan: {date}"
   ,"admin.complaintOpenTarget": "Ochish"
@@ -794,13 +783,7 @@
   ,"admin.userDealCounts": "Jarayonda: {active} · Yakunlangan: {completed} · Bekor qilingan: {cancelled}"
   ,"admin.userNoDeals": "Bitimlar yo‘q"
   ,"admin.userComplaintCounts": "Unga qarshi: {against} (ochiq: {open}) · O‘zi yuborgan: {filed}"
-  ,"admin.funnelLinkHint": "Odamlar qayerda to‘xtab qoladi: birinchi kirishdan fikrgacha"
   ,"admin.activityActive": "Ilovaga kirganlar: bugun {today}, 7 kunda {week}"
-  ,"admin.sourcesTitle": "Qayerdan kelishdi"
-  ,"admin.sourcesHint": "Har bir belgi bo‘yicha nechta odam kelgani. Belgi bot havolasiga ?start= orqali qo‘shiladi, masalan t.me/sizning_bot?start=insta."
-  ,"admin.sourcesEmpty": "Hozircha belgili havola orqali hech kim kelmadi"
-  ,"admin.securityTitle": "Sahifalar himoyasi"
-  ,"admin.securityHint": "Sahifalar himoyasi (CSP) ilovada nimani to‘sib qo‘ygan bo‘lardi. Bo‘sh bo‘lsa, uni qat’iy yoqish mumkin."
-  ,"admin.securityCount": "{count} marta, oxirgisi {date}"
-  ,"admin.securityEmpty": "Buzilishlar yo‘q"
+  ,"admin.siteTitle": "To‘liq admin panel"
+  ,"admin.siteHint": "Ro‘yxatlar, tahlil, voronka, jurnal va xavfsizlik. Brauzerda ochiladi."
 }

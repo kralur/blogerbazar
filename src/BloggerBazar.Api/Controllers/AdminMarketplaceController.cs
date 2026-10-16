@@ -3,14 +3,16 @@ using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Admin;
 using BloggerBazar.Application.Features.CollaborationRequests;
 using BloggerBazar.Application.Features.Tips;
+using BloggerBazar.Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace BloggerBazar.Api.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-public sealed class AdminMarketplaceController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
+public sealed class AdminMarketplaceController(ISender sender, IOptions<AdminWebOptions> adminWebOptions, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("users")]
     public async Task<ActionResult<IReadOnlyList<AdminPlatformUserDto>>> GetUsers([FromQuery] int take = 100, [FromQuery] string? search = null, [FromQuery] string? filter = null, CancellationToken cancellationToken = default)
@@ -60,7 +62,8 @@ public sealed class AdminMarketplaceController(ISender sender, ITelegramWebAppVa
     public async Task<ActionResult<AdminDashboardDto>> GetDashboard(CancellationToken cancellationToken)
     {
         var actorId = await GetAdminActorIdAsync(cancellationToken);
-        return Ok(await sender.Send(new GetAdminDashboardQuery(actorId), cancellationToken));
+        var dashboard = await sender.Send(new GetAdminDashboardQuery(actorId), cancellationToken);
+        return Ok(dashboard with { AdminWebUrl = adminWebOptions.Value.NormalizedOrigin });
     }
 
     // Funnel from the first app open to a review, per role; period "7d", "30d" (default) or "all".

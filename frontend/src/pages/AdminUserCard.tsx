@@ -46,7 +46,7 @@ export function AdminUserCard() {
     } catch { setToastTone("error"); setToast(t("admin.userUpdateDenied")); }
   };
 
-  const header = <PageHeader back={{ href: "#/admin/users", label: t("admin.users") }} title={t("admin.userCard")} />;
+  const header = <PageHeader back={{ href: "#/admin", label: t("admin.dashboardTitle") }} title={t("admin.userCard")} />;
   if (state === "denied") return <div className="screen screen--with-nav space-y-4 pt-5">{header}<ErrorState onRetry={load} subtitle={t("ui.accessDeniedSubtitle")} title={t("ui.accessDenied")} /><BottomNav /></div>;
   if (state === "failed") return <div className="screen screen--with-nav space-y-4 pt-5">{header}<ErrorState onRetry={load} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   if (state === "loading" || !details) return <div className="screen screen--with-nav space-y-4 pt-5">{header}<LoadingState /><BottomNav /></div>;

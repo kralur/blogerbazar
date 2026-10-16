@@ -176,12 +176,8 @@ type ApiCampaign = {
 };
 
 export type ContactDetails = { phone?: string | null; email?: string | null; telegram?: string | null; websiteUrl?: string | null };
-export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number; openComplaints?: number; newUsersToday?: number; newUsersWeek?: number; newDealsWeek?: number; completedDealsWeek?: number; activeToday?: number; activeWeek?: number; sources?: Array<{ source: string; users: number }> };
+export type AdminDashboard = { users: number; bloggers: number; businesses: number; publishedCampaigns: number; completedDeals: number; promotedBloggers: number; promotedCampaigns: number; openComplaints?: number; newUsersToday?: number; newUsersWeek?: number; newDealsWeek?: number; completedDealsWeek?: number; activeToday?: number; activeWeek?: number; sources?: Array<{ source: string; users: number }>; adminWebUrl?: string | null };
 // Admin funnel: people who first opened the app in the period and how many of them reached each step since then.
-export type AdminFunnelPeriod = "7d" | "30d" | "all";
-export type AdminFunnelRole = "blogger" | "brandFace" | "business";
-export type AdminFunnelStepKey = "opened" | "roleSelected" | "profile" | "reached" | "posted" | "answered" | "deal" | "completed" | "reviewed";
-export type AdminFunnel = { period: AdminFunnelPeriod; fromUtc: string | null; roles: Array<{ role: AdminFunnelRole; steps: Array<{ key: AdminFunnelStepKey; count: number }> }> };
 // D52: what can be reported and why; fixed camelCase values shared with the API.
 export type ComplaintTarget = "blogger" | "brandFace" | "business" | "campaign" | "offer" | "deal";
 export type ComplaintReason = "spam" | "fraud" | "fake" | "offensive" | "noShow" | "other";
@@ -200,11 +196,8 @@ export type AdminUserDetails = {
   user: AdminPlatformUser; profiles: AdminUserProfile[]; activeDeals: number; completedDeals: number; cancelledDeals: number;
   recentDeals: AdminUserDeal[]; complaintsAgainst: number; openComplaintsAgainst: number; complaintsFiled: number;
 };
-export type AdminUserFilter = "all" | "new" | "bloggers" | "businesses" | "brandFaces" | "admins" | "blocked" | "deleted";
 export type AdminBloggerProfile = { id: string; name: string; city: string; categories: string[]; avatarUrl?: string | null; totalFollowers: number; status: number; createdAtUtc: string };
 export type AdminBusiness = { id: string; name: string; city?: string | null; logoUrl?: string | null; moderationStatus: number; isHidden: boolean; isDeleted: boolean; campaignsCount: number; completedDealsCount: number; createdAtUtc: string };
-export type AdminCampaign = { id: string; title: string; businessName: string; status: number; isPromoted: boolean; applicationsCount: number; createdAtUtc: string };
-export type AdminAuditLog = { id: string; actorTelegramUserId: number; action: string; targetType: string; targetId: string; details?: string | null; correlationId?: string | null; createdAtUtc: string };
 export type MarketplaceRole = "Blogger" | "BrandFace" | "Business";
 type MarketplaceRoleValue = MarketplaceRole | number;
 export type CurrentPlatformUser = {
@@ -881,20 +874,10 @@ export async function sendAdminTipPreview() {
   return api<{ number: number; total: number; sent: boolean }>("/api/admin/tips/preview", { method: "POST" });
 }
 
-// Security B4: what the report-only Content-Security-Policy would have blocked (this server instance, since its start).
-export type AdminCspReport = { directive: string; blocked: string; source: string; count: number; firstSeenAtUtc: string; lastSeenAtUtc: string };
-export async function getAdminCspReports() {
-  return api<AdminCspReport[]>("/api/admin/csp-reports");
-}
-
 export async function getAdminDashboard() {
   const dashboard = await api<AdminDashboard>("/api/admin/dashboard");
   lastAdminDashboard = dashboard;
   return dashboard;
-}
-
-export async function getAdminFunnel(period: AdminFunnelPeriod) {
-  return api<AdminFunnel>(`/api/admin/funnel?period=${period}`);
 }
 
 export async function getAdminBloggers() {
@@ -903,26 +886,6 @@ export async function getAdminBloggers() {
 
 export async function getAdminBusinesses() {
   return api<AdminBusiness[]>("/api/admin/businesses");
-}
-
-export async function getAdminCampaigns() {
-  return api<AdminCampaign[]>("/api/admin/campaigns");
-}
-
-export async function getAdminUsers(search?: string, filter: AdminUserFilter = "all") {
-  const params = new URLSearchParams();
-  if (search?.trim()) params.set("search", search.trim());
-  if (filter !== "all") params.set("filter", filter);
-  const query = params.toString();
-  return api<AdminPlatformUser[]>(`/api/admin/users${query ? `?${query}` : ""}`);
-}
-
-export async function getAdminAuditLogs() {
-  return api<AdminAuditLog[]>("/api/admin/audit-logs");
-}
-
-export async function updateAdminUserRole(telegramUserId: number, role: number) {
-  return api<AdminPlatformUser>("/api/admin/users/" + telegramUserId + "/role", { method: "PATCH", body: JSON.stringify({ role }) });
 }
 
 export async function setAdminUserBlocked(telegramUserId: number, isBlocked: boolean) {

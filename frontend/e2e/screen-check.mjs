@@ -135,7 +135,7 @@ function routesFor(role, data) {
   if (role === "business") return [...common, ...details, "/business", "/my-campaigns", `/my-campaign/${data.campaign.id}`,
     `/my-campaign-applications/${data.campaign.id}`, `/my-campaign-edit/${data.campaign.id}`,
     data.activeDealId && `/deal/${data.activeDealId}`,
-    "/admin", "/admin/funnel", "/admin/users", "/admin/complaints", "/admin/bloggers", "/admin/businesses", "/admin/campaigns", "/admin/log",
+    "/admin", "/admin/complaints", "/admin/bloggers", "/admin/businesses",
     `/admin/user?id=${users.blogger.id}`].filter(Boolean);
   return [...common, ...details, "/brand-face", data.pendingOfferId && `/offer/${data.pendingOfferId}`].filter(Boolean);
 }

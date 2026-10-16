@@ -745,6 +745,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.False(item.GetProperty("ownerIsPlatformOwner").GetBoolean());
         var dashboard = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/dashboard");
         Assert.True(dashboard.GetProperty("openComplaints").GetInt32() >= 1);
+        // The Mini App admin links to the full admin site configured in AdminWeb:Origin.
+        Assert.Equal(BloggerBazarApiFactory.AdminWebOrigin, dashboard.GetProperty("adminWebUrl").GetString());
         var businesses = await adminClient.GetFromJsonAsync<JsonElement>("/api/admin/businesses");
         Assert.Contains(businesses.EnumerateArray(), entry => entry.GetProperty("id").GetGuid() == seed.BusinessId);
         Assert.Equal(HttpStatusCode.OK, (await adminClient.GetAsync("/api/admin/bloggers")).StatusCode);

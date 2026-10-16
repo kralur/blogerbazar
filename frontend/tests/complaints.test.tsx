@@ -5,7 +5,7 @@ import { I18nProvider, translate } from "../src/i18n";
 
 const api = vi.hoisted(() => ({
   createComplaint: vi.fn(), getAdminComplaints: vi.fn(), closeAdminComplaint: vi.fn(),
-  getAdminDashboard: vi.fn(), getAdminUsers: vi.fn(), getAdminAuditLogs: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), getAdminCampaigns: vi.fn(), setAdminUserBlocked: vi.fn(), sendAdminTipPreview: vi.fn(), getAdminCspReports: vi.fn()
+  getAdminDashboard: vi.fn(), getAdminBloggers: vi.fn(), getAdminBusinesses: vi.fn(), setAdminUserBlocked: vi.fn(), sendAdminTipPreview: vi.fn()
 }));
 
 vi.mock("../src/api/marketplace", async (importOriginal) => ({ ...(await importOriginal<typeof import("../src/api/marketplace")>()), ...api }));
@@ -88,8 +88,6 @@ describe("Complaints (D52)", () => {
 
   it("lists open complaints for the admin and closes one", async () => {
     api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 1, businesses: 1, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, openComplaints: 1 });
-    api.getAdminUsers.mockResolvedValue([]);
-    api.getAdminAuditLogs.mockResolvedValue([]);
     api.getAdminBloggers.mockResolvedValue([]);
     api.getAdminComplaints.mockResolvedValue([{ id: "c1", targetType: "blogger", targetId: "b1", targetName: "Madina", reason: "fake", comment: "Bought followers", status: "open", reporterTelegramUserId: 22, reporterName: "Lumi", reporterRole: 1, createdAtUtc: "2026-10-12T08:00:00Z" }]);
     api.closeAdminComplaint.mockResolvedValue({ id: "c1", status: "resolved", alreadyReported: false });
@@ -103,35 +101,23 @@ describe("Complaints (D52)", () => {
     expect(await screen.findByText(ru("admin.complaintsEmpty"))).toBeInTheDocument();
   });
 
-  // Security B4: what the report-only policy would block, for the admin to clear before making it strict.
-  it("lists what the page protection would block, or says there is nothing", async () => {
-    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
-    api.getAdminCspReports.mockResolvedValue([{ directive: "script-src-elem", blocked: "https://evil.example/x.js", source: "https://app.example/", count: 3, firstSeenAtUtc: "2026-10-15T08:00:00Z", lastSeenAtUtc: "2026-10-15T09:00:00Z" }]);
-    const { unmount } = render(<I18nProvider><Admin section="security" /></I18nProvider>);
-
-    expect(await screen.findByText("script-src-elem · https://evil.example/x.js")).toBeInTheDocument();
-    unmount();
-
-    api.getAdminCspReports.mockResolvedValue([]);
-    render(<I18nProvider><Admin section="security" /></I18nProvider>);
-    expect(await screen.findByText(ru("admin.securityEmpty"))).toBeInTheDocument();
-  });
-
-  it("shows who opened the app and where people came from", async () => {
-    api.getAdminDashboard.mockResolvedValue({ users: 3, bloggers: 1, businesses: 1, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, activeToday: 2, activeWeek: 3, sources: [{ source: "insta", users: 12 }, { source: "blogger_madina", users: 5 }] });
+  // Sources, the funnel, the journal and security moved to the admin site (D57); the Mini App only links to it.
+  it("shows who opened the app and opens the full admin site in the browser", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 3, bloggers: 1, businesses: 1, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, activeToday: 2, activeWeek: 3, sources: [{ source: "insta", users: 12 }], adminWebUrl: "https://admin.example" });
     render(<I18nProvider><Admin /></I18nProvider>);
 
     expect(await screen.findByText(ru("admin.activityActive", { today: 2, week: 3 }))).toBeInTheDocument();
-    expect(screen.getByText("insta")).toBeInTheDocument();
-    expect(screen.getByText("12")).toBeInTheDocument();
-    expect(screen.getByText("blogger_madina")).toBeInTheDocument();
+    expect(screen.queryByText("insta")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: new RegExp(ru("admin.siteTitle")) }));
+    expect(openLink).toHaveBeenCalledWith("https://admin.example");
   });
 
-  it("says nobody came by a labelled link yet", async () => {
-    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
+  it("shows no site link while the admin site is off", async () => {
+    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, adminWebUrl: null });
     render(<I18nProvider><Admin /></I18nProvider>);
 
-    expect(await screen.findByText(ru("admin.sourcesEmpty"))).toBeInTheDocument();
+    expect(await screen.findByText(ru("admin.tipsTitle"))).toBeInTheDocument();
+    expect(screen.queryByText(ru("admin.siteTitle"))).not.toBeInTheDocument();
   });
 
   it("sends the admin the next bot tip from the admin home", async () => {
@@ -176,8 +162,6 @@ describe("Complaints (D52)", () => {
   });
 
   it("says access is denied only when the server refuses, and shows a load error otherwise", async () => {
-    api.getAdminUsers.mockResolvedValue([]);
-    api.getAdminAuditLogs.mockResolvedValue([]);
     api.getAdminBloggers.mockResolvedValue([]);
     api.getAdminComplaints.mockResolvedValue([]);
     api.getAdminDashboard.mockRejectedValue(new ApiError(403, "access_denied"));
@@ -191,60 +175,23 @@ describe("Complaints (D52)", () => {
     expect(screen.queryByText(ru("ui.accessDenied"))).not.toBeInTheDocument();
   });
 
-  it("shows tiles that open their own lists, with open complaints highlighted", async () => {
+  it("opens complaints and moderation from tiles; users and campaigns are counts only", async () => {
     api.getAdminDashboard.mockResolvedValue({ users: 8, bloggers: 5, businesses: 7, publishedCampaigns: 4, completedDeals: 6, promotedBloggers: 0, promotedCampaigns: 0, openComplaints: 2 });
     render(<I18nProvider><Admin /></I18nProvider>);
 
-    expect(await screen.findByRole("link", { name: new RegExp(ru("admin.users")) })).toHaveAttribute("href", "#/admin/users");
-    expect(screen.getByRole("link", { name: new RegExp(ru("admin.complaints")) })).toHaveAttribute("href", "#/admin/complaints");
-    expect(screen.getByRole("link", { name: new RegExp(ru("admin.logTitle")) })).toHaveAttribute("href", "#/admin/log");
-    expect(api.getAdminUsers).not.toHaveBeenCalled();
-  });
-
-  it("writes the journal in words with the person's name instead of raw ids", async () => {
-    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
-    api.getAdminUsers.mockResolvedValue([{ telegramUserId: 7, firstName: "Umid", role: 4, isBlocked: false, isDeleted: false, createdAtUtc: "2026-10-01T00:00:00Z" }, { telegramUserId: 9, firstName: "Ali", role: 0, isBlocked: true, isDeleted: false, createdAtUtc: "2026-10-01T00:00:00Z" }]);
-    api.getAdminAuditLogs.mockResolvedValue([{ id: "l1", actorTelegramUserId: 7, action: "platform-user.blocked", targetType: "PlatformUser", targetId: "9", createdAtUtc: "2026-10-12T08:00:00Z" }]);
-    render(<I18nProvider><Admin section="log" /></I18nProvider>);
-
-    expect(await screen.findByText(ru("admin.log.platform-user.blocked"))).toBeInTheDocument();
-    expect(screen.getByText(/Umid → Ali/)).toBeInTheDocument();
-  });
-
-  it("searches users by phone, filters them and opens a Telegram chat", async () => {
-    api.getAdminDashboard.mockResolvedValue({ users: 2, bloggers: 1, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0 });
-    api.getAdminUsers.mockResolvedValue([{ telegramUserId: 9, firstName: "Ali", username: "miraskarov", role: 0, isBlocked: false, isDeleted: false, createdAtUtc: "2026-10-01T00:00:00Z", verifiedPhone: "+998901234567", hasBloggerProfile: true }]);
-    render(<I18nProvider><Admin section="users" /></I18nProvider>);
-
-    expect(await screen.findByText(/\+998901234567/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(ru("admin.userSearch")), { target: { value: "90 123" } });
-    await waitFor(() => expect(api.getAdminUsers).toHaveBeenLastCalledWith("90 123", "all"), { timeout: 2000 });
-    fireEvent.click(screen.getByRole("button", { name: ru("admin.userFilter.blocked") }));
-    await waitFor(() => expect(api.getAdminUsers).toHaveBeenLastCalledWith("90 123", "blocked"), { timeout: 2000 });
-
-    fireEvent.click(screen.getByRole("button", { name: ru("admin.writeInTelegram") }));
-    expect(openLink).toHaveBeenCalledWith("https://t.me/miraskarov");
+    expect(await screen.findByRole("link", { name: new RegExp(ru("admin.complaints")) })).toHaveAttribute("href", "#/admin/complaints");
+    expect(screen.getByRole("link", { name: new RegExp(ru("admin.bloggers")) })).toHaveAttribute("href", "#/admin/bloggers");
+    expect(screen.getByRole("link", { name: new RegExp(ru("admin.businesses")) })).toHaveAttribute("href", "#/admin/businesses");
+    expect(screen.queryByRole("link", { name: new RegExp(ru("admin.users")) })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: new RegExp(ru("admin.campaigns")) })).not.toBeInTheDocument();
+    expect(screen.getByText("8")).toBeInTheDocument();
   });
 
   it("shows activity for today and the last 7 days on the admin home", async () => {
     api.getAdminDashboard.mockResolvedValue({ users: 8, bloggers: 5, businesses: 7, publishedCampaigns: 4, completedDeals: 6, promotedBloggers: 0, promotedCampaigns: 0, newUsersToday: 2, newUsersWeek: 5, newDealsWeek: 3, completedDealsWeek: 1 });
     render(<I18nProvider><Admin /></I18nProvider>);
 
-    const newUsers = await screen.findByRole("link", { name: new RegExp(translate("admin.activityUsers", { today: 2, week: 5 }, "ru")) });
-    expect(newUsers).toHaveAttribute("href", "#/admin/users?filter=new");
+    expect(await screen.findByText(translate("admin.activityUsers", { today: 2, week: 5 }, "ru"))).toBeInTheDocument();
     expect(screen.getByText(translate("admin.activityDeals", { started: 3, completed: 1 }, "ru"))).toBeInTheDocument();
-  });
-
-  it("opens new users from the activity link with their registration date", async () => {
-    window.location.hash = "#/admin/users?filter=new";
-    api.getAdminDashboard.mockResolvedValue({ users: 1, bloggers: 0, businesses: 0, publishedCampaigns: 0, completedDeals: 0, promotedBloggers: 0, promotedCampaigns: 0, newUsersToday: 1, newUsersWeek: 1 });
-    api.getAdminUsers.mockResolvedValue([{ telegramUserId: 11, firstName: "Newcomer", role: 0, isBlocked: false, isDeleted: false, createdAtUtc: "2026-10-12T08:00:00Z" }]);
-    render(<I18nProvider><Admin section="users" /></I18nProvider>);
-
-    expect(await screen.findByRole("link", { name: /Newcomer/ })).toHaveAttribute("href", "#/admin/user?id=11");
-    await waitFor(() => expect(api.getAdminUsers).toHaveBeenLastCalledWith("", "new"), { timeout: 2000 });
-    expect(screen.getByRole("button", { name: ru("admin.userFilter.new") })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(/^Регистрация: /)).toBeInTheDocument();
-    window.location.hash = "";
   });
 });
