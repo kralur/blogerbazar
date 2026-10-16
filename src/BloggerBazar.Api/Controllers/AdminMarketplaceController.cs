@@ -78,6 +78,14 @@ public sealed class AdminMarketplaceController(ISender sender, ITelegramWebAppVa
         return Ok(await sender.Send(new GetAdminBloggersQuery(actorId, take), cancellationToken));
     }
 
+    // Web admin deal list; status "active", "completed" or "cancelled", every deal without it.
+    [HttpGet("deals")]
+    public async Task<ActionResult<IReadOnlyList<AdminDealDto>>> GetDeals([FromQuery] string? status = null, [FromQuery] int take = 100, CancellationToken cancellationToken = default)
+    {
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new GetAdminDealsQuery(actorId, status, take), cancellationToken));
+    }
+
     [HttpGet("collaboration-requests")]
     public async Task<ActionResult<IReadOnlyList<CollaborationRequestDto>>> GetCollaborationRequests([FromQuery] int take = 100, CancellationToken cancellationToken = default)
     {

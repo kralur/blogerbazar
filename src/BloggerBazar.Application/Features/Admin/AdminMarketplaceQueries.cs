@@ -22,7 +22,8 @@ public sealed class GetAdminBloggersHandler(IAdminMarketplaceReadModel marketpla
 }
 
 // Every company for the admin list, newest first; moderation status as the number the app already uses.
-public sealed record AdminBusinessDto(Guid Id, string Name, string? City, string? LogoUrl, int ModerationStatus, bool IsHidden, bool IsDeleted, int CampaignsCount, int CompletedDealsCount, DateTime CreatedAtUtc);
+// TelegramUserId (added for the web admin) opens the owner's admin card.
+public sealed record AdminBusinessDto(Guid Id, string Name, string? City, string? LogoUrl, int ModerationStatus, bool IsHidden, bool IsDeleted, int CampaignsCount, int CompletedDealsCount, DateTime CreatedAtUtc, long? TelegramUserId = null);
 
 public sealed record GetAdminBusinessesQuery(long TelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AdminBusinessDto>>;
 
@@ -46,10 +47,10 @@ public sealed class GetAdminCollaborationRequestsHandler(IAdminMarketplaceReadMo
     }
 }
 
-public sealed record AdminCampaignDto(Guid Id, string Title, string BusinessName, int Status, bool IsPromoted, int ApplicationsCount, DateTime CreatedAtUtc)
+public sealed record AdminCampaignDto(Guid Id, string Title, string BusinessName, int Status, bool IsPromoted, int ApplicationsCount, DateTime CreatedAtUtc, long? BusinessTelegramUserId = null)
 {
     public static AdminCampaignDto From(Domain.Entities.Campaign campaign) =>
-        new(campaign.Id, campaign.Title, campaign.Business.Name, (int)campaign.Status, campaign.IsPromoted, campaign.Applications.Count, campaign.CreatedAtUtc);
+        new(campaign.Id, campaign.Title, campaign.Business.Name, (int)campaign.Status, campaign.IsPromoted, campaign.Applications.Count, campaign.CreatedAtUtc, campaign.Business.TelegramUserId);
 }
 
 public sealed record GetAdminCampaignsQuery(long TelegramUserId, int Take = 100) : IRequest<IReadOnlyList<AdminCampaignDto>>;
@@ -98,5 +99,55 @@ public sealed class ModerateCampaignHandler(ICampaignRepository campaigns, IAdmi
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
         return AdminCampaignDto.From(campaign);
+    }
+}
+
+// Every deal for the web admin, newest first. Status is the number the app already uses; CreatorRole is "blogger" or
+// "brandFace" (D26 string). The Telegram ids open the two people's admin cards.
+public sealed record AdminDealDto(
+    Guid Id,
+    string? Title,
+    bool FromOffer,
+    string BusinessName,
+    long BusinessTelegramUserId,
+    string CreatorRole,
+    string CreatorName,
+    long CreatorTelegramUserId,
+    int Status,
+    int? AgreedPrice,
+    DateTime CreatedAtUtc,
+    DateTime? CompletedAtUtc);
+
+// Filter values for the admin deal list; null means every deal.
+public static class AdminDealFilters
+{
+    public const string Active = "active";
+    public const string Completed = "completed";
+    public const string Cancelled = "cancelled";
+    public static readonly IReadOnlyDictionary<string, DealStatus> Statuses = new Dictionary<string, DealStatus>(StringComparer.Ordinal)
+    {
+        [Active] = DealStatus.Active,
+        [Completed] = DealStatus.Completed,
+        [Cancelled] = DealStatus.Cancelled
+    };
+}
+
+public sealed record GetAdminDealsQuery(long TelegramUserId, string? Status = null, int Take = 100) : IRequest<IReadOnlyList<AdminDealDto>>;
+
+public sealed class GetAdminDealsValidator : AbstractValidator<GetAdminDealsQuery>
+{
+    public GetAdminDealsValidator()
+    {
+        RuleFor(query => query.Status).Must(status => status is null || AdminDealFilters.Statuses.ContainsKey(status));
+    }
+}
+
+public sealed class GetAdminDealsHandler(IAdminMarketplaceReadModel marketplace, IAdminAccessPolicy access) : IRequestHandler<GetAdminDealsQuery, IReadOnlyList<AdminDealDto>>
+{
+    public async Task<IReadOnlyList<AdminDealDto>> Handle(GetAdminDealsQuery query, CancellationToken cancellationToken)
+    {
+        access.EnsureAllowed(query.TelegramUserId);
+        DealStatus? status = query.Status is null ? null : AdminDealFilters.Statuses[query.Status];
+        return await marketplace.GetDealsAsync(status, Math.Clamp(query.Take, 1, 200), cancellationToken);
     }
 }

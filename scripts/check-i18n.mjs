@@ -8,9 +8,9 @@ const apps = [
   { name: "frontend", alwaysReferenced: ["taxonomy.category.", "taxonomy.city.", "admin.role."] },
   { name: "admin-web", alwaysReferenced: ["taxonomy.category.", "taxonomy.city."] }
 ];
-// City and category names (shared/taxonomy) and the admin funnel texts (shared/funnel) are merged into both apps'
-// dictionaries; an app never repeats a shared key.
-const sharedPaths = (language) => ["taxonomy", "funnel"].map((name) => join(root, "shared", name, `${language}.json`));
+// City and category names (shared/taxonomy), the admin funnel texts (shared/funnel) and the admin labels (shared/admin)
+// are merged into both apps' dictionaries; an app never repeats a shared key.
+const sharedPaths = (language) => ["taxonomy", "funnel", "admin"].map((name) => join(root, "shared", name, `${language}.json`));
 
 const flatten = (value, prefix = "") => Object.entries(value).flatMap(([key, item]) =>
   item && typeof item === "object" && !Array.isArray(item) ? flatten(item, `${prefix}${key}.`) : [`${prefix}${key}`]);

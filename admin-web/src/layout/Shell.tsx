@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AdminWebSession } from "../api/session";
+import { useActions } from "../components/Actions";
 import { BrandMark, Badge, Button } from "../components/ui";
 import { Preferences } from "../components/Preferences";
 import { useI18n } from "../i18n";
@@ -12,14 +13,16 @@ type ShellProps = {
   title: string;
   onNavigate: (path: string) => void;
   onSignOut: () => void;
+  onSignOutAll: () => Promise<void>;
   signingOut: boolean;
   children: ReactNode;
 };
 
 // Desktop first: a fixed side menu from 1024px; below that the menu opens over the page, so a phone never
 // scrolls sideways.
-export function Shell({ session, activeId, title, onNavigate, onSignOut, signingOut, children }: ShellProps) {
+export function Shell({ session, activeId, title, onNavigate, onSignOut, onSignOutAll, signingOut, children }: ShellProps) {
   const { t } = useI18n();
+  const signOutAll = useActions(() => undefined);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLElement>(null);
@@ -72,6 +75,21 @@ export function Shell({ session, activeId, title, onNavigate, onSignOut, signing
           </div>
           <Preferences />
           <Button className="w-full" onClick={onSignOut} disabled={signingOut}>{signingOut ? t("header.signingOut") : t("header.signOut")}</Button>
+          <Button
+            variant="ghost"
+            className="w-full"
+            disabled={signingOut}
+            onClick={() => signOutAll.ask({
+              title: t("header.signOutAllTitle"),
+              text: t("header.signOutAllText"),
+              confirmLabel: t("header.signOutAll"),
+              danger: true,
+              run: onSignOutAll,
+              done: t("header.signingOut")
+            })}
+          >
+            {t("header.signOutAll")}
+          </Button>
         </div>
       </aside>
 
@@ -94,6 +112,7 @@ export function Shell({ session, activeId, title, onNavigate, onSignOut, signing
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>
       </div>
+      {signOutAll.dialog}
     </div>
   );
 }

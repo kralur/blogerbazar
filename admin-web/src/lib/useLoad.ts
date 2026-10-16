@@ -5,12 +5,13 @@ import { browser } from "./browser";
 export type Loaded<T> = { status: "loading" } | { status: "ready"; data: T } | { status: "error" };
 
 // Loads one report; a session that ended on the way goes to the sign-in page, an older answer never wins.
+// refresh() reloads after a change without hiding what is on screen.
 export function useLoad<T>(load: () => Promise<T>, key: string) {
   const [state, setState] = useState<Loaded<T>>({ status: "loading" });
   const latest = useRef(0);
-  const run = useCallback(() => {
+  const run = useCallback((quiet = false) => {
     const ticket = ++latest.current;
-    setState({ status: "loading" });
+    if (!quiet) setState({ status: "loading" });
     load()
       .then((data) => { if (ticket === latest.current) setState({ status: "ready", data }); })
       .catch((error: unknown) => {
@@ -21,6 +22,8 @@ export function useLoad<T>(load: () => Promise<T>, key: string) {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  useEffect(run, [run]);
-  return { state, reload: run };
+  useEffect(() => run(), [run]);
+  const reload = useCallback(() => run(), [run]);
+  const refresh = useCallback(() => run(true), [run]);
+  return { state, reload, refresh };
 }

@@ -2,6 +2,7 @@ using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Application.Notifications;
+using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using FluentValidation;
 using MediatR;
@@ -20,7 +21,7 @@ public sealed class ModerateBloggerProfileValidator : AbstractValidator<Moderate
     }
 }
 
-public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository profiles, IAdminAccessPolicy adminAccess, IUnitOfWork unitOfWork, ITelegramBotClient? botClient = null, ILogger<ModerateBloggerProfileHandler>? logger = null)
+public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository profiles, IAdminAccessPolicy adminAccess, IUnitOfWork unitOfWork, IAuditLogRepository auditLogs, ITelegramBotClient? botClient = null, ILogger<ModerateBloggerProfileHandler>? logger = null)
     : IRequestHandler<ModerateBloggerProfileCommand, AdminBloggerProfileDto>
 {
     public async Task<AdminBloggerProfileDto> Handle(ModerateBloggerProfileCommand command, CancellationToken cancellationToken)
@@ -46,6 +47,8 @@ public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository prof
             profile.Reject();
         }
 
+        // Every moderation decision is in the journal, like campaign moderation and blocking.
+        await auditLogs.AddAsync(AuditLog.Create(command.TelegramUserId, AdminModerationAudit.Action("blogger-profile", command.Approve, command.NeedsChanges), "BloggerProfile", profile.Id.ToString()), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var notification = command.NeedsChanges
             ? BotMessages.BloggerProfileNeedsChanges
@@ -55,4 +58,11 @@ public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository prof
         await BestEffortTelegramNotification.SendAsync(botClient, logger, profile.TelegramUserId, notification, cancellationToken);
         return AdminBloggerProfileDto.From(profile);
     }
+}
+
+// Journal actions of profile moderation: "<target>.approved", "<target>.rejected" or "<target>.needs-changes".
+public static class AdminModerationAudit
+{
+    public static string Action(string target, bool approve, bool needsChanges) =>
+        $"{target}.{(needsChanges ? "needs-changes" : approve ? "approved" : "rejected")}";
 }

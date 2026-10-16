@@ -13,13 +13,13 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
     public async Task<IReadOnlyList<AdminBloggerProfileDto>> GetBloggersAsync(int take, CancellationToken cancellationToken) =>
         await dbContext.BloggerProfiles.AsNoTracking().OrderByDescending(profile => profile.CreatedAtUtc).Take(take)
             .Select(profile => new AdminBloggerProfileDto(profile.Id, profile.Name, profile.City, profile.Categories,
-                profile.AvatarUrl, profile.TotalFollowers, (int)profile.Status, profile.CreatedAtUtc))
+                profile.AvatarUrl, profile.TotalFollowers, (int)profile.Status, profile.CreatedAtUtc, profile.TelegramUserId))
             .ToArrayAsync(cancellationToken);
 
     public async Task<IReadOnlyList<AdminCampaignDto>> GetCampaignsAsync(int take, CancellationToken cancellationToken) =>
         await dbContext.Campaigns.AsNoTracking().OrderByDescending(campaign => campaign.CreatedAtUtc).Take(take)
             .Select(campaign => new AdminCampaignDto(campaign.Id, campaign.Title, campaign.Business.Name, (int)campaign.Status,
-                campaign.IsPromoted, campaign.Applications.Count, campaign.CreatedAtUtc))
+                campaign.IsPromoted, campaign.Applications.Count, campaign.CreatedAtUtc, campaign.Business.TelegramUserId))
             .ToArrayAsync(cancellationToken);
 
     public async Task<IReadOnlyList<AdminPlatformUserDto>> SearchUsersAsync(string? search, string? filter, int take, CancellationToken cancellationToken)
@@ -57,7 +57,8 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
                 user.DeletedAtUtc, user.DeletedByTelegramUserId, user.CreatedAtUtc, user.VerifiedPhone,
                 dbContext.BloggerProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted),
                 dbContext.BusinessProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted),
-                dbContext.BrandFaceProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted)))
+                dbContext.BrandFaceProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted),
+                user.LastSeenAtUtc, user.Source))
             .ToArrayAsync(cancellationToken);
     }
 
@@ -115,13 +116,36 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
                 user.DeletedAtUtc, user.DeletedByTelegramUserId, user.CreatedAtUtc, user.VerifiedPhone,
                 dbContext.BloggerProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted),
                 dbContext.BusinessProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted),
-                dbContext.BrandFaceProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted)))
+                dbContext.BrandFaceProfiles.Any(profile => profile.TelegramUserId == user.TelegramUserId && !profile.IsDeleted),
+                user.LastSeenAtUtc, user.Source))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyList<AdminBusinessDto>> GetBusinessesAsync(int take, CancellationToken cancellationToken) =>
         await dbContext.BusinessProfiles.AsNoTracking().OrderByDescending(profile => profile.CreatedAtUtc).Take(take)
             .Select(profile => new AdminBusinessDto(profile.Id, profile.Name, profile.City, profile.LogoUrl, (int)profile.ModerationStatus,
-                profile.IsHidden, profile.IsDeleted, profile.Campaigns.Count, profile.Deals.Count(deal => deal.Status == DealStatus.Completed), profile.CreatedAtUtc))
+                profile.IsHidden, profile.IsDeleted, profile.Campaigns.Count, profile.Deals.Count(deal => deal.Status == DealStatus.Completed), profile.CreatedAtUtc,
+                profile.TelegramUserId))
+            .ToArrayAsync(cancellationToken);
+
+    // A deal has a blogger or a brand face on the creator side (never both); deleted profiles stay for their deals (D43).
+    public async Task<IReadOnlyList<AdminDealDto>> GetDealsAsync(DealStatus? status, int take, CancellationToken cancellationToken) =>
+        await dbContext.Deals.AsNoTracking()
+            .Where(deal => status == null || deal.Status == status)
+            .OrderByDescending(deal => deal.CreatedAtUtc).Take(take)
+            .Select(deal => new AdminDealDto(
+                deal.Id,
+                // Older campaign deals have no snapshot: the campaign's current title then.
+                deal.CampaignTitleSnapshot ?? (deal.CampaignApplicationId != null ? deal.CampaignApplication!.Campaign.Title : null),
+                deal.CollaborationRequestId != null,
+                deal.Business.Name,
+                deal.Business.TelegramUserId,
+                deal.BloggerId != null ? "blogger" : "brandFace",
+                deal.BloggerId != null ? deal.Blogger!.Name : deal.BrandFace!.Name,
+                deal.BloggerId != null ? deal.Blogger!.TelegramUserId : deal.BrandFace!.TelegramUserId,
+                (int)deal.Status,
+                deal.AgreedPrice,
+                deal.CreatedAtUtc,
+                deal.CompletedAtUtc))
             .ToArrayAsync(cancellationToken);
 
     public async Task<IReadOnlyList<CollaborationRequestDto>> GetCollaborationRequestsAsync(int take, CancellationToken cancellationToken) =>

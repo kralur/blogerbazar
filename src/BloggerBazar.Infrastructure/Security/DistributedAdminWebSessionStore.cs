@@ -1,4 +1,5 @@
 using System.Buffers.Text;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -10,11 +11,13 @@ namespace BloggerBazar.Infrastructure.Security;
 
 // Web admin sessions in the distributed cache (Redis in production, memory when Redis is not configured).
 // The key is a SHA-256 of the token, so a copy of the cache does not give working cookies. The cache ends an idle
-// session (sliding expiration) and the stored fixed end is checked on every read as well.
+// session (sliding expiration) and the stored fixed end is checked on every read as well. The cache cannot list a
+// person's sessions, so "sign out everywhere" stores the moment instead: sessions created up to it no longer count.
 internal sealed class DistributedAdminWebSessionStore(IDistributedCache cache, IOptions<AdminWebOptions> options, IOptions<TelegramOptions> telegramOptions) : IAdminWebSessionStore
 {
     private const string SessionKeyPrefix = "admin-web:session:";
     private const string SignInKeyPrefix = "admin-web:sign-in:";
+    private const string EndedKeyPrefix = "admin-web:ended:";
     private const int TokenBytes = 32;
     private static readonly int TokenLength = Base64Url.GetEncodedLength(TokenBytes);
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
@@ -62,7 +65,7 @@ internal sealed class DistributedAdminWebSessionStore(IDistributedCache cache, I
         }
 
         var session = JsonSerializer.Deserialize<AdminWebSession>(payload, SerializerOptions);
-        if (session is null || session.ExpiresAtUtc <= DateTime.UtcNow)
+        if (session is null || session.ExpiresAtUtc <= DateTime.UtcNow || await EndedEverywhereAsync(session, cancellationToken))
         {
             await cache.RemoveAsync(KeyFor(token), cancellationToken);
             return null;
@@ -73,6 +76,24 @@ internal sealed class DistributedAdminWebSessionStore(IDistributedCache cache, I
 
     public Task RemoveAsync(string token, CancellationToken cancellationToken) =>
         IsWellFormed(token) ? cache.RemoveAsync(KeyFor(token), cancellationToken) : Task.CompletedTask;
+
+    public async Task RemoveAllAsync(long telegramUserId, CancellationToken cancellationToken)
+    {
+        // Kept as long as a session can live, so every session that existed at this moment is covered.
+        var ended = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        await cache.SetStringAsync(EndedKeyPrefix + telegramUserId.ToString(CultureInfo.InvariantCulture), ended, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(Math.Max(1, options.Value.SessionHours))
+        }, cancellationToken);
+    }
+
+    private async Task<bool> EndedEverywhereAsync(AdminWebSession session, CancellationToken cancellationToken)
+    {
+        var ended = await cache.GetStringAsync(EndedKeyPrefix + session.TelegramUserId.ToString(CultureInfo.InvariantCulture), cancellationToken);
+        return ended is not null
+            && DateTime.TryParse(ended, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var endedAtUtc)
+            && session.CreatedAtUtc <= endedAtUtc;
+    }
 
     internal static string KeyFor(string token) =>
         SessionKeyPrefix + Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(token))).ToLowerInvariant();

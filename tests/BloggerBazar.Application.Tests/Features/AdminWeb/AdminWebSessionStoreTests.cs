@@ -24,6 +24,24 @@ public sealed class AdminWebSessionStoreTests
     }
 
     [Fact]
+    public async Task Signing_out_everywhere_ends_every_current_session_of_that_person_only()
+    {
+        var store = CreateStore(new RecordingCache());
+        var laptop = await store.CreateAsync(42, CancellationToken.None);
+        var phone = await store.CreateAsync(42, CancellationToken.None);
+        var otherAdmin = await store.CreateAsync(43, CancellationToken.None);
+
+        await store.RemoveAllAsync(42, CancellationToken.None);
+        await Task.Delay(5);
+        var later = await store.CreateAsync(42, CancellationToken.None);
+
+        Assert.Null(await store.GetAsync(laptop.Token, CancellationToken.None));
+        Assert.Null(await store.GetAsync(phone.Token, CancellationToken.None));
+        Assert.Equal(43, (await store.GetAsync(otherAdmin.Token, CancellationToken.None))?.TelegramUserId);
+        Assert.Equal(42, (await store.GetAsync(later.Token, CancellationToken.None))?.TelegramUserId);
+    }
+
+    [Fact]
     public async Task Tokens_are_random_and_the_cache_keeps_only_their_hash()
     {
         var cache = new RecordingCache();

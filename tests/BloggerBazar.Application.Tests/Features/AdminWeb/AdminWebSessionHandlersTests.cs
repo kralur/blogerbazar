@@ -97,6 +97,37 @@ public sealed class AdminWebSessionHandlersTests
         Assert.Equal(AdminWebAuditActions.SignedOut, Assert.Single(audit.Entries).Action);
     }
 
+    [Fact]
+    public async Task Signing_out_everywhere_ends_all_own_sessions_and_is_recorded()
+    {
+        var sessions = new FakeSessions();
+        var audit = new FakeAuditLogs();
+        var here = await sessions.CreateAsync(42, CancellationToken.None);
+        var elsewhere = await sessions.CreateAsync(42, CancellationToken.None);
+        var otherAdmin = await sessions.CreateAsync(43, CancellationToken.None);
+        var handler = new EndAllAdminWebSessionsHandler(sessions, new FakeAccess(42, 43), audit, new SpyUnitOfWork());
+
+        await handler.Handle(new EndAllAdminWebSessionsCommand(here.Token), CancellationToken.None);
+
+        Assert.False(sessions.Has(here.Token));
+        Assert.False(sessions.Has(elsewhere.Token));
+        Assert.True(sessions.Has(otherAdmin.Token));
+        var entry = Assert.Single(audit.Entries);
+        Assert.Equal(AdminWebAuditActions.SignedOutEverywhere, entry.Action);
+        Assert.Equal(42, entry.ActorTelegramUserId);
+    }
+
+    [Fact]
+    public async Task Signing_out_everywhere_needs_a_live_session()
+    {
+        var sessions = new FakeSessions();
+        var audit = new FakeAuditLogs();
+        var handler = new EndAllAdminWebSessionsHandler(sessions, new FakeAccess(42), audit, new SpyUnitOfWork());
+
+        await Assert.ThrowsAsync<AuthenticationException>(() => handler.Handle(new EndAllAdminWebSessionsCommand("unknown"), CancellationToken.None));
+        Assert.Empty(audit.Entries);
+    }
+
     [Theory]
     [InlineData("Id")]
     [InlineData("first-name")]
@@ -158,6 +189,11 @@ public sealed class AdminWebSessionHandlersTests
         }
         public Task<AdminWebSession?> GetAsync(string token, CancellationToken cancellationToken) => Task.FromResult(items.GetValueOrDefault(token));
         public Task RemoveAsync(string token, CancellationToken cancellationToken) { items.Remove(token); return Task.CompletedTask; }
+        public Task RemoveAllAsync(long telegramUserId, CancellationToken cancellationToken)
+        {
+            foreach (var token in items.Where(item => item.Value.TelegramUserId == telegramUserId).Select(item => item.Key).ToArray()) items.Remove(token);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeUsers(params PlatformUser[] users) : IPlatformUserRepository

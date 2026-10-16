@@ -12,7 +12,7 @@ public sealed class ModerateBloggerProfileHandlerTests
     public async Task Approves_pending_profile_for_administrator()
     {
         var profile = BloggerProfile.Create(101, "Madina", "Tashkent", ["Lifestyle"]);
-        var handler = new ModerateBloggerProfileHandler(new InMemoryBloggerRepository(profile), new AllowAdminAccessPolicy(), new SpyUnitOfWork());
+        var handler = new ModerateBloggerProfileHandler(new InMemoryBloggerRepository(profile), new AllowAdminAccessPolicy(), new SpyUnitOfWork(), new SpyAuditLogs());
 
         var result = await handler.Handle(new ModerateBloggerProfileCommand(profile.Id, 1, true), CancellationToken.None);
 
@@ -20,11 +20,42 @@ public sealed class ModerateBloggerProfileHandlerTests
         Assert.True(profile.IsVerified);
     }
 
+    [Theory]
+    [InlineData(true, false, "blogger-profile.approved")]
+    [InlineData(false, false, "blogger-profile.rejected")]
+    [InlineData(false, true, "blogger-profile.needs-changes")]
+    public async Task Writes_every_decision_to_the_journal(bool approve, bool needsChanges, string action)
+    {
+        var profile = BloggerProfile.Create(101, "Madina", "Tashkent", ["Lifestyle"]);
+        var auditLogs = new SpyAuditLogs();
+        var handler = new ModerateBloggerProfileHandler(new InMemoryBloggerRepository(profile), new AllowAdminAccessPolicy(), new SpyUnitOfWork(), auditLogs);
+
+        await handler.Handle(new ModerateBloggerProfileCommand(profile.Id, 7, approve, needsChanges), CancellationToken.None);
+
+        var entry = Assert.Single(auditLogs.Entries);
+        Assert.Equal(action, entry.Action);
+        Assert.Equal(7, entry.ActorTelegramUserId);
+        Assert.Equal("BloggerProfile", entry.TargetType);
+        Assert.Equal(profile.Id.ToString(), entry.TargetId);
+    }
+
+    [Fact]
+    public async Task Writes_nothing_when_the_profile_is_no_longer_pending()
+    {
+        var profile = BloggerProfile.Create(101, "Madina", "Tashkent", ["Lifestyle"]);
+        profile.Approve();
+        var auditLogs = new SpyAuditLogs();
+        var handler = new ModerateBloggerProfileHandler(new InMemoryBloggerRepository(profile), new AllowAdminAccessPolicy(), new SpyUnitOfWork(), auditLogs);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new ModerateBloggerProfileCommand(profile.Id, 7, false), CancellationToken.None));
+        Assert.Empty(auditLogs.Entries);
+    }
+
     [Fact]
     public async Task Rejects_moderation_from_non_administrator()
     {
         var profile = BloggerProfile.Create(101, "Madina", "Tashkent", ["Lifestyle"]);
-        var handler = new ModerateBloggerProfileHandler(new InMemoryBloggerRepository(profile), new DenyAdminAccessPolicy(), new SpyUnitOfWork());
+        var handler = new ModerateBloggerProfileHandler(new InMemoryBloggerRepository(profile), new DenyAdminAccessPolicy(), new SpyUnitOfWork(), new SpyAuditLogs());
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             handler.Handle(new ModerateBloggerProfileCommand(profile.Id, 2, true), CancellationToken.None));
@@ -47,6 +78,13 @@ public sealed class ModerateBloggerProfileHandlerTests
     private sealed class DenyAdminAccessPolicy : IAdminAccessPolicy
     {
         public void EnsureAllowed(long telegramUserId) => throw new UnauthorizedAccessException();
+    }
+
+    private sealed class SpyAuditLogs : IAuditLogRepository
+    {
+        public List<AuditLog> Entries { get; } = [];
+        public Task AddAsync(AuditLog entry, CancellationToken cancellationToken) { Entries.Add(entry); return Task.CompletedTask; }
+        public Task<IReadOnlyList<AuditLog>> GetRecentAsync(int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<AuditLog>>(Entries);
     }
 
     private sealed class SpyUnitOfWork : IUnitOfWork

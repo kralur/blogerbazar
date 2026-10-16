@@ -10,6 +10,8 @@ public interface IAdminWebSessionStore
     // Null when the session is unknown, idle for too long or past its fixed end.
     Task<AdminWebSession?> GetAsync(string token, CancellationToken cancellationToken);
     Task RemoveAsync(string token, CancellationToken cancellationToken);
+    // Ends every session of this person that exists now, on any browser; sessions opened later are not affected.
+    Task RemoveAllAsync(long telegramUserId, CancellationToken cancellationToken);
 }
 
 public sealed record AdminWebSession(long TelegramUserId, DateTime CreatedAtUtc, DateTime ExpiresAtUtc);

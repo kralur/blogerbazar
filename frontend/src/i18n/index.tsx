@@ -4,13 +4,16 @@ import taxonomyRu from "@bloggerbazar/shared/taxonomy/ru.json";
 import taxonomyUz from "@bloggerbazar/shared/taxonomy/uz.json";
 import funnelRu from "@bloggerbazar/shared/funnel/ru.json";
 import funnelUz from "@bloggerbazar/shared/funnel/uz.json";
+import adminRu from "@bloggerbazar/shared/admin/ru.json";
+import adminUz from "@bloggerbazar/shared/admin/uz.json";
 import ru from "./ru.json";
 import uz from "./uz.json";
 
 export type { Language };
 export { russianPluralForm };
-// City and category names and the funnel texts are shared with the web admin (shared/taxonomy, shared/funnel).
-const dictionaries: Record<Language, Dictionary> = { ru: { ...taxonomyRu, ...funnelRu, ...ru }, uz: { ...taxonomyUz, ...funnelUz, ...uz } };
+// City and category names, the funnel texts and the admin labels (roles, journal, complaints) are shared with the web
+// admin (shared/taxonomy, shared/funnel, shared/admin).
+const dictionaries: Record<Language, Dictionary> = { ru: { ...taxonomyRu, ...funnelRu, ...adminRu, ...ru }, uz: { ...taxonomyUz, ...funnelUz, ...adminUz, ...uz } };
 const storageKey = "bloggerbazar.language";
 
 function toSupportedLanguage(value?: string | null): Language | undefined {

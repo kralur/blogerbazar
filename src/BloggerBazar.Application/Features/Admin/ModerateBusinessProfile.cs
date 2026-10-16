@@ -5,6 +5,7 @@ using BloggerBazar.Application.Notifications;
 using BloggerBazar.Application.Features.Businesses;
 using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Application.Abstractions.Caching;
+using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,7 @@ public sealed record ModerateBusinessProfileCommand(Guid BusinessId, long Telegr
 
 public sealed record GetPendingBusinessProfilesQuery(long TelegramUserId, int Take = 50) : IRequest<IReadOnlyList<BusinessProfileDto>>;
 
-public sealed class ModerateBusinessProfileHandler(IBusinessProfileRepository businesses, IAdminAccessPolicy access, IUnitOfWork unitOfWork, ITelegramBotClient? botClient = null, ILogger<ModerateBusinessProfileHandler>? logger = null, ICatalogCache? cache = null) : IRequestHandler<ModerateBusinessProfileCommand, BusinessProfileDto>
+public sealed class ModerateBusinessProfileHandler(IBusinessProfileRepository businesses, IAdminAccessPolicy access, IUnitOfWork unitOfWork, IAuditLogRepository auditLogs, ITelegramBotClient? botClient = null, ILogger<ModerateBusinessProfileHandler>? logger = null, ICatalogCache? cache = null) : IRequestHandler<ModerateBusinessProfileCommand, BusinessProfileDto>
 {
     public async Task<BusinessProfileDto> Handle(ModerateBusinessProfileCommand command, CancellationToken cancellationToken)
     {
@@ -26,6 +27,7 @@ public sealed class ModerateBusinessProfileHandler(IBusinessProfileRepository bu
             throw new InvalidOperationException("Only pending business profiles can be moderated.");
         }
         if (command.NeedsChanges) profile.RequestChanges(); else if (command.Approve) profile.Approve(); else profile.Reject();
+        await auditLogs.AddAsync(AuditLog.Create(command.TelegramUserId, AdminModerationAudit.Action("business-profile", command.Approve, command.NeedsChanges), "BusinessProfile", profile.Id.ToString()), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
         await BestEffortTelegramNotification.SendAsync(botClient, logger, profile.TelegramUserId, command.Approve ? BotMessages.BusinessProfileApproved : command.NeedsChanges ? BotMessages.BusinessProfileNeedsChanges : BotMessages.BusinessProfileRejected, cancellationToken);

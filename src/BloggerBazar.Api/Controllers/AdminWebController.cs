@@ -69,6 +69,18 @@ public sealed class AdminWebController(
         return NoContent();
     }
 
+    // Ends this person's sessions in every browser, this one included.
+    [HttpPost("logout-all")]
+    public async Task<IActionResult> LogoutEverywhere(CancellationToken cancellationToken)
+    {
+        if (!guard.IsEnabled) return NotFound();
+        guard.EnsureSameOrigin(Request);
+        var token = AdminWebCookie.Read(Request) ?? throw AdminWebRequestGuard.SessionEnded();
+        await sender.Send(new EndAllAdminWebSessionsCommand(token, CorrelationId()), cancellationToken);
+        Response.Cookies.Delete(AdminWebCookie.Name, AdminWebCookie.Expired());
+        return NoContent();
+    }
+
     private string? CorrelationId() =>
         HttpContext.Items.TryGetValue(CorrelationIdMiddleware.CorrelationIdItemKey, out var value) ? value?.ToString() : null;
 }

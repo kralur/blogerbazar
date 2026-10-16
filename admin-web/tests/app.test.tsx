@@ -38,7 +38,11 @@ describe("Admin pages", () => {
     expect(within(menu).getByRole("link", { name: "Обзор" })).toHaveAttribute("aria-current", "page");
     expect(within(menu).getByRole("link", { name: "Аналитика" })).toHaveAttribute("href", "/analytics");
     expect(within(menu).getByRole("link", { name: "Воронка" })).toHaveAttribute("href", "/funnel");
-    expect(within(menu).getAllByText("скоро")).toHaveLength(8);
+    // Every section is open since phase 3: no "soon" badges are left.
+    expect(within(menu).queryByText("скоро")).not.toBeInTheDocument();
+    for (const [label, path] of [["Пользователи", "/users"], ["Блогеры", "/moderation/bloggers"], ["Компании", "/moderation/businesses"], ["Кампании", "/moderation/campaigns"], ["Жалобы", "/complaints"], ["Сделки", "/deals"], ["Журнал действий", "/audit-log"], ["Безопасность", "/security"]]) {
+      expect(within(menu).getByRole("link", { name: label })).toHaveAttribute("href", path);
+    }
     expect(screen.getByText("Umid")).toBeInTheDocument();
     expect(screen.getByText("Владелец")).toBeInTheDocument();
     // 16:30 UTC is 21:30 in Tashkent (UTC+5).

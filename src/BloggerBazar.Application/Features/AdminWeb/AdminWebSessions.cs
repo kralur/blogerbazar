@@ -25,6 +25,7 @@ public static class AdminWebAuditActions
     public const string SignedIn = "admin-web.signed-in";
     public const string SignedOut = "admin-web.signed-out";
     public const string SignInDenied = "admin-web.sign-in-denied";
+    public const string SignedOutEverywhere = "admin-web.signed-out-everywhere";
 }
 
 public sealed record AdminWebSessionDto(long TelegramUserId, string FirstName, string? Username, string Role, DateTime ExpiresAtUtc)
@@ -43,6 +44,7 @@ public sealed record AdminWebSignInResult(string Token, AdminWebSessionDto Sessi
 public sealed record StartAdminWebSessionCommand(IReadOnlyDictionary<string, string> Fields, string? CorrelationId = null) : IRequest<AdminWebSignInResult>;
 public sealed record GetAdminWebSessionQuery(string Token) : IRequest<AdminWebSessionDto>;
 public sealed record EndAdminWebSessionCommand(string Token, string? CorrelationId = null) : IRequest;
+public sealed record EndAllAdminWebSessionsCommand(string Token, string? CorrelationId = null) : IRequest;
 
 public sealed class StartAdminWebSessionValidator : AbstractValidator<StartAdminWebSessionCommand>
 {
@@ -160,6 +162,20 @@ public sealed class EndAdminWebSessionHandler(IAdminWebSessionStore sessions, IA
         }
 
         await auditLogs.AddAsync(AuditLog.Create(session.TelegramUserId, AdminWebAuditActions.SignedOut, "PlatformUser", session.TelegramUserId.ToString(CultureInfo.InvariantCulture), correlationId: command.CorrelationId), cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+}
+
+// "Sign out on all devices": only from a live session of an active Owner/Admin, for that person's own sessions.
+public sealed class EndAllAdminWebSessionsHandler(IAdminWebSessionStore sessions, IAdminAccessPolicy access, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork)
+    : IRequestHandler<EndAllAdminWebSessionsCommand>
+{
+    public async Task Handle(EndAllAdminWebSessionsCommand command, CancellationToken cancellationToken)
+    {
+        var session = await AdminWebSessionAccess.RequireAsync(sessions, access, command.Token, cancellationToken);
+        await sessions.RemoveAllAsync(session.TelegramUserId, cancellationToken);
+        await sessions.RemoveAsync(command.Token, cancellationToken);
+        await auditLogs.AddAsync(AuditLog.Create(session.TelegramUserId, AdminWebAuditActions.SignedOutEverywhere, "PlatformUser", session.TelegramUserId.ToString(CultureInfo.InvariantCulture), correlationId: command.CorrelationId), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

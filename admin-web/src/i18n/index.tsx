@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { formatMessage, type Dictionary, type Language, type MessageValues } from "@bloggerbazar/shared/i18n";
+import adminRu from "@bloggerbazar/shared/admin/ru.json";
+import adminUz from "@bloggerbazar/shared/admin/uz.json";
 import funnelRu from "@bloggerbazar/shared/funnel/ru.json";
 import funnelUz from "@bloggerbazar/shared/funnel/uz.json";
 import taxonomyRu from "@bloggerbazar/shared/taxonomy/ru.json";
@@ -8,8 +10,8 @@ import ru from "./ru.json";
 import uz from "./uz.json";
 
 export type { Language };
-// City and category names and the funnel texts come from shared/, the same words as in the Mini App.
-export const dictionaries: Record<Language, Dictionary> = { ru: { ...taxonomyRu, ...funnelRu, ...ru }, uz: { ...taxonomyUz, ...funnelUz, ...uz } };
+// City and category names, the funnel texts and the admin labels come from shared/, the same words as in the Mini App.
+export const dictionaries: Record<Language, Dictionary> = { ru: { ...taxonomyRu, ...funnelRu, ...adminRu, ...ru }, uz: { ...taxonomyUz, ...funnelUz, ...adminUz, ...uz } };
 const storageKey = "bloggerbazar.admin.language";
 
 export function initialLanguage(): Language {

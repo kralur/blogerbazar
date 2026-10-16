@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Features.Admin;
 using BloggerBazar.Application.Features.CollaborationRequests;
+using BloggerBazar.Domain.Enums;
 
 namespace BloggerBazar.Application.Abstractions.Persistence;
 
@@ -17,4 +18,7 @@ public interface IAdminMarketplaceReadModel
     // People who first opened the app since fromUtc (all time when null) and the funnel steps they reached, per role.
     Task<IReadOnlyList<AdminFunnelRoleDto>> GetFunnelAsync(DateTime? fromUtc, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<AdminFunnelRoleDto>>([]);
+    // Deals newest first, every status when status is null.
+    Task<IReadOnlyList<AdminDealDto>> GetDealsAsync(DealStatus? status, int take, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<AdminDealDto>>([]);
 }

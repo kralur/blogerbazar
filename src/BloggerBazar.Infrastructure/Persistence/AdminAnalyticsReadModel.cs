@@ -131,7 +131,9 @@ internal sealed class AdminAnalyticsReadModel(BloggerBazarDbContext dbContext) :
 
     private async Task<IReadOnlyList<AdminGeographyRowDto>> GeoRowsAsync(string sql, CancellationToken cancellationToken)
     {
-        var rows = await dbContext.Database.SqlQueryRaw<GeoRow>($"""SELECT * FROM ({sql}) g WHERE g."Key" IS NOT NULL AND g."Key" <> ''""").ToListAsync(cancellationToken);
+        // sql is one of the fixed queries written above (no request value is ever part of the text), so wrapping it is safe.
+        var query = $"""SELECT * FROM ({sql}) g WHERE g."Key" IS NOT NULL AND g."Key" <> ''""";
+        var rows = await dbContext.Database.SqlQueryRaw<GeoRow>(query).ToListAsync(cancellationToken);
         return rows.GroupBy(row => row.Key)
             .Select(group => new AdminGeographyRowDto(group.Key,
                 group.Where(row => row.Metric == "bloggers").Sum(row => row.Count),

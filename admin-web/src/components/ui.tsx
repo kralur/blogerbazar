@@ -1,22 +1,26 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 // Small Design System v2 primitives for the web admin. Colors come only from the shared --bb-* tokens.
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 const buttonVariants: Record<ButtonVariant, string> = {
   primary: "bg-brand-accent text-[color:var(--bb-accent-text)] hover:bg-[color:var(--bb-accent-pressed)]",
   secondary: "border border-brand-line bg-brand-surface text-brand-ink hover:bg-brand-soft",
-  ghost: "text-brand-ink hover:bg-brand-soft"
+  ghost: "text-brand-ink hover:bg-brand-soft",
+  danger: "bg-[color:var(--bb-error-fill)] text-[color:var(--bb-error-text)] hover:opacity-90"
 };
 
-export function Button({ variant = "secondary", className = "", type = "button", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
-  return (
-    <button
-      type={type}
-      className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[var(--bb-radius-control)] px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${buttonVariants[variant]} ${className}`}
-      {...props}
-    />
-  );
-}
+export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }>(
+  function Button({ variant = "secondary", className = "", type = "button", ...props }, ref) {
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[var(--bb-radius-control)] px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${buttonVariants[variant]} ${className}`}
+        {...props}
+      />
+    );
+  }
+);
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-[var(--bb-radius-card)] border border-brand-line bg-brand-surface p-5 shadow-card sm:p-6 ${className}`}>{children}</section>;
@@ -39,10 +43,15 @@ export function Alert({ children }: { children: ReactNode }) {
   );
 }
 
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "warning" }) {
-  const look = tone === "warning"
-    ? "border-transparent bg-[color:var(--bb-warning-subtle)] text-[color:var(--bb-warning-on-subtle)]"
-    : "border-brand-line text-brand-muted";
+const badgeTones = {
+  neutral: "border-brand-line text-brand-muted",
+  warning: "border-transparent bg-[color:var(--bb-warning-subtle)] text-[color:var(--bb-warning-on-subtle)]",
+  danger: "border-transparent bg-[color:var(--bb-error-subtle)] text-[color:var(--bb-error-on-subtle)]",
+  success: "border-transparent bg-[color:var(--bb-success-subtle)] text-[color:var(--bb-success-on-subtle)]"
+};
+
+export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: keyof typeof badgeTones }) {
+  const look = badgeTones[tone];
   return <span className={`inline-block shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${look}`}>{children}</span>;
 }
 
@@ -85,7 +94,9 @@ export function Tile({ label, value, note }: { label: string; value: string; not
 }
 
 // A wide table scrolls inside its own box, so the page itself never scrolls sideways.
-export function Table({ caption, head, rows, empty }: { caption: string; head: string[]; rows: ReactNode[][]; empty?: string }) {
+// Numbers line up on the right; textColumns (by index) stay on the left.
+export function Table({ caption, head, rows, empty, textColumns = [] }: { caption: string; head: string[]; rows: ReactNode[][]; empty?: string; textColumns?: number[] }) {
+  const right = (index: number) => index > 0 && !textColumns.includes(index);
   if (rows.length === 0 && empty) return <p className="text-sm text-brand-muted">{empty}</p>;
   return (
     <div className="max-w-full overflow-x-auto">
@@ -93,7 +104,7 @@ export function Table({ caption, head, rows, empty }: { caption: string; head: s
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr className="border-b border-brand-line text-left text-xs text-brand-muted">
-            {head.map((name, index) => <th key={name} scope="col" className={`px-3 py-2 font-semibold ${index > 0 ? "whitespace-nowrap text-right" : ""}`}>{name}</th>)}
+            {head.map((name, index) => <th key={name} scope="col" className={`whitespace-nowrap px-3 py-2 font-semibold ${right(index) ? "text-right" : ""}`}>{name}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -101,7 +112,7 @@ export function Table({ caption, head, rows, empty }: { caption: string; head: s
             <tr key={rowIndex} className="border-b border-brand-line last:border-0">
               {cells.map((cell, index) => index === 0
                 ? <th key={index} scope="row" className="min-w-[7rem] max-w-[16rem] break-words px-3 py-2 text-left font-medium">{cell}</th>
-                : <td key={index} className="whitespace-nowrap px-3 py-2 text-right tabular-nums">{cell}</td>)}
+                : <td key={index} className={right(index) ? "whitespace-nowrap px-3 py-2 text-right tabular-nums" : "max-w-[18rem] break-words px-3 py-2"}>{cell}</td>)}
             </tr>
           ))}
         </tbody>

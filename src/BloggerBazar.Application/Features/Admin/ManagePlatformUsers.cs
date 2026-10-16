@@ -8,10 +8,13 @@ using MediatR;
 namespace BloggerBazar.Application.Features.Admin;
 
 // VerifiedPhone and the profile flags let an admin find a person and see which roles they have (additive).
+// LastSeenAtUtc and Source (D56) were added for the web admin: the last app open (at most hourly) and the ad label.
 public sealed record AdminPlatformUserDto(long TelegramUserId, string FirstName, string? Username, PlatformRole Role, bool IsBlocked, bool IsDeleted, DateTime? DeletedAtUtc, long? DeletedByTelegramUserId, DateTime CreatedAtUtc,
-    string? VerifiedPhone = null, bool HasBloggerProfile = false, bool HasBusinessProfile = false, bool HasBrandFaceProfile = false)
+    string? VerifiedPhone = null, bool HasBloggerProfile = false, bool HasBusinessProfile = false, bool HasBrandFaceProfile = false,
+    DateTime? LastSeenAtUtc = null, string? Source = null)
 {
-    public static AdminPlatformUserDto From(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.IsBlocked, user.IsDeleted, user.DeletedAtUtc, user.DeletedByTelegramUserId, user.CreatedAtUtc, user.VerifiedPhone);
+    public static AdminPlatformUserDto From(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.IsBlocked, user.IsDeleted, user.DeletedAtUtc, user.DeletedByTelegramUserId, user.CreatedAtUtc, user.VerifiedPhone,
+        LastSeenAtUtc: user.LastSeenAtUtc, Source: user.Source);
 }
 
 // Filter values for the admin user list; anything else means all users.
