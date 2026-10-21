@@ -16,7 +16,10 @@ COPY landing landing
 RUN VITE_BOT_USERNAME="$BOT_USERNAME" npm --workspace landing run build
 
 FROM nginx:1.27-alpine AS runtime
-ENV PORT=8080
+# Railway sets PORT and API_UPSTREAM; the defaults suit a local docker compose network.
+ENV PORT=8080 \
+    API_UPSTREAM=http://api:8080 \
+    NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 COPY landing/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY landing/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/landing/dist /usr/share/nginx/html

@@ -1,5 +1,12 @@
-# Landing site: static pages only. No API, no cookies, no forms; every button is a link to the bot on t.me.
-# ${PORT} comes from the environment when the container starts (nginx image templates); Railway sets it.
+# Landing site: static pages, no cookies, no forms; every button is a link to the bot on t.me.
+# The one API call is GET /api/public/stats (three totals, D58), passed to the API over Railway's private network and
+# kept here for ten minutes, so visitors never reach the API directly.
+# ${...} values come from the environment when the container starts (nginx image templates):
+#   PORT                    the port Railway routes to;
+#   API_UPSTREAM            the API on the private network, e.g. http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080;
+#   NGINX_LOCAL_RESOLVERS   the container's DNS servers (set by the image from /etc/resolv.conf).
+
+proxy_cache_path /var/cache/nginx/stats levels=1 keys_zone=stats:1m max_size=1m inactive=1h use_temp_path=off;
 
 log_format landing '$time_iso8601 "$request_method $uri" $status $body_bytes_sent $request_time';
 
@@ -10,12 +17,42 @@ server {
     server_tokens off;
     access_log /var/log/nginx/access.log landing;
     client_max_body_size 16k;
+    # Looked up per request (not once at start), so the API can move inside the private network.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
 
     gzip on;
     gzip_comp_level 6;
     gzip_min_length 1024;
     gzip_vary on;
     gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # Nothing else of the API is reachable from this site.
+    location /api/ {
+        return 404;
+    }
+
+    # One cached answer for everyone; while the API is down the last answer stays (or the page hides the numbers).
+    location = /api/public/stats {
+        limit_except GET { deny all; }
+        set $api_upstream ${API_UPSTREAM};
+        proxy_pass $api_upstream/api/public/stats;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Cookie "";
+        proxy_set_header Authorization "";
+        proxy_pass_request_body off;
+        proxy_cache stats;
+        proxy_cache_key "public-stats";
+        proxy_cache_valid 200 10m;
+        proxy_cache_lock on;
+        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+        proxy_ignore_headers Set-Cookie;
+        proxy_hide_header Set-Cookie;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 5s;
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=600" always;
+    }
 
     location = /health {
         access_log off;
@@ -35,12 +72,12 @@ server {
         add_header Cache-Control "public, max-age=3600" always;
     }
 
-    # One page: own scripts and styles only, nothing is sent anywhere.
+    # One page: own scripts and styles only; it reads only /api/public/stats.
     location / {
         include /etc/nginx/snippets/security-headers.conf;
         add_header Cache-Control "no-cache" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; require-trusted-types-for 'script'" always;
+        add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; require-trusted-types-for 'script'" always;
         try_files $uri /index.html;
     }
 }

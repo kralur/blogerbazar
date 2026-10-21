@@ -73,5 +73,15 @@
   "cta.title": "Откройте BloggerBazar в Telegram",
   "cta.text": "Выберите роль и начните за пару минут.",
   "footer.rights": "© {year} BloggerBazar",
-  "footer.bot": "Бот в Telegram"
+  "footer.bot": "Бот в Telegram",
+  "numbers.title": "Уже в BloggerBazar",
+  "numbers.bloggers": "блогеров",
+  "numbers.businesses": "компаний",
+  "numbers.completedDeals": "завершённых сделок",
+  "numbers.bloggers_one": "блогер",
+  "numbers.bloggers_few": "блогера",
+  "numbers.businesses_one": "компания",
+  "numbers.businesses_few": "компании",
+  "numbers.completedDeals_one": "завершённая сделка",
+  "numbers.completedDeals_few": "завершённые сделки"
 }

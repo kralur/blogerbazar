@@ -1,6 +1,7 @@
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { botLink, type StartLabel } from "./bot";
 import { useI18n, type Language } from "./i18n";
+import { usePublicStats } from "./stats";
 import { useTheme } from "./theme";
 
 // The public landing page: what BloggerBazar is, how it works, and buttons that open the bot.
@@ -10,6 +11,7 @@ export function App() {
       <Header />
       <main>
         <Hero />
+        <Numbers />
         <HowItWorks />
         <Why />
         <ForWhom />
@@ -130,6 +132,33 @@ function PhoneMock() {
         </div>
       </div>
     </figure>
+  );
+}
+
+// Real totals, shown as they are (owner, 2026-10-21); the block appears only once the numbers have arrived.
+function Numbers() {
+  const { t, language } = useI18n();
+  const stats = usePublicStats();
+  if (!stats) return null;
+  const format = (value: number) => new Intl.NumberFormat(language === "uz" ? "uz-UZ" : "ru-RU").format(value);
+  const items = [
+    { key: "bloggers", value: stats.bloggers },
+    { key: "businesses", value: stats.businesses },
+    { key: "completedDeals", value: stats.completedDeals }
+  ];
+  return (
+    <section aria-labelledby="numbers-title" className={`${container} pb-4`}>
+      <h2 id="numbers-title" className="text-sm font-bold text-brand-muted">{t("numbers.title")}</h2>
+      <dl className="mt-3 grid grid-cols-1 gap-3 min-[360px]:grid-cols-3">
+        {items.map(({ key, value }) => (
+          // The label comes first for screen readers (dt before dd); the number is shown on top.
+          <div key={key} className="flex min-w-0 flex-col-reverse justify-end rounded-[var(--bb-radius-card)] border border-brand-line bg-brand-surface p-3 sm:p-6">
+            <dt className="mt-1 text-xs leading-5 text-brand-muted sm:text-sm">{t(`numbers.${key}`, { count: value })}</dt>
+            <dd className="break-words text-xl font-extrabold tracking-tight min-[360px]:text-2xl sm:text-4xl">{format(value)}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 

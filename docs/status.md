@@ -3,13 +3,13 @@
 Волатильный файл: обновляется при каждой публикации/checkpoint. Исторические результаты gates
 **не являются** результатами будущих изменений.
 
-_Последнее обновление: 2026-10-21, опубликовано до `b5f4535`; в review: сайт-лендинг `landing/` (D58)._
+_Последнее обновление: 2026-10-21, опубликовано до `e08ac5e` (лендинг); в review: цифры на лендинге, `GET /api/public/stats` (D58)._
 
 ## Checkpoint
 
 | | |
 |---|---|
-| Published `main` / `origin/main` | `b5f4535` CI: проверка на телефоне на Ubuntu 24.04 (`1f15125` напоминание о цене, фильтр «без цены»; `5bd96f3` карманная админка в Mini App (главный чат); до этого `87bd039` цена при завершении, `14c38f2` логотип, красная кнопка, фильтры модерации, `c4e6ad5` фаза 4, `ef05ef3` доработка фазы 3, `991cd4d` фаза 3, `a7d9e15` фаза 2, `ca9b16d` фаза 1, `0a37df8` Б4 CSP report-only, `880c553` D56, `e6dd11d`, `14db7da`, `0f25c80`, `2f30ca9`, `88b664f`, `450bf55`, `5250b46`, `07f7b23`, `11d672d`, `b849656`, `4b22bf8`, `17a8c07`, `5de31b5`, `e8363e0` D52 жалобы + очистка оплаты, `f0cd8bb` D51, `46b6320` D50, `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
+| Published `main` / `origin/main` | `e08ac5e` лендинг D58 (до этого `b5f4535` CI: проверка на телефоне на Ubuntu 24.04 (`1f15125` напоминание о цене, фильтр «без цены»; `5bd96f3` карманная админка в Mini App (главный чат); до этого `87bd039` цена при завершении, `14c38f2` логотип, красная кнопка, фильтры модерации, `c4e6ad5` фаза 4, `ef05ef3` доработка фазы 3, `991cd4d` фаза 3, `a7d9e15` фаза 2, `ca9b16d` фаза 1, `0a37df8` Б4 CSP report-only, `880c553` D56, `e6dd11d`, `14db7da`, `0f25c80`, `2f30ca9`, `88b664f`, `450bf55`, `5250b46`, `07f7b23`, `11d672d`, `b849656`, `4b22bf8`, `17a8c07`, `5de31b5`, `e8363e0` D52 жалобы + очистка оплаты, `f0cd8bb` D51, `46b6320` D50, `aa5c4dd` D47–D49, `3d8d1c8` D46, `92e7ec6`…`2db7833` RC QA, безопасность 1–2, D42–D45; ранее `c9e5e9e` MVP QA, раунд 4; предыдущие checkpoints `0b8aed0` D38, `f82d387` QA3, `eb82bb4` QA2+D37, `8478f84` D36, `66c2e1f` QA1, `e8a6ca1` R7, `755e847` R6, `a4385ef` R5, `3d00671` R4, `d45bf43` R3, `323825a` R2b, `abf79d6` R2a, `bd46784` R1, `9f0e632` 4C, `16603e9` 4A+4B, `b26abeb` 3F-C, `a17819b` 3F-B) |
 | Рабочая ветка Claude | `claude/new-session-di2yul` (сайт-админка; прежняя `claude/pensive-fermat-rp0p5w` сохраняется) |
 | CI PR для gates | 3F-B: …/pull/1 · 3F-C: …/pull/2 · 4A+4B: https://github.com/kralur/blogerbazar/pull/3 · 4C: https://github.com/kralur/blogerbazar/pull/4 · R1: https://github.com/kralur/blogerbazar/pull/5 · R2a: https://github.com/kralur/blogerbazar/pull/6 · R2b: https://github.com/kralur/blogerbazar/pull/7 · R3: https://github.com/kralur/blogerbazar/pull/8 · R4: https://github.com/kralur/blogerbazar/pull/9 · R5: https://github.com/kralur/blogerbazar/pull/10 |
 

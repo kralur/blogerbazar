@@ -73,5 +73,15 @@
   "cta.title": "BloggerBazar’ni Telegramda oching",
   "cta.text": "Rolni tanlang va bir necha daqiqada boshlang.",
   "footer.rights": "© {year} BloggerBazar",
-  "footer.bot": "Telegramdagi bot"
+  "footer.bot": "Telegramdagi bot",
+  "numbers.title": "BloggerBazar’da allaqachon",
+  "numbers.bloggers": "bloger",
+  "numbers.businesses": "kompaniya",
+  "numbers.completedDeals": "yakunlangan bitim",
+  "numbers.bloggers_one": "bloger",
+  "numbers.bloggers_few": "bloger",
+  "numbers.businesses_one": "kompaniya",
+  "numbers.businesses_few": "kompaniya",
+  "numbers.completedDeals_one": "yakunlangan bitim",
+  "numbers.completedDeals_few": "yakunlangan bitim"
 }

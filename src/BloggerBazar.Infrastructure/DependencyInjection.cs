@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminComplaintReviewReadModel, AdminComplaintReviewReadModel>();
         services.AddScoped<IReviewReadModel, ReviewReadModel>();
         services.AddScoped<IPublicBusinessReadModel, PublicBusinessReadModel>();
+        services.AddScoped<IPublicStatsReadModel, PublicStatsReadModel>();
         services.AddScoped<IDealReadModel, DealReadModel>();
         services.Configure<ProfileMediaOptions>(configuration.GetSection(ProfileMediaOptions.SectionName));
         services.AddSingleton<IProfileMediaStorage, S3ProfileMediaStorage>();
