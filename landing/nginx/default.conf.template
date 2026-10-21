@@ -1,0 +1,46 @@
+# Landing site: static pages only. No API, no cookies, no forms; every button is a link to the bot on t.me.
+# ${PORT} comes from the environment when the container starts (nginx image templates); Railway sets it.
+
+log_format landing '$time_iso8601 "$request_method $uri" $status $body_bytes_sent $request_time';
+
+server {
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    server_tokens off;
+    access_log /var/log/nginx/access.log landing;
+    client_max_body_size 16k;
+
+    gzip on;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_vary on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    location = /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Vite names built files by content, so they can be kept for a year.
+    location /assets/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    location = /robots.txt {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=3600" always;
+    }
+
+    # One page: own scripts and styles only, nothing is sent anywhere.
+    location / {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; require-trusted-types-for 'script'" always;
+        try_files $uri /index.html;
+    }
+}

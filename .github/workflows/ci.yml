@@ -77,6 +77,24 @@ jobs:
       - name: Build admin web
         run: npm --workspace admin-web run build
 
+  # The public landing site (landing): its own tests and production build; translations are audited above.
+  landing:
+    name: Landing build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run landing tests
+        run: npm --workspace landing run test
+      - name: Build landing
+        run: npm --workspace landing run build
+
   # Every main screen at 360 and 320 px, RU/UZ, light/dark, against the API with the development seed:
   # fails on content outside the screen, cut-off labels and text below 3:1 contrast (frontend/e2e/screen-check.mjs).
   # The bot token and webhook secret below are throwaway values for this job's own API, not production secrets.
@@ -140,7 +158,7 @@ jobs:
 
   docker:
     name: Production Docker build validation
-    needs: [backend, frontend, admin-web]
+    needs: [backend, frontend, admin-web, landing]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -153,3 +171,8 @@ jobs:
       # The image's entrypoint renders the nginx template from the environment, then nginx checks the result.
       - name: Check the admin site nginx configuration
         run: docker run --rm bloggerbazar-admin-web:ci nginx -t
+      # The bot name here is a placeholder: the image only needs a well-formed one to build.
+      - name: Build landing production image
+        run: docker build --file landing/Dockerfile --build-arg BOT_USERNAME=BloggerBazarCiBot --tag bloggerbazar-landing:ci .
+      - name: Check the landing nginx configuration
+        run: docker run --rm bloggerbazar-landing:ci nginx -t

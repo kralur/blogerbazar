@@ -3,10 +3,11 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-// Each app keeps its own RU/UZ dictionaries in src/i18n; the same rules apply to both.
+// Each app keeps its own RU/UZ dictionaries in src/i18n; the same rules apply to all of them.
 const apps = [
   { name: "frontend", alwaysReferenced: ["taxonomy.category.", "taxonomy.city.", "admin.role."] },
-  { name: "admin-web", alwaysReferenced: ["taxonomy.category.", "taxonomy.city."] }
+  { name: "admin-web", alwaysReferenced: ["taxonomy.category.", "taxonomy.city."] },
+  { name: "landing", alwaysReferenced: [] }
 ];
 // City and category names (shared/taxonomy), the admin funnel texts (shared/funnel) and the admin labels (shared/admin)
 // are merged into both apps' dictionaries; an app never repeats a shared key.
