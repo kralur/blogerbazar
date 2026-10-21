@@ -82,7 +82,7 @@ jobs:
   # The bot token and webhook secret below are throwaway values for this job's own API, not production secrets.
   screens:
     name: Phone screen check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16-alpine
