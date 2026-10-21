@@ -124,6 +124,8 @@ public static class AdminDealFilters
     public const string Active = "active";
     public const string Completed = "completed";
     public const string Cancelled = "cancelled";
+    // Completed deals the money report misses: no price entered and no offer budget.
+    public const string WithoutPrice = "withoutPrice";
     public static readonly IReadOnlyDictionary<string, DealStatus> Statuses = new Dictionary<string, DealStatus>(StringComparer.Ordinal)
     {
         [Active] = DealStatus.Active,
@@ -138,7 +140,7 @@ public sealed class GetAdminDealsValidator : AbstractValidator<GetAdminDealsQuer
 {
     public GetAdminDealsValidator()
     {
-        RuleFor(query => query.Status).Must(status => status is null || AdminDealFilters.Statuses.ContainsKey(status));
+        RuleFor(query => query.Status).Must(status => status is null || status == AdminDealFilters.WithoutPrice || AdminDealFilters.Statuses.ContainsKey(status));
     }
 }
 
@@ -147,7 +149,13 @@ public sealed class GetAdminDealsHandler(IAdminMarketplaceReadModel marketplace,
     public async Task<IReadOnlyList<AdminDealDto>> Handle(GetAdminDealsQuery query, CancellationToken cancellationToken)
     {
         access.EnsureAllowed(query.TelegramUserId);
+        var take = Math.Clamp(query.Take, 1, 200);
+        if (query.Status == AdminDealFilters.WithoutPrice)
+        {
+            return await marketplace.GetDealsAsync(null, take, cancellationToken, withoutPrice: true);
+        }
+
         DealStatus? status = query.Status is null ? null : AdminDealFilters.Statuses[query.Status];
-        return await marketplace.GetDealsAsync(status, Math.Clamp(query.Take, 1, 200), cancellationToken);
+        return await marketplace.GetDealsAsync(status, take, cancellationToken);
     }
 }

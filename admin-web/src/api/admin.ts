@@ -64,8 +64,9 @@ export type AdminComplaint = {
 };
 export const maxComplaintNote = 500;
 
-export type DealFilter = "all" | "active" | "completed" | "cancelled";
-export const dealFilters: DealFilter[] = ["all", "active", "completed", "cancelled"];
+// "withoutPrice": completed deals with no price entered and no offer budget, the ones the money report misses.
+export type DealFilter = "all" | "active" | "completed" | "cancelled" | "withoutPrice";
+export const dealFilters: DealFilter[] = ["all", "active", "completed", "cancelled", "withoutPrice"];
 export type AdminDeal = {
   id: string;
   title: string | null;

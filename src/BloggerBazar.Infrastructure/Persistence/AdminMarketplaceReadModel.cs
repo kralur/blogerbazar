@@ -92,7 +92,7 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
                     : deal.Business.Name,
                 deal.CampaignTitleSnapshot,
                 (int)deal.Status,
-                deal.AgreedPrice,
+                deal.CollaborationRequest != null && deal.CollaborationRequest.OfferedBudget != null ? deal.CollaborationRequest.OfferedBudget : deal.AgreedPrice,
                 deal.CreatedAtUtc))
             .ToArrayAsync(cancellationToken);
 
@@ -127,10 +127,16 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
                 profile.TelegramUserId))
             .ToArrayAsync(cancellationToken);
 
+    public Task<IReadOnlyList<AdminDealDto>> GetDealsAsync(DealStatus? status, int take, CancellationToken cancellationToken) =>
+        GetDealsAsync(status, take, cancellationToken, withoutPrice: false);
+
     // A deal has a blogger or a brand face on the creator side (never both); deleted profiles stay for their deals (D43).
-    public async Task<IReadOnlyList<AdminDealDto>> GetDealsAsync(DealStatus? status, int take, CancellationToken cancellationToken) =>
+    // Without a price: completed, no price entered and no offer budget (D51), the deals the money report misses.
+    public async Task<IReadOnlyList<AdminDealDto>> GetDealsAsync(DealStatus? status, int take, CancellationToken cancellationToken, bool withoutPrice) =>
         await dbContext.Deals.AsNoTracking()
             .Where(deal => status == null || deal.Status == status)
+            .Where(deal => !withoutPrice || (deal.Status == DealStatus.Completed && deal.AgreedPrice == null
+                && (deal.CollaborationRequest == null || deal.CollaborationRequest.OfferedBudget == null)))
             .OrderByDescending(deal => deal.CreatedAtUtc).Take(take)
             .Select(deal => new AdminDealDto(
                 deal.Id,
@@ -143,7 +149,7 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
                 deal.BloggerId != null ? deal.Blogger!.Name : deal.BrandFace!.Name,
                 deal.BloggerId != null ? deal.Blogger!.TelegramUserId : deal.BrandFace!.TelegramUserId,
                 (int)deal.Status,
-                deal.AgreedPrice,
+                deal.CollaborationRequest != null && deal.CollaborationRequest.OfferedBudget != null ? deal.CollaborationRequest.OfferedBudget : deal.AgreedPrice,
                 deal.CreatedAtUtc,
                 deal.CompletedAtUtc))
             .ToArrayAsync(cancellationToken);

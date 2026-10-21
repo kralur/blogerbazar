@@ -36,9 +36,11 @@ internal sealed class AdminAnalyticsReadModel(BloggerBazarDbContext dbContext) :
         var sql = $$"""
             SELECT to_char(d."CompletedAtUtc" AT TIME ZONE {{Tashkent}}, 'YYYY-MM') AS "Month",
                    count(*)::int AS "Completed",
-                   count(d."AgreedPrice")::int AS "Priced",
-                   coalesce(sum(d."AgreedPrice"), 0)::bigint AS "Total"
+                   count(coalesce(cr."OfferedBudget", d."AgreedPrice"))::int AS "Priced",
+                   coalesce(sum(coalesce(cr."OfferedBudget", d."AgreedPrice")), 0)::bigint AS "Total"
             FROM deals d
+            -- An offer deal's price is the offer budget (D51); the deal page shows it the same way.
+            LEFT JOIN collaboration_requests cr ON cr."Id" = d."CollaborationRequestId"
             WHERE d."Status" = {{(int)DealStatus.Completed}} AND d."CompletedAtUtc" >= {0}
             GROUP BY 1
             """;

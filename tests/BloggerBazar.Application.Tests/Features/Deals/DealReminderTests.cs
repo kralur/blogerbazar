@@ -81,6 +81,45 @@ public sealed class DealReminderTests
         Assert.Equal(10, reminder.ChatId);
     }
 
+    [Theory]
+    [InlineData(1.9, false)]
+    [InlineData(2.0, true)]
+    [InlineData(13.9, true)]
+    [InlineData(14.0, false)]
+    public void Business_without_a_price_is_asked_for_it_from_day_two(double daysSinceCompletion, bool expected)
+    {
+        var deal = Completed(Daytime.AddDays(-daysSinceCompletion)) with { BloggerHasReviewed = true, BusinessHasReviewed = true, NeedsPrice = true };
+
+        var due = DealReminderSchedule.Due(deal, Daytime);
+
+        if (!expected)
+        {
+            Assert.Empty(due);
+            return;
+        }
+
+        var reminder = Assert.Single(due);
+        Assert.Equal(DealReminderKind.PriceDay2, reminder.Kind);
+        Assert.Equal(MarketplaceRole.Business, reminder.RecipientRole);
+        Assert.Equal(20, reminder.ChatId);
+    }
+
+    [Fact]
+    public async Task Price_reminder_goes_to_the_business_and_names_the_deal()
+    {
+        var deal = Completed(Daytime.AddDays(-2)) with { BloggerHasReviewed = true, BusinessHasReviewed = true, BloggerName = "Madina", CampaignTitle = "Launch", NeedsPrice = true };
+        var bot = new SpyBotClient();
+
+        var sent = await new ProcessDealRemindersHandler(new FakeReminders(deal), new SpyReviews(), bot).Handle(new ProcessDealRemindersCommand(Daytime), CancellationToken.None);
+
+        Assert.Equal(1, sent);
+        Assert.Equal([20L], bot.NotifiedChats);
+        var text = Assert.Single(bot.Texts);
+        Assert.Contains("Укажите цену сделки «Launch» с партнёром Madina.", text);
+        Assert.Contains("Madina bilan «Launch» bitimining narxini kiriting.", text);
+        Assert.Contains("укажите 0", text);
+    }
+
     [Fact]
     public void Added_publication_means_no_results_reminder() =>
         Assert.Empty(DealReminderSchedule.Due(Completed(Daytime.AddDays(-4)) with { BloggerHasReviewed = true, BusinessHasReviewed = true, HasPublications = true }, Daytime));

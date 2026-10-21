@@ -141,6 +141,10 @@ internal static class BotMessages
         $"Если по сделке{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)} вышла публикация, добавьте ссылку и просмотры. Так бизнес увидит результат, а ваш профиль станет сильнее.",
         $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "i", "")} bo‘yicha e’lon chiqqan bo‘lsa, havolasini va ko‘rishlar sonini qo‘shing. Biznes natijani ko‘radi, profilingiz esa kuchliroq bo‘ladi.") with { Button = OpenDealButton };
 
+    public static BotText PriceReminder(string? partner, DealTopic topic) => Bilingual(
+        $"Укажите цену сделки{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)}. Так результат сделки будет полным. Если сделка была без оплаты, укажите 0.",
+        $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "ining", "ning")} narxini kiriting. Shunda bitim natijasi to‘liq bo‘ladi. Agar bitim to‘lovsiz bo‘lsa, 0 kiriting.") with { Button = OpenDealButton };
+
     public static BotText BloggerProfileApproved => Bilingual(
         "🎉 Ваш профиль прошёл проверку и доступен пользователям BloggerBazar.",
         "🎉 Profilingiz tekshiruvdan o‘tdi va BloggerBazar foydalanuvchilariga ko‘rinadi.");

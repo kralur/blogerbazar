@@ -17,6 +17,7 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
         var firstReviewReminderAt = nowUtc.AddDays(-1);
         // Not before the results reminder is due, so not-yet-due deals never fill the run's candidate limit.
         var resultsReminderAt = nowUtc.AddDays(-DealReminderSchedule.ResultsReminderDay);
+        var priceReminderAt = nowUtc.AddDays(-DealReminderSchedule.PriceReminderDay);
 
         // IgnoreQueryFilters: hidden reviews still mean the side has already reviewed.
         return await dbContext.Deals.AsNoTracking().IgnoreQueryFilters()
@@ -28,7 +29,10 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
                     && (deal.Reviews.Count() < 2
                         || (deal.CompletedAtUtc <= resultsReminderAt
                             && !dbContext.DealPublications.Any(publication => publication.DealId == deal.Id)
-                            && !dbContext.DealReminders.Any(reminder => reminder.DealId == deal.Id && reminder.Kind == DealReminderKind.ResultsDay2)))))
+                            && !dbContext.DealReminders.Any(reminder => reminder.DealId == deal.Id && reminder.Kind == DealReminderKind.ResultsDay2))
+                        || (deal.CompletedAtUtc <= priceReminderAt
+                            && deal.AgreedPrice == null && (deal.CollaborationRequest == null || deal.CollaborationRequest.OfferedBudget == null)
+                            && !dbContext.DealReminders.Any(reminder => reminder.DealId == deal.Id && reminder.Kind == DealReminderKind.PriceDay2)))))
             .OrderBy(deal => deal.CreatedAtUtc)
             .ThenBy(deal => deal.Id)
             .Take(MaxCandidatesPerRun)
@@ -45,7 +49,8 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
                 deal.Business.Name,
                 deal.CampaignTitleSnapshot,
                 deal.CollaborationRequest != null ? deal.CollaborationRequest.Format : null,
-                dbContext.DealPublications.Any(publication => publication.DealId == deal.Id)))
+                dbContext.DealPublications.Any(publication => publication.DealId == deal.Id),
+                deal.AgreedPrice == null && (deal.CollaborationRequest == null || deal.CollaborationRequest.OfferedBudget == null)))
             .ToArrayAsync(cancellationToken);
     }
 

@@ -38,6 +38,18 @@ public sealed class AdminDealsHandlerTests
     }
 
     [Fact]
+    public async Task Without_price_filter_asks_for_completed_deals_missing_a_price()
+    {
+        var marketplace = new FakeMarketplace();
+
+        var deals = await new GetAdminDealsHandler(marketplace, new AllowAdmin()).Handle(new GetAdminDealsQuery(1, "withoutPrice"), CancellationToken.None);
+
+        Assert.True(marketplace.RequestedWithoutPrice);
+        Assert.Null(marketplace.RequestedStatus);
+        Assert.Same(marketplace.Deals, deals);
+    }
+
+    [Fact]
     public async Task Non_admin_gets_no_deals()
     {
         var marketplace = new FakeMarketplace();
@@ -51,6 +63,7 @@ public sealed class AdminDealsHandlerTests
     [InlineData("active", true)]
     [InlineData("completed", true)]
     [InlineData("cancelled", true)]
+    [InlineData("withoutPrice", true)]
     [InlineData("Active", false)]
     [InlineData("1", false)]
     [InlineData("", false)]
@@ -67,6 +80,7 @@ public sealed class AdminDealsHandlerTests
         public bool Called { get; private set; }
         public DealStatus? RequestedStatus { get; private set; }
         public int RequestedTake { get; private set; }
+        public bool RequestedWithoutPrice { get; private set; }
         public IReadOnlyList<AdminDealDto> Deals { get; } =
             [new(Guid.NewGuid(), "Launch", false, "Cafe", 10, "blogger", "Madina", 20, (int)DealStatus.Active, null, DateTime.UtcNow, null)];
 
@@ -76,6 +90,12 @@ public sealed class AdminDealsHandlerTests
             RequestedStatus = status;
             RequestedTake = take;
             return Task.FromResult(Deals);
+        }
+
+        public Task<IReadOnlyList<AdminDealDto>> GetDealsAsync(DealStatus? status, int take, CancellationToken cancellationToken, bool withoutPrice)
+        {
+            RequestedWithoutPrice = withoutPrice;
+            return GetDealsAsync(status, take, cancellationToken);
         }
 
         public Task<IReadOnlyList<AdminBloggerProfileDto>> GetBloggersAsync(int take, CancellationToken cancellationToken) => throw new NotSupportedException();

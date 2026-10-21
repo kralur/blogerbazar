@@ -322,9 +322,10 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.True(reviewedCandidate.BloggerHasReviewed);
         Assert.False(reviewedCandidate.BusinessHasReviewed);
         Assert.False(reviewedCandidate.HasPublications);
-        // Two days after completion: the business still owes a review, and the blogger is asked for the publication link.
+        Assert.True(reviewedCandidate.NeedsPrice);
+        // Two days after completion: the business still owes a review and the price, the blogger is asked for the publication link.
         Assert.Equal(
-            [(reviewed.BusinessTelegramUserId, DealReminderKind.ReviewDay1), (reviewed.BloggerTelegramUserId, DealReminderKind.ResultsDay2)],
+            [(reviewed.BusinessTelegramUserId, DealReminderKind.ReviewDay1), (reviewed.BloggerTelegramUserId, DealReminderKind.ResultsDay2), (reviewed.BusinessTelegramUserId, DealReminderKind.PriceDay2)],
             DealReminderSchedule.Due(reviewedCandidate, nowUtc).Select(reminder => (reminder.ChatId, reminder.Kind)));
         Assert.True(firstClaim);
         Assert.False(secondClaim);
@@ -339,7 +340,9 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
         await dbContext.Deals.Where(deal => deal.Id == seed.DealId)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(deal => deal.CompletedAtUtc, (DateTime?)nowUtc.AddDays(-3)));
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(deal => deal.CompletedAtUtc, (DateTime?)nowUtc.AddDays(-3))
+                .SetProperty(deal => deal.AgreedPrice, (int?)1_000_000));
         using (var bloggerClient = CreateClient(seed.BloggerTelegramUserId))
         using (var businessClient = CreateClient(seed.BusinessTelegramUserId))
         {
@@ -353,6 +356,31 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal((seed.BloggerTelegramUserId, DealReminderKind.ResultsDay2), (due.ChatId, due.Kind));
 
         Assert.True(await reminders.TryClaimAsync(seed.DealId, DealReminderKind.ResultsDay2, MarketplaceRole.Blogger, nowUtc, CancellationToken.None));
+        Assert.DoesNotContain(await reminders.GetCandidatesAsync(nowUtc, CancellationToken.None), item => item.DealId == seed.DealId);
+    }
+
+    [IntegrationFact]
+    public async Task Reviewed_deal_without_a_price_stays_a_candidate_until_the_price_reminder_is_claimed()
+    {
+        var seed = await SeedCampaignDealAsync(1_100_109, 1_100_110, complete: true);
+        var nowUtc = DateTime.UtcNow;
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        await dbContext.Deals.Where(deal => deal.Id == seed.DealId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(deal => deal.CompletedAtUtc, (DateTime?)nowUtc.AddDays(-3)));
+        using (var bloggerClient = CreateClient(seed.BloggerTelegramUserId))
+        using (var businessClient = CreateClient(seed.BusinessTelegramUserId))
+        {
+            Assert.Equal(HttpStatusCode.Created, (await bloggerClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5 })).StatusCode);
+            Assert.Equal(HttpStatusCode.Created, (await businessClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5 })).StatusCode);
+        }
+
+        var reminders = scope.ServiceProvider.GetRequiredService<IDealReminderRepository>();
+        Assert.True(await reminders.TryClaimAsync(seed.DealId, DealReminderKind.ResultsDay2, MarketplaceRole.Blogger, nowUtc, CancellationToken.None));
+        var candidate = Assert.Single(await reminders.GetCandidatesAsync(nowUtc, CancellationToken.None), item => item.DealId == seed.DealId);
+        Assert.True(candidate.NeedsPrice);
+
+        Assert.True(await reminders.TryClaimAsync(seed.DealId, DealReminderKind.PriceDay2, MarketplaceRole.Business, nowUtc, CancellationToken.None));
         Assert.DoesNotContain(await reminders.GetCandidatesAsync(nowUtc, CancellationToken.None), item => item.DealId == seed.DealId);
     }
 

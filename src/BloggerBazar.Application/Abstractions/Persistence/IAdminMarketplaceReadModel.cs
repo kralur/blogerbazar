@@ -21,4 +21,7 @@ public interface IAdminMarketplaceReadModel
     // Deals newest first, every status when status is null.
     Task<IReadOnlyList<AdminDealDto>> GetDealsAsync(DealStatus? status, int take, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<AdminDealDto>>([]);
+    // Completed deals still without a price (none entered, no offer budget) when withoutPrice is set.
+    Task<IReadOnlyList<AdminDealDto>> GetDealsAsync(DealStatus? status, int take, CancellationToken cancellationToken, bool withoutPrice) =>
+        withoutPrice ? Task.FromResult<IReadOnlyList<AdminDealDto>>([]) : GetDealsAsync(status, take, cancellationToken);
 }

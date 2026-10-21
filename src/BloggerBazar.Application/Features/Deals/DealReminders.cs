@@ -23,7 +23,8 @@ public sealed record DealReminderCandidate(
     string? BusinessName = null,
     string? CampaignTitle = null,
     CollaborationFormat? Format = null,
-    bool HasPublications = true);
+    bool HasPublications = true,
+    bool NeedsPrice = false);
 
 public sealed record DueDealReminder(DealReminderKind Kind, MarketplaceRole RecipientRole, long ChatId);
 
@@ -44,6 +45,10 @@ public static class DealReminderSchedule
     // D51: two days after completion the creator is asked once for the publication link, if none was added.
     // Day 2 keeps it apart from the review reminders on days 1 and 3.
     public const int ResultsReminderDay = 2;
+
+    // D51 (2026-10-16): a completed deal without a price (none entered, no offer budget) asks the business once on day 2,
+    // so the money report fills even when the creator closed the deal. Day 2 is the business's quiet day between reviews.
+    public const int PriceReminderDay = 2;
 
     public static bool IsDeliveryTime(DateTime nowUtc)
     {
@@ -84,6 +89,11 @@ public static class DealReminderSchedule
             due.Add(new DueDealReminder(DealReminderKind.ResultsDay2, MarketplaceRole.Blogger, deal.BloggerTelegramUserId));
         }
 
+        if (deal.NeedsPrice && completedAtUtc.AddDays(PriceReminderDay) <= nowUtc)
+        {
+            due.Add(new DueDealReminder(DealReminderKind.PriceDay2, MarketplaceRole.Business, deal.BusinessTelegramUserId));
+        }
+
         return due;
     }
 
@@ -108,6 +118,7 @@ public static class DealReminderSchedule
             DealReminderKind.ReviewDay7 => BotMessages.ReviewReminderLastWeek(partner, topic),
             DealReminderKind.ReviewDay1 or DealReminderKind.ReviewDay3 => BotMessages.ReviewReminder(partner, topic),
             DealReminderKind.ResultsDay2 => BotMessages.ResultsReminder(partner, topic),
+            DealReminderKind.PriceDay2 => BotMessages.PriceReminder(partner, topic),
             _ => BotMessages.CompletionReminder(partner, topic)
         };
     }

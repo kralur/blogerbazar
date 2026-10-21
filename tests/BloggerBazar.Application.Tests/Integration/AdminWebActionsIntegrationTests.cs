@@ -42,6 +42,22 @@ public sealed class AdminWebActionsIntegrationTests(BloggerBazarApiFactory facto
         Assert.Equal((int)DealStatus.Completed, deal.GetProperty("status").GetInt32());
         Assert.DoesNotContain(active.EnumerateArray(), item => item.GetProperty("id").GetGuid() == dealId);
         Assert.Equal(HttpStatusCode.UnprocessableEntity, (await SendAsync(client, HttpMethod.Get, "/api/admin/deals?status=Done", token)).StatusCode);
+
+        // Completed without a price: listed under "without price" until the business enters one, 0 included.
+        Assert.Contains((await GetDealIdsAsync(client, "withoutPrice", token)), id => id == dealId);
+        using (var scope = factory.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>().Deals.Where(item => item.Id == dealId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(item => item.AgreedPrice, (int?)0));
+        }
+
+        Assert.DoesNotContain((await GetDealIdsAsync(client, "withoutPrice", token)), id => id == dealId);
+    }
+
+    private async Task<Guid[]> GetDealIdsAsync(HttpClient client, string status, string token)
+    {
+        var deals = await (await SendAsync(client, HttpMethod.Get, $"/api/admin/deals?status={status}&take=200", token)).Content.ReadFromJsonAsync<JsonElement>();
+        return deals.EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ToArray();
     }
 
     [IntegrationFact]

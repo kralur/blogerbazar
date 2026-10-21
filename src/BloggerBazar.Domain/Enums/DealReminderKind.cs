@@ -7,5 +7,6 @@ public enum DealReminderKind
     ReviewDay7 = 2,
     CompleteDay7 = 3,
     CompleteDay14 = 4,
-    ResultsDay2 = 5
+    ResultsDay2 = 5,
+    PriceDay2 = 6
 }
