@@ -14,7 +14,7 @@ jobs:
     name: Backend build and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
@@ -41,7 +41,7 @@ jobs:
     name: Frontend build and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -64,7 +64,7 @@ jobs:
     name: Admin web build and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -82,7 +82,7 @@ jobs:
     name: Landing build and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -125,7 +125,7 @@ jobs:
       SCREEN_CHECK_BOT_TOKEN: "123456:CI-SCREEN-CHECK"
       SCREEN_CHECK_WEBHOOK_SECRET: ci-screen-check-secret
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
@@ -161,7 +161,7 @@ jobs:
     needs: [backend, frontend, admin-web, landing]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build API production image
         run: docker build --file src/BloggerBazar.Api/Dockerfile --tag bloggerbazar-api:ci .
       - name: Build frontend production image
