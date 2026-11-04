@@ -54,6 +54,41 @@ public sealed class AdminWebActionsIntegrationTests(BloggerBazarApiFactory facto
         Assert.DoesNotContain((await GetDealIdsAsync(client, "withoutPrice", token)), id => id == dealId);
     }
 
+    // D59: the "Suspicious" page on a real database: one Instagram written two ways and one phone on two accounts.
+    [IntegrationFact]
+    public async Task Signals_find_a_shared_social_link_and_a_shared_phone()
+    {
+        await SeedUserAsync(1_500_091, PlatformRole.Admin);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var first = BloggerProfile.Create(1_500_092, "Signals original", "tashkent", ["beauty"]);
+            var copy = BloggerProfile.Create(1_500_093, "Signals copy", "tashkent", ["beauty"]);
+            dbContext.AddRange(first, copy);
+            dbContext.AddRange(
+                SocialPlatform.Create(first.Id, "instagram", "https://instagram.com/signals_case", 1000, null),
+                SocialPlatform.Create(copy.Id, "instagram", "https://www.Instagram.com/Signals_Case/?igsh=x", 900, null));
+            var phoneOne = PlatformUser.Create(1_500_094, "Signals phone one", null);
+            phoneOne.VerifyPhone("+998901500094", DateTime.UtcNow);
+            var phoneTwo = PlatformUser.Create(1_500_095, "Signals phone two", null);
+            phoneTwo.VerifyPhone("998901500094", DateTime.UtcNow);
+            dbContext.AddRange(phoneOne, phoneTwo);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var client = CreateClient();
+        var token = await SignInAsync(client, 1_500_091);
+        var response = await SendAsync(client, HttpMethod.Get, "/api/admin/signals", token);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var handle = body.GetProperty("duplicateHandles").EnumerateArray().Single(item => item.GetProperty("handle").GetString() == "instagram.com/signals_case");
+        Assert.Equal([1_500_092L, 1_500_093L], handle.GetProperty("people").EnumerateArray().Select(person => person.GetProperty("telegramUserId").GetInt64()).Order());
+        var phone = body.GetProperty("sharedPhones").EnumerateArray().Single(item => item.GetProperty("phone").GetString() == "+998901500094");
+        Assert.Equal(2, phone.GetProperty("people").GetArrayLength());
+        Assert.Equal(30, body.GetProperty("rules").GetProperty("quickDealMinutes").GetInt32());
+    }
+
     private async Task<Guid[]> GetDealIdsAsync(HttpClient client, string status, string token)
     {
         var deals = await (await SendAsync(client, HttpMethod.Get, $"/api/admin/deals?status={status}&take=200", token)).Content.ReadFromJsonAsync<JsonElement>();

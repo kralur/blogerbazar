@@ -10,6 +10,10 @@ internal sealed class BloggerProfileRepository(BloggerBazarDbContext dbContext) 
     public Task<BloggerProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.Id == id && !profile.IsDeleted, cancellationToken);
 
+    public async Task<bool> TryDecidePendingAsync(Guid id, BloggerStatus status, CancellationToken cancellationToken) =>
+        await dbContext.BloggerProfiles.Where(profile => profile.Id == id && profile.Status == BloggerStatus.Pending)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(profile => profile.Status, status), cancellationToken) == 1;
+
     public Task<BloggerProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) =>
         dbContext.BloggerProfiles.SingleOrDefaultAsync(profile => profile.TelegramUserId == telegramUserId && !profile.IsDeleted, cancellationToken);
 

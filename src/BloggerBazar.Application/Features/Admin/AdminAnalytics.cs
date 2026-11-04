@@ -15,6 +15,9 @@ public static class AdminAnalytics
     public const int DefaultRetentionDays = 90;
     public const int DefaultMonths = 12;
     public const int MaxMonths = 36;
+    // Audit 2026-10-22: dates before the app existed or far in the future are refused (422) instead of overflowing
+    // the date arithmetic (500).
+    public static readonly DateOnly EarliestDay = new(2020, 1, 1);
     public static readonly IReadOnlyList<int> RetentionHorizons = [1, 7, 30];
 
     public static DateOnly TodayInTashkent(DateTime utcNow) => DateOnly.FromDateTime(utcNow + TashkentOffset);
@@ -81,9 +84,12 @@ public sealed class GetAdminMoneyAnalyticsValidator : AbstractValidator<GetAdmin
 
 internal static class AdminAnalyticsRanges
 {
-    // Both ends optional; when given: from not after to, at most a year, and not after tomorrow.
+    // Both ends optional; when given: not before 2020, from not after to, at most a year, and not after tomorrow.
     public static bool IsValid(DateOnly? from, DateOnly? to)
     {
+        if (from < AdminAnalytics.EarliestDay || to < AdminAnalytics.EarliestDay) return false;
+        var latestDay = AdminAnalytics.TodayInTashkent(DateTime.UtcNow).AddDays(1);
+        if (from > latestDay || to > latestDay) return false;
         var (start, end) = AdminAnalytics.Resolve(from, to, 1, DateTime.UtcNow);
         var latest = AdminAnalytics.TodayInTashkent(DateTime.UtcNow).AddDays(1);
         return start <= end && end.DayNumber - start.DayNumber < AdminAnalytics.MaxDays && end <= latest;

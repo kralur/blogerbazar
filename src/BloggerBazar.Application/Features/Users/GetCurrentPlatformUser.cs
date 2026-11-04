@@ -31,10 +31,19 @@ public sealed class GetCurrentPlatformUserValidator : AbstractValidator<GetCurre
     }
 }
 
-public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users, IUnitOfWork unitOfWork, IConfiguredOwners? owners = null)
+public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users, IUnitOfWork unitOfWork, IConfiguredOwners? owners = null, IAuditLogRepository? auditLogs = null)
     : IRequestHandler<GetCurrentPlatformUserCommand, CurrentPlatformUserDto>
 {
+    // Pre-launch audit 2026-11-04: a new person's app opens with two GET /me at once; both try to create the account and
+    // the unique Telegram id lets only one in. The other now reads the account its twin created instead of a 500.
     public async Task<CurrentPlatformUserDto> Handle(GetCurrentPlatformUserCommand command, CancellationToken cancellationToken)
+    {
+        var first = await TryHandleAsync(command, cancellationToken);
+        return first ?? await TryHandleAsync(command, cancellationToken)
+            ?? throw new InvalidOperationException("The account was changed by another request at the same time.");
+    }
+
+    private async Task<CurrentPlatformUserDto?> TryHandleAsync(GetCurrentPlatformUserCommand command, CancellationToken cancellationToken)
     {
         var user = await users.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken);
         if (user is null)
@@ -65,10 +74,18 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
         {
             user.SetRole(PlatformRole.Owner);
         }
+        // Audit 2026-10-22: and loses it once the id is taken out of the settings (a former co-owner), with a journal entry.
+        else if (owners is not null && user.Role == PlatformRole.Owner && !owners.IsConfiguredOwner(user.TelegramUserId))
+        {
+            user.SetRole(PlatformRole.Member);
+            if (auditLogs is not null)
+            {
+                await auditLogs.AddAsync(AuditLog.Create(user.TelegramUserId, "platform-user.owner-revoked", "PlatformUser", user.TelegramUserId.ToString()), cancellationToken);
+            }
+        }
 
         user.MarkSeen(DateTime.UtcNow);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        return ToDto(user);
+        return await unitOfWork.TrySaveChangesAsync(cancellationToken) ? ToDto(user) : null;
     }
 
     internal static CurrentPlatformUserDto ToDto(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.SelectedMarketplaceRole, user.IsBlocked, user.PreferredLanguage, user.VerifiedPhone, !user.TipsDisabled);

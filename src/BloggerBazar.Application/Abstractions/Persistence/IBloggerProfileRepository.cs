@@ -1,4 +1,5 @@
 using BloggerBazar.Domain.Entities;
+using BloggerBazar.Domain.Enums;
 
 namespace BloggerBazar.Application.Abstractions.Persistence;
 
@@ -21,6 +22,9 @@ public sealed record BloggerCatalogPage(IReadOnlyList<BloggerProfile> Profiles, 
 public interface IBloggerProfileRepository
 {
     Task<BloggerProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    // Audit 2026-10-22: moves a profile out of "pending" only if it is still pending (conditional update), so two
+    // moderators deciding at once cannot both win; false when someone else already decided.
+    Task<bool> TryDecidePendingAsync(Guid id, BloggerStatus status, CancellationToken cancellationToken) => Task.FromResult(true);
     Task<BloggerProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken);
     Task<BloggerProfile?> GetIncludingDeletedByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => GetByTelegramUserIdAsync(telegramUserId, cancellationToken);
     Task<BloggerProfile?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>

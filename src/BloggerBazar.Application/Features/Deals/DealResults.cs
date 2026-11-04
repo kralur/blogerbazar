@@ -171,7 +171,8 @@ public sealed class AddDealPublicationHandler(
     IUnitOfWork unitOfWork,
     IBrandFaceProfileRepository? brandFaces = null,
     ITelegramBotClient? botClient = null,
-    ILogger<AddDealPublicationHandler>? logger = null) : IRequestHandler<AddDealPublicationCommand, DealPublicationDto>
+    ILogger<AddDealPublicationHandler>? logger = null,
+    IDealReminderRepository? reminders = null) : IRequestHandler<AddDealPublicationCommand, DealPublicationDto>
 {
     public async Task<DealPublicationDto> Handle(AddDealPublicationCommand command, CancellationToken cancellationToken)
     {
@@ -200,7 +201,13 @@ public sealed class AddDealPublicationHandler(
             throw new BusinessRuleConflictException(DealResultCodes.PublicationDuplicate, "This link is already in the deal.");
         }
 
-        await BestEffortTelegramNotification.SendAsync(botClient, logger, deal.Business.TelegramUserId, BotMessages.DealPublicationAdded(deal.CreatorName, DealTopic.Of(deal)), $"/deal/{deal.Id}", cancellationToken);
+        // Pre-launch audit 2026-11-04: once per deal (claimed like a reminder), so adding and deleting a link in a loop
+        // cannot message the business again and again; later links show in the deal's "Result" block.
+        if (reminders is null || await reminders.TryClaimAsync(deal.Id, DealReminderKind.PublicationNotice, MarketplaceRole.Business, DateTime.UtcNow, cancellationToken))
+        {
+            await BestEffortTelegramNotification.SendAsync(botClient, logger, deal.Business.TelegramUserId, BotMessages.DealPublicationAdded(deal.CreatorName, DealTopic.Of(deal)), $"/deal/{deal.Id}", cancellationToken);
+        }
+
         return DealPublicationDto.From(publication);
     }
 }

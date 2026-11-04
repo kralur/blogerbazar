@@ -417,7 +417,8 @@ describe("CSV export", () => {
     // UTF-8 byte order mark first, so Excel reads Cyrillic correctly.
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     const text = new TextDecoder().decode(bytes);
-    expect(text.split("\r\n")[0]).toBe("Имя;Ник (ПД);Telegram id (ПД);Телефон из Telegram (ПД);Роль;Профили;Регистрация;Последний заход;Метка, по которой пришёл;Состояние");
+    // A header with a comma is quoted, so programs that split on commas keep it as one cell (audit 2026-10-22).
+    expect(text.split("\r\n")[0]).toBe('Имя;Ник (ПД);Telegram id (ПД);Телефон из Telegram (ПД);Роль;Профили;Регистрация;Последний заход;"Метка, по которой пришёл";Состояние');
     expect(text.split("\r\n")[1]).toBe("Madina;'@madina;42;'+998901234567;Участник;Блогер;01.10.2026 15:00;16.10.2026 00:05;insta;активен");
   });
 

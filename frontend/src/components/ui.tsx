@@ -265,6 +265,8 @@ export function toastDurationMs(tone?: string) {
 
 export function Toast({ message, tone = "success" }: { message: string; tone?: ToastTone }) {
   const { haptic } = useTelegram();
+  // A screen kept mounted behind another tab keeps its last toast; the portal would still show it on top.
+  const screenVisible = useRootScreenVisibility();
   const [visible, setVisible] = useState(Boolean(message));
   useEffect(() => {
     if (!message) {
@@ -279,7 +281,7 @@ export function Toast({ message, tone = "success" }: { message: string; tone?: T
     const timer = window.setTimeout(() => setVisible(false), toastDurationMs(tone));
     return () => window.clearTimeout(timer);
   }, [haptic, message, tone]);
-  if (!message || !visible) return null;
+  if (!message || !visible || !screenVisible) return null;
   const isError = tone === "error";
   const isWarning = tone === "warning";
   if (typeof document === "undefined") return null;

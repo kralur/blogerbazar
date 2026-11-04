@@ -48,5 +48,8 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         // Web admin on, with room for every sign-in of a test class (the test server has no client address).
         builder.UseSetting("AdminWeb:Origin", AdminWebOrigin);
         builder.UseSetting("RateLimiting:AdminWebSignIn:PermitLimit", "1000");
+        // Owner counts only while the id is in the settings (audit 2026-10-22): the owners the tests seed are listed.
+        builder.UseSetting("Administration:TelegramUserIds:0", "1100939");
+        builder.UseSetting("Administration:TelegramUserIds:1", "1300011");
     }
 }

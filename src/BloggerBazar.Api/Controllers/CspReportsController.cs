@@ -12,7 +12,8 @@ public sealed class CspReportsController(CspReportLog log, IAdminAccessPolicy ad
     [HttpPost("csp-reports")]
     public IActionResult Report(CspReportRequest request)
     {
-        GetTelegramIdentity();
+        // A signed-in, active person only: blocked and deleted accounts cannot fill the list (audit 2026-10-22).
+        GetTelegramUser();
         log.Add(request.Directive, request.Blocked, request.Source, DateTime.UtcNow);
         return NoContent();
     }

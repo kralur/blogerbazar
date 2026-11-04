@@ -20,6 +20,7 @@
   "admin.log.platform-user.blocked": "Пользователь заблокирован",
   "admin.log.platform-user.unblocked": "Пользователь разблокирован",
   "admin.log.platform-user.account-deleted": "Пользователь удалил аккаунт",
+  "admin.log.platform-user.owner-revoked": "Снята роль владельца (нет в настройках)",
   "admin.log.complaint.resolved": "Жалоба решена",
   "admin.log.complaint.dismissed": "Жалоба отклонена",
   "admin.log.campaign.promoted": "Кампания продвигается",

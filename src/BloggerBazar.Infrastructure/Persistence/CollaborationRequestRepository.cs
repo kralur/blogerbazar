@@ -43,6 +43,13 @@ internal sealed class CollaborationRequestRepository(BloggerBazarDbContext dbCon
             && request.ExpiresAtUtc != null
             && request.CreatedAtUtc >= sinceUtc, cancellationToken);
 
+    public async Task<bool> TryDecidePendingAsync(Guid offerId, CollaborationRequestStatus status, CancellationToken cancellationToken) =>
+        await dbContext.CollaborationRequests
+            .Where(request => request.Id == offerId && (request.Status == CollaborationRequestStatus.Sent || request.Status == CollaborationRequestStatus.Viewed))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(request => request.Status, status), cancellationToken) == 1;
+
+    // Pre-launch audit 2026-11-04: an offer of a business whose account was blocked (or deleted) is gone for the creator
+    // too, so it can no longer be accepted into a deal that would open the blocked company's contacts.
     private IQueryable<CollaborationRequest> Offers() =>
         dbContext.CollaborationRequests
             .Include(request => request.Blogger)
@@ -50,6 +57,7 @@ internal sealed class CollaborationRequestRepository(BloggerBazarDbContext dbCon
             .Include(request => request.Business)
             .Include(request => request.Deal)
             .Where(request => request.ExpiresAtUtc != null && !request.Business.IsDeleted
+                && !dbContext.PlatformUsers.Any(user => user.TelegramUserId == request.Business.TelegramUserId && (user.IsBlocked || user.IsDeleted))
                 && (request.BloggerId != null ? !request.Blogger!.IsDeleted : !request.BrandFace!.IsDeleted));
 
     private static Expression<Func<CollaborationRequest, bool>> ParticipantFilter(MarketplaceRole role, Guid profileId) => role switch

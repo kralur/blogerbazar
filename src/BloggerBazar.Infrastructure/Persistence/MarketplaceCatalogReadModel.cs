@@ -10,8 +10,11 @@ namespace BloggerBazar.Infrastructure.Persistence;
 
 internal static class MarketplaceCatalogVisibility
 {
-    internal static IQueryable<BloggerProfile> PublicBloggers(IQueryable<BloggerProfile> query) =>
-        query.Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved);
+    // Pre-launch audit 2026-11-04: like campaigns and brand faces, a blogger whose account is blocked (or deleted) leaves
+    // the catalog, the profile page and the home rails; before, a blocked fraudster stayed listed.
+    internal static IQueryable<BloggerProfile> PublicBloggers(IQueryable<BloggerProfile> query, IQueryable<PlatformUser> platformUsers) =>
+        query.Where(profile => !profile.IsDeleted && profile.Status == BloggerStatus.Approved
+            && !platformUsers.Any(user => user.TelegramUserId == profile.TelegramUserId && (user.IsBlocked || user.IsDeleted)));
 
     internal static IQueryable<Campaign> PublicCampaigns(
         IQueryable<Campaign> campaigns,
@@ -42,7 +45,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
 {
     public async Task<SearchBloggersResult> SearchBloggersAsync(BloggerCatalogSearch search, CancellationToken cancellationToken)
     {
-        var query = MarketplaceCatalogVisibility.Listed(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking()));
+        var query = MarketplaceCatalogVisibility.Listed(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking(), dbContext.PlatformUsers.AsNoTracking()));
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
             var pattern = PostgresSearchPattern.Contains(search.Query.Trim());
@@ -98,7 +101,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
     }
 
     public async Task<BloggerProfileDto?> GetBloggerAsync(Guid id, CancellationToken cancellationToken) =>
-        (await ProjectBloggersAsync(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking()).Where(profile => profile.Id == id), cancellationToken)).SingleOrDefault();
+        (await ProjectBloggersAsync(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking(), dbContext.PlatformUsers.AsNoTracking()).Where(profile => profile.Id == id), cancellationToken)).SingleOrDefault();
 
     public async Task<MyBloggerProfileDto?> GetMyBloggerAsync(long telegramUserId, CancellationToken cancellationToken)
     {
