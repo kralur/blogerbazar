@@ -106,6 +106,13 @@ public sealed class BusinessProfile
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    // Owner decision 2026-11-04: as for bloggers, a rejected or returned company goes back to moderation on save.
+    public void PublishAfterOwnerEdit()
+    {
+        if (ModerationStatus is BloggerStatus.Rejected or BloggerStatus.NeedsChanges or BloggerStatus.Pending) SubmitForModeration();
+        else Approve(verified: false);
+    }
+
     public void SubmitForModeration()
     {
         ModerationStatus = BloggerStatus.Pending;

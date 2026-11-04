@@ -205,6 +205,14 @@ public sealed class BloggerProfile
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    // Owner decision 2026-11-04: a profile the moderator rejected or returned for changes goes back to the moderation
+    // queue when its owner saves it, instead of being published again by the save; any other profile stays published.
+    public void PublishAfterOwnerEdit()
+    {
+        if (Status is BloggerStatus.Rejected or BloggerStatus.NeedsChanges or BloggerStatus.Pending) SubmitForModeration();
+        else Approve(verified: false);
+    }
+
     public void SubmitForModeration()
     {
         Status = BloggerStatus.Pending;

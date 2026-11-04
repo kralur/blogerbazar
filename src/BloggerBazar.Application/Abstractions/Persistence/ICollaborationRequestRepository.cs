@@ -15,4 +15,7 @@ public interface ICollaborationRequestRepository
     Task<CollaborationRequest?> GetPendingOfferAsync(Guid businessId, MarketplaceRole creatorRole, Guid creatorId, CancellationToken cancellationToken) =>
         Task.FromResult<CollaborationRequest?>(null);
     Task<int> CountOffersSinceAsync(Guid businessId, DateTime sinceUtc, CancellationToken cancellationToken) => Task.FromResult(0);
+    // Pre-launch audit 2026-11-04: answers an offer only while it is still pending (conditional update), so Accept and
+    // Decline tapped at once cannot both win; false when the other answer came first.
+    Task<bool> TryDecidePendingAsync(Guid offerId, CollaborationRequestStatus status, CancellationToken cancellationToken) => Task.FromResult(true);
 }

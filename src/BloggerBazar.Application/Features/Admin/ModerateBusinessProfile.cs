@@ -27,8 +27,18 @@ public sealed class ModerateBusinessProfileHandler(IBusinessProfileRepository bu
             throw new InvalidOperationException("Only pending business profiles can be moderated.");
         }
         if (command.NeedsChanges) profile.RequestChanges(); else if (command.Approve) profile.Approve(); else profile.Reject();
-        await auditLogs.AddAsync(AuditLog.Create(command.TelegramUserId, AdminModerationAudit.Action("business-profile", command.Approve, command.NeedsChanges), "BusinessProfile", profile.Id.ToString()), cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        // Audit 2026-10-22: one decision per company even when two moderators decide at once (409 for the loser).
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
+        {
+            if (!await businesses.TryDecidePendingAsync(profile.Id, profile.ModerationStatus, token))
+            {
+                throw new InvalidOperationException("Only pending business profiles can be moderated.");
+            }
+
+            await auditLogs.AddAsync(AuditLog.Create(command.TelegramUserId, AdminModerationAudit.Action("business-profile", command.Approve, command.NeedsChanges), "BusinessProfile", profile.Id.ToString()), token);
+            await unitOfWork.SaveChangesAsync(token);
+            return true;
+        }, cancellationToken);
         if (cache is not null) await CampaignCatalogCache.InvalidateAsync(cache, cancellationToken);
         await BestEffortTelegramNotification.SendAsync(botClient, logger, profile.TelegramUserId, command.Approve ? BotMessages.BusinessProfileApproved : command.NeedsChanges ? BotMessages.BusinessProfileNeedsChanges : BotMessages.BusinessProfileRejected, cancellationToken);
         return BusinessProfileDto.From(profile);

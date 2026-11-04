@@ -35,6 +35,22 @@ public sealed class OfferHandlersTests
         Assert.Equal([blogger.TelegramUserId], bot.NotifiedChats);
     }
 
+    // Owner decision 2026-11-04: a company that moderation has not approved sends no offers.
+    [Fact]
+    public async Task A_company_not_approved_by_moderation_sends_no_offers()
+    {
+        var blogger = ApprovedBlogger(11);
+        var business = BusinessProfile.Create(22, "Pending Co", "tashkent");
+        var offers = new FakeOffers();
+        var bot = new SpyBotClient();
+
+        var error = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => CreateHandler(offers, blogger, business, User(22, MarketplaceRole.Business), bot).Handle(Command(22, blogger.Id), CancellationToken.None));
+
+        Assert.Equal("business_not_approved", error.Code);
+        Assert.Empty(offers.Items);
+        Assert.Empty(bot.NotifiedChats);
+    }
+
     [Theory]
     [InlineData(MarketplaceRole.Blogger)]
     [InlineData(MarketplaceRole.BrandFace)]
@@ -168,6 +184,31 @@ public sealed class OfferHandlersTests
         Assert.Contains("expired", exception.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(CollaborationRequestStatus.Expired, offer.Status);
         Assert.Empty(deals.Added);
+    }
+
+    // Pre-launch audit 2026-11-04: Accept and Decline tapped at once; the conditional update lets only the first win.
+    [Fact]
+    public async Task Accept_after_a_simultaneous_decline_fails_and_creates_no_deal()
+    {
+        var (blogger, business, offer) = PendingOffer();
+        var offers = new FakeOffers(offer) { DecidedElsewhere = true };
+        var deals = new FakeDeals();
+        var bot = new SpyBotClient();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => AcceptHandler(offers, deals, blogger, business, User(11, MarketplaceRole.Blogger), bot).Handle(new AcceptOfferCommand(11, offer.Id), CancellationToken.None));
+        Assert.Empty(deals.Added);
+        Assert.Empty(bot.NotifiedChats);
+    }
+
+    [Fact]
+    public async Task Decline_after_a_simultaneous_accept_fails_and_tells_nobody()
+    {
+        var (blogger, business, offer) = PendingOffer();
+        var bot = new SpyBotClient();
+        var handler = new DeclineOfferHandler(new FakeUsers(User(11, MarketplaceRole.Blogger)), new FakeBloggers(blogger), new FakeBusinesses(business), new FakeOffers(offer) { DecidedElsewhere = true }, new SpyUnitOfWork(), bot);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new DeclineOfferCommand(11, offer.Id), CancellationToken.None));
+        Assert.Empty(bot.NotifiedChats);
     }
 
     [Fact]
@@ -353,6 +394,8 @@ public sealed class OfferHandlersTests
     {
         public List<CollaborationRequest> Items { get; } = [.. seed];
         public int SentToday { get; init; }
+        public bool DecidedElsewhere { get; init; }
+        public Task<bool> TryDecidePendingAsync(Guid offerId, CollaborationRequestStatus status, CancellationToken cancellationToken) => Task.FromResult(!DecidedElsewhere);
 
         public Task<CollaborationRequest?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(Items.SingleOrDefault(item => item.Id == id));
         public Task<bool> ExistsDealAsync(Guid requestId, CancellationToken cancellationToken) => Task.FromResult(false);

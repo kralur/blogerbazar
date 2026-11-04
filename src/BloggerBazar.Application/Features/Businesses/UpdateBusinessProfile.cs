@@ -23,7 +23,7 @@ public sealed class UpdateBusinessProfileValidator : AbstractValidator<UpdateBus
     public UpdateBusinessProfileValidator()
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
-        RuleFor(command => command.Name).NotEmpty().MaximumLength(150);
+        RuleFor(command => command.Name).NotEmpty().MaximumLength(150).Must(ContactValidation.HasNoLink);
         RuleFor(command => command.Username).Must(ContactValidation.IsTelegramUsername).When(command => command.Username is not null);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80).Must(Regions.IsKnown);
         RuleFor(command => command.LogoUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.LogoUrl is not null);
@@ -57,7 +57,7 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
             command.Description?.Trim(),
             command.Phone?.Trim(),
             command.Email?.Trim());
-        profile.Approve(verified: false);
+        profile.PublishAfterOwnerEdit();
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null)
         {

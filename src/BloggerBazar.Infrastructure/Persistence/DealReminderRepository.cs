@@ -50,7 +50,9 @@ internal sealed class DealReminderRepository(BloggerBazarDbContext dbContext) : 
                 deal.CampaignTitleSnapshot,
                 deal.CollaborationRequest != null ? deal.CollaborationRequest.Format : null,
                 dbContext.DealPublications.Any(publication => publication.DealId == deal.Id),
-                deal.AgreedPrice == null && (deal.CollaborationRequest == null || deal.CollaborationRequest.OfferedBudget == null)))
+                deal.AgreedPrice == null && (deal.CollaborationRequest == null || deal.CollaborationRequest.OfferedBudget == null),
+                dbContext.PlatformUsers.Any(user => user.IsBlocked && user.TelegramUserId == (deal.BloggerId != null ? deal.Blogger!.TelegramUserId : deal.BrandFace!.TelegramUserId)),
+                dbContext.PlatformUsers.Any(user => user.IsBlocked && user.TelegramUserId == deal.Business.TelegramUserId)))
             .ToArrayAsync(cancellationToken);
     }
 

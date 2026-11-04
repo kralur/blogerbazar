@@ -12,6 +12,21 @@ public sealed class DealResultsTests
     private const long BloggerTelegramId = 11;
     private const long BusinessTelegramId = 22;
 
+    // Pre-launch audit 2026-11-04: adding and deleting links in a loop cannot message the business again and again.
+    [Fact]
+    public async Task The_business_hears_about_links_once_per_deal()
+    {
+        var world = World();
+        var bot = new SpyBotClient();
+
+        await world.Add(BloggerTelegramId, "https://instagram.com/p/one", 10, bot);
+        world.Publications.Items.Clear();
+        await world.Add(BloggerTelegramId, "https://instagram.com/p/one", 10, bot);
+        await world.Add(BloggerTelegramId, "https://instagram.com/p/two", 10, bot);
+
+        Assert.Equal([BusinessTelegramId], bot.NotifiedChats);
+    }
+
     [Fact]
     public async Task Creator_adds_a_publication_and_the_business_is_notified()
     {
@@ -237,8 +252,10 @@ public sealed class DealResultsTests
         public FakeDeals Deals { get; } = new(deal);
         public FakeDealPublications Publications { get; } = new();
 
+        public OnceClaims Claims { get; } = new();
+
         public Task<DealPublicationDto> Add(long telegramUserId, string url, int? views, SpyBotClient? bot = null) =>
-            new AddDealPublicationHandler(Users, Bloggers, Businesses, Deals, Publications, new SpyUnitOfWork(), botClient: bot)
+            new AddDealPublicationHandler(Users, Bloggers, Businesses, Deals, Publications, new SpyUnitOfWork(), botClient: bot, reminders: Claims)
                 .Handle(new AddDealPublicationCommand(Deal.Id, telegramUserId, url, views), CancellationToken.None);
 
         public Task<DealPublicationDto> Confirm(long telegramUserId, Guid publicationId) =>
@@ -260,4 +277,11 @@ internal sealed class FakeDealPublications : IDealPublicationRepository
     public Task AddAsync(DealPublication publication, CancellationToken cancellationToken) { Items.Add(publication); return Task.CompletedTask; }
 
     public void Remove(DealPublication publication) => Items.Remove(publication);
+}
+
+internal sealed class OnceClaims : IDealReminderRepository
+{
+    private readonly HashSet<(Guid, DealReminderKind, MarketplaceRole)> claimed = [];
+    public Task<IReadOnlyList<DealReminderCandidate>> GetCandidatesAsync(DateTime nowUtc, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<DealReminderCandidate>>([]);
+    public Task<bool> TryClaimAsync(Guid dealId, DealReminderKind kind, MarketplaceRole recipientRole, DateTime nowUtc, CancellationToken cancellationToken) => Task.FromResult(claimed.Add((dealId, kind, recipientRole)));
 }

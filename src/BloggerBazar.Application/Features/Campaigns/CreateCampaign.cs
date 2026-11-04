@@ -15,7 +15,7 @@ public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCo
     public CreateCampaignValidator()
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
-        RuleFor(command => command.Title).Must(value => !string.IsNullOrWhiteSpace(value)).MaximumLength(160);
+        RuleFor(command => command.Title).Must(value => !string.IsNullOrWhiteSpace(value)).MaximumLength(160).Must(ContactValidation.HasNoLink);
         RuleFor(command => command.Description).Must(value => !string.IsNullOrWhiteSpace(value)).MaximumLength(3000);
         RuleFor(command => command.City).MaximumLength(80).Must(Regions.IsKnown).When(command => !string.IsNullOrWhiteSpace(command.City));
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);

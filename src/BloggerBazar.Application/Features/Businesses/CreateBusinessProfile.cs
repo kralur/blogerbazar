@@ -15,7 +15,7 @@ public sealed class CreateBusinessProfileValidator : AbstractValidator<CreateBus
     public CreateBusinessProfileValidator()
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
-        RuleFor(command => command.Name).NotEmpty().MaximumLength(150);
+        RuleFor(command => command.Name).NotEmpty().MaximumLength(150).Must(ContactValidation.HasNoLink);
         RuleFor(command => command.Username).Must(ContactValidation.IsTelegramUsername).When(command => command.Username is not null);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80).Must(Regions.IsKnown);
         RuleFor(command => command.LogoUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.LogoUrl is not null);
@@ -50,7 +50,7 @@ public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository busi
         // Images come only from our own upload (profile media); a URL sent with the form is ignored, so nobody can
         // point a profile at an arbitrary external picture.
         profile.Update(command.Name.Trim(), command.Username?.Trim(), command.City?.Trim(), profile.LogoUrl, command.WebsiteUrl?.Trim(), command.Description?.Trim(), command.Phone?.Trim(), command.Email?.Trim());
-        profile.Approve(verified: false);
+        if (existing is null) profile.Approve(verified: false); else profile.PublishAfterOwnerEdit();
         if (existing is null)
         {
             await businesses.AddAsync(profile, cancellationToken);
