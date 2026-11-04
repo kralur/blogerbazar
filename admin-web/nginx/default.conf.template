@@ -18,11 +18,13 @@ server {
     # Looked up per request (not once at start), so the API can move inside the private network.
     resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
 
+    # gzip_proxied: the admin lists come from the API through this proxy and are the largest answers on the site.
     gzip on;
     gzip_comp_level 6;
     gzip_min_length 1024;
+    gzip_proxied any;
     gzip_vary on;
-    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_types text/css application/javascript application/json application/problem+json image/svg+xml;
 
     # Only the admin part of the API is reachable from this site (/api/admin*, /api/admin-web/*, also under /api/v1);
     # the marketplace API stays on its own address.

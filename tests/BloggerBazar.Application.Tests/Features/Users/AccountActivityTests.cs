@@ -36,6 +36,24 @@ public sealed class AccountActivityTests
         Assert.Equal("insta", users.Single.Source);
     }
 
+    // Found by a load test: two first requests of one account in the same instant made the second one fail on the
+    // unique index with a 500. It now reads the account the other request created and continues as a returning one.
+    [Fact]
+    public async Task A_parallel_first_request_continues_with_the_account_that_won()
+    {
+        var winner = PlatformUser.Create(5, "Ali", "ali");
+        var users = new RacingUsers(winner);
+        var unitOfWork = new RacingUnitOfWork();
+
+        var result = await new GetCurrentPlatformUserHandler(users, unitOfWork).Handle(new GetCurrentPlatformUserCommand(5, "Aliya", null, "insta"), CancellationToken.None);
+
+        Assert.Equal("Aliya", result.FirstName);
+        Assert.Equal("Aliya", winner.FirstName);
+        Assert.NotNull(winner.LastSeenAtUtc);
+        Assert.Equal(1, unitOfWork.TryCalls);
+        Assert.Equal(1, unitOfWork.SaveCalls);
+    }
+
     [Fact]
     public void Last_open_is_written_at_most_once_an_hour()
     {
@@ -48,6 +66,24 @@ public sealed class AccountActivityTests
 
         user.MarkSeen(first.AddMinutes(61));
         Assert.Equal(first.AddMinutes(61), user.LastSeenAtUtc);
+    }
+
+    // The account is missing on the first look and present on the second: another request created it in between.
+    private sealed class RacingUsers(PlatformUser winner) : IPlatformUserRepository
+    {
+        private int lookups;
+        public Task<PlatformUser?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult(++lookups == 1 ? null : winner);
+        public Task<IReadOnlyList<PlatformUser>> GetActiveAsync(int take, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<PlatformUser>>([winner]);
+        public Task<int> CountActiveAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+        public Task AddAsync(PlatformUser user, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class RacingUnitOfWork : IUnitOfWork
+    {
+        public int TryCalls { get; private set; }
+        public int SaveCalls { get; private set; }
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken) { SaveCalls++; return Task.FromResult(1); }
+        public Task<bool> TrySaveChangesAsync(CancellationToken cancellationToken) { TryCalls++; return Task.FromResult(false); }
     }
 
     private sealed class Users : IPlatformUserRepository

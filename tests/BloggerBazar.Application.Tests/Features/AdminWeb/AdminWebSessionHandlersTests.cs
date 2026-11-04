@@ -178,6 +178,19 @@ public sealed class AdminWebSessionHandlersTests
         Assert.True(validator.Validate(new StartAdminWebSessionCommand(new Dictionary<string, string> { ["auth_date"] = "1", ["hash"] = "h" })).IsValid);
     }
 
+    // The signed string joins fields with line feeds: a value with a line break could pass one field off as two.
+    [Theory]
+    [InlineData("Umid\nid=1")]
+    [InlineData("Umid\r")]
+    [InlineData("\t")]
+    public void A_value_with_a_control_character_is_invalid(string value)
+    {
+        var fields = new Dictionary<string, string> { ["first_name"] = value, ["auth_date"] = "1", ["hash"] = "h" };
+
+        Assert.False(new StartAdminWebSessionValidator().Validate(new StartAdminWebSessionCommand(fields)).IsValid);
+        Assert.True(new StartAdminWebSessionValidator().Validate(new StartAdminWebSessionCommand(new Dictionary<string, string>(fields) { ["first_name"] = "Umid Karimov" })).IsValid);
+    }
+
     private static PlatformUser User(long telegramUserId, PlatformRole role)
     {
         var user = PlatformUser.Create(telegramUserId, "Umid", "umid");

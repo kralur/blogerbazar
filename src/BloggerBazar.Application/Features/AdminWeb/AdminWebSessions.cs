@@ -79,11 +79,16 @@ public sealed class StartAdminWebSessionValidator : AbstractValidator<StartAdmin
             .Cascade(CascadeMode.Stop)
             .NotNull()
             .Must(fields => fields.Count is > 0 and <= MaxFields)
-            .Must(fields => fields.All(pair => IsFieldName(pair.Key) && pair.Value is { Length: <= MaxValueLength }));
+            .Must(fields => fields.All(pair => IsFieldName(pair.Key) && IsFieldValue(pair.Value)));
     }
 
     private static bool IsFieldName(string name) =>
         name.Length is > 0 and <= 32 && name.All(character => character is >= 'a' and <= 'z' or '_');
+
+    // Telegram never puts a line break or another control character in a field; the signature check joins fields with
+    // line feeds, so a value that carries one could only be an attempt to pass one field off as two.
+    private static bool IsFieldValue(string? value) =>
+        value is { Length: <= MaxValueLength } && !value.Any(char.IsControl);
 }
 
 // Every web admin request: the session must exist and its owner must still be an active Owner or Admin. Otherwise the

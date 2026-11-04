@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Bloggers;
 using BloggerBazar.Application.Features.Campaigns;
@@ -22,8 +23,25 @@ public sealed record MarketplaceHomeDto(
 
 public sealed record GetMarketplaceHomeQuery : IRequest<MarketplaceHomeDto>;
 
-public sealed class GetMarketplaceHomeHandler(IMarketplaceHomeReadModel home) : IRequestHandler<GetMarketplaceHomeQuery, MarketplaceHomeDto>
+// The home page is the first and busiest request of every start, and its rails cost eleven queries. One answer serves
+// everyone for a minute: a profile, photo or campaign change rotates a catalog namespace version (the same ones the
+// catalog searches use), so the key changes and the next request reads the database again.
+public sealed class GetMarketplaceHomeHandler(IMarketplaceHomeReadModel home, ICatalogCache cache) : IRequestHandler<GetMarketplaceHomeQuery, MarketplaceHomeDto>
 {
-    public Task<MarketplaceHomeDto> Handle(GetMarketplaceHomeQuery query, CancellationToken cancellationToken) =>
-        home.GetAsync(cancellationToken);
+    public static readonly TimeSpan CacheTime = TimeSpan.FromMinutes(1);
+
+    public async Task<MarketplaceHomeDto> Handle(GetMarketplaceHomeQuery query, CancellationToken cancellationToken)
+    {
+        var profilesVersion = await cache.GetNamespaceVersionAsync(cancellationToken);
+        var campaignsVersion = await cache.GetNamespaceVersionAsync(CampaignCatalogCache.Namespace, cancellationToken);
+        var key = $"marketplace:home:v1:{profilesVersion}:{campaignsVersion}";
+        if (await cache.GetAsync<MarketplaceHomeDto>(key, cancellationToken) is { } cached)
+        {
+            return cached;
+        }
+
+        var fresh = await home.GetAsync(cancellationToken);
+        await cache.SetAsync(key, fresh, CacheTime, cancellationToken);
+        return fresh;
+    }
 }

@@ -39,36 +39,49 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
         var user = await users.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken);
         if (user is null)
         {
-            user = PlatformUser.Create(command.TelegramUserId, command.FirstName.Trim(), NormalizeUsername(command.Username));
-            user.SetSourceOnce(command.Source?.Trim().ToLowerInvariant());
-            await users.AddAsync(user, cancellationToken);
+            var created = PlatformUser.Create(command.TelegramUserId, command.FirstName.Trim(), NormalizeUsername(command.Username));
+            created.SetSourceOnce(command.Source?.Trim().ToLowerInvariant());
+            await users.AddAsync(created, cancellationToken);
+            PromoteConfiguredOwner(created);
+            created.MarkSeen(DateTime.UtcNow);
+            // Two first requests of one account in the same instant (the app's start and the bot, or parallel screens):
+            // the unique index lets one through; the other reads the account that won and continues as a returning one.
+            if (await unitOfWork.TrySaveChangesAsync(cancellationToken))
+            {
+                return ToDto(created);
+            }
+
+            user = await users.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
+                ?? throw new InvalidOperationException("The account was created by a parallel request but could not be read.");
+        }
+
+        if (user.IsBlocked)
+        {
+            throw new UnauthorizedAccessException("This Telegram account is not allowed to access the marketplace.");
+        }
+
+        if (user.IsDeleted)
+        {
+            user.RestoreForNewOnboarding(command.FirstName.Trim(), NormalizeUsername(command.Username));
         }
         else
         {
-            if (user.IsBlocked)
-            {
-                throw new UnauthorizedAccessException("This Telegram account is not allowed to access the marketplace.");
-            }
-
-            if (user.IsDeleted)
-            {
-                user.RestoreForNewOnboarding(command.FirstName.Trim(), NormalizeUsername(command.Username));
-            }
-            else
-            {
-                user.SyncTelegramIdentity(command.FirstName.Trim(), NormalizeUsername(command.Username));
-            }
+            user.SyncTelegramIdentity(command.FirstName.Trim(), NormalizeUsername(command.Username));
         }
 
-        // The owner named in the deployment settings gets the Owner role on sign-in; nobody can grant it in the app.
+        PromoteConfiguredOwner(user);
+        user.MarkSeen(DateTime.UtcNow);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return ToDto(user);
+    }
+
+    // The owner named in the deployment settings gets the Owner role on sign-in; nobody can grant it in the app.
+    private void PromoteConfiguredOwner(PlatformUser user)
+    {
         if (owners?.IsConfiguredOwner(user.TelegramUserId) == true && user.Role != PlatformRole.Owner)
         {
             user.SetRole(PlatformRole.Owner);
         }
-
-        user.MarkSeen(DateTime.UtcNow);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        return ToDto(user);
     }
 
     internal static CurrentPlatformUserDto ToDto(PlatformUser user) => new(user.TelegramUserId, user.FirstName, user.Username, user.Role, user.SelectedMarketplaceRole, user.IsBlocked, user.PreferredLanguage, user.VerifiedPhone, !user.TipsDisabled);
