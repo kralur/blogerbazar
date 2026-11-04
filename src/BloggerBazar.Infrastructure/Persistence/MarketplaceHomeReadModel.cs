@@ -15,12 +15,16 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
 
     public async Task<MarketplaceHomeDto> GetAsync(CancellationToken cancellationToken)
     {
-        var approvedBloggers = dbContext.BloggerProfiles.AsNoTracking()
-            .Where(profile => !profile.IsDeleted && !profile.IsHidden && profile.Status == BloggerStatus.Approved);
-        var publishedCampaigns = MarketplaceCatalogVisibility.OpenForApplications(dbContext.Campaigns.AsNoTracking()
-            .Where(campaign => campaign.Status == CampaignStatus.Published && !campaign.Business.IsDeleted && !campaign.Business.IsHidden), DateTime.UtcNow);
-        var businesses = dbContext.BusinessProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && !profile.IsHidden);
-        var brandFaces = dbContext.BrandFaceProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && !profile.IsHidden);
+        // Pre-launch audit 2026-11-04: the same visibility rules as the catalogs (blocked or deleted owners and unapproved
+        // companies stay out), so Home never lists someone the catalog hides.
+        var users = dbContext.PlatformUsers.AsNoTracking();
+        var approvedBloggers = MarketplaceCatalogVisibility.Listed(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking(), users));
+        var publishedCampaigns = MarketplaceCatalogVisibility.OpenForApplications(MarketplaceCatalogVisibility.Listed(
+            MarketplaceCatalogVisibility.PublicCampaigns(dbContext.Campaigns.AsNoTracking(), dbContext.BusinessProfiles.AsNoTracking(), users)), DateTime.UtcNow);
+        var businesses = dbContext.BusinessProfiles.AsNoTracking().Where(profile => !profile.IsDeleted && !profile.IsHidden
+            && profile.ModerationStatus == BloggerStatus.Approved
+            && !users.Any(user => user.TelegramUserId == profile.TelegramUserId && (user.IsBlocked || user.IsDeleted)));
+        var brandFaces = BrandFaceCatalogVisibility.PublicBrandFaces(dbContext.BrandFaceProfiles.AsNoTracking(), users).Where(profile => !profile.IsHidden);
 
         var promotedBloggers = await ProjectBloggers(approvedBloggers
                 .Where(profile => profile.IsPromoted)

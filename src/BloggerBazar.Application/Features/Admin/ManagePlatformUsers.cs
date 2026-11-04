@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Features.Campaigns;
@@ -45,7 +46,13 @@ public sealed class GetAuditLogValidator : AbstractValidator<GetAuditLogQuery>
     public GetAuditLogValidator()
     {
         RuleFor(query => query).Must(query => query.From is null || query.To is null || query.From <= query.To);
+        // Audit 2026-10-22: no dates before the app or after tomorrow, so the day arithmetic cannot overflow (500).
+        RuleFor(query => query.From).Must(InRange).When(query => query.From is not null);
+        RuleFor(query => query.To).Must(InRange).When(query => query.To is not null);
     }
+
+    private static bool InRange(DateOnly? day) =>
+        day >= AdminAnalytics.EarliestDay && day <= AdminAnalytics.TodayInTashkent(DateTime.UtcNow).AddDays(1);
 }
 public sealed record UpdatePlatformUserRoleCommand(long ActorTelegramUserId, long TargetTelegramUserId, PlatformRole Role) : IRequest<AdminPlatformUserDto>;
 public sealed record SetPlatformUserBlockedCommand(long ActorTelegramUserId, long TargetTelegramUserId, bool IsBlocked) : IRequest<AdminPlatformUserDto>;
@@ -109,15 +116,16 @@ public sealed class GetAuditLogHandler(IAuditLogRepository auditLogs, BloggerBaz
     }
 }
 
-public sealed class UpdatePlatformUserRoleHandler(IPlatformUserRepository users, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork)
+public sealed class UpdatePlatformUserRoleHandler(IPlatformUserRepository users, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork, IConfiguredOwners? owners = null)
     : IRequestHandler<UpdatePlatformUserRoleCommand, AdminPlatformUserDto>
 {
     public async Task<AdminPlatformUserDto> Handle(UpdatePlatformUserRoleCommand command, CancellationToken cancellationToken)
     {
-        var actor = await RequireOwnerAsync(users, command.ActorTelegramUserId, cancellationToken);
+        var actor = await RequireOwnerAsync(users, command.ActorTelegramUserId, cancellationToken, owners);
         var target = await users.GetByTelegramUserIdAsync(command.TargetTelegramUserId, cancellationToken)
             ?? throw new InvalidOperationException("The target Telegram user has not registered yet.");
-        if (target.Role == PlatformRole.Owner && command.Role != PlatformRole.Owner)
+        // An owner no longer in the deployment settings is an ordinary account: their role can be changed.
+        if (IsConfiguredOwner(target, owners) && command.Role != PlatformRole.Owner)
         {
             throw new InvalidOperationException("The owner role cannot be removed through this endpoint.");
         }
@@ -134,21 +142,25 @@ public sealed class UpdatePlatformUserRoleHandler(IPlatformUserRepository users,
         return AdminPlatformUserDto.From(target);
     }
 
-    internal static async Task<PlatformUser> RequireOwnerAsync(IPlatformUserRepository users, long telegramUserId, CancellationToken cancellationToken) =>
-        await users.GetByTelegramUserIdAsync(telegramUserId, cancellationToken) is { Role: PlatformRole.Owner, IsBlocked: false, IsDeleted: false } user
+    // Audit 2026-10-22: Owner only while the id is in Administration:TelegramUserIds (when the settings are known).
+    internal static async Task<PlatformUser> RequireOwnerAsync(IPlatformUserRepository users, long telegramUserId, CancellationToken cancellationToken, IConfiguredOwners? owners = null) =>
+        await users.GetByTelegramUserIdAsync(telegramUserId, cancellationToken) is { IsBlocked: false, IsDeleted: false } user && IsConfiguredOwner(user, owners)
             ? user
             : throw new UnauthorizedAccessException("Only the owner can manage platform roles.");
+
+    internal static bool IsConfiguredOwner(PlatformUser user, IConfiguredOwners? owners) =>
+        user.Role == PlatformRole.Owner && (owners is null || owners.IsConfiguredOwner(user.TelegramUserId));
 }
 
-public sealed class SetPlatformUserBlockedHandler(IPlatformUserRepository users, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork, ICatalogCache? cache = null)
+public sealed class SetPlatformUserBlockedHandler(IPlatformUserRepository users, IAuditLogRepository auditLogs, IUnitOfWork unitOfWork, ICatalogCache? cache = null, IConfiguredOwners? owners = null)
     : IRequestHandler<SetPlatformUserBlockedCommand, AdminPlatformUserDto>
 {
     public async Task<AdminPlatformUserDto> Handle(SetPlatformUserBlockedCommand command, CancellationToken cancellationToken)
     {
-        var actor = await UpdatePlatformUserRoleHandler.RequireOwnerAsync(users, command.ActorTelegramUserId, cancellationToken);
+        var actor = await UpdatePlatformUserRoleHandler.RequireOwnerAsync(users, command.ActorTelegramUserId, cancellationToken, owners);
         var target = await users.GetByTelegramUserIdAsync(command.TargetTelegramUserId, cancellationToken)
             ?? throw new InvalidOperationException("The target Telegram user has not registered yet.");
-        if (target.Role == PlatformRole.Owner)
+        if (UpdatePlatformUserRoleHandler.IsConfiguredOwner(target, owners))
         {
             throw new InvalidOperationException("The owner account cannot be blocked.");
         }

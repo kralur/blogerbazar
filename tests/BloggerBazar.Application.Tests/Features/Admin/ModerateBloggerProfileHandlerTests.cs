@@ -51,6 +51,18 @@ public sealed class ModerateBloggerProfileHandlerTests
         Assert.Empty(auditLogs.Entries);
     }
 
+    // Audit 2026-10-22: another moderator decided first (the conditional update found the profile no longer pending).
+    [Fact]
+    public async Task The_second_of_two_simultaneous_decisions_fails_and_writes_nothing()
+    {
+        var profile = BloggerProfile.Create(101, "Madina", "Tashkent", ["Lifestyle"]);
+        var auditLogs = new SpyAuditLogs();
+        var handler = new ModerateBloggerProfileHandler(new InMemoryBloggerRepository(profile, loseRace: true), new AllowAdminAccessPolicy(), new SpyUnitOfWork(), auditLogs);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new ModerateBloggerProfileCommand(profile.Id, 7, true), CancellationToken.None));
+        Assert.Empty(auditLogs.Entries);
+    }
+
     [Fact]
     public async Task Rejects_moderation_from_non_administrator()
     {
@@ -61,8 +73,9 @@ public sealed class ModerateBloggerProfileHandlerTests
             handler.Handle(new ModerateBloggerProfileCommand(profile.Id, 2, true), CancellationToken.None));
     }
 
-    private sealed class InMemoryBloggerRepository(BloggerProfile profile) : IBloggerProfileRepository
+    private sealed class InMemoryBloggerRepository(BloggerProfile profile, bool loseRace = false) : IBloggerProfileRepository
     {
+        public Task<bool> TryDecidePendingAsync(Guid id, BloggerStatus status, CancellationToken cancellationToken) => Task.FromResult(!loseRace);
         public Task AddAsync(BloggerProfile value, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<BloggerProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<BloggerProfile?>(id == profile.Id ? profile : null);
         public Task<BloggerProfile?> GetByTelegramUserIdAsync(long telegramUserId, CancellationToken cancellationToken) => Task.FromResult<BloggerProfile?>(null);

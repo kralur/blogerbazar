@@ -13,6 +13,7 @@ internal sealed class FavoritesReadModel(BloggerBazarDbContext dbContext) : IFav
                     where favorite.PlatformUserId == platformUserId
                         && !blogger.IsDeleted
                         && blogger.Status == BloggerBazar.Domain.Enums.BloggerStatus.Approved
+                        && !dbContext.PlatformUsers.Any(user => user.TelegramUserId == blogger.TelegramUserId && (user.IsBlocked || user.IsDeleted))
                     select new { Favorite = favorite, Blogger = blogger };
 
         var total = await query.CountAsync(cancellationToken);

@@ -30,7 +30,7 @@ public sealed class UpsertBrandFaceProfileValidator : AbstractValidator<UpsertBr
     public UpsertBrandFaceProfileValidator()
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
-        RuleFor(command => command.Name).NotEmpty().MaximumLength(100);
+        RuleFor(command => command.Name).NotEmpty().MaximumLength(100).Must(ContactValidation.HasNoLink);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80).Must(Regions.IsKnown);
         // A business picks a face by gender and age first (QA Q20).
         RuleFor(command => command.Age).NotNull().InclusiveBetween(BrandFaceAge.Min, BrandFaceAge.Max);
@@ -46,7 +46,7 @@ public sealed class UpsertBrandFaceProfileValidator : AbstractValidator<UpsertBr
         RuleFor(command => command.Instagram).NotEmpty().Must(ContactValidation.IsInstagramUsername);
         RuleFor(command => command.Experience).MaximumLength(2000).When(command => command.Experience is not null);
         RuleFor(command => command.Description).MaximumLength(2000).When(command => command.Description is not null);
-        RuleFor(command => command.PortfolioUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.PortfolioUrl is not null);
+        RuleFor(command => command.PortfolioUrl).MaximumLength(2048).Must(ContactValidation.IsHttpsUrl).When(command => command.PortfolioUrl is not null);
         RuleFor(command => command.AvatarUrl).Must(ContactValidation.IsHttpsUrl).When(command => command.AvatarUrl is not null);
         RuleFor(command => command.CollaborationPrice).GreaterThan(0).LessThanOrEqualTo(InputLimits.MaxMoney).When(command => command.CollaborationPrice.HasValue);
     }

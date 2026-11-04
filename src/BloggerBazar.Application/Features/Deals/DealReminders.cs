@@ -24,7 +24,9 @@ public sealed record DealReminderCandidate(
     string? CampaignTitle = null,
     CollaborationFormat? Format = null,
     bool HasPublications = true,
-    bool NeedsPrice = false);
+    bool NeedsPrice = false,
+    bool BloggerBlocked = false,
+    bool BusinessBlocked = false);
 
 public sealed record DueDealReminder(DealReminderKind Kind, MarketplaceRole RecipientRole, long ChatId);
 
@@ -56,7 +58,14 @@ public static class DealReminderSchedule
         return localHour >= FirstDeliveryHour && localHour < LastDeliveryHour;
     }
 
-    public static IReadOnlyList<DueDealReminder> Due(DealReminderCandidate deal, DateTime nowUtc)
+    // Pre-launch audit 2026-11-04: an account the admin blocked gets no reminders (they link to an app that answers 403);
+    // the other side of the deal still gets theirs.
+    public static IReadOnlyList<DueDealReminder> Due(DealReminderCandidate deal, DateTime nowUtc) =>
+        DueForAnyone(deal, nowUtc)
+            .Where(reminder => !(reminder.RecipientRole == MarketplaceRole.Blogger ? deal.BloggerBlocked : deal.BusinessBlocked))
+            .ToArray();
+
+    private static IReadOnlyList<DueDealReminder> DueForAnyone(DealReminderCandidate deal, DateTime nowUtc)
     {
         if (deal.Status == DealStatus.Active)
         {

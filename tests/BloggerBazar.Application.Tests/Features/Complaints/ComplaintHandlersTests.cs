@@ -149,6 +149,19 @@ public sealed class ComplaintHandlersTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new CloseComplaintCommand(1, complaint.Id, ComplaintStatuses.Dismissed, null), CancellationToken.None));
     }
 
+    // Audit 2026-10-22: another admin closed it first; the loser gets 409 and writes no journal entry.
+    [Fact]
+    public async Task The_second_of_two_simultaneous_closes_fails_and_writes_nothing()
+    {
+        var complaint = Complaint.Create(BusinessTelegramId, MarketplaceRole.Business, ComplaintTargets.Blogger, Guid.NewGuid(), "spam", null, DateTime.UtcNow);
+        var complaints = new FakeComplaints { Items = { complaint }, LoseRace = true };
+        var audit = new FakeAuditLogs();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new CloseComplaintHandler(complaints, new AllowAdmin(), audit, new SpyUnitOfWork())
+            .Handle(new CloseComplaintCommand(1, complaint.Id, ComplaintStatuses.Dismissed, null), CancellationToken.None));
+        Assert.Empty(audit.Entries);
+    }
+
     [Fact]
     public async Task Non_admin_cannot_see_or_close_complaints()
     {
@@ -198,6 +211,8 @@ public sealed class ComplaintHandlersTests
     private sealed class FakeComplaints : IComplaintRepository
     {
         public List<Complaint> Items { get; init; } = [];
+        public bool LoseRace { get; init; }
+        public Task<bool> TryCloseOpenAsync(Guid id, string status, CancellationToken cancellationToken) => Task.FromResult(!LoseRace);
         public Task<Complaint?> FindOpenAsync(long reporterTelegramUserId, string targetType, Guid targetId, CancellationToken cancellationToken) =>
             Task.FromResult(Items.SingleOrDefault(item => item.ReporterTelegramUserId == reporterTelegramUserId && item.TargetType == targetType && item.TargetId == targetId && item.Status == ComplaintStatuses.Open));
         public Task<int> CountSinceAsync(long reporterTelegramUserId, DateTime sinceUtc, CancellationToken cancellationToken) =>

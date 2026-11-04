@@ -49,7 +49,8 @@ public sealed class ShareDealContactHandler(
         {
             await botClient.SendContactAsync(command.TelegramUserId, phone, name, cancellationToken);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        // A Telegram timeout (TaskCanceledException) is a failed send too, not a 500 (pre-launch audit 2026-11-04).
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             // Usually the person has never started the bot or has blocked it.
             throw new BusinessRuleConflictException("contact_share_failed", "The contact could not be sent to the bot chat.");

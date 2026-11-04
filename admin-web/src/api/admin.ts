@@ -139,3 +139,15 @@ export const signOutEverywhere = () => api<void>("/api/admin-web/logout-all", { 
 // The journal entry for a CSV export, written before the browser saves the file.
 export type ExportKind = "users" | "deals" | "complaints" | "journal" | "daily" | "money" | "cities" | "categories" | "sources" | "funnel";
 export const recordExport = (kind: ExportKind, rows: number) => api<void>("/api/admin-web/exports", { method: "POST", body: { kind, rows } });
+
+// D60: hints of fake accounts and rating farming; the owner decides, nothing happens automatically.
+export type SignalPerson = { telegramUserId: number; name: string };
+export type AdminSignals = {
+  duplicateHandles: { handle: string; people: SignalPerson[] }[];
+  sharedPhones: { phone: string; people: SignalPerson[] }[];
+  quickDeals: { dealId: string; title: string | null; business: SignalPerson; creator: SignalPerson; minutes: number; reviews: number; completedAtUtc: string }[];
+  complaintTargets: { targetType: AdminComplaint["targetType"]; targetId: string; targetName: string | null; ownerTelegramUserId: number | null; reporters: number; lastAtUtc: string }[];
+  signupBursts: { source: string; hourUtc: string; accounts: number; withProfile: number; lowProfiles: boolean }[];
+  rules: { quickDealMinutes: number; quickDealDays: number; complaintReporters: number; complaintDays: number; burstAccounts: number; burstLowProfilePercent: number; burstDays: number };
+};
+export const getSignals = () => api<AdminSignals>("/api/admin/signals");

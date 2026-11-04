@@ -26,17 +26,31 @@ internal sealed class S3ProfileMediaStorage(
 
     private readonly ProfileMediaOptions _options = options.Value;
 
+    // Pre-launch audit 2026-11-04: a tiny file can describe a huge picture (a 110 KB PNG of 5000x5000 decodes to
+    // 100 MB), and uploads were decoded side by side without limit, so 30 at once could exhaust the container's memory.
+    // At most two pictures are processed at a time across the process, and big ones are decoded already scaled down.
+    private static readonly SemaphoreSlim Processing = new(2, 2);
+
     public async Task<StoredProfileMedia> UploadAsync(ProfileMediaUpload upload, CancellationToken cancellationToken)
     {
         EnsureConfigured();
         ValidateFileMetadata(upload);
 
-        using var input = new MemoryStream(upload.Content.ToArray(), writable: false);
-        using var image = LoadAndValidateImage(input);
-        using var resizedImage = ResizeImage(image);
-        using var encodedImage = resizedImage.Encode(SKEncodedImageFormat.Webp, _options.WebpQuality);
         await using var output = new MemoryStream();
-        encodedImage.SaveTo(output);
+        await Processing.WaitAsync(cancellationToken);
+        try
+        {
+            using var input = new MemoryStream(upload.Content.ToArray(), writable: false);
+            using var image = LoadAndValidateImage(input);
+            using var resizedImage = ResizeImage(image);
+            using var encodedImage = resizedImage.Encode(SKEncodedImageFormat.Webp, _options.WebpQuality);
+            encodedImage.SaveTo(output);
+        }
+        finally
+        {
+            Processing.Release();
+        }
+
         output.Position = 0;
 
         var objectKey = $"profiles/{ToStorageSegment(upload.Target)}/{upload.ProfileId:N}/{Guid.NewGuid():N}.webp";
@@ -97,7 +111,7 @@ internal sealed class S3ProfileMediaStorage(
         }
     }
 
-    private SKBitmap LoadAndValidateImage(Stream input)
+    internal SKBitmap LoadAndValidateImage(Stream input)
     {
         using var codec = SKCodec.Create(input);
         if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0 ||
@@ -106,9 +120,17 @@ internal sealed class S3ProfileMediaStorage(
             throw new ProfileMediaValidationException();
         }
 
-        var image = SKBitmap.Decode(codec);
-        if (image is null)
+        // The stored picture is at most MaxImageDimension wide; decoding at twice that keeps the halving steps of
+        // ResizeImage sharp. Formats that cannot decode scaled (PNG) are decoded at full size, one or two at a time.
+        var target = Math.Max(1, _options.MaxImageDimension * 2);
+        var longest = Math.Max(codec.Info.Width, codec.Info.Height);
+        var size = longest > target ? codec.GetScaledDimensions((float)target / longest) : codec.Info.Size;
+        var info = new SKImageInfo(size.Width, size.Height, SKImageInfo.PlatformColorType, codec.Info.AlphaType == SKAlphaType.Opaque ? SKAlphaType.Opaque : SKAlphaType.Premul);
+        var image = new SKBitmap(info);
+        var result = codec.GetPixels(info, image.GetPixels());
+        if (result is not (SKCodecResult.Success or SKCodecResult.IncompleteInput))
         {
+            image.Dispose();
             throw new ProfileMediaValidationException();
         }
 

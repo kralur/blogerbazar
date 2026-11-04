@@ -25,7 +25,7 @@ public sealed class SearchBloggersValidator : AbstractValidator<SearchBloggersQu
 {
     public SearchBloggersValidator()
     {
-        RuleFor(query => query.Page).GreaterThan(0);
+        RuleFor(query => query.Page).InclusiveBetween(1, 100_000); // a huge page number overflowed the offset (500), audit 2026-11-04
         RuleFor(query => query.PageSize).InclusiveBetween(1, 50);
         RuleFor(query => query.Query).MaximumLength(100).When(query => query.Query is not null);
         RuleFor(query => query.City).MaximumLength(80).When(query => query.City is not null);

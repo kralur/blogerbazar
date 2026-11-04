@@ -15,7 +15,8 @@ const check = (ok, name, detail = "") => {
   console.log(`${ok ? "ok  " : "FAIL"} ${name}${detail ? ` (${detail})` : ""}`);
 };
 
-for (const path of ["/", "/login", "/users"]) {
+// /auth/telegram receives the signed Telegram data: the strict CSP and no-referrer matter most there.
+for (const path of ["/", "/login", "/users", "/auth/telegram"]) {
   const response = await fetch(base + path, { redirect: "manual" });
   const csp = response.headers.get("content-security-policy") ?? "";
   check(response.status === 200, `${path} answers`, String(response.status));
