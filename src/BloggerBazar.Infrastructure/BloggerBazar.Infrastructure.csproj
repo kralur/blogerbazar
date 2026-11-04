@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.101.6" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.104.2" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\BloggerBazar.Domain\BloggerBazar.Domain.csproj" />
     <ProjectReference Include="..\BloggerBazar.Application\BloggerBazar.Application.csproj" />
