@@ -18,6 +18,10 @@ internal sealed class ComplaintRepository(BloggerBazarDbContext dbContext) : ICo
     public Task<Complaint?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         dbContext.Complaints.SingleOrDefaultAsync(complaint => complaint.Id == id, cancellationToken);
 
+    public async Task<bool> TryCloseOpenAsync(Guid id, string status, CancellationToken cancellationToken) =>
+        await dbContext.Complaints.Where(complaint => complaint.Id == id && complaint.Status == Complaint.OpenStatus)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(complaint => complaint.Status, status), cancellationToken) == 1;
+
     public async Task AddAsync(Complaint complaint, CancellationToken cancellationToken) => await dbContext.Complaints.AddAsync(complaint, cancellationToken);
 
     public Task<int> CountOpenAsync(CancellationToken cancellationToken) =>

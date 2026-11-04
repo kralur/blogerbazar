@@ -115,6 +115,8 @@ internal static class OfferAccess
 {
     internal const int DailyLimit = 20;
     internal const string DailyLimitCode = "offer_daily_limit";
+    // Owner decision 2026-11-04: a company that moderation has not approved (pending, rejected, returned) sends no offers.
+    internal const string BusinessNotApprovedCode = "business_not_approved";
     internal const string AlreadyActiveCode = "offer_already_active";
 
     internal static InvalidOperationException NotFound() => new("Offer was not found.");
@@ -164,6 +166,11 @@ public sealed class CreateOfferHandler(
         if (business.IsHidden)
         {
             throw new BusinessRuleConflictException(Users.ProfileVisibilityCodes.ProfileHidden, "The profile is hidden.");
+        }
+
+        if (business.ModerationStatus != BloggerStatus.Approved)
+        {
+            throw new BusinessRuleConflictException(OfferAccess.BusinessNotApprovedCode, "The company is not approved by moderation yet.");
         }
 
         var recipient = await FindRecipientAsync(command, cancellationToken);
@@ -308,8 +315,25 @@ public sealed class AcceptOfferHandler(
         await OfferDecision.EnsurePendingAsync(offer, unitOfWork, cancellationToken);
         offer.Accept();
         var deal = Deal.CreateFromCollaborationRequest(offer.Id, offer.CreatorRole, offer.CreatorId, offer.BusinessId);
-        await deals.AddAsync(deal, cancellationToken);
-        if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
+        // The pending check and the deal commit together: a Decline that came first makes this one fail (409) instead
+        // of leaving a deal behind a declined offer.
+        var saved = await unitOfWork.ExecuteInTransactionAsync(async token =>
+        {
+            if (!await offers.TryDecidePendingAsync(offer.Id, CollaborationRequestStatus.Accepted, token))
+            {
+                return (bool?)null;
+            }
+
+            await deals.AddAsync(deal, token);
+            return await unitOfWork.TrySaveChangesAsync(token);
+        }, cancellationToken);
+        if (saved is null)
+        {
+            var current = await deals.GetByCollaborationRequestIdAsync(offer.Id, cancellationToken);
+            return current is not null ? new(offer.Id, OfferStates.Accepted, current.Id) : throw new InvalidOperationException("The offer is no longer pending.");
+        }
+
+        if (saved == false)
         {
             var persisted = await deals.GetByCollaborationRequestIdAsync(offer.Id, cancellationToken)
                 ?? throw new InvalidOperationException("Offer acceptance conflicts with an existing deal.");
@@ -355,6 +379,11 @@ public sealed class DeclineOfferHandler(
         }
 
         await OfferDecision.EnsurePendingAsync(offer, unitOfWork, cancellationToken);
+        if (!await offers.TryDecidePendingAsync(offer.Id, CollaborationRequestStatus.Declined, cancellationToken))
+        {
+            throw new InvalidOperationException("The offer is no longer pending.");
+        }
+
         offer.Decline();
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await BestEffortTelegramNotification.SendAsync(

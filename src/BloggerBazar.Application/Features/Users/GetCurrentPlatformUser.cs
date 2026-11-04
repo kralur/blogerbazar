@@ -31,7 +31,7 @@ public sealed class GetCurrentPlatformUserValidator : AbstractValidator<GetCurre
     }
 }
 
-public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users, IUnitOfWork unitOfWork, IConfiguredOwners? owners = null)
+public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users, IUnitOfWork unitOfWork, IConfiguredOwners? owners = null, IAuditLogRepository? auditLogs = null)
     : IRequestHandler<GetCurrentPlatformUserCommand, CurrentPlatformUserDto>
 {
     public async Task<CurrentPlatformUserDto> Handle(GetCurrentPlatformUserCommand command, CancellationToken cancellationToken)
@@ -42,7 +42,7 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
             var created = PlatformUser.Create(command.TelegramUserId, command.FirstName.Trim(), NormalizeUsername(command.Username));
             created.SetSourceOnce(command.Source?.Trim().ToLowerInvariant());
             await users.AddAsync(created, cancellationToken);
-            PromoteConfiguredOwner(created);
+            await SyncOwnerRoleAsync(created, cancellationToken);
             created.MarkSeen(DateTime.UtcNow);
             // Two first requests of one account in the same instant (the app's start and the bot, or parallel screens):
             // the unique index lets one through; the other reads the account that won and continues as a returning one.
@@ -69,18 +69,28 @@ public sealed class GetCurrentPlatformUserHandler(IPlatformUserRepository users,
             user.SyncTelegramIdentity(command.FirstName.Trim(), NormalizeUsername(command.Username));
         }
 
-        PromoteConfiguredOwner(user);
+        await SyncOwnerRoleAsync(user, cancellationToken);
         user.MarkSeen(DateTime.UtcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ToDto(user);
     }
 
     // The owner named in the deployment settings gets the Owner role on sign-in; nobody can grant it in the app.
-    private void PromoteConfiguredOwner(PlatformUser user)
+    // Audit 2026-10-22: and loses it once the id is taken out of the settings (a former co-owner), with a journal entry.
+    private async Task SyncOwnerRoleAsync(PlatformUser user, CancellationToken cancellationToken)
     {
-        if (owners?.IsConfiguredOwner(user.TelegramUserId) == true && user.Role != PlatformRole.Owner)
+        if (owners is null) return;
+        if (owners.IsConfiguredOwner(user.TelegramUserId))
         {
-            user.SetRole(PlatformRole.Owner);
+            if (user.Role != PlatformRole.Owner) user.SetRole(PlatformRole.Owner);
+            return;
+        }
+
+        if (user.Role != PlatformRole.Owner) return;
+        user.SetRole(PlatformRole.Member);
+        if (auditLogs is not null)
+        {
+            await auditLogs.AddAsync(AuditLog.Create(user.TelegramUserId, "platform-user.owner-revoked", "PlatformUser", user.TelegramUserId.ToString()), cancellationToken);
         }
     }
 

@@ -214,8 +214,19 @@ public sealed class CloseComplaintHandler(IComplaintRepository complaints, IAdmi
             ?? throw new InvalidOperationException("Complaint was not found.");
         var note = string.IsNullOrWhiteSpace(command.Note) ? null : command.Note.Trim();
         complaint.Close(command.Status, command.ActorTelegramUserId, note, DateTime.UtcNow);
-        await auditLogs.AddAsync(AuditLog.Create(command.ActorTelegramUserId, $"complaint.{command.Status}", "Complaint", complaint.Id.ToString(), $"{complaint.TargetType}:{complaint.TargetId}"), cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        // Audit 2026-10-22: one decision per complaint even when two admins close it at once; the loser gets 409 and
+        // writes no journal entry.
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
+        {
+            if (!await complaints.TryCloseOpenAsync(complaint.Id, command.Status, token))
+            {
+                throw new InvalidOperationException("The complaint is already closed.");
+            }
+
+            await auditLogs.AddAsync(AuditLog.Create(command.ActorTelegramUserId, $"complaint.{command.Status}", "Complaint", complaint.Id.ToString(), $"{complaint.TargetType}:{complaint.TargetId}"), token);
+            await unitOfWork.SaveChangesAsync(token);
+            return true;
+        }, cancellationToken);
         return new ComplaintDto(complaint.Id, complaint.Status, false);
     }
 }

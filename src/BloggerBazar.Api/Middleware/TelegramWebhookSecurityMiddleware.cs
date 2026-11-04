@@ -1,6 +1,8 @@
+using BloggerBazar.Api.Controllers;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Infrastructure.Security;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Options;
 
 namespace BloggerBazar.Api.Middleware;
@@ -16,8 +18,7 @@ public sealed class TelegramWebhookSecurityMiddleware(
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!HttpMethods.IsPost(context.Request.Method)
-            || !string.Equals(context.Request.Path, WebhookPath, StringComparison.OrdinalIgnoreCase))
+        if (!IsWebhookRequest(context))
         {
             await next(context);
             return;
@@ -63,6 +64,21 @@ public sealed class TelegramWebhookSecurityMiddleware(
         {
             await RejectAsync(context, StatusCodes.Status413PayloadTooLarge, "payload_too_large");
         }
+    }
+
+    // Pre-launch audit 2026-11-04 (BLOCKER): an exact path comparison let "/api/webhooks/telegram/" (trailing slash,
+    // other letter case) reach the controller without the secret, so anyone could post fake updates (a contact card
+    // that sets another person's phone). The check now follows the endpoint routing chose, whatever the spelling,
+    // plus the path itself (and anything under it) for requests that matched no endpoint.
+    internal static bool IsWebhookRequest(HttpContext context)
+    {
+        var action = context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>();
+        if (action?.ControllerTypeInfo.AsType() == typeof(TelegramWebhookController))
+        {
+            return true;
+        }
+
+        return HttpMethods.IsPost(context.Request.Method) && context.Request.Path.StartsWithSegments(WebhookPath, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task RejectAsync(HttpContext context, int statusCode, string outcome)

@@ -40,6 +40,17 @@ public sealed class AuditLogQueryTests
         Assert.Equal(valid, new GetAuditLogValidator().Validate(new GetAuditLogQuery(1, 100, new DateOnly(2026, 10, from), new DateOnly(2026, 10, to))).IsValid);
     }
 
+    [Theory]
+    [InlineData("0001-01-01", null)]
+    [InlineData(null, "9999-12-31")]
+    [InlineData("2019-12-31", "2020-01-02")]
+    public void Dates_before_the_app_or_far_ahead_are_refused(string? from, string? to)
+    {
+        var query = new GetAuditLogQuery(1, 100, from is null ? null : DateOnly.Parse(from), to is null ? null : DateOnly.Parse(to));
+
+        Assert.False(new GetAuditLogValidator().Validate(query).IsValid);
+    }
+
     private sealed class Allow : IAdminAccessPolicy { public void EnsureAllowed(long telegramUserId) { } }
 
     private sealed class FakeLogs : IAuditLogRepository

@@ -22,7 +22,7 @@ public sealed record GetBrandFaceQuery(Guid Id) : IRequest<BrandFacePublicDto?>;
 public sealed class SearchBrandFacesHandler(IBrandFaceProfileRepository profiles) : IRequestHandler<SearchBrandFacesQuery, IReadOnlyList<BrandFacePublicDto>>
 {
     public async Task<IReadOnlyList<BrandFacePublicDto>> Handle(SearchBrandFacesQuery query, CancellationToken cancellationToken) =>
-        (await profiles.SearchAsync(query.Query, query.City, query.Category, (Math.Max(query.Page, 1) - 1) * Math.Clamp(query.PageSize, 1, 50), Math.Clamp(query.PageSize, 1, 50), cancellationToken)).Select(BrandFacePublicDto.From).ToArray();
+        (await profiles.SearchAsync(query.Query, query.City, query.Category, (Math.Clamp(query.Page, 1, 100_000) - 1) * Math.Clamp(query.PageSize, 1, 50), Math.Clamp(query.PageSize, 1, 50), cancellationToken)).Select(BrandFacePublicDto.From).ToArray();
 }
 
 public sealed class GetBrandFaceHandler(IBrandFaceProfileRepository profiles) : IRequestHandler<GetBrandFaceQuery, BrandFacePublicDto?>

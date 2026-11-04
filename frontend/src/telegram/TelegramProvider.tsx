@@ -295,6 +295,16 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     button.show?.();
   }, [app, hasBackHandler, overlayBackHandlers.length]);
 
+  // Stable while the Telegram app object stays the same: a new object on every resize or viewport change re-ran every
+  // Toast's effect, so old toasts popped up again with a vibration (pre-launch audit 2026-11-04).
+  const haptic = useMemo<TelegramContextValue["haptic"]>(() => ({
+    selection: () => app?.HapticFeedback?.selectionChanged?.(),
+    impact: () => app?.HapticFeedback?.impactOccurred?.("light"),
+    success: () => app?.HapticFeedback?.notificationOccurred?.("success"),
+    error: () => app?.HapticFeedback?.notificationOccurred?.("error"),
+    warning: () => app?.HapticFeedback?.notificationOccurred?.("warning")
+  }), [app]);
+
   const value = useMemo<TelegramContextValue>(() => ({
     isTelegram: Boolean(app?.initData),
     isEmbedded: Boolean(app),
@@ -307,13 +317,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     setBackButtonHandler,
     registerBackButtonHandler,
     setClosingConfirmation,
-    haptic: {
-      selection: () => app?.HapticFeedback?.selectionChanged?.(),
-      impact: () => app?.HapticFeedback?.impactOccurred?.("light"),
-      success: () => app?.HapticFeedback?.notificationOccurred?.("success"),
-      error: () => app?.HapticFeedback?.notificationOccurred?.("error"),
-      warning: () => app?.HapticFeedback?.notificationOccurred?.("warning")
-    },
+    haptic,
     openLink: (url) => {
       // Telegram's openLink accepts only http(s); call and mail links go to the WebView, which hands them to the OS.
       if (url.startsWith("tel:") || url.startsWith("mailto:")) {
@@ -326,7 +330,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         window.location.assign(url);
       }
     }
-  }), [app, environment, environmentReady, registerBackButtonHandler, setBackButtonHandler, setClosingConfirmation]);
+  }), [app, environment, environmentReady, haptic, registerBackButtonHandler, setBackButtonHandler, setClosingConfirmation]);
 
   return <TelegramContext.Provider value={value}>{booting ? <LaunchScreen /> : children}</TelegramContext.Provider>;
 }

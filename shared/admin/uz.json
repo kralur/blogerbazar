@@ -20,6 +20,7 @@
   "admin.log.platform-user.blocked": "Foydalanuvchi bloklandi",
   "admin.log.platform-user.unblocked": "Foydalanuvchi blokdan chiqarildi",
   "admin.log.platform-user.account-deleted": "Foydalanuvchi akkauntini o‘chirdi",
+  "admin.log.platform-user.owner-revoked": "Egalik roli olib tashlandi (sozlamalarda yo‘q)",
   "admin.log.complaint.resolved": "Shikoyat hal qilindi",
   "admin.log.complaint.dismissed": "Shikoyat rad etildi",
   "admin.log.campaign.promoted": "Kampaniya targ‘ibga qo‘yildi",

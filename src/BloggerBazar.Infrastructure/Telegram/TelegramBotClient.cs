@@ -158,6 +158,9 @@ internal sealed class TelegramBotClient(HttpClient httpClient, IOptions<Telegram
         {
             chat_id = chatId,
             text,
+            // No preview card for a link inside a notification (pre-launch audit 2026-11-04): texts carry other people's
+            // names, and a preview makes any link in them look like part of the bot's message.
+            link_preview_options = new { is_disabled = true },
             reply_markup = buttonUrl is null
                 ? null
                 : new { inline_keyboard = new[] { new[] { new { text = ButtonLabel(button, language), web_app = new { url = buttonUrl } } } } }
