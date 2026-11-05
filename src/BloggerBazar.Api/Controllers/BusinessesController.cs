@@ -27,14 +27,19 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicBusinessProfileDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
+        // Public pages need the Telegram signature too (D59); the Mini App sends it with every request.
+        GetTelegramUser();
         var profile = await sender.Send(new GetPublicBusinessProfileQuery(id), cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
     }
 
     [HttpGet("{id:guid}/reviews")]
     [ProducesResponseType<BusinessReviewsDto>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new GetBusinessReviewsQuery(id, take, skip), cancellationToken));
+    public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
+    {
+        GetTelegramUser();
+        return Ok(await sender.Send(new GetBusinessReviewsQuery(id, take, skip), cancellationToken));
+    }
 
     [HttpPost]
     [ProducesResponseType<BusinessProfileDto>(StatusCodes.Status201Created)]

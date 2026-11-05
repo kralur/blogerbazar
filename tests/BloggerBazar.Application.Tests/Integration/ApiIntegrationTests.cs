@@ -3,6 +3,10 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BloggerBazar.Application.Tests.Integration;
 
@@ -33,6 +37,44 @@ public sealed class ApiIntegrationTests(BloggerBazarApiFactory factory) : IClass
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Equal("authentication_required", problem.GetProperty("code").GetString());
         Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("traceId").GetString()));
+    }
+
+    // D59: nothing of the marketplace answers without the Telegram signature. The two paths below are the whole
+    // allowlist, so a new anonymous GET fails here until it is added on purpose.
+    [IntegrationFact]
+    public async Task Every_api_read_needs_a_telegram_sign_in_except_the_public_ones()
+    {
+        string[] anonymousReads = ["/api/public/stats", "/api/admin-web/config"];
+        var sampleValues = new Dictionary<string, string> { ["targetType"] = "Blogger" };
+        var reads = factory.Services.GetServices<EndpointDataSource>()
+            .SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods.Contains(HttpMethods.Get) == true)
+            .Select(endpoint => "/" + endpoint.RoutePattern.RawText!.TrimStart('/'))
+            .Where(path => path.StartsWith("/api/", StringComparison.Ordinal) && !path.StartsWith("/api/v1/", StringComparison.Ordinal))
+            .Distinct()
+            .ToArray();
+        using var client = factory.CreateClient();
+
+        Assert.Contains("/api/bloggers", reads);
+        Assert.Contains("/api/marketplace/home", reads);
+        foreach (var template in reads)
+        {
+            var path = Regex.Replace(template, @"\{(\w+)(?::(\w+))?\}", match => match.Groups[2].Value switch
+            {
+                "guid" => Guid.NewGuid().ToString(),
+                "long" or "int" => "1",
+                _ => sampleValues.GetValueOrDefault(match.Groups[1].Value, "x")
+            });
+            var response = await client.GetAsync(path);
+            if (anonymousReads.Contains(template))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                continue;
+            }
+
+            Assert.True(response.StatusCode == HttpStatusCode.Unauthorized, $"{template} answered {(int)response.StatusCode} without a Telegram sign-in.");
+        }
     }
 
     [IntegrationFact]

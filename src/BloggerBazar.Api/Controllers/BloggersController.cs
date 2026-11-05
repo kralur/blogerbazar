@@ -40,6 +40,8 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
+        // Catalog reads need the Telegram signature too (D59); the Mini App sends it with every request.
+        GetTelegramUser();
         var result = await sender.Send(new SearchBloggersQuery(query, city, category, platform, minFollowers, minEr, maxEr, minPrice, maxPrice, sort, page, pageSize), cancellationToken);
         return Ok(SearchBloggersResponse.From(result));
     }
@@ -49,14 +51,18 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BloggerProfileDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
+        GetTelegramUser();
         var profile = await sender.Send(new GetBloggerProfileQuery(id), cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
     }
 
     [HttpGet("{id:guid}/reviews")]
     [ProducesResponseType<IReadOnlyList<ReviewDto>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ReviewDto>>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new GetBloggerReviewsQuery(id, take, skip), cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<ReviewDto>>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
+    {
+        GetTelegramUser();
+        return Ok(await sender.Send(new GetBloggerReviewsQuery(id, take, skip), cancellationToken));
+    }
 
     [HttpPost]
     [ProducesResponseType<BloggerProfileDto>(StatusCodes.Status201Created)]

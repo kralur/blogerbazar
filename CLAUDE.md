@@ -80,6 +80,9 @@ npm run i18n:audit
 
 ## Конвенции API
 
+- Каждый ответ API требует `Authorization: tma` (D59), кроме `GET /api/public/*`, `GET /api/admin-web/config`,
+  входа на сайт-админку и вебхука; admin-эндпоинты принимают также cookie сайта. Новый анонимный GET ломает тест
+  `Every_api_read_needs_a_telegram_sign_in_except_the_public_ones`.
 - Ошибки: `ExceptionHandlingMiddleware` → ProblemDetails с `code`.
   `UnauthorizedAccessException` → 403, `InvalidOperationException` с «not found» → 404,
   прочие `InvalidOperationException` → 409, `ValidationException` → 422.

@@ -26,23 +26,34 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
         [FromQuery] string? gender = null,
         [FromQuery] int? minAge = null,
         [FromQuery] int? maxAge = null,
-        CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new SearchBrandFaceCatalogQuery(query, city, category, language, minPrice, maxPrice, sort, page, pageSize, gender, minAge, maxAge), cancellationToken));
+        CancellationToken cancellationToken = default)
+    {
+        // Catalog reads need the Telegram signature too (D59); the Mini App sends it with every request.
+        GetTelegramUser();
+        return Ok(await sender.Send(new SearchBrandFaceCatalogQuery(query, city, category, language, minPrice, maxPrice, sort, page, pageSize, gender, minAge, maxAge), cancellationToken));
+    }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<BrandFacePublicDto>>> Search([FromQuery] string? query, [FromQuery] string? city, [FromQuery] string? category, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new SearchBrandFacesQuery(query, city, category, page, pageSize), cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<BrandFacePublicDto>>> Search([FromQuery] string? query, [FromQuery] string? city, [FromQuery] string? category, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        GetTelegramUser();
+        return Ok(await sender.Send(new SearchBrandFacesQuery(query, city, category, page, pageSize), cancellationToken));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<BrandFacePublicDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
+        GetTelegramUser();
         var profile = await sender.Send(new GetBrandFaceQuery(id), cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
     }
 
     [HttpGet("{id:guid}/reviews")]
-    public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new GetBrandFaceReviewsQuery(id, take, skip), cancellationToken));
+    public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
+    {
+        GetTelegramUser();
+        return Ok(await sender.Send(new GetBrandFaceReviewsQuery(id, take, skip), cancellationToken));
+    }
 
     [HttpGet("me")]
     public async Task<ActionResult<BrandFaceProfileDto>> GetMine(CancellationToken cancellationToken)

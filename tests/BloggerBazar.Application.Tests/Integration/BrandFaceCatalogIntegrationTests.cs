@@ -16,7 +16,7 @@ public sealed class BrandFaceCatalogIntegrationTests(BloggerBazarApiFactory fact
         await AddProfileAsync(2_100_001, "Madina Beauty", "tashkent", ["beauty"], ["uz"], 150_000);
         await AddProfileAsync(2_100_002, "Madina Fashion", "tashkent", ["fashion"], ["ru"], 250_000);
         await AddProfileAsync(2_100_003, "Aziza Beauty", "samarkand", ["beauty"], ["uz"], null);
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(2_100_900);
 
         var filtered = await client.GetAsync("/api/brand-faces/catalog?query=madina&city=tashkent&minPrice=100000&maxPrice=200000&page=1&pageSize=1");
         var response = await filtered.Content.ReadFromJsonAsync<JsonElement>();
@@ -56,7 +56,7 @@ public sealed class BrandFaceCatalogIntegrationTests(BloggerBazarApiFactory fact
         });
         await AddProfileAsync(2_100_042, "Gender Filter Bek", "bukhara", ["beauty"], ["uz"], null, profile =>
             profile.Update(profile.Name, profile.City, 35, "male", ["uz"], ["beauty"], null, "@bek", "@bek", null, null, null, null));
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(2_100_900);
 
         var women = await client.GetFromJsonAsync<JsonElement>("/api/brand-faces/catalog?city=bukhara&gender=female");
         var twenties = await client.GetFromJsonAsync<JsonElement>("/api/brand-faces/catalog?city=bukhara&minAge=18&maxAge=30");
@@ -80,7 +80,7 @@ public sealed class BrandFaceCatalogIntegrationTests(BloggerBazarApiFactory fact
         await AddProfileAsync(2_100_011, "Price A", "bukhara", ["beauty"], ["uz"], 200_000);
         await AddProfileAsync(2_100_012, "Price B", "bukhara", ["beauty"], ["uz"], 100_000);
         await AddProfileAsync(2_100_013, "Price Unknown", "bukhara", ["beauty"], ["uz"], null);
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(2_100_900);
 
         var ascending = await client.GetFromJsonAsync<JsonElement>("/api/brand-faces/catalog?city=bukhara&sort=price_asc&pageSize=20");
         var descending = await client.GetFromJsonAsync<JsonElement>("/api/brand-faces/catalog?city=bukhara&sort=price_desc&pageSize=20");
@@ -102,7 +102,7 @@ public sealed class BrandFaceCatalogIntegrationTests(BloggerBazarApiFactory fact
         var visible = await AddProfileAsync(2_100_021, "Visible", "navoi", ["beauty"], ["uz"], 100_000);
         var deleted = await AddProfileAsync(2_100_022, "Deleted", "navoi", ["beauty"], ["uz"], 100_000, profile => profile.SoftDelete());
         var blocked = await AddProfileAsync(2_100_023, "Blocked", "navoi", ["beauty"], ["uz"], 100_000, null, user => user.SetBlocked(true));
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(2_100_900);
 
         var catalog = await client.GetFromJsonAsync<JsonElement>("/api/brand-faces/catalog?city=navoi");
         var ids = catalog.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetString()).ToArray();
@@ -121,7 +121,7 @@ public sealed class BrandFaceCatalogIntegrationTests(BloggerBazarApiFactory fact
     [IntegrationFact]
     public async Task Catalog_validation_rejects_invalid_values()
     {
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(2_100_900);
 
         foreach (var url in new[]
         {

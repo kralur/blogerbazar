@@ -9,10 +9,10 @@ namespace BloggerBazar.Application.Tests.Integration;
 public sealed class PublicBloggerDetailsIntegrationTests(BloggerBazarApiFactory factory) : IClassFixture<BloggerBazarApiFactory>
 {
     [IntegrationFact]
-    public async Task Approved_blogger_details_are_publicly_available()
+    public async Task Approved_blogger_details_are_available_to_a_signed_in_user()
     {
         var profile = await AddProfileAsync(1_010_001, profile => profile.Approve());
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(1_010_900);
 
         var response = await client.GetAsync($"/api/bloggers/{profile.Id}");
 
@@ -23,7 +23,7 @@ public sealed class PublicBloggerDetailsIntegrationTests(BloggerBazarApiFactory 
     public async Task Pending_blogger_details_return_not_found()
     {
         var profile = await AddProfileAsync(1_010_002, _ => { });
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(1_010_900);
 
         var response = await client.GetAsync($"/api/bloggers/{profile.Id}");
 
@@ -34,7 +34,7 @@ public sealed class PublicBloggerDetailsIntegrationTests(BloggerBazarApiFactory 
     public async Task Rejected_blogger_details_return_not_found()
     {
         var profile = await AddProfileAsync(1_010_003, profile => profile.Reject());
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(1_010_900);
 
         var response = await client.GetAsync($"/api/bloggers/{profile.Id}");
 
@@ -49,11 +49,23 @@ public sealed class PublicBloggerDetailsIntegrationTests(BloggerBazarApiFactory 
             profile.Approve();
             profile.SoftDelete();
         });
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClientFor(1_010_900);
 
         var response = await client.GetAsync($"/api/bloggers/{profile.Id}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // D59: the catalog is for signed-in Telegram users; without the signature even an approved profile is not served.
+    [IntegrationFact]
+    public async Task Blogger_details_need_a_telegram_sign_in()
+    {
+        var profile = await AddProfileAsync(1_010_005, profile => profile.Approve());
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/bloggers/{profile.Id}");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     private async Task<BloggerProfile> AddProfileAsync(long telegramUserId, Action<BloggerProfile> mutate)

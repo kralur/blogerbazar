@@ -202,7 +202,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var seed = await SeedCampaignDealAsync(1_100_201, 1_100_202, complete: true);
         using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
         using var businessClient = CreateClient(seed.BusinessTelegramUserId);
-        using var anonymous = factory.CreateClient();
+        // Another signed-in person: published reviews are visible to everyone in the app, not only to the two sides.
+        using var viewer = CreateClient(1_100_999);
         Assert.Equal(HttpStatusCode.Created, (await bloggerClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 4, comment = "Clear brief" })).StatusCode);
         Assert.Equal(HttpStatusCode.Created, (await businessClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5, comment = "Great reel" })).StatusCode);
 
@@ -211,7 +212,7 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var deals = await bloggerClient.GetFromJsonAsync<JsonElement>("/api/deals/me");
         var deal = await bloggerClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{seed.DealId}");
         var contact = await bloggerClient.GetAsync($"/api/deals/me/{seed.DealId}/contact");
-        var bloggerReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews");
+        var bloggerReviews = await viewer.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews");
 
         var listed = Assert.Single(deals.EnumerateArray(), item => item.GetProperty("id").GetGuid() == seed.DealId);
         Assert.True(listed.GetProperty("counterpartyDeleted").GetBoolean());
@@ -233,17 +234,18 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var seed = await SeedCampaignDealAsync(1_100_081, 1_100_082, complete: true);
         using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
         using var businessClient = CreateClient(seed.BusinessTelegramUserId);
-        using var anonymous = factory.CreateClient();
+        // Another signed-in person: published reviews are visible to everyone in the app, not only to the two sides.
+        using var viewer = CreateClient(1_100_999);
 
         var first = await bloggerClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 4, comment = "Clear brief" });
-        var hiddenBusinessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
+        var hiddenBusinessReviews = await viewer.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
         var bloggerDeal = await bloggerClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{seed.DealId}");
         var second = await businessClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5, comment = "Great reel" });
-        var businessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
-        var bloggerReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews");
-        var bloggerProfile = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}");
-        var businessReviewsNextPage = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews?skip=1");
-        var bloggerReviewsNextPage = await anonymous.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews?skip=1");
+        var businessReviews = await viewer.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
+        var bloggerReviews = await viewer.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews");
+        var bloggerProfile = await viewer.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}");
+        var businessReviewsNextPage = await viewer.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews?skip=1");
+        var bloggerReviewsNextPage = await viewer.GetFromJsonAsync<JsonElement>($"/api/bloggers/{seed.BloggerId}/reviews?skip=1");
 
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);
         Assert.Equal(0, hiddenBusinessReviews.GetProperty("reviewsCount").GetInt32());
@@ -271,7 +273,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         var seed = await SeedCampaignDealAsync(1_100_091, 1_100_092, complete: true);
         using var bloggerClient = CreateClient(seed.BloggerTelegramUserId);
         using var businessClient = CreateClient(seed.BusinessTelegramUserId);
-        using var anonymous = factory.CreateClient();
+        // Another signed-in person: published reviews are visible to everyone in the app, not only to the two sides.
+        using var viewer = CreateClient(1_100_999);
         Assert.Equal(HttpStatusCode.Created, (await bloggerClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 3 })).StatusCode);
 
         using (var scope = factory.Services.CreateScope())
@@ -283,7 +286,7 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
             Assert.True(published >= 1);
         }
 
-        var businessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
+        var businessReviews = await viewer.GetFromJsonAsync<JsonElement>($"/api/businesses/{seed.BusinessId}/reviews");
         var businessDeal = await businessClient.GetFromJsonAsync<JsonElement>($"/api/deals/me/{seed.DealId}");
         var late = await businessClient.PostAsJsonAsync($"/api/deals/{seed.DealId}/reviews", new { rating = 5 });
 
@@ -568,7 +571,8 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
 
         using var brandFaceClient = CreateClient(brandFaceTelegramUserId);
         using var businessClient = CreateClient(businessTelegramUserId);
-        using var anonymous = factory.CreateClient();
+        // Another signed-in person: published reviews are visible to everyone in the app, not only to the two sides.
+        using var viewer = CreateClient(1_100_999);
 
         var applied = await brandFaceClient.PostAsJsonAsync($"/api/campaigns/{campaignId}/applications", new { message = "Hello" });
         var duplicate = await brandFaceClient.PostAsJsonAsync($"/api/campaigns/{campaignId}/applications", new { message = "Again" });
@@ -603,13 +607,13 @@ public sealed class DealLifecycleIntegrationTests(BloggerBazarApiFactory factory
         Assert.Equal(HttpStatusCode.Created, (await brandFaceClient.PostAsJsonAsync($"/api/deals/{dealId}/reviews", new { rating = 4, comment = "Clear brief" })).StatusCode);
         Assert.Equal(HttpStatusCode.Created, (await businessClient.PostAsJsonAsync($"/api/deals/{dealId}/reviews", new { rating = 5, comment = "Great face" })).StatusCode);
 
-        var brandFaceReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/brand-faces/{brandFaceId}/reviews");
+        var brandFaceReviews = await viewer.GetFromJsonAsync<JsonElement>($"/api/brand-faces/{brandFaceId}/reviews");
         Assert.Equal(1, brandFaceReviews.GetProperty("reviewsCount").GetInt32());
         Assert.Equal(5m, brandFaceReviews.GetProperty("rating").GetDecimal());
         var aboutBrandFace = Assert.Single(brandFaceReviews.GetProperty("items").EnumerateArray());
         Assert.Equal("Brand face business", aboutBrandFace.GetProperty("reviewerName").GetString());
         Assert.Equal("business", aboutBrandFace.GetProperty("reviewerRole").GetString());
-        var businessReviews = await anonymous.GetFromJsonAsync<JsonElement>($"/api/businesses/{businessId}/reviews");
+        var businessReviews = await viewer.GetFromJsonAsync<JsonElement>($"/api/businesses/{businessId}/reviews");
         var aboutBusiness = Assert.Single(businessReviews.GetProperty("items").EnumerateArray());
         Assert.Equal("Integration brand face", aboutBusiness.GetProperty("reviewerName").GetString());
         Assert.Equal("brandFace", aboutBusiness.GetProperty("reviewerRole").GetString());

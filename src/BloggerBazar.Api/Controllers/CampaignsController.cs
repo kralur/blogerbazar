@@ -23,8 +23,12 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
         [FromQuery] string? sort = "promoted",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
-        CancellationToken cancellationToken = default) =>
-        Ok(await sender.Send(new SearchCampaignCatalogQuery(query, city, category, minBudget, maxBudget, deadlineFrom, deadlineTo, sort, page, pageSize), cancellationToken));
+        CancellationToken cancellationToken = default)
+    {
+        // Catalog reads need the Telegram signature too (D59); the Mini App sends it with every request.
+        GetTelegramUser();
+        return Ok(await sender.Send(new SearchCampaignCatalogQuery(query, city, category, minBudget, maxBudget, deadlineFrom, deadlineTo, sort, page, pageSize), cancellationToken));
+    }
 
     [HttpGet]
     [ProducesResponseType<SearchCampaignsResponse>(StatusCodes.Status200OK)]
@@ -33,8 +37,11 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
         [FromQuery] string? category,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
-        CancellationToken cancellationToken = default) =>
-        Ok(new SearchCampaignsResponse(await sender.Send(new SearchCampaignsQuery(city, category, page, pageSize), cancellationToken)));
+        CancellationToken cancellationToken = default)
+    {
+        GetTelegramUser();
+        return Ok(new SearchCampaignsResponse(await sender.Send(new SearchCampaignsQuery(city, category, page, pageSize), cancellationToken)));
+    }
 
     [HttpGet("mine")]
     [ProducesResponseType<MyCampaignsResult>(StatusCodes.Status200OK)]
@@ -65,6 +72,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CampaignDto>> GetById(Guid campaignId, CancellationToken cancellationToken)
     {
+        GetTelegramUser();
         var campaign = await sender.Send(new GetCampaignQuery(campaignId), cancellationToken);
         return campaign is null ? NotFound() : Ok(campaign);
     }

@@ -1,3 +1,7 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using BloggerBazar.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -33,6 +37,24 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         await postgres.DisposeAsync();
     }
 
+    // A client that signs every request as this Telegram user, the way the Mini App does (D59: the catalog needs it too).
+    public HttpClient CreateClientFor(long telegramUserId)
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("tma", CreateInitData(telegramUserId));
+        return client;
+    }
+
+    public static string CreateInitData(long telegramUserId)
+    {
+        var authDate = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+        var user = JsonSerializer.Serialize(new { id = telegramUserId, first_name = "Integration", username = $"integration{telegramUserId}" });
+        var dataCheckString = $"auth_date={authDate}\nuser={user}";
+        var secret = HMACSHA256.HashData(Encoding.UTF8.GetBytes("WebAppData"), Encoding.UTF8.GetBytes(BotToken));
+        var hash = Convert.ToHexString(HMACSHA256.HashData(secret, Encoding.UTF8.GetBytes(dataCheckString))).ToLowerInvariant();
+        return $"auth_date={authDate}&user={Uri.EscapeDataString(user)}&hash={hash}";
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -48,5 +70,7 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         // Web admin on, with room for every sign-in of a test class (the test server has no client address).
         builder.UseSetting("AdminWeb:Origin", AdminWebOrigin);
         builder.UseSetting("RateLimiting:AdminWebSignIn:PermitLimit", "1000");
+        // Every anonymous request of the whole run shares one address budget here; the route walk alone takes dozens.
+        builder.UseSetting("RateLimiting:PermitLimit", "100000");
     }
 }
