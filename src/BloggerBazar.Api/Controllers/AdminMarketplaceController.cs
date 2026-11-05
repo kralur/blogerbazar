@@ -89,6 +89,14 @@ public sealed class AdminMarketplaceController(ISender sender, IOptions<AdminWeb
         return Ok(await sender.Send(new GetAdminDealsQuery(actorId, status, take), cancellationToken));
     }
 
+    // D60: hints of fake accounts and rating farming for the owner to look at; read only.
+    [HttpGet("signals")]
+    public async Task<ActionResult<AdminSignalsDto>> GetSignals(CancellationToken cancellationToken)
+    {
+        var actorId = await GetAdminActorIdAsync(cancellationToken);
+        return Ok(await sender.Send(new GetAdminSignalsQuery(actorId), cancellationToken));
+    }
+
     [HttpGet("collaboration-requests")]
     public async Task<ActionResult<IReadOnlyList<CollaborationRequestDto>>> GetCollaborationRequests([FromQuery] int take = 100, CancellationToken cancellationToken = default)
     {

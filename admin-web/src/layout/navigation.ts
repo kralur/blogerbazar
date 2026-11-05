@@ -17,6 +17,7 @@ export const navigation: NavItem[] = [
   },
   { id: "complaints", labelKey: "nav.complaints", path: "/complaints" },
   { id: "deals", labelKey: "nav.deals", path: "/deals" },
+  { id: "signals", labelKey: "nav.signals", path: "/signals" },
   { id: "audit-log", labelKey: "nav.auditLog", path: "/audit-log" },
   { id: "security", labelKey: "nav.security", path: "/security" }
 ];

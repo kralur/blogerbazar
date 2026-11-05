@@ -35,7 +35,9 @@ public sealed class TelegramWebhookController(
                 {
                     await botClient.SendStartMessageAsync(chat.Id, StartPayload(message.Text), cancellationToken);
                 }
-                catch (Exception exception) when (exception is not OperationCanceledException)
+                // A Telegram timeout is a TaskCanceledException too: only our own request being aborted lets it through
+                // (pre-launch audit 2026-11-04), so a slow Telegram no longer makes the webhook answer 500 and redeliver.
+                catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
                 {
                     // A non-2xx answer makes Telegram redeliver this update and hold the updates behind it;
                     // a missed greeting is not worth that, so log it and acknowledge.
@@ -74,7 +76,7 @@ public sealed class TelegramWebhookController(
     private async Task BestEffortAsync(Func<Task> send, long chatId)
     {
         try { await send(); }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        catch (Exception exception) when (!HttpContext.RequestAborted.IsCancellationRequested)
         {
             logger.LogError(exception, "Unable to send a Telegram reply to chat {ChatId}.", chatId);
         }

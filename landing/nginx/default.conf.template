@@ -48,6 +48,12 @@ server {
         proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
         proxy_ignore_headers Set-Cookie;
         proxy_hide_header Set-Cookie;
+        # The site's own headers replace the API's, so no header arrives twice with different values (audit 2026-10-22).
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header Referrer-Policy;
+        proxy_hide_header Cross-Origin-Resource-Policy;
+        proxy_hide_header Cache-Control;
         proxy_connect_timeout 3s;
         proxy_read_timeout 5s;
         include /etc/nginx/snippets/security-headers.conf;

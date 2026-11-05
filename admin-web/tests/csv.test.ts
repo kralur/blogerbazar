@@ -19,4 +19,12 @@ describe("CSV", () => {
     expect(csvCell("@madina")).toBe("'@madina");
     expect(csvCell("Madina")).toBe("Madina");
   });
+
+  // Audit 2026-10-22: a program that splits on commas (Excel with English settings, Google Sheets) must still see one
+  // cell, so a formula hidden after a comma never starts a cell of its own.
+  it("quotes cells with a comma or a tab, so nothing after them becomes a cell", () => {
+    expect(csvCell("x,=1+1")).toBe('"x,=1+1"');
+    expect(csvCell("x\t=1+1")).toBe('"x\t=1+1"');
+    expect(csvCell("Tashkent, Chilonzor")).toBe('"Tashkent, Chilonzor"');
+  });
 });

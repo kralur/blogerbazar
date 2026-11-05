@@ -5,9 +5,11 @@ import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { I18nProvider } from "./i18n";
 import { VirtualKeyboardProvider } from "./layout/VirtualKeyboardProvider";
 import { TelegramProvider } from "./telegram/TelegramProvider";
+import { normalizeLaunchHash } from "./lib/launchHash";
 import { installCspReporter } from "./security/cspReporter";
 import "./styles.css";
 
+normalizeLaunchHash(window.location, window.history);
 installCspReporter();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

@@ -47,9 +47,19 @@ public sealed class ModerateBloggerProfileHandler(IBloggerProfileRepository prof
             profile.Reject();
         }
 
-        // Every moderation decision is in the journal, like campaign moderation and blocking.
-        await auditLogs.AddAsync(AuditLog.Create(command.TelegramUserId, AdminModerationAudit.Action("blogger-profile", command.Approve, command.NeedsChanges), "BloggerProfile", profile.Id.ToString()), cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        // Every moderation decision is in the journal, like campaign moderation and blocking. Audit 2026-10-22: one
+        // decision per profile even when two moderators decide at once; the loser gets 409, no journal entry, no message.
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
+        {
+            if (!await profiles.TryDecidePendingAsync(profile.Id, profile.Status, token))
+            {
+                throw new InvalidOperationException("Only pending blogger profiles can be moderated.");
+            }
+
+            await auditLogs.AddAsync(AuditLog.Create(command.TelegramUserId, AdminModerationAudit.Action("blogger-profile", command.Approve, command.NeedsChanges), "BloggerProfile", profile.Id.ToString()), token);
+            await unitOfWork.SaveChangesAsync(token);
+            return true;
+        }, cancellationToken);
         var notification = command.NeedsChanges
             ? BotMessages.BloggerProfileNeedsChanges
             : command.Approve

@@ -13,6 +13,7 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import { ComplaintReviewPage, ComplaintsPage } from "./pages/ComplaintsPage";
 import { DealsPage } from "./pages/DealsPage";
+import { SignalsPage } from "./pages/SignalsPage";
 import { FunnelPage } from "./pages/FunnelPage";
 import { BloggerModerationPage, BusinessModerationPage, CampaignModerationPage } from "./pages/ModerationPage";
 import { NotFoundPage, OverviewPage } from "./pages/OverviewPage";
@@ -39,6 +40,7 @@ function pageFor(path: string, session: AdminWebSession, navigate: (path: string
     case "/moderation/campaigns": return { id: "moderation-campaigns", title: t("moderation.campaignsPage"), content: <CampaignModerationPage /> };
     case "/complaints": return { id: "complaints", title: t("nav.complaints"), content: <ComplaintsPage /> };
     case "/deals": return { id: "deals", title: t("nav.deals"), content: <DealsPage /> };
+    case "/signals": return { id: "signals", title: t("nav.signals"), content: <SignalsPage /> };
     case "/audit-log": return { id: "audit-log", title: t("nav.auditLog"), content: <AuditLogPage /> };
     case "/security": return { id: "security", title: t("nav.security"), content: <SecurityPage /> };
     default: return { id: "", title: t("notFound.title"), content: <NotFoundPage onBack={() => navigate("/")} /> };

@@ -321,7 +321,7 @@ export function App() {
       {route.path === "/deal" && route.id && <DealDetails id={route.id} viewerRole={selectedRole} />}
       {route.path === "/offer" && route.id && <OfferDetails id={route.id} viewerRole={selectedRole} />}
       {route.path === "/admin" && (route.id === "user" ? <AdminUserCard key={window.location.hash} /> : <Admin section={route.id} />)}
-      {!knownRoutes.includes(route.path) && <Home />}
+      {!knownRoutes.includes(route.path) && <Home role={selectedRole} />}
     </>}
   </Suspense></main></ActionCountsProvider></FavoritesProvider>;
 }

@@ -50,7 +50,7 @@ internal sealed class MarketplaceRecommendationReadModel(BloggerBazarDbContext d
         var cities = open.Select(campaign => campaign.City).OfType<string>().Distinct().ToArray();
         if (wanted.Length == 0 && cities.Length == 0) return ([], []);
 
-        var bloggers = MarketplaceCatalogVisibility.Listed(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking()))
+        var bloggers = MarketplaceCatalogVisibility.Listed(MarketplaceCatalogVisibility.PublicBloggers(dbContext.BloggerProfiles.AsNoTracking(), dbContext.PlatformUsers.AsNoTracking()))
             .Where(profile => !dbContext.PlatformUsers.Any(user => user.TelegramUserId == profile.TelegramUserId && (user.IsBlocked || user.IsDeleted)))
             .Select(profile => new
             {

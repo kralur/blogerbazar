@@ -116,6 +116,8 @@ jobs:
       ConnectionStrings__Postgres: Host=localhost;Port=5432;Database=bloggerbazar;Username=bb;Password=ci
       Database__ApplyMigrationsOnStartup: "true"
       DevelopmentData__Seed: "true"
+      # The seeded owner keeps the Owner role only while the settings name them (D60 addendum).
+      Administration__TelegramUserIds__0: "5044343262"
       Telegram__BotToken: "123456:CI-SCREEN-CHECK"
       Telegram__WebhookSecret: ci-screen-check-secret
       DealReminders__Enabled: "false"

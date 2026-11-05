@@ -47,8 +47,8 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
     public CreateBloggerProfileValidator()
     {
         RuleFor(command => command.TelegramUserId).GreaterThan(0);
-        RuleFor(command => command.Name).NotEmpty().MaximumLength(100);
-        RuleFor(command => command.LastName).MaximumLength(100).When(command => command.LastName is not null);
+        RuleFor(command => command.Name).NotEmpty().MaximumLength(100).Must(ContactValidation.HasNoLink);
+        RuleFor(command => command.LastName).MaximumLength(100).Must(ContactValidation.HasNoLink).When(command => command.LastName is not null);
         RuleFor(command => command.Username).Must(ContactValidation.IsTelegramUsername).When(command => command.Username is not null);
         RuleFor(command => command.City).NotEmpty().MaximumLength(80).Must(Regions.IsKnown);
         RuleFor(command => command.Categories).NotEmpty().Must(categories => categories.Count <= 5);
@@ -78,12 +78,15 @@ public sealed class CreateBloggerProfileValidator : AbstractValidator<CreateBlog
         {
             item.RuleFor(value => value.Title).NotEmpty().MaximumLength(120);
             item.RuleFor(value => value.Type).IsInEnum();
-            item.RuleFor(value => value.Url).Must(ContactValidation.IsHttpsUrl);
+            item.RuleFor(value => value.Url).MaximumLength(2048).Must(ContactValidation.IsHttpsUrl);
         });
         RuleForEach(command => command.Platforms!).ChildRules(item =>
         {
             item.RuleFor(value => value.Type).NotEmpty();
+            item.RuleFor(value => value.Type).MaximumLength(50);
+            item.RuleFor(value => value.Url).MaximumLength(2048);
             item.RuleFor(value => value).Must(value => ContactValidation.IsSupportedPlatform(value.Type, value.Url));
+            item.RuleFor(value => value.ScreenshotUrl).MaximumLength(2048).Must(ContactValidation.IsHttpsUrl).When(value => value.ScreenshotUrl is not null);
             item.RuleFor(value => value.Followers).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxFollowers).When(value => value.Followers.HasValue);
             item.RuleFor(value => value.AverageReach).GreaterThanOrEqualTo(0).LessThanOrEqualTo(InputLimits.MaxReach).When(value => value.AverageReach.HasValue);
             item.RuleFor(value => value.EngagementRate).InclusiveBetween(0m, 100m).When(value => value.EngagementRate.HasValue);
@@ -120,11 +123,17 @@ public sealed class CreateBloggerProfileHandler(IBloggerProfileRepository profil
             command.TotalFollowers, command.AverageReach, command.EngagementRate, command.StoriesPrice,
             command.ReelsPrice, command.PostPrice, command.IntegrationPrice, command.BarterEnabled);
         profile.UpdateExtendedProfile(profile.CoverUrl, command.Age, command.Gender?.Trim(), command.Language?.Trim(), command.Subcategory?.Trim(), command.PriceFrom, command.PriceTo, command.PriceNote?.Trim());
-        profile.Approve(verified: false);
+        if (existing is null) profile.Approve(verified: false); else profile.PublishAfterOwnerEdit();
 
         if (existing is null)
         {
             await profiles.AddAsync(profile, cancellationToken);
+        }
+        else
+        {
+            // A restored profile starts from what this form sends, as an update does; the old rows would pile up.
+            await portfolioItems.DeleteForBloggerAsync(profile.Id, cancellationToken);
+            await platforms.DeleteForBloggerAsync(profile.Id, cancellationToken);
         }
         var portfolio = (command.PortfolioItems ?? []).Select(item =>
             PortfolioItem.Create(profile.Id, item.Title.Trim(), item.Type, item.Url.Trim()));

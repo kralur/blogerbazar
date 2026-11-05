@@ -84,6 +84,19 @@ public sealed class AdminWebSessionIntegrationTests(BloggerBazarApiFactory facto
         Assert.Contains(await AuditActionsAsync(1_300_021), action => action == AdminWebAuditActions.SignInDenied);
     }
 
+    // Audit 2026-10-22: an owner whose id was taken out of Administration:TelegramUserIds is not an owner any more.
+    [IntegrationFact]
+    public async Task An_owner_no_longer_in_the_settings_cannot_sign_in()
+    {
+        await SeedUserAsync(1_300_071, PlatformRole.Owner);
+        using var client = CreateClient();
+
+        var response = await SignInAsync(client, 1_300_071);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.False(response.Headers.Contains("Set-Cookie"));
+    }
+
     [IntegrationFact]
     public async Task Reused_stale_and_forged_sign_ins_are_refused()
     {

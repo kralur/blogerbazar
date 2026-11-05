@@ -72,5 +72,8 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         builder.UseSetting("RateLimiting:AdminWebSignIn:PermitLimit", "1000");
         // Every anonymous request of the whole run shares one address budget here; the route walk alone takes dozens.
         builder.UseSetting("RateLimiting:PermitLimit", "100000");
+        // Owner counts only while the id is in the settings (audit 2026-10-22): the owners the tests seed are listed.
+        builder.UseSetting("Administration:TelegramUserIds:0", "1100939");
+        builder.UseSetting("Administration:TelegramUserIds:1", "1300011");
     }
 }

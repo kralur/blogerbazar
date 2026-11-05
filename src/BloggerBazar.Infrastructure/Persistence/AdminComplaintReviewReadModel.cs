@@ -23,7 +23,8 @@ internal sealed class AdminComplaintReviewReadModel(BloggerBazarDbContext dbCont
             _ => []
         };
         // Only a participant can report a deal or an offer; anything else has no "other side".
-        return sides.Length == 2 && sides.Contains(reporterTelegramUserId) ? sides.First(side => side != reporterTelegramUserId) : null;
+        // Older data may hold a deal of one person with themselves (new flows refuse it): then there is no other side.
+        return sides.Length == 2 && sides.Contains(reporterTelegramUserId) && sides[0] != sides[1] ? sides.First(side => side != reporterTelegramUserId) : null;
     }
 
     public async Task<IReadOnlyList<Guid>> GetComplaintTargetIdsAsync(long telegramUserId, CancellationToken cancellationToken)

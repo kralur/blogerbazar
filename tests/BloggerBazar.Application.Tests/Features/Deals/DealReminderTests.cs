@@ -120,6 +120,18 @@ public sealed class DealReminderTests
         Assert.Contains("укажите 0", text);
     }
 
+    // Pre-launch audit 2026-11-04: a blocked account gets no reminders; the other side still does.
+    [Fact]
+    public void A_blocked_side_gets_no_reminders_and_the_other_side_still_does()
+    {
+        var deal = Completed(Daytime.AddDays(-3)) with { BusinessBlocked = true };
+
+        var reminder = Assert.Single(DealReminderSchedule.Due(deal, Daytime));
+
+        Assert.Equal(MarketplaceRole.Blogger, reminder.RecipientRole);
+        Assert.Empty(DealReminderSchedule.Due(deal with { BloggerBlocked = true }, Daytime));
+    }
+
     [Fact]
     public void Added_publication_means_no_results_reminder() =>
         Assert.Empty(DealReminderSchedule.Due(Completed(Daytime.AddDays(-4)) with { BloggerHasReviewed = true, BusinessHasReviewed = true, HasPublications = true }, Daytime));

@@ -48,6 +48,21 @@ describe("Blogger details", () => {
 
   afterEach(() => cleanup());
 
+  // Pre-launch audit 2026-11-04: a portfolio link is never loaded as an image from someone else's server.
+  it("shows portfolio entries as links with the site's name, never as images from that site", async () => {
+    api.getBlogger.mockResolvedValue({ ...blogger, portfolioItems: [
+      { id: "w1", title: "Работа", type: "IMAGE", url: "https://www.tracker.example/p.gif" },
+      { id: "w2", title: "", type: "IMAGE", url: "http://insecure.example/x" }
+    ] });
+    const { container } = renderDetails();
+
+    const link = await screen.findByRole("link", { name: /Работа/ });
+    expect(link).toHaveAttribute("href", "https://www.tracker.example/p.gif");
+    expect(link).toHaveTextContent("tracker.example");
+    expect(container.querySelector('img[src*="tracker.example"]')).toBeNull();
+    expect(screen.queryByText("insecure.example")).not.toBeInTheDocument();
+  });
+
   it("shows only known prices and never a zero price", async () => {
     renderDetails();
 
