@@ -88,10 +88,10 @@ public sealed class AdminWebSessionIntegrationTests(BloggerBazarApiFactory facto
     [IntegrationFact]
     public async Task An_owner_no_longer_in_the_settings_cannot_sign_in()
     {
-        await SeedUserAsync(1_300_051, PlatformRole.Owner);
+        await SeedUserAsync(1_300_071, PlatformRole.Owner);
         using var client = CreateClient();
 
-        var response = await SignInAsync(client, 1_300_051);
+        var response = await SignInAsync(client, 1_300_071);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.False(response.Headers.Contains("Set-Cookie"));
