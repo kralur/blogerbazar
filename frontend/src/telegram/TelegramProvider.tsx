@@ -12,7 +12,7 @@ type TelegramNativeButton = { hide?: () => void };
 type TelegramClosingBehavior = { enableConfirmation?: () => void; disableConfirmation?: () => void };
 type TelegramWebApp = {
   initData?: string;
-  initDataUnsafe?: { user?: TelegramUser };
+  initDataUnsafe?: { user?: TelegramUser; start_param?: string };
   platform?: string;
   version?: string;
   colorScheme?: "light" | "dark";

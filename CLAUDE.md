@@ -97,8 +97,11 @@ npm run i18n:audit
 1. Перед любой фазой: `git fetch origin`; доложить branch, HEAD, `origin/main`, merge-base,
    `git status`, stash. Если `origin/main` ≠ ожидаемому baseline — **STOP** (без merge/rebase).
 2. Работа в feature branch, основанной на точном `origin/main` (`claude/...`).
-3. **До review: no commit, no push, no merge, no rebase.**
-4. Публикация только после approval: commit → push feature branch → fetch → fast-forward
+3. Владелец (2026-11-05: «ок на все, сам делай»): отдельное «ок» на коммит и публикацию не нужно.
+   Когда gates прошли, публиковать сразу; отчёт в формате A–K присылать после публикации.
+   Отдельное согласование по-прежнему нужно для решений (decisions.md), миграций, infra/config
+   и всего, что меняет поведение для пользователей неочевидным образом.
+4. Публикация: commit → push feature branch → draft PR для CI → fetch → fast-forward
    `main` → push `main` → финальная проверка. Без merge commit, без force push.
    Feature branch сохраняется.
 
@@ -117,7 +120,8 @@ CI (`.github/workflows/ci.yml`) на PR в `main` и push в `main` запуск
 
 ## Общение с владельцем
 
-- Перед любым выполнением — короткий план («Можно сделать вот так, да?»); выполнять только после ответа.
+- Перед новой задачей — короткий план («Можно сделать вот так, да?»); выполнять после ответа.
+  Коммит и публикация готового пакета — без вопроса (см. Git workflow, п. 3).
 - В начале каждого ответа — какой effort (low / medium / high / xhigh / max) советуется для шага и почему.
   Текущий effort пользователя не угадывать: если он не виден, так и написать.
 

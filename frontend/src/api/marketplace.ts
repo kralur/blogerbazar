@@ -811,12 +811,13 @@ export function forgetSessionData() {
   lastAdminDashboard = null;
 }
 
-// The ad label of the link that opened the app (the bot adds bb_src from t.me/bot?start=<label>). The server keeps it only
-// for an account it sees for the first time.
+// The ad label of the link that opened the app: bb_src on the bot's button (t.me/bot?start=<label>) or the startapp
+// value of a direct link (t.me/bot?startapp=<label>). The server keeps it only for an account it sees for the first time.
 const launchSource = (() => {
   if (typeof window === "undefined") return null;
-  const value = new URLSearchParams(window.location.search).get("bb_src")?.toLowerCase() ?? null;
-  return value && /^[a-z0-9_-]{1,32}$/.test(value) ? value : null;
+  // Read straight from Telegram's object: tests mock the provider module, and this runs at module load.
+  const value = (new URLSearchParams(window.location.search).get("bb_src") ?? window.Telegram?.WebApp?.initDataUnsafe?.start_param ?? "").toLowerCase();
+  return /^[a-z0-9_-]{1,32}$/.test(value) ? value : null;
 })();
 
 export async function getCurrentPlatformUser() {
