@@ -1,7 +1,7 @@
 // Phone screen check: every main screen at phone widths, light and dark, RU and UZ, against a running API with the
 // development seed (DevelopmentData:Seed) and the Vite dev server. It fails when something sticks out of the screen,
 // a label is cut off, or text is too faint to read (WCAG contrast below 3:1). Run by CI (job "Phone screen check");
-// locally: start the API and `npm run dev`, then
+// locally: start the API (with Administration__TelegramUserIds__0=5044343262, the seeded owner) and `npm run dev`, then
 //   SCREEN_CHECK_BOT_TOKEN=<the API's Telegram:BotToken> SCREEN_CHECK_WEBHOOK_SECRET=<its webhook secret> npm --workspace frontend run screen-check
 // Only for local and CI test instances: the token signs fake Telegram logins, never use production values.
 import crypto from "node:crypto";
