@@ -70,7 +70,8 @@ describe("Deal details", () => {
     renderDeal();
 
     expect(await screen.findByText("Barakasini bersin!")).toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem("bloggerbazar.seen-deals.v1") ?? "{}").ids).toContain("deal-a");
+    // The deal is marked seen in an effect after the render, so a busy runner can read storage first.
+    await waitFor(() => expect(JSON.parse(localStorage.getItem("bloggerbazar.seen-deals.v1") ?? "{}").ids).toContain("deal-a"));
   });
 
   it("keeps a deal whose partner deleted the account, without the partner name or actions", async () => {
