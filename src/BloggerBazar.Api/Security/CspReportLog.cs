@@ -12,7 +12,14 @@ public sealed class CspReportLog
     public void Add(string? directive, string? blocked, string? source, DateTime utcNow)
     {
         var key = $"{Clip(directive, 64)}|{Clip(blocked, 200)}|{Clip(source, 200)}";
-        if (!entries.ContainsKey(key) && entries.Count >= MaxEntries) return;
+        // Audit 2026-10-22: when full, the entry seen longest ago makes room, so junk sent once cannot lock real
+        // reports out until the next restart (a real problem keeps coming back and stays near the top).
+        if (!entries.ContainsKey(key) && entries.Count >= MaxEntries)
+        {
+            var oldest = entries.OrderBy(entry => entry.Value.LastSeenAtUtc).FirstOrDefault();
+            if (oldest.Key is not null) entries.TryRemove(oldest.Key, out _);
+        }
+
         entries.AddOrUpdate(key,
             _ => new CspReportEntry(Clip(directive, 64), Clip(blocked, 200), Clip(source, 200), 1, utcNow, utcNow),
             (_, entry) => entry with { Count = entry.Count + 1, LastSeenAtUtc = utcNow });

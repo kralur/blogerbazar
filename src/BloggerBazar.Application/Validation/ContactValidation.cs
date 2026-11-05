@@ -4,6 +4,11 @@ namespace BloggerBazar.Application.Validation;
 
 public static partial class ContactValidation
 {
+    // Pre-launch audit 2026-11-04: names and titles go into the bot's own messages, where Telegram turns a link into a
+    // tappable one; "Payout for your ad: https://…" as a company name would be phishing from the trusted bot. A name
+    // may not carry a link (a bare "cafe.uz" brand name stays allowed).
+    public static bool HasNoLink(string? value) => value is null || !LinkInText().IsMatch(value);
+
     public static bool IsUzbekPhone(string? value) => value is not null && UzbekPhone().IsMatch(value);
 
     // Telegram sends a contact's number as digits, sometimes with "+". Uzbek numbers get the usual spacing;
@@ -50,4 +55,7 @@ public static partial class ContactValidation
 
     [GeneratedRegex("^@[A-Za-z0-9._]{1,30}$")]
     private static partial Regex InstagramUsername();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"://|\bwww\.|\b(t|telegram)\.me/", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)]
+    private static partial System.Text.RegularExpressions.Regex LinkInText();
 }

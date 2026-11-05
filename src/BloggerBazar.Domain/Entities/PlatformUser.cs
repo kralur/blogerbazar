@@ -43,8 +43,11 @@ public sealed class PlatformUser
 
     public static PlatformUser Create(long telegramUserId, string firstName, string? username) => new(telegramUserId, firstName, username);
 
+    // Pre-launch audit 2026-11-04: only a real change is a change, so the app's every-open GET /me does not write a row
+    // (an UPDATE and a commit per open) when nothing in the Telegram profile moved.
     public void SyncTelegramIdentity(string firstName, string? username)
     {
+        if (FirstName == firstName && Username == username) return;
         FirstName = firstName;
         Username = username;
         UpdatedAtUtc = DateTime.UtcNow;

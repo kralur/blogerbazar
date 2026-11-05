@@ -61,6 +61,10 @@ public sealed class AdminAnalyticsHandlerTests
     [InlineData("2024-01-01", "2025-03-01", false)]
     [InlineData("2025-01-01", "2025-12-31", true)]
     [InlineData(null, null, true)]
+    [InlineData("0001-01-01", "0001-01-05", false)]
+    [InlineData("2019-12-31", "2020-01-05", false)]
+    [InlineData("9999-12-30", "9999-12-31", false)]
+    [InlineData("0001-01-01", null, false)]
     public void Periods_are_ordered_and_at_most_a_year(string? from, string? to, bool valid)
     {
         var query = new GetAdminDailyAnalyticsQuery(1, from is null ? null : DateOnly.Parse(from), to is null ? null : DateOnly.Parse(to));

@@ -40,4 +40,20 @@ public sealed class CspReportLogTests
 
         Assert.Equal(200, log.Snapshot().Count);
     }
+
+    // Audit 2026-10-22: junk sent once does not lock real reports out; the entry seen longest ago makes room.
+    [Fact]
+    public void A_new_report_still_gets_in_when_the_list_is_full_of_old_junk()
+    {
+        var log = new CspReportLog();
+        var start = new DateTime(2026, 10, 22, 8, 0, 0, DateTimeKind.Utc);
+        for (var index = 0; index < 200; index++) log.Add("junk", $"https://junk{index}.example/", "", start.AddSeconds(index));
+
+        log.Add("script-src-elem", "https://real.example/x.js", "https://app.example/", start.AddHours(1));
+
+        var entries = log.Snapshot();
+        Assert.Equal(200, entries.Count);
+        Assert.Equal("https://real.example/x.js", entries[0].Blocked);
+        Assert.DoesNotContain(entries, entry => entry.Blocked == "https://junk0.example/");
+    }
 }

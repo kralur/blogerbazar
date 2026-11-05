@@ -145,6 +145,15 @@ internal static class BotMessages
         $"Укажите цену сделки{Spaced(TopicRussian(topic))}{WithPartnerRussian(partner)}. Так результат сделки будет полным. Если сделка была без оплаты, укажите 0.",
         $"{WithPartnerUzbek(partner)}{DealUzbek(topic, "ining", "ning")} narxini kiriting. Shunda bitim natijasi to‘liq bo‘ladi. Agar bitim to‘lovsiz bo‘lsa, 0 kiriting.") with { Button = OpenDealButton };
 
+    // D60: to the owners only, when the API answers with many errors or rate-limit refusals in a short time.
+    public static BotText ServerErrorSpike(int count, int minutes) => Bilingual(
+        $"⚠️ BloggerBazar: за последние {minutes} мин сервер ответил ошибкой {count} раз. Посмотрите логи API в Railway.",
+        $"⚠️ BloggerBazar: so‘nggi {minutes} daqiqada server {count} marta xato bilan javob berdi. Railway’dagi API loglarini ko‘ring.");
+
+    public static BotText RateLimitSpike(int count, int minutes) => Bilingual(
+        $"⚠️ BloggerBazar: за последние {minutes} мин лимит запросов отклонил {count} запросов. Это может быть атака или слишком строгий лимит для настоящих пользователей. Посмотрите логи API в Railway.",
+        $"⚠️ BloggerBazar: so‘nggi {minutes} daqiqada so‘rovlar limiti {count} ta so‘rovni rad etdi. Bu hujum yoki haqiqiy foydalanuvchilar uchun juda qattiq limit bo‘lishi mumkin. Railway’dagi API loglarini ko‘ring.");
+
     public static BotText BloggerProfileApproved => Bilingual(
         "🎉 Ваш профиль прошёл проверку и доступен пользователям BloggerBazar.",
         "🎉 Profilingiz tekshiruvdan o‘tdi va BloggerBazar foydalanuvchilariga ko‘rinadi.");

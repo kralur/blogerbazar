@@ -22,7 +22,13 @@ internal static class DealTestData
 
     public static BloggerProfile Blogger(long telegramUserId, string name = "Blogger") => BloggerProfile.Create(telegramUserId, name, "tashkent", ["beauty"]);
 
-    public static BusinessProfile Business(long telegramUserId, string name = "Business") => BusinessProfile.Create(telegramUserId, name, "tashkent");
+    // Approved, as the app does when a company is created (CreateBusinessProfile); offers need an approved company.
+    public static BusinessProfile Business(long telegramUserId, string name = "Business")
+    {
+        var business = BusinessProfile.Create(telegramUserId, name, "tashkent");
+        business.Approve(verified: false);
+        return business;
+    }
 
     public static Deal CampaignDeal(BloggerProfile blogger, BusinessProfile business)
     {

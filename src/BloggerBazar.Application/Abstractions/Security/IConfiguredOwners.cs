@@ -4,4 +4,7 @@ namespace BloggerBazar.Application.Abstractions.Security;
 public interface IConfiguredOwners
 {
     bool IsConfiguredOwner(long telegramUserId);
+
+    // Every configured owner, for messages meant only for them (error-spike alerts, D60).
+    IReadOnlyList<long> All => [];
 }

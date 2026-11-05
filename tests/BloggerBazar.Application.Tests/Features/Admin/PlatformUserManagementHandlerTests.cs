@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
+using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Admin;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -81,6 +82,36 @@ public sealed class PlatformUserManagementHandlerTests
 
         Assert.Equal(2, cache.Rotations);
         Assert.Equal(2, cache.CampaignRotations);
+    }
+
+    // Audit 2026-10-22: Owner only while the id is in Administration:TelegramUserIds.
+    [Fact]
+    public async Task An_owner_no_longer_in_the_settings_cannot_manage_roles_and_can_be_blocked()
+    {
+        var owner = PlatformUser.Create(1, "Owner", "owner");
+        owner.SetRole(PlatformRole.Owner);
+        var former = PlatformUser.Create(3, "Former", "former");
+        former.SetRole(PlatformRole.Owner);
+        var member = PlatformUser.Create(2, "Member", "member");
+        var users = new InMemoryPlatformUserRepository(owner, former, member);
+        var owners = new Owners(1);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => new UpdatePlatformUserRoleHandler(users, new InMemoryAuditLogRepository(), new SpyUnitOfWork(), owners)
+            .Handle(new UpdatePlatformUserRoleCommand(former.TelegramUserId, member.TelegramUserId, PlatformRole.Admin), CancellationToken.None));
+        var blocked = await new SetPlatformUserBlockedHandler(users, new InMemoryAuditLogRepository(), new SpyUnitOfWork(), owners: owners)
+            .Handle(new SetPlatformUserBlockedCommand(owner.TelegramUserId, former.TelegramUserId, true), CancellationToken.None);
+        var demoted = await new UpdatePlatformUserRoleHandler(users, new InMemoryAuditLogRepository(), new SpyUnitOfWork(), owners)
+            .Handle(new UpdatePlatformUserRoleCommand(owner.TelegramUserId, former.TelegramUserId, PlatformRole.Member), CancellationToken.None);
+
+        Assert.True(blocked.IsBlocked);
+        Assert.Equal(PlatformRole.Member, demoted.Role);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new SetPlatformUserBlockedHandler(users, new InMemoryAuditLogRepository(), new SpyUnitOfWork(), owners: owners)
+            .Handle(new SetPlatformUserBlockedCommand(owner.TelegramUserId, owner.TelegramUserId, true), CancellationToken.None));
+    }
+
+    private sealed class Owners(params long[] ids) : IConfiguredOwners
+    {
+        public bool IsConfiguredOwner(long telegramUserId) => ids.Contains(telegramUserId);
     }
 
     private sealed class InMemoryPlatformUserRepository(params PlatformUser[] initial) : IPlatformUserRepository

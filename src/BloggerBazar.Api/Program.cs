@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Notifications;
 using BloggerBazar.Api.Background;
 using BloggerBazar.Api.Middleware;
 using BloggerBazar.Api.OpenApi;
@@ -22,7 +23,13 @@ try
 {
     DotEnvConfiguration.Load();
     var builder = WebApplication.CreateBuilder(args);
+    // Pre-launch audit 2026-11-04: without a Serilog section everything logged at Information, including the SQL of
+    // every EF command and ASP.NET Core's own per-request lines (the request log below keeps one line per request).
+    // A Serilog section in the configuration, read after these defaults, still overrides them.
     builder.Host.UseSerilog((context, services, configuration) => configuration
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+        .MinimumLevel.Override("System.Net.Http.HttpClient", Serilog.Events.LogEventLevel.Warning)
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
@@ -156,6 +163,8 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddScoped<AdminWebRequestGuard>();
+    builder.Services.AddSingleton(new ErrorSpikeMonitor(builder.Configuration.GetSection(ErrorSpikeOptions.SectionName).Get<ErrorSpikeOptions>() ?? new ErrorSpikeOptions()));
+    builder.Services.AddScoped<ErrorSpikeAlertSender>();
     if (builder.Configuration.GetValue("DealReminders:Enabled", true))
     {
         builder.Services.AddHostedService<DealReminderWorker>();
@@ -167,7 +176,9 @@ try
     builder.Services.AddCors(options => options.AddPolicy("mini-app", policy =>
     {
         var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-        policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
+        // Every Mini App request carries Authorization, so the browser asks first (preflight); remembering the answer
+        // saves a round trip per request on slow mobile networks (pre-launch audit 2026-11-04).
+        policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().SetPreflightMaxAge(TimeSpan.FromHours(2));
     }));
 
     var app = builder.Build();
@@ -203,6 +214,7 @@ try
         diagnosticContext.Set("TraceId", context.TraceIdentifier);
         diagnosticContext.Set("CorrelationId", context.Items.TryGetValue(CorrelationIdMiddleware.CorrelationIdItemKey, out var correlationId) ? correlationId ?? "none" : "none");
     });
+    app.UseMiddleware<ErrorSpikeMiddleware>();
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseStatusCodePages(async statusContext =>
     {
@@ -218,8 +230,11 @@ try
     }
     app.UseRouting();
     app.UseCors("mini-app");
-    app.UseRateLimiter();
+    // Pre-launch audit 2026-11-04 (HIGH): the webhook secret is checked before the rate limiter, so requests without
+    // it (401) no longer use up the permits real Telegram deliveries need. Routing runs first: the check follows the
+    // endpoint it chose.
     app.UseMiddleware<TelegramWebhookSecurityMiddleware>();
+    app.UseRateLimiter();
 
     if (app.Environment.IsDevelopment())
     {

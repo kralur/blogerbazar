@@ -137,9 +137,43 @@ public sealed class TelegramWebhookSecurityTests
         Assert.NotEqual((HttpStatusCode)429, read.StatusCode);
     }
 
-    private static HttpRequestMessage CreateRequest(string body, string? secret = "test-webhook-secret", string contentType = "application/json")
+    // Pre-launch audit 2026-11-04 (BLOCKER): every spelling that reaches the webhook controller needs the secret.
+    [Theory]
+    [InlineData("/api/webhooks/telegram/")]
+    [InlineData("/API/Webhooks/Telegram/")]
+    [InlineData("/api/webhooks/telegram/?x=1")]
+    [InlineData("/Api/WebHooks/TELEGRAM")]
+    public async Task Every_spelling_of_the_webhook_address_needs_the_secret(string path)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/webhooks/telegram")
+        using var factory = new TestApiFactory();
+        using var client = factory.CreateClient();
+
+        using var response = await client.SendAsync(CreateRequest("{}", secret: null, path: path));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    // Pre-launch audit 2026-11-04 (HIGH): requests without the secret are refused before the rate limiter, so a flood
+    // of them cannot use up the permits real Telegram deliveries need.
+    [Fact]
+    public async Task Requests_without_the_secret_do_not_use_up_the_webhook_limit()
+    {
+        using var factory = new TestApiFactory();
+        using var client = factory.CreateClient();
+
+        for (var i = 0; i < 130; i++)
+        {
+            using var fake = await client.SendAsync(CreateRequest("{}", secret: null));
+            Assert.Equal(HttpStatusCode.Unauthorized, fake.StatusCode);
+        }
+
+        using var real = await client.SendAsync(CreateRequest("{}"));
+        Assert.Equal(HttpStatusCode.OK, real.StatusCode);
+    }
+
+    private static HttpRequestMessage CreateRequest(string body, string? secret = "test-webhook-secret", string contentType = "application/json", string path = "/api/webhooks/telegram")
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, path)
         {
             Content = new StringContent(body, Encoding.UTF8, contentType)
         };

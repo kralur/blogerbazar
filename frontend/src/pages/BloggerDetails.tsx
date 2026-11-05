@@ -9,7 +9,7 @@ import { formatCompactNumber, formatCurrency, formatPercentage } from "../lib/cu
 import { FavoriteButton } from "../components/FavoriteButton";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { ReportButton } from "../components/ReportButton";
-import { platformProfileLink } from "../lib/contacts";
+import { platformProfileLink, safeExternalUrl } from "../lib/contacts";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
@@ -118,7 +118,7 @@ export function BloggerDetails({ id }: { id: string }) {
     <DetailSection title={t("details.adPrices")}>{hasPrices ? <FactGrid facts={prices} /> : <Card><p className="text-sm text-brand-muted">{t("details.pricesOnRequest")}</p></Card>}</DetailSection>
     <DetailSection title={t("details.about")}><Card><p className="text-sm leading-6 text-brand-muted">{blogger.bio ?? t("details.filling")}</p>{tags.length > 0 && <div className="mt-3"><ChipList items={tags} /></div>}</Card></DetailSection>
     {platformStats.length === 0 && blogger.platforms.length > 0 && <DetailSection title={t("details.platforms")}><FactGrid facts={blogger.platforms.map((platform) => ({ label: platformLabel(platform.type, t), value: platform.followers ? formatCompactNumber(platform.followers) : t("card.onRequest") }))} /></DetailSection>}
-    {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <a className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-brand-soft" href={item.url} key={item.id} onClick={(event) => { event.preventDefault(); openLink(item.url); }}><img alt={item.title} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" src={item.url} />{item.type === "VIDEO" && <span aria-label={t("details.video")} className="absolute inset-0 grid place-items-center" role="img"><span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-[color:var(--bb-overlay)] text-sm text-white">▶</span></span>}</a>)}</div></DetailSection>}
+    {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <PortfolioLink item={item} key={item.id} onOpen={openLink} />)}</div></DetailSection>}
     <ReviewsSection allHref={`#/blogger-reviews/${blogger.id}`} count={blogger.reviewsCount} emptyText={t("details.noReviews")} rating={blogger.reviewsCount > 0 ? blogger.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews} title={t("details.reviews")} />
     {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
     {blogger.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
@@ -126,6 +126,20 @@ export function BloggerDetails({ id }: { id: string }) {
     <OfferForm bloggerId={blogger.id} initialBudget={offerPreset?.budget} initialFormat={offerPreset?.format} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} /><BottomNav />
   </div>;
+}
+
+// A portfolio entry is a link the blogger typed (an Instagram post, a Drive folder), not our upload: showing it as an
+// <img> loaded a stranger's server for every business that opened the profile (their IP address) and drew a broken
+// tile for ordinary pages (pre-launch audit 2026-11-04). It is a link card with the site's name instead.
+function PortfolioLink({ item, onOpen }: { item: BloggerDetails["portfolioItems"][number]; onOpen: (url: string) => void }) {
+  const { t } = useI18n();
+  const url = safeExternalUrl(item.url);
+  if (!url) return null;
+  const host = new URL(url).hostname.replace(/^www\./, "");
+  return <a className="flex h-28 w-36 shrink-0 flex-col justify-between rounded-2xl bg-brand-soft p-3 text-brand-ink" href={url} onClick={(event) => { event.preventDefault(); onOpen(url); }}>
+    <Icon name="link" />
+    <span className="min-w-0"><span className="block truncate text-sm font-bold">{item.title || (item.type === "VIDEO" ? t("details.video") : t("details.portfolio"))}</span><span className="block truncate text-xs text-brand-muted">{host}</span></span>
+  </a>;
 }
 
 function positiveCurrency(value?: number | null) {
