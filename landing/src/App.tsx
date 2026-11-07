@@ -143,23 +143,33 @@ function PriceTags() {
   );
 }
 
+// Three flames (saffron, lime, coral) with a three-layer core, thin threads between them; the feathering is light
+// so the motif stays crisp. The two strips on the page share these ids, which is fine: the defs are identical.
 function Ikat() {
+  const flame = (x: number, outer: string, middle: string, core: string) => <>
+    <path d={`M${x} 0 C${x + 12} 10 ${x + 16} 20 ${x + 16} 24 C${x + 16} 28 ${x + 12} 38 ${x} 48 C${x - 12} 38 ${x - 16} 28 ${x - 16} 24 C${x - 16} 20 ${x - 12} 10 ${x} 0 Z`} fill={outer} />
+    <path d={`M${x} 8 C${x + 7} 15 ${x + 9} 20 ${x + 9} 24 C${x + 9} 28 ${x + 7} 33 ${x} 40 C${x - 7} 33 ${x - 9} 28 ${x - 9} 24 C${x - 9} 20 ${x - 7} 15 ${x} 8 Z`} fill={middle} />
+    <path d={`M${x} 17 C${x + 3} 20 ${x + 4} 22 ${x + 4} 24 C${x + 4} 26 ${x + 3} 28 ${x} 31 C${x - 3} 28 ${x - 4} 26 ${x - 4} 24 C${x - 4} 22 ${x - 3} 20 ${x} 17 Z`} fill={core} />
+  </>;
   return (
     <div aria-hidden="true" className="ikat">
       <svg preserveAspectRatio="none">
         <defs>
-          <filter id="ikat-feather">
-            <feTurbulence type="fractalNoise" baseFrequency=".9 .08" numOctaves={2} seed={4} />
-            <feDisplacementMap in="SourceGraphic" scale={5} />
+          <filter id="ikat-feather" x="-5%" y="-10%" width="110%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency=".015 .7" numOctaves={3} seed={7} result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale={5} xChannelSelector="R" yChannelSelector="G" />
           </filter>
-          <pattern id="ikat-motif" width="64" height="34" patternUnits="userSpaceOnUse">
-            <path d="M16 2 L26 17 L16 32 L6 17 Z" fill="#C8FF00" />
-            <path d="M16 9 L21 17 L16 25 L11 17 Z" fill="#0C1838" />
-            <path d="M48 5 L55 17 L48 29 L41 17 Z" fill="#19A59C" />
-            <path d="M48 12 L51 17 L48 22 L45 17 Z" fill="#FFFFFF" />
+          <pattern id="ikat-motif" width="176" height="48" patternUnits="userSpaceOnUse">
+            <rect width="176" height="48" fill="var(--l-lapis)" />
+            {flame(28, "var(--l-saffron)", "var(--l-ink)", "#FFFFFF")}
+            {flame(88, "var(--l-lime)", "var(--l-tile)", "var(--l-ink)")}
+            {flame(148, "var(--l-coral)", "#FFFFFF", "var(--l-lapis)")}
+            <rect x="2" width="3" height="48" fill="var(--l-tile)" />
+            <rect x="57" width="3" height="48" fill="var(--l-lime)" />
+            <rect x="117" width="3" height="48" fill="var(--l-saffron)" />
           </pattern>
         </defs>
-        <rect width="100%" height="34" fill="url(#ikat-motif)" filter="url(#ikat-feather)" />
+        <rect width="100%" height="48" fill="url(#ikat-motif)" filter="url(#ikat-feather)" />
       </svg>
     </div>
   );

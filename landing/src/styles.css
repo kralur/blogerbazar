@@ -48,6 +48,9 @@
     --l-tile: #19A59C;
     --l-tile-subtle: #D9F3F1;
     --l-tile-text: #0D6B65;
+    /* Atlas colours (owner, 2026-11-07): only inside the ikat strip, the same in both themes. */
+    --l-saffron: #F2B01E;
+    --l-coral: #E8572F;
     --l-ink: #0C1838;
     --l-page: #FFFFFF;
     --l-quiet: #E8EDF7;
@@ -146,16 +149,17 @@
     background: var(--l-lapis);
   }
 
-  /* A strip of ikat (abrband): blurred-edge diamonds, only between the lapis blocks and the page. */
+  /* A strip of atlas (abrband): flame motifs in five colours with crisp, lightly feathered edges on lapis, only
+     between the lapis blocks and the page (owner, 2026-11-07: "вариант первый, чёткий"). */
   .ikat {
-    height: 34px;
-    background: var(--l-ink);
+    height: 48px;
+    background: var(--l-lapis);
     overflow: hidden;
   }
 
   .ikat svg {
     display: block;
     width: 100%;
-    height: 34px;
+    height: 48px;
   }
 }
