@@ -13,7 +13,7 @@ export function BrandFaceCard({ profile, onFavoriteChanged, variant = "default" 
   return <article className={`catalog-brand-face-card${variant === "home" ? " catalog-card--rail" : ""}`}>
     <a aria-label={t("search.openBrandFaceAria", { name: profile.name })} className="catalog-brand-face-card__link" href={`#/brand-face-detail/${profile.id}`}>
       <div className="catalog-brand-face-card__identity">
-        <Avatar name={profile.name} size="md" src={profile.avatarUrl} variant="catalog" />
+        <Avatar name={profile.name} priority={variant === "home"} size="md" src={profile.avatarUrl} variant="catalog" />
         <div className="catalog-brand-face-card__heading">
           <div className="catalog-brand-face-card__name-row">
             <strong>{profile.name}</strong>

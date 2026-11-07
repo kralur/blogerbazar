@@ -57,7 +57,10 @@ describe("Offer details", () => {
     fireEvent.click(accept);
     fireEvent.click(accept);
 
-    await waitFor(() => expect(window.location.hash).toBe("#/deal/deal-a"));
+    // The success moment plays first (about a second and a half), then the new deal opens.
+    expect(await screen.findByRole("status")).toHaveTextContent(ru("offers.acceptedToast"));
+    expect(window.location.hash).toBe("#/offer/offer-a");
+    await waitFor(() => expect(window.location.hash).toBe("#/deal/deal-a"), { timeout: 3000 });
     expect(api.acceptOffer).toHaveBeenCalledTimes(1);
   });
 

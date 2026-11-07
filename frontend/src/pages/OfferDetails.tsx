@@ -3,6 +3,7 @@ import { ReportButton } from "../components/ReportButton";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { acceptOffer, declineOffer, getMyOffer, type MarketplaceRole, type Offer } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Toast } from "../components/ui";
+import { SuccessMoment } from "../components/SuccessMoment";
 import { useI18n } from "../i18n";
 import { formatShortDate, formatCurrency } from "../lib/currency";
 import { dealRoute } from "../lib/dealStatus";
@@ -23,6 +24,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
   const [tone, setTone] = useState<"success" | "error">("success");
+  const [moment, setMoment] = useState<{ id: number; message: string; next?: string } | null>(null);
   const requestRef = useRef(0);
   const busyRef = useRef(false);
   const idRef = useRef(id);
@@ -57,11 +59,12 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
       const decision = accept ? await acceptOffer(id) : await declineOffer(id);
       if (idRef.current !== id) return;
       if (accept && decision.dealId) {
-        window.location.hash = dealRoute(decision.dealId);
+        // The moment plays here; the new deal opens when it is over.
+        setMoment({ id: Date.now(), message: t("offers.acceptedToast"), next: dealRoute(decision.dealId) });
         return;
       }
-      setTone("success");
-      setToast(t(accept ? "offers.acceptedToast" : "offers.declinedToast"));
+      if (accept) setMoment({ id: Date.now(), message: t("offers.acceptedToast") });
+      else { setTone("success"); setToast(t("offers.declinedToast")); }
       await load();
     } catch (error) {
       if (idRef.current !== id) return;
@@ -100,7 +103,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
       <div className="grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => decide(false)} type="button" variant="secondary">{t("offers.decline")}</Button><Button disabled={busy} onClick={() => decide(true)} type="button">{t("offers.accept")}</Button></div>
     </div>}
     {offer.dealId && <Button className="mt-5 w-full" onClick={() => { window.location.hash = dealRoute(offer.dealId!); }} type="button">{t("deals.open")}</Button>}
-    <Toast message={toast} tone={tone} />
+    <SuccessMoment key={moment?.id} message={moment?.message ?? ""} onDone={() => { if (moment?.next) window.location.hash = moment.next; }} /><Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;
 }

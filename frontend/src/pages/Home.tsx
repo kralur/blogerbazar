@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { getMarketplaceHome, getMyCampaigns, getMyDeals, getMyOffers, getRecommendations, type MarketplaceRole } from "../api/marketplace";
+import { getMarketplaceHome, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaigns, getMyDeals, getMyOffers, getRecommendations, type MarketplaceRole } from "../api/marketplace";
+import { profileCompleteness, type ProfileCompleteness } from "../lib/profileCompleteness";
+import { readHomeSnapshot, writeHomeSnapshot } from "../data/homeSnapshot";
 import { BloggerCard } from "../components/BloggerCard";
 import { BrandFaceCard } from "../components/BrandFaceCard";
 import { CampaignCard } from "../components/CampaignCard";
@@ -25,6 +27,30 @@ function useRecommendations(enabled: boolean, reloadKey: number) {
   return value;
 }
 type HomeRole = MarketplaceRole;
+
+// The selected role's own profile, measured for the progress bar; a failed or missing profile hides the bar.
+function useProfileProgress(role: HomeRole, enabled: boolean, reloadKey: number) {
+  const [value, setValue] = useState<ProfileCompleteness | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    const request = role === "Business" ? getMyBusinessProfile() : role === "BrandFace" ? getMyBrandFaceProfile() : getMyBloggerProfile();
+    request.then((profile) => { if (!cancelled) setValue(profileCompleteness(role, profile)); }).catch(() => { if (!cancelled) setValue(null); });
+    return () => { cancelled = true; };
+  }, [enabled, reloadKey, role]);
+  return value;
+}
+
+function HomeProgress({ progress }: { progress: ProfileCompleteness }) {
+  const { t } = useI18n();
+  const title = t("home.progress.title", { percent: progress.percent });
+  const next = progress.next!;
+  return <section aria-label={title} className="home-progress" role="region">
+    <div className="home-progress__head"><h2>{title}</h2><a className="home-progress__action" href={next.href}>{t("home.progress.action")}</a></div>
+    <div aria-label={title} aria-valuemax={100} aria-valuemin={0} aria-valuenow={progress.percent} className="home-progress__track" role="progressbar"><span className="home-progress__value" style={{ width: `${Math.max(progress.percent, 4)}%` }} /></div>
+    <p>{t("home.progress.next", { step: t(`home.progress.${next.key}`) })}</p>
+  </section>;
+}
 
 function HomeSection({ title, actionHref, children }: { title: string; actionHref?: string; children: ReactNode }) {
   const { t } = useI18n();
@@ -152,7 +178,8 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   const { t } = useI18n();
   const resolvedRole = role ?? "Business";
   const isPreview = initialData !== undefined || initialError || initialLoading;
-  const [data, setData] = useState<HomeData | null>(initialData ?? null);
+  // A cold start draws the Home remembered from the last visit at once; the fresh answer replaces it quietly.
+  const [data, setData] = useState<HomeData | null>(() => initialData ?? (isPreview ? null : readHomeSnapshot(resolvedRole)));
   const [failed, setFailed] = useState(initialError);
   const [offline, setOffline] = useState(false);
   const activeRequest = useRef<AbortController>();
@@ -171,13 +198,14 @@ export function Home({ role, initialData, initialError = false, initialLoading =
       .then((response) => {
         if (controller.signal.aborted || version !== requestVersion.current) return;
         setData(response);
+        writeHomeSnapshot(resolvedRole, response);
       })
       .catch(() => {
         if (controller.signal.aborted || version !== requestVersion.current) return;
         setOffline(typeof navigator !== "undefined" && navigator.onLine === false);
         setFailed(true);
       });
-  }, [isPreview]);
+  }, [isPreview, resolvedRole]);
 
   useEffect(() => {
     if (isPreview) return;
@@ -190,6 +218,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
 
   const activity = useHomeActivity(resolvedRole, !isPreview, activityReloadKey);
   const forYou = useRecommendations(!isPreview, activityReloadKey);
+  const progress = useProfileProgress(resolvedRole, !isPreview, activityReloadKey);
   const forYouCount = forYou ? forYou.campaigns.length + forYou.bloggers.length + forYou.brandFaces.length : 0;
   const forYouRail = forYou && forYouCount > 0 && <HomeSection actionHref={forYou.audience === "business" ? "#/search" : "#/campaigns"} title={t("home.forYou")}>
     {forYou.campaigns.map((campaign) => <div className="home-rail__campaign" key={campaign.id}><CampaignCard campaign={campaign} variant="home" /></div>)}
@@ -205,6 +234,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   return <div className="home screen screen--with-nav">
     <PageHeader eyebrow={t("home.marketplaceSubtitle")} title={t("common.appName")} />
     <HomeSearch categories={data?.categories ?? []} role={resolvedRole} />
+    {progress && progress.next && <HomeProgress progress={progress} />}
     {activity && activity.length > 0 && <HomeActivity items={activity} />}
     {failed && !data ? <HomeError offline={offline} onRetry={load} /> : !data ? <HomeSkeleton role={resolvedRole} /> : <div className="home-content">
       {failed && <p className="text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}

@@ -29,6 +29,7 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
 }));
 vi.mock("../src/components/ManagementBackLink", () => ({ ManagementBackLink: () => null }));
 vi.mock("../src/components/ContactList", () => ({ ContactList: () => null, hasContacts: () => false }));
+vi.mock("../src/telegram/TelegramProvider", () => ({ useTelegram: () => ({ haptic: { selection: vi.fn(), impact: vi.fn(), success: vi.fn(), error: vi.fn(), warning: vi.fn() } }) }));
 vi.mock("../src/components/ui", () => ({
   Avatar: ({ name }: { name: string }) => <span>{name}</span>,
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,

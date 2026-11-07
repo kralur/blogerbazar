@@ -192,14 +192,17 @@ export function Badge({ children, tone = "blue" }: { children: ReactNode; tone?:
   );
 }
 
-export function Avatar({ src, name, size = "md", verified = false, variant = "default" }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean; variant?: "default" | "catalog" | "neutral" }) {
+// priority: a photo on the first screen (Home rails) is fetched at once and ahead of the rest; others wait until near view.
+export function Avatar({ src, name, size = "md", verified = false, variant = "default", priority = false }: { src?: string | null; name: string; size?: "sm" | "md" | "lg" | "xl"; verified?: boolean; variant?: "default" | "catalog" | "neutral"; priority?: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [src]);
   const sizes = { sm: "h-12 w-12", md: "h-16 w-16", lg: "h-24 w-24", xl: "h-32 w-32" };
+  // React 18 passes the lowercase attribute through to the browser; the camelCase name only arrives with React 19.
+  const fetchAttributes = priority ? { fetchpriority: "high" } : {};
   return (
     <div className={cn("relative shrink-0", variant === "catalog" && "catalog-avatar")}>
       <div className={cn("overflow-hidden rounded-full", variant === "neutral" ? "border border-[color:var(--bb-border)] bg-[color:var(--bb-surface-secondary)] text-[color:var(--bb-text)]" : "avatar-surface", variant === "catalog" && "catalog-avatar__image", sizes[size])}>
-        {src && !imageFailed ? <img alt={name} className="image-fade h-full w-full object-cover" decoding="async" loading="lazy" onError={() => setImageFailed(true)} src={src} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
+        {src && !imageFailed ? <img alt={name} className="image-fade h-full w-full object-cover" decoding="async" loading={priority ? "eager" : "lazy"} onError={() => setImageFailed(true)} src={src} {...fetchAttributes} /> : <div aria-label={name} className="grid h-full place-items-center font-bold">{name.slice(0, 1)}</div>}
       </div>
       {verified && (
         <span className={cn("avatar-verified absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full", variant === "catalog" && "catalog-avatar__verified")}>

@@ -15,6 +15,7 @@ vi.mock("../src/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => n
 vi.mock("../src/hooks/useProfileDataRefresh", () => ({ useProfileDataRefresh: () => undefined }));
 vi.mock("../src/hooks/useScrollRestoration", () => ({ useScrollRestoration: () => undefined }));
 vi.mock("../src/components/ui", () => ({
+  Skeleton: ({ className }: { className?: string }) => <div className={className} data-testid="skeleton" />,
   Avatar: () => null,
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
   BottomNav: () => null,

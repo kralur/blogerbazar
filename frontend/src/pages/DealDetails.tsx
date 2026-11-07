@@ -4,6 +4,10 @@ import { addDealPublication, completeDeal, createDealReview, setDealPrice, getDe
 import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { SuccessMoment } from "../components/SuccessMoment";
+
+// Completing a deal and publishing a review get the drawn check; the smaller actions (price, link) keep the toast.
+const momentKeys = new Set(["requests.completedToast", "requests.reviewPublished"]);
 import { DealResults, digitsToNumber, isHttpsLink } from "../components/DealResults";
 import { ReportButton } from "../components/ReportButton";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
@@ -37,6 +41,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
   const [completeError, setCompleteError] = useState("");
   const [contact, setContact] = useState<ContactDetails | null>(null);
   const [toast, setToast] = useState("");
+  const [moment, setMoment] = useState<{ id: number; message: string } | null>(null);
   const [tone, setTone] = useState<"success" | "error">("success");
   const requestRef = useRef(0);
   const actionRef = useRef(0);
@@ -92,8 +97,8 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       if (actionId !== actionRef.current || idRef.current !== id) return;
       setCompleteOpen(false);
       setComment("");
-      setTone("success");
-      setToast(t(successKey));
+      if (momentKeys.has(successKey)) setMoment({ id: Date.now(), message: t(successKey) });
+      else { setTone("success"); setToast(t(successKey)); }
       await load();
     } catch (error) {
       if (actionId !== actionRef.current || idRef.current !== id) return;
@@ -195,7 +200,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
         {completeError && <p className="text-sm font-semibold text-brand-danger" role="alert">{completeError}</p>}
       </div>}
       <div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => setCompleteOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={complete} type="button">{busy ? t("deals.completing") : t("requests.complete")}</Button></div></Modal>
-    <Toast message={toast} tone={tone} />
+    <SuccessMoment key={moment?.id} message={moment?.message ?? ""} /><Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;
 }

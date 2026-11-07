@@ -9,7 +9,7 @@ import {
   type MyDeal,
   type Offer
 } from "../api/marketplace";
-import { Badge, BottomNav, BottomSheet, Button, EmptyState, ErrorState, Icon, Input, LoadingState, Modal, Toast } from "../components/ui";
+import { Badge, BottomNav, BottomSheet, Button, EmptyState, ErrorState, Icon, Input, Modal, Skeleton, Toast } from "../components/ui";
 import { useI18n, type Language } from "../i18n";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
@@ -28,6 +28,11 @@ import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { ActionBadge, useActionCounts } from "../features/actionCounts/ActionCountsProvider";
 
 const formatDate = (value: string, language: Language) => formatShortDate(value, language);
+
+// Row-shaped placeholders while a list loads: the screen keeps the shape it is about to have.
+function RequestListSkeleton({ label }: { label: string }) {
+  return <div aria-busy="true" aria-label={label} className="request-list-skeleton" role="status"><span className="sr-only">{label}</span>{[0, 1, 2].map((row) => <Skeleton className="request-list-skeleton__row" key={row} />)}</div>;
+}
 
 // canAccept only says the viewer is the business side; the application waits for an answer while it is still pending (QA Q19).
 function awaitsAnswer(request: MyCampaignApplication) {
@@ -165,7 +170,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       </div>
 
       {view === "offers" ? (
-        offersLoading ? <div className="mt-5"><LoadingState title={t("offers.loading")} /></div> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(isCreator ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
+        offersLoading ? <RequestListSkeleton label={t("offers.loading")} /> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(isCreator ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
           <div className="request-list">
             {waitingFirst(offers, (offer) => offer.canRespond).map((offer) => (
               <RequestRow action={offer.canRespond ? t("requests.awaitingYourAnswer") : null} href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, language)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} title={`${t(offerFormatLabelKey(offer.format))}${offer.offeredBudget != null ? ` · ${formatCurrency(offer.offeredBudget)}` : ""}`} />
@@ -173,7 +178,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
           </div>
         )
       ) : view === "applications" && isCreator ? <BloggerApplications activeMarketplaceRole={activeMarketplaceRole} /> : view === "applications" ? (
-        requestsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} title={t("requests.loadFailed")} /></div> :
+        requestsLoading ? <RequestListSkeleton label={t("requests.loading")} /> : requestsFailed ? <div className="mt-5"><ErrorState onRetry={loadRequests} title={t("requests.loadFailed")} /></div> :
         !visibleRequests.length ? <div className="mt-8"><EmptyState subtitle={requests.length ? t("requests.emptyDateSubtitle") : t("requests.emptyApplicationsSubtitle")} title={requests.length ? t("requests.emptyDateTitle") : t("requests.emptyApplicationsTitle")} /></div> : (
           <div className="request-list">
             {waitingFirst(visibleRequests, awaitsAnswer).map((request) => (
@@ -182,7 +187,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
           </div>
         )
       ) : (
-        dealsLoading ? <div className="mt-5"><LoadingState title={t("requests.loading")} /></div> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
+        dealsLoading ? <RequestListSkeleton label={t("requests.loading")} /> : dealsFailed ? <div className="mt-5"><ErrorState onRetry={loadDeals} title={t("requests.loadFailed")} /></div> : !visibleDeals.length ? <div className="mt-8"><EmptyState icon="briefcase" subtitle={deals.length ? t("requests.emptyDateSubtitle") : t("requests.emptyDealsSubtitle")} title={deals.length ? t("requests.emptyDateTitle") : t("requests.emptyDealsTitle")} /></div> : (
           <div className="request-list">
             {waitingFirst(visibleDeals, (deal) => deal.canReview || newDealIds.has(deal.id)).map((deal) => (
               <RequestRow action={deal.canReview ? t(deal.partnerHasReviewed ? "deals.partnerReviewedRow" : "deals.awaitingReview") : newDealIds.has(deal.id) ? t("deals.newDealRow") : null} href={`#${dealRoute(deal.id)}`} imageUrl={deal.counterpartyImageUrl} key={deal.id} meta={deal.canReview ? t("deals.awaitingReview") : deal.status === 1 && deal.completedAtUtc ? `${t("requests.completed")} ${formatDate(deal.completedAtUtc, language)}` : `${t("requests.started")} ${formatDate(deal.createdAtUtc, language)}`} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} status={<Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge>} title={deal.sourceType === "collaborationRequest" ? t("deals.source.collaborationRequest") : deal.title} />
