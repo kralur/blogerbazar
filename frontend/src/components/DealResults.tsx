@@ -109,7 +109,7 @@ export function DealResults({ deal, onChanged, onMessage }: { deal: DealDetails;
         {editor?.kind !== "price" && <Input inputMode="numeric" label={t("deals.viewsOptional")} onChange={(event) => setViews(formatNumericInput(event.target.value))} value={views} />}
         {error && <p className="text-sm font-semibold text-brand-danger" role="alert">{error}</p>}
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={busy} onClick={() => setEditor(null)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={save} type="button">{t("deals.saveResult")}</Button></div>
+      <div className="mt-5 modal-actions"><Button disabled={busy} onClick={() => setEditor(null)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={busy} onClick={save} type="button">{t("deals.saveResult")}</Button></div>
     </Modal>
   </DetailSection>;
 }

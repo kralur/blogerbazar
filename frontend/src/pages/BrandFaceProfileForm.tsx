@@ -8,7 +8,7 @@ import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
 import { ProfileMediaPicker, type PendingProfileImage } from "../components/ProfileMediaPicker";
 import { RegionSelect } from "../components/RegionSelect";
 import { TelegramHandleField, useTelegramHandle } from "../components/TelegramHandleField";
-import { FixedActionBar, ReviewItem, ReviewSection, WizardErrorSummary, WizardHeader, WizardLayout, WizardStep } from "../components/Wizard";
+import { FixedActionBar, revealFirstWizardError, ReviewItem, ReviewSection, WizardErrorSummary, WizardHeader, WizardLayout, WizardStep } from "../components/Wizard";
 import { Button, Icon, Input, Modal, Textarea, Toast } from "../components/ui";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { notifyProfileDataChanged } from "../hooks/useProfileDataRefresh";
@@ -167,7 +167,6 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
   const unsavedChanges = useUnsavedChanges(dirty);
   const clientErrors = validate(form, languages, categories, formats, t);
   const errors = { ...clientErrors, ...Object.fromEntries(Object.entries(serverErrors).filter(([, value]) => Boolean(value))) } as Errors;
-  const currentStepValid = step === 3 || stepFields[step].every((field) => !errors[field]);
   const stepTitles = [t("wizard.brandFaceAboutStep"), t("wizard.brandFacePositioningStep"), t("wizard.brandFacePortfolioStep"), t("wizard.brandFaceReviewStep")];
 
   useEffect(() => {
@@ -278,8 +277,10 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
   const continueStep = useCallback(() => {
     if (step === 3) return;
     markStepTouched(step);
-    if (!stepFields[step].every((field) => !errors[field])) {
+    const invalidField = stepFields[step].find((field) => errors[field]);
+    if (invalidField) {
       haptic.error();
+      revealFirstWizardError(invalidField);
       return;
     }
     haptic.selection();
@@ -424,7 +425,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
   const photoCount = savedPhotos.length + pendingPhotos.length;
 
   return <form noValidate onSubmit={submit}>
-    <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 3 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 3 ? undefined : continueStep} submit={step === 3} />}>
+    <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} loading={saving} onBack={goBack} onPrimary={step === 3 ? undefined : continueStep} submit={step === 3} />}>
       <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} showLanguage={Boolean(onCompleted)} step={step + 1} stepTitle={stepTitles[step]} totalSteps={4} />
       <WizardErrorSummary message={serverSummary} />
       {step === 0 && <WizardStep stepKey={stepTitles[0]}>
@@ -432,7 +433,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
           <div data-wizard-field="name"><Input className="wizard-input" error={touched.name ? errors.name : undefined} label={t("form.name")} maxLength={100} name="name" onBlur={blur("name")} onChange={update("name")} placeholder={t("form.blogger.namePlaceholder")} required value={form.name} /></div>
           <div data-wizard-field="city"><RegionSelect className="wizard-region-select" error={touched.city ? errors.city : undefined} onChange={selectCity} required value={form.city} /></div>
           <div data-wizard-field="gender"><p className="ds-field-label">{t("brandFace.gender")}<span aria-hidden="true" className="ml-1 text-brand-danger">*</span></p><div aria-label={t("brandFace.gender")} className="brand-face-chips mt-2" role="group">{(["female", "male"] as const).map((gender) => <button aria-pressed={form.gender === gender} className="brand-face-chip" key={gender} onClick={() => selectGender(gender)} type="button">{t(`brandFace.gender.${gender}`)}</button>)}</div>{touched.gender && errors.gender && <p className="mt-2 text-xs font-semibold text-brand-danger" role="alert">{errors.gender}</p>}</div>
-          <div data-wizard-field="age"><Input className="wizard-input" error={touched.age ? errors.age : undefined} inputMode="numeric" label={t("brandFace.age")} maxLength={2} name="age" onBlur={blur("age")} onChange={updateAge} placeholder="24" required value={form.age} /></div>
+          <div data-wizard-field="age"><Input className="wizard-input" error={touched.age ? errors.age : undefined} inputMode="numeric" label={t("brandFace.age")} maxLength={2} name="age" onBlur={blur("age")} onChange={updateAge} placeholder={t("form.example", { value: "24" })} required value={form.age} /></div>
           <div data-wizard-field="languages"><LanguageMultiSelect error={touched.languages ? errors.languages : undefined} onChange={(next) => { setDirty(true); clearServerError("languages"); setTouched((current) => ({ ...current, languages: true })); setLanguages(next); }} required value={languages} /><p className="wizard-field-helper">{t("brandFace.languagesHelper")}</p></div>
         </div>
       </WizardStep>}
@@ -450,7 +451,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
           <div data-wizard-field="instagram"><Input className="wizard-input" error={touched.instagram ? errors.instagram : undefined} label={t("brandFace.instagram")} name="instagram" onBlur={blur("instagram")} onChange={update("instagram")} placeholder="@username" required value={form.instagram} /></div>
           <div data-wizard-field="showreelUrl"><Input className="wizard-input" error={touched.showreelUrl ? errors.showreelUrl : undefined} label={t("brandFace.showreel")} name="showreelUrl" onBlur={blur("showreelUrl")} onChange={update("showreelUrl")} placeholder="https://instagram.com/reel/..." type="url" value={form.showreelUrl} /><p className="wizard-field-helper">{t("brandFace.showreelHelper")}</p></div>
           <div data-wizard-field="portfolioUrl"><Input className="wizard-input" error={touched.portfolioUrl ? errors.portfolioUrl : undefined} label={t("brandFace.portfolio")} name="portfolioUrl" onBlur={blur("portfolioUrl")} onChange={update("portfolioUrl")} placeholder="https://..." type="url" value={form.portfolioUrl} /></div>
-          <div data-wizard-field="collaborationPrice"><Input className="wizard-input" error={touched.collaborationPrice ? errors.collaborationPrice : undefined} inputMode="numeric" label={t("brandFace.price")} name="collaborationPrice" onBlur={blur("collaborationPrice")} onChange={updatePrice} placeholder="200 000" value={form.collaborationPrice} /></div>
+          <div data-wizard-field="collaborationPrice"><Input className="wizard-input" error={touched.collaborationPrice ? errors.collaborationPrice : undefined} inputMode="numeric" label={t("brandFace.price")} name="collaborationPrice" onBlur={blur("collaborationPrice")} onChange={updatePrice} placeholder={t("form.example", { value: "200 000" })} value={form.collaborationPrice} /></div>
           <div data-wizard-field="description"><Textarea className="wizard-input" error={touched.description ? errors.description : undefined} label={t("brandFace.description")} maxLength={2000} name="description" onBlur={blur("description")} onChange={update("description")} placeholder={t("brandFace.descriptionPlaceholder")} value={form.description} /></div>
         </div>
       </WizardStep>}

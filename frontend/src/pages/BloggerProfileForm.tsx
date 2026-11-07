@@ -145,7 +145,6 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   const unsavedChanges = useUnsavedChanges(dirty);
   const clientErrors = validate(form, selectedCategories, t);
   const errors = { ...clientErrors, ...Object.fromEntries(Object.entries(serverErrors).filter(([, value]) => Boolean(value))) } as Errors;
-  const currentStepValid = step === 4 || stepFields[step].every((field) => !errors[field]);
   const stepTitles = [t("wizard.bloggerBasicStep"), t("wizard.bloggerAudienceStep"), t("wizard.bloggerPricesStep"), t("wizard.bloggerPortfolioStep"), t("wizard.bloggerReviewStep")];
 
   useEffect(() => {
@@ -364,7 +363,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   const actionLabel = step === 4 ? (saving ? t("form.publishing") : submitLabel) : t("wizard.continue");
 
   return <form noValidate onSubmit={submit}>
-    <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 4 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 4 ? undefined : continueStep} submit={step === 4} />}>
+    <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} loading={saving} onBack={goBack} onPrimary={step === 4 ? undefined : continueStep} submit={step === 4} />}>
       <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} showLanguage={Boolean(onCompleted)} step={step + 1} stepTitle={stepTitles[step]} totalSteps={5} />
       <WizardErrorSummary message={serverSummary} />
       {step === 0 && <WizardStep stepKey={stepTitles[0]}><div className="wizard-fields">
@@ -397,10 +396,10 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
         </fieldset>
       </div></WizardStep>}
       {step === 2 && <WizardStep stepKey={stepTitles[2]}><div className="wizard-fields">
-        <div data-wizard-field="storiesPrice"><Input className="wizard-input" error={touched.storiesPrice ? errors.storiesPrice : undefined} inputMode="numeric" label={t("card.stories")} onBlur={blur("storiesPrice")} onChange={numeric("storiesPrice")} placeholder="200 000" required suffix={t("currency.uzs")} value={form.storiesPrice} /></div>
-        <div data-wizard-field="reelsPrice"><Input className="wizard-input" error={touched.reelsPrice ? errors.reelsPrice : undefined} inputMode="numeric" label={t("card.reels")} onBlur={blur("reelsPrice")} onChange={numeric("reelsPrice")} placeholder="500 000" required suffix={t("currency.uzs")} value={form.reelsPrice} /></div>
-        <div data-wizard-field="postPrice"><Input className="wizard-input" inputMode="numeric" label={t("form.optionalField", { label: t("card.post") })} onBlur={blur("postPrice")} onChange={numeric("postPrice")} placeholder="350 000" suffix={t("currency.uzs")} value={form.postPrice} /></div>
-        <div data-wizard-field="integrationPrice"><Input className="wizard-input" inputMode="numeric" label={t("form.optionalField", { label: t("card.integration") })} onBlur={blur("integrationPrice")} onChange={numeric("integrationPrice")} placeholder="900 000" suffix={t("currency.uzs")} value={form.integrationPrice} /></div>
+        <div data-wizard-field="storiesPrice"><Input className="wizard-input" error={touched.storiesPrice ? errors.storiesPrice : undefined} inputMode="numeric" label={t("card.stories")} onBlur={blur("storiesPrice")} onChange={numeric("storiesPrice")} placeholder={t("form.example", { value: "200 000" })} required suffix={t("currency.uzs")} value={form.storiesPrice} /></div>
+        <div data-wizard-field="reelsPrice"><Input className="wizard-input" error={touched.reelsPrice ? errors.reelsPrice : undefined} inputMode="numeric" label={t("card.reels")} onBlur={blur("reelsPrice")} onChange={numeric("reelsPrice")} placeholder={t("form.example", { value: "500 000" })} required suffix={t("currency.uzs")} value={form.reelsPrice} /></div>
+        <div data-wizard-field="postPrice"><Input className="wizard-input" inputMode="numeric" label={t("form.optionalField", { label: t("card.post") })} onBlur={blur("postPrice")} onChange={numeric("postPrice")} placeholder={t("form.example", { value: "350 000" })} suffix={t("currency.uzs")} value={form.postPrice} /></div>
+        <div data-wizard-field="integrationPrice"><Input className="wizard-input" inputMode="numeric" label={t("form.optionalField", { label: t("card.integration") })} onBlur={blur("integrationPrice")} onChange={numeric("integrationPrice")} placeholder={t("form.example", { value: "900 000" })} suffix={t("currency.uzs")} value={form.integrationPrice} /></div>
         <button aria-checked={barterEnabled} aria-label={t("form.barterTitle")} className="wizard-toggle" onClick={() => { setDirty(true); setBarterEnabled((value) => !value); }} role="switch" type="button"><span><strong>{t("form.barterTitle")}</strong><small>{t("form.barterSubtitle")}</small></span><span aria-hidden="true" className="wizard-toggle__control"><span /></span></button>
       </div></WizardStep>}
       {step === 3 && <WizardStep stepKey={stepTitles[3]}><div className="wizard-fields">

@@ -79,6 +79,18 @@ Raw colors, custom shadows, and new one-off modal implementations are not allowe
 - Budgets are formatted only with `formatBudgetRange` (`lib/currency.ts`).
 - Tailwind aliases for tokens: `brand-surface`, `brand-soft` (surface-secondary), `brand-accent`, `brand-ink`, `brand-muted`.
 
+## Buttons and choices (review 2026-11-07)
+
+- **Picked choice, one look everywhere:** lime outline, `--bb-accent-subtle` fill and a lime tick (`.marketplace-chip--active`,
+  `.brand-face-chip[aria-pressed="true"]`, `.choice-selected`). No solid-lime or dark-outline variants.
+- **Dialog buttons:** `.modal-actions` keeps Cancel and the action side by side while both labels fit on one line; when they
+  do not, each takes the full width and the action goes on top. A label is never broken over two lines.
+- **Wizard Continue stays active.** A tap on an incomplete step marks its fields and brings the first error into view
+  (`revealFirstWizardError`); a grey button that does not say why is not used.
+- **Examples in fields start with "Например, …" / "Masalan, …"** (`form.example`), so an empty field never looks filled.
+- **Report** is a quiet grey link at the end of a profile, campaign, offer or deal, not a red button in the header.
+- **Filter fields** use the same white surface with a border as form fields.
+
 ## Typography and spacing
 
 - Screen title: `30px` maximum in compact product views.

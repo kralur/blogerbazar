@@ -25,6 +25,13 @@ vi.mock("../src/components/CategoryMultiSelect", () => ({
 
 import { BloggerProfileForm } from "../src/pages/BloggerProfileForm";
 
+// Continue stays active (owner, 2026-11-07): on an incomplete step a tap keeps the same step and shows what is missing.
+function expectContinueBlocked() {
+  const step = screen.getByRole("heading", { level: 1 }).textContent ?? "";
+  fireEvent.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(step);
+}
+
 function renderCreate(onBackToRole = vi.fn()) {
   const onCompleted = vi.fn();
   render(<I18nProvider><BloggerProfileForm onBackToRole={onBackToRole} onCompleted={onCompleted} /></I18nProvider>);
@@ -56,9 +63,9 @@ async function completeAudience(user: ReturnType<typeof userEvent.setup>) {
 
 // Prices start empty (no sample values that could end up in the catalog); the required two are filled here.
 function fillPrices() {
-  const stories = screen.getByPlaceholderText("200 000") as HTMLInputElement;
+  const stories = screen.getByPlaceholderText("Например, 200 000") as HTMLInputElement;
   if (!stories.value) fireEvent.change(stories, { target: { value: "250000" } });
-  const reels = screen.getByPlaceholderText("500 000") as HTMLInputElement;
+  const reels = screen.getByPlaceholderText("Например, 500 000") as HTMLInputElement;
   if (!reels.value) fireEvent.change(reels, { target: { value: "500000" } });
 }
 
@@ -100,7 +107,7 @@ describe("Blogger profile wizard", () => {
     expect(screen.queryByPlaceholderText("+998 90 123 45 67")).not.toBeInTheDocument();
     await user.clear(screen.getByDisplayValue("Madina"));
     await user.tab();
-    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
+    expectContinueBlocked();
     expect(screen.getByText(translate("form.validation.name", undefined, "ru"))).toBeInTheDocument();
     expect(api.createBloggerProfile).not.toHaveBeenCalled();
   });
@@ -185,14 +192,14 @@ describe("Blogger profile wizard", () => {
     await completeBasic(user);
     expect(screen.getByText(translate("form.platformsTitle", undefined, "ru"))).toBeInTheDocument();
     expect(screen.getByText(translate("form.engagementRateHelper", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
+    expectContinueBlocked();
     fillAudience();
     expect(screen.getByText("%")).toBeInTheDocument();
     expect(screen.getByDisplayValue("5.5")).toHaveValue("5.5");
     await completeAudience(user);
     expect(screen.getAllByText(translate("currency.uzs", undefined, "ru"))).toHaveLength(4);
-    expect(screen.getByPlaceholderText("200 000")).toHaveValue("");
-    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
+    expect(screen.getByPlaceholderText("Например, 200 000")).toHaveValue("");
+    expectContinueBlocked();
     fillPrices();
     expect(screen.getByDisplayValue("250 000")).toHaveValue("250 000");
     expect(document.querySelectorAll(".input-control__input--with-suffix")).toHaveLength(4);
@@ -208,7 +215,7 @@ describe("Blogger profile wizard", () => {
     fireEvent.blur(er);
 
     expect(await screen.findByText(translate("form.validation.erFormat", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: continueLabel() })).toBeDisabled();
+    expectContinueBlocked();
   });
 
   it("accepts a comma or dot ER value, submits numeric 5.5 and localizes the Review percentage", async () => {

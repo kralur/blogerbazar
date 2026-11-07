@@ -89,7 +89,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
   ].filter(Boolean).join(" · ");
   const open = (href: string) => { if (openLink) openLink(href); else window.open(href, "_blank", "noopener,noreferrer"); };
   return <div className="screen screen--with-nav">
-    <PageHeader actions={<><FavoriteButton brandFaceId={profile.id} /><ReportButton targetId={profile.id} targetType="brandFace" /></>} back={{ href: "#/", label: t("common.back") }} />
+    <PageHeader actions={<><FavoriteButton brandFaceId={profile.id} /></>} back={{ href: "#/", label: t("common.back") }} />
     <div className="mt-4 text-center"><div className="mx-auto w-fit"><Avatar name={profile.name} size="xl" src={profile.avatarUrl} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{profile.name}</h1><p className="mt-1 text-sm text-brand-muted">{t("onboarding.brandFace")} · {identity}</p>{reviews && reviews.reviewsCount > 0 && <div className="mt-2"><Rating count={reviews.reviewsCount} value={reviews.rating ?? undefined} /></div>}{profile.isPromoted && <div className="mt-3 flex justify-center"><span className="catalog-card__promoted detail-promoted">{t("card.promoted")}</span></div>}</div>
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     {photos.length > 0 && <ul aria-label={t("brandFace.galleryTitle")} className="brand-face-photos no-scrollbar">{photos.map((url) => <li className="brand-face-photos__item" key={url}><img alt={profile.name} loading="lazy" src={url} /></li>)}</ul>}
@@ -105,6 +105,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
     {reviews && <ReviewsSection allHref={`#/brand-face-reviews/${profile.id}`} count={reviews.reviewsCount} emptyText={t("details.noReviews")} rating={reviews.reviewsCount > 0 ? reviews.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews.items} title={t("details.reviews")} />}
     {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
     {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
+    <ReportButton targetId={profile.id} targetType="brandFace" />
     {role === "Business" && !profile.isHidden && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm brandFaceId={profile.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} />

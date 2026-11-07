@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { createBusinessProfile, deleteProfileImage, getMyBusinessProfile, updateBusinessProfile, uploadProfileImage } from "../api/marketplace";
 import { ProfileMediaPicker, type PendingProfileImage } from "../components/ProfileMediaPicker";
-import { FixedActionBar, ReviewItem, ReviewSection, WizardErrorSummary, WizardHeader, WizardLayout, WizardStep } from "../components/Wizard";
+import { FixedActionBar, revealFirstWizardError, ReviewItem, ReviewSection, WizardErrorSummary, WizardHeader, WizardLayout, WizardStep } from "../components/Wizard";
 import { Button, Icon, Input, Modal, Textarea, Toast } from "../components/ui";
 import { RegionSelect } from "../components/RegionSelect";
 import { TelegramHandleField, useTelegramHandle } from "../components/TelegramHandleField";
@@ -86,7 +86,6 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
   const unsavedChanges = useUnsavedChanges(dirty);
   const clientErrors = useMemo(() => validate(form, t), [form, language, t]);
   const errors = useMemo(() => ({ ...clientErrors, ...serverErrors }), [clientErrors, serverErrors]);
-  const currentStepValid = step === 2 || stepFields[step].every((field) => !errors[field]);
   const stepTitles = [t("wizard.businessCompanyStep"), t("wizard.businessDetailsStep"), t("wizard.businessReviewStep")];
 
   useEffect(() => {
@@ -149,7 +148,11 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
   const continueStep = useCallback(() => {
     if (step === 2) return;
     markStepTouched(step);
-    if (!stepFields[step].every((field) => !errors[field])) return;
+    if (!stepFields[step].every((field) => !errors[field])) {
+      haptic.error();
+      revealFirstWizardError();
+      return;
+    }
     haptic.selection();
     setStep((current) => current === 0 ? 1 : 2);
   }, [errors, haptic, markStepTouched, step]);
@@ -231,12 +234,12 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
   const actionLabel = step === 2 ? (saving ? t("form.publishing") : submitLabel) : t("wizard.continue");
 
   return <form noValidate onSubmit={submit}>
-    <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} disabled={step === 2 ? false : !currentStepValid} loading={saving} onBack={goBack} onPrimary={step === 2 ? undefined : continueStep} submit={step === 2} />}>
+    <WizardLayout actionBar={<FixedActionBar key={step} backLabel={t("common.back")} continueLabel={actionLabel} loading={saving} onBack={goBack} onPrimary={step === 2 ? undefined : continueStep} submit={step === 2} />}>
       <WizardHeader backLabel={t("common.back")} onBack={goBack} progressLabel={progressLabel} showBackButton={!isTelegram} showLanguage={Boolean(onCompleted)} step={step + 1} stepTitle={stepTitles[step]} totalSteps={3} />
       <WizardErrorSummary message={serverSummary} />
       {step === 0 && <WizardStep stepKey={stepTitles[0]}>
         <div className="wizard-fields">
-          <Input className="wizard-input" error={touched.name ? errors.name : undefined} label={t("form.companyName")} onBlur={blur("name")} onChange={update("name")} placeholder="Lumi Beauty" required value={form.name} />
+          <Input className="wizard-input" error={touched.name ? errors.name : undefined} label={t("form.companyName")} onBlur={blur("name")} onChange={update("name")} placeholder={t("form.example", { value: "Kofe Hona" })} required value={form.name} />
           <TelegramHandleField />
           <RegionSelect className="wizard-region-select" error={touched.city ? errors.city : undefined} onChange={selectCity} required value={form.city} />
         </div>
@@ -253,12 +256,12 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
       {step === 2 && <WizardStep stepKey={stepTitles[2]}>
         <div className="wizard-review">
           {reviewLogoUrl && <img alt={t("profileMedia.title")} className="wizard-review__logo" src={reviewLogoUrl} />}
-          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[0] })} editLabel={t("common.edit")} onEdit={() => setStep(0)} title={stepTitles[0]}>
+          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[0] })} editLabel={t("wizard.change")} onEdit={() => setStep(0)} title={stepTitles[0]}>
             <ReviewItem label={t("form.companyName")} value={form.name.trim()} />
             <ReviewItem label={t("form.telegramUsername")} value={telegramUsername ?? t("form.telegramNoUsername")} />
             <ReviewItem label={t("common.city")} value={cityLabel(form.city, language)} />
           </ReviewSection>
-          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[1] })} editLabel={t("common.edit")} onEdit={() => setStep(1)} title={stepTitles[1]}>
+          <ReviewSection editAriaLabel={t("wizard.editSection", { section: stepTitles[1] })} editLabel={t("wizard.change")} onEdit={() => setStep(1)} title={stepTitles[1]}>
             <ReviewItem label={t("form.websiteOptional")} value={form.website.trim()} />
             <ReviewItem label={t("form.aboutCompany")} value={form.description.trim()} />
             <ReviewItem label={t("common.phone")} value={verifiedPhone ?? t("phone.missing")} />

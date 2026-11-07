@@ -419,6 +419,8 @@
   .wizard-screen__content { width: 100%; max-width: 26rem; margin: 0 auto; }
   .wizard-header { position: relative; display: grid; gap: .75rem; width: 100%; min-width: 0; margin-bottom: 1.5rem; }
   .wizard-header__language { position: absolute; top: 0; right: 0; }
+  /* A long step title ("Описание и контакты") wraps before the RU/UZ switch instead of running under it. */
+  .wizard-header--with-language .wizard-header__copy h1 { padding-right: 6.5rem; }
   .wizard-header__back { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
   .wizard-header__copy { width: 100%; min-width: 0; }
   .wizard-header__copy p { margin: .15rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 700; }
@@ -909,7 +911,7 @@
   }
   .bottom-nav__item--active { color: var(--bb-text); font-weight: 800; }
   .bottom-nav__item--active .bottom-nav__icon { border-color: var(--bb-accent); background: var(--bb-accent-subtle); color: var(--bb-text); }
-  .bottom-nav__item--active .bottom-nav__label::after { display: block; width: .25rem; height: .25rem; margin: .125rem auto 0; border-radius: 999px; background: var(--bb-accent); content: ""; }
+  /* The lime box and the bold label mark the active tab; a second dot under the label added nothing (2026-11-07). */
 
   .bottom-nav__home .bottom-nav__icon {
     width: 2.5rem;
@@ -1038,8 +1040,9 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .catalog-search__sheet-content { display: grid; gap: .875rem; }
 .catalog-search__filter-select { display: grid; gap: .375rem; }
 .catalog-search__filter-select > span { color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 700; }
-.catalog-search__filter-select select { height: 3.25rem; padding: 0 .75rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface-secondary); }
-.catalog-search__filter-select input { height: 3.25rem; min-width: 0; padding: 0 .75rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface-secondary); color: var(--bb-text); font: inherit; outline: 0; }
+/* Filter fields look like the form fields (white with a border), not grey "disabled-looking" blocks (2026-11-07). */
+.catalog-search__filter-select select { height: 3.25rem; padding: 0 .75rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); }
+.catalog-search__filter-select input { height: 3.25rem; min-width: 0; padding: 0 .75rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); font: inherit; outline: 0; }
 .catalog-search__filter-select input::placeholder { color: var(--bb-text-secondary); }
 .catalog-search__filter-select input:focus-visible,
 .catalog-search__filter-select select:focus-visible { border-color: var(--bb-accent); box-shadow: 0 0 0 2px var(--bb-accent-subtle); }
@@ -1175,7 +1178,6 @@ html[data-telegram-embedded="true"] .campaign-management-screen { padding-top: c
 /* No profile for this role yet: a quiet dashed card, so created roles stand out at a glance. */
 .profile-role-card--missing:not(.profile-role-card--selected) { border-style: dashed; background: transparent; color: var(--bb-text-secondary); }
 .profile-role-card--missing:not(.profile-role-card--selected) svg { color: var(--bb-text-secondary); opacity: .7; }
-.choice-selected { border-color: var(--bb-text) !important; background: var(--bb-accent-subtle); color: var(--bb-text); box-shadow: inset 0 0 0 1px var(--bb-text); }
 /* Detail pages (R3): key facts as tiles, neutral chips, one section rhythm. */
 .fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
 .fact-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1252,8 +1254,14 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 }
 .page-header__icon-button { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); }
 .page-header__icon-button:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
-.report-button { display: inline-flex; min-height: 2.75rem; align-items: center; gap: .375rem; padding: 0 .75rem; border: 1px solid var(--bb-error); border-radius: .75rem; background: var(--bb-error-subtle); color: var(--bb-error-on-subtle); font-size: .875rem; font-weight: 700; white-space: nowrap; }
-.report-button:focus-visible { outline: 2px solid var(--bb-error); outline-offset: 2px; }
+/* Cancel and confirm side by side while both labels fit on one line; otherwise each takes the full width and the
+   confirm button goes on top (never a label broken over two lines, like "Завершить / сделку" at 390 px). */
+.modal-actions { display: flex; flex-wrap: wrap-reverse; gap: .75rem; }
+.modal-actions > * { flex: 1 1 0; min-width: fit-content; white-space: nowrap; }
+/* The report link sits at the end of the page, quiet: grey, underlined, still a 44px tap target. */
+.report-button { display: flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: .375rem; width: fit-content; margin: 1.5rem auto 0; padding: 0 .75rem; border: 0; border-radius: .75rem; background: transparent; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.report-button:active { background: var(--bb-surface-secondary); }
+.report-button:focus-visible { outline: 2px solid var(--bb-focus); outline-offset: 2px; }
 .page-header__secondary { display: inline-flex; min-height: 2.75rem; align-items: center; padding: 0 .75rem; border: 1px solid var(--bb-border); border-radius: .75rem; color: var(--bb-text); font-size: .8125rem; font-weight: 800; text-decoration: none; white-space: nowrap; }
 .page-header__secondary:active { background: var(--bb-surface-secondary); }
 .my-campaigns__create { gap: .375rem; white-space: nowrap; }
@@ -1400,7 +1408,8 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 
 .offer-respond { display: grid; gap: .75rem; }
 .offer-respond__left { margin: 0; color: var(--bb-text); font-size: .875rem; font-weight: 750; }
-.offer-respond__left--urgent { color: var(--bb-warning); }
+/* The last hour of an offer: warning text that stays readable on a light card (was 1.96:1, 2026-11-07). */
+.offer-respond__left--urgent { color: var(--bb-warning-on-subtle); }
 .offer-respond__hint { margin: 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.4; }
 .campaign-details__expired p { margin: 0; }
 .campaign-details__blocked-action { display: inline-flex; min-height: 2.75rem; align-items: center; margin-top: .5rem; color: var(--bb-action); font-size: .875rem; font-weight: 800; text-decoration: none; }
@@ -1515,7 +1524,10 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .brand-face-gallery__add--disabled { opacity: .5; pointer-events: none; }
 .brand-face-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
 .brand-face-chip { min-height: 2.5rem; padding: 0 1rem; border: 1px solid var(--bb-border); border-radius: 999px; background: var(--bb-surface); color: var(--bb-text); font: inherit; font-size: .875rem; font-weight: 700; }
-.brand-face-chip[aria-pressed="true"] { border-color: var(--bb-accent); background: var(--bb-accent); color: var(--bb-accent-text); }
+/* One look for every "picked" choice (owner, 2026-11-07), the same as the category chips: lime outline, pale lime
+   fill and a lime tick. Before, gender was solid lime, the offer format had a dark outline and categories had a tick. */
+.brand-face-chip[aria-pressed="true"], .choice-selected { border-color: var(--bb-accent) !important; background: var(--bb-accent-subtle); color: var(--bb-text); box-shadow: none; }
+.brand-face-chip[aria-pressed="true"]::before, .choice-selected::before { content: "✓"; display: inline-grid; width: 1rem; height: 1rem; margin-right: .375rem; place-items: center; border-radius: 50%; background: var(--bb-accent); color: var(--bb-accent-text); font-size: .6875rem; font-weight: 800; vertical-align: -.125rem; }
 .brand-face-photos { display: flex; gap: .5rem; margin: 1.25rem -1rem 0; padding: 0 1rem .25rem; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 1rem; touch-action: pan-x pan-y; list-style: none; }
 .brand-face-photos__item { flex: 0 0 min(44vw, 12rem); aspect-ratio: 3 / 4; overflow: hidden; border-radius: 1rem; background: var(--bb-surface-secondary); scroll-snap-align: start; }
 .brand-face-photos__item img { width: 100%; height: 100%; object-fit: cover; }

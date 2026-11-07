@@ -27,7 +27,7 @@ export function WizardHeader({ title, stepTitle, step, totalSteps, backLabel, pr
   // Language choice belongs to first-run onboarding; editing an existing profile keeps it in Profile settings.
   showLanguage?: boolean;
 }) {
-  return <header className="wizard-header" data-content-header>
+  return <header className={showLanguage ? "wizard-header wizard-header--with-language" : "wizard-header"} data-content-header>
     {showLanguage && <div className="wizard-header__language"><LanguageSwitcher /></div>}
     {showBackButton && <button aria-label={backLabel} className="wizard-header__back" onClick={onBack} type="button"><Icon name="back" /></button>}
     <div className="wizard-header__copy">{title && <p>{title}</p>}<h1>{stepTitle}</h1></div>
@@ -41,6 +41,20 @@ export function ProgressIndicator({ current, total, label }: { current: number; 
     <span className="wizard-progress__label">{label}</span>
     <span aria-hidden="true" className="wizard-progress__track"><span className="wizard-progress__value" style={{ width: `${progress}%` }} /></span>
   </div>;
+}
+
+// Continue stays active (owner, 2026-11-07): a tap on an incomplete step marks its fields, then this brings the first
+// error into view and puts the focus there, so nobody is left in front of a grey button without knowing why.
+export function revealFirstWizardError(field?: string) {
+  window.requestAnimationFrame(() => {
+    const scope = field
+      ? document.querySelector<HTMLElement>(`[data-wizard-field="${field}"]`)
+      : document.querySelector<HTMLElement>(".wizard-step [aria-invalid='true'], .wizard-step .ds-field-error");
+    if (!scope) return;
+    scope.scrollIntoView?.({ block: "center" });
+    const target = scope.matches("input, textarea, select, button") ? scope : scope.querySelector<HTMLElement>("input, textarea, select, button");
+    target?.focus({ preventScroll: true });
+  });
 }
 
 export function WizardStep({ stepKey, children }: { stepKey: string; children: ReactNode }) {

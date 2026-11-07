@@ -30,6 +30,13 @@ vi.mock("../src/components/ProfileMediaPicker", () => ({
 
 import { BusinessProfileForm } from "../src/pages/BusinessProfileForm";
 
+// Continue stays active (owner, 2026-11-07): on an incomplete step a tap keeps the same step and shows what is missing.
+function expectContinueBlocked() {
+  const step = screen.getByRole("heading", { level: 1 }).textContent ?? "";
+  fireEvent.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(step);
+}
+
 function renderCreate(onBackToRole = vi.fn()) {
   const onCompleted = vi.fn();
   render(<I18nProvider><BusinessProfileForm onBackToRole={onBackToRole} onCompleted={onCompleted} /></I18nProvider>);
@@ -37,7 +44,7 @@ function renderCreate(onBackToRole = vi.fn()) {
 }
 
 async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByPlaceholderText("Lumi Beauty"), "Lumi Beauty");
+  await user.type(screen.getByPlaceholderText("Например, Kofe Hona"), "Lumi Beauty");
   await user.selectOptions(screen.getByRole("combobox", { name: translate("common.city", undefined, "ru") }), "tashkent-city");
   await waitFor(() => expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeEnabled());
   await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
@@ -60,11 +67,23 @@ describe("Business profile wizard", () => {
     api.deleteProfileImage.mockResolvedValue(undefined);
   });
 
+  it("keeps Continue active and brings the first missing field into focus", async () => {
+    renderCreate();
+    const name = screen.getByPlaceholderText(translate("form.example", { value: "Kofe Hona" }, "ru"));
+    expect(name).toHaveValue("");
+    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeEnabled();
+
+    expectContinueBlocked();
+
+    await waitFor(() => expect(name).toHaveFocus());
+    expect(name).toHaveAttribute("aria-invalid", "true");
+  });
+
   it("starts on Company and blocks an invalid first step", () => {
     renderCreate();
     expect(screen.getByRole("heading", { level: 1, name: translate("wizard.businessCompanyStep", undefined, "ru") })).toBeInTheDocument();
     expect(document.querySelector(".wizard-screen")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeDisabled();
+    expectContinueBlocked();
     expect(api.createBusinessProfile).not.toHaveBeenCalled();
   });
 
@@ -72,7 +91,7 @@ describe("Business profile wizard", () => {
     const user = userEvent.setup();
     renderCreate();
 
-    await user.type(screen.getByPlaceholderText("Lumi Beauty"), "Lumi Beauty");
+    await user.type(screen.getByPlaceholderText("Например, Kofe Hona"), "Lumi Beauty");
 
     // The handle is shown from Telegram and cannot be typed over.
     expect(screen.getByText("@lumibeauty")).toBeInTheDocument();
@@ -145,7 +164,7 @@ describe("Business profile wizard", () => {
     await completeStepOne(user);
     await completeStepTwo(user);
     const editButton = screen.getByRole("button", { name: translate("wizard.editSection", { section: translate("wizard.businessCompanyStep", undefined, "ru") }, "ru") });
-    expect(editButton).toHaveTextContent(translate("common.edit", undefined, "ru"));
+    expect(editButton).toHaveTextContent(translate("wizard.change", undefined, "ru"));
     await user.click(editButton);
     expect(screen.getByDisplayValue("Lumi Beauty")).toBeInTheDocument();
   });
@@ -210,7 +229,7 @@ describe("Business profile wizard", () => {
   it("does not replace the native BackButton listener while typing", async () => {
     const user = userEvent.setup();
     renderCreate();
-    await user.type(screen.getByPlaceholderText("Lumi Beauty"), "L");
+    await user.type(screen.getByPlaceholderText("Например, Kofe Hona"), "L");
     expect(telegram.setBackButtonHandler).toHaveBeenCalledTimes(1);
   });
 

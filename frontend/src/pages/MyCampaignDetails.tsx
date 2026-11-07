@@ -132,7 +132,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
     {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t("myCampaignDetails.closedHint")}</p>}
     <Modal onClose={() => { if (!closing) setCloseOpen(false); }} open={closeOpen} title={t("myCampaignDetails.closeTitle")} variant="neutral">
       <p className="text-sm leading-6 text-brand-muted">{t("myCampaignDetails.closeDescription")}</p>
-      <div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={closing} onClick={() => setCloseOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={closing} disabled={closing} onClick={closeCampaign} type="button" variant="danger">{closing ? t("myCampaignDetails.closing") : t("myCampaignDetails.close")}</Button></div>
+      <div className="mt-5 modal-actions"><Button disabled={closing} onClick={() => setCloseOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={closing} disabled={closing} onClick={closeCampaign} type="button" variant="danger">{closing ? t("myCampaignDetails.closing") : t("myCampaignDetails.close")}</Button></div>
     </Modal>
     <Toast message={toast} tone="success" />
     <BottomNav />

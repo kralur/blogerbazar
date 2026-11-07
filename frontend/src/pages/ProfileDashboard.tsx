@@ -187,7 +187,7 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
       </>}
       {/* Settings stay reachable even without an active profile: logout and account deletion live there. */}
       <nav aria-label={t("profile.settings")} className="settings-list"><SettingsLink detail={t("profile.settingsDetail")} href="#/settings" title={t("profile.settings")} /></nav>
-      <Modal onClose={() => !visibilitySaving && setHideConfirmOpen(false)} open={hideConfirmOpen} title={t("profile.hideTitle")}><p className="text-sm leading-6 text-brand-muted">{t("profile.hideDescription")}</p><div className="mt-5 grid grid-cols-2 gap-3"><Button disabled={visibilitySaving} onClick={() => setHideConfirmOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={visibilitySaving} disabled={visibilitySaving} onClick={() => void changeVisibility(true)} type="button">{t("profile.hideConfirm")}</Button></div></Modal><Toast message={toast} tone={toastTone} />
+      <Modal onClose={() => !visibilitySaving && setHideConfirmOpen(false)} open={hideConfirmOpen} title={t("profile.hideTitle")}><p className="text-sm leading-6 text-brand-muted">{t("profile.hideDescription")}</p><div className="mt-5 modal-actions"><Button disabled={visibilitySaving} onClick={() => setHideConfirmOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={visibilitySaving} disabled={visibilitySaving} onClick={() => void changeVisibility(true)} type="button">{t("profile.hideConfirm")}</Button></div></Modal><Toast message={toast} tone={toastTone} />
       <BottomNav />
     </div>
   );

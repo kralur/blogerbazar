@@ -34,6 +34,13 @@ vi.mock("../src/components/CategoryMultiSelect", () => ({
 
 import { BrandFaceProfileForm } from "../src/pages/BrandFaceProfileForm";
 
+// Continue stays active (owner, 2026-11-07): on an incomplete step a tap keeps the same step and shows what is missing.
+function expectContinueBlocked() {
+  const step = screen.getByRole("heading", { level: 1 }).textContent ?? "";
+  fireEvent.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(step);
+}
+
 function renderCreate(onBackToRole = vi.fn()) {
   const onCompleted = vi.fn();
   render(<I18nProvider><BrandFaceProfileForm onBackToRole={onBackToRole} onCompleted={onCompleted} /></I18nProvider>);
@@ -49,7 +56,7 @@ async function pickLanguages(user: ReturnType<typeof userEvent.setup>, codes: st
 async function completeStepOne(user: ReturnType<typeof userEvent.setup>, languages = ["ru", "uz"]) {
   // Gender and age are required (QA Q20).
   await user.click(screen.getByRole("button", { name: translate("brandFace.gender.female", undefined, "ru") }));
-  await user.type(screen.getByPlaceholderText("24"), "24");
+  await user.type(screen.getByPlaceholderText("Например, 24"), "24");
   await pickLanguages(user, languages);
   await user.click(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") }));
 }
@@ -86,7 +93,7 @@ describe("Brand Face profile wizard", () => {
     renderCreate();
     expect(screen.getByRole("heading", { level: 1, name: translate("wizard.brandFaceAboutStep", undefined, "ru") })).toBeInTheDocument();
     expect(screen.getByDisplayValue("Madina")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeDisabled();
+    expectContinueBlocked();
     expect(api.upsertBrandFaceProfile).not.toHaveBeenCalled();
   });
 
@@ -94,9 +101,9 @@ describe("Brand Face profile wizard", () => {
   it("blocks step one without a gender and shows why", async () => {
     const user = userEvent.setup();
     renderCreate();
-    await user.type(screen.getByPlaceholderText("24"), "24");
+    await user.type(screen.getByPlaceholderText("Например, 24"), "24");
     await pickLanguages(user, ["ru"]);
-    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeDisabled();
+    expectContinueBlocked();
     await user.click(screen.getByRole("button", { name: translate("brandFace.gender.male", undefined, "ru") }));
     expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeEnabled();
   });
@@ -106,19 +113,19 @@ describe("Brand Face profile wizard", () => {
     renderCreate();
     await user.click(screen.getByRole("button", { name: translate("brandFace.gender.female", undefined, "ru") }));
     await pickLanguages(user, ["ru"]);
-    const ageInput = screen.getByPlaceholderText("24");
+    const ageInput = screen.getByPlaceholderText("Например, 24");
     if (age) await user.type(ageInput, age);
     await user.click(ageInput);
     await user.tab();
     expect(screen.getByText(translate("brandFace.ageInvalid", { min: 16, max: 80 }, "ru"))).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeDisabled();
+    expectContinueBlocked();
   });
 
   it("keeps only digits in the age field", async () => {
     const user = userEvent.setup();
     renderCreate();
-    await user.type(screen.getByPlaceholderText("24"), "2a5!7");
-    expect(screen.getByPlaceholderText("24")).toHaveValue("25");
+    await user.type(screen.getByPlaceholderText("Например, 24"), "2a5!7");
+    expect(screen.getByPlaceholderText("Например, 24")).toHaveValue("25");
   });
 
   it("blocks step two until at least one format is chosen and unblocks after", async () => {
@@ -127,11 +134,11 @@ describe("Brand Face profile wizard", () => {
     await completeStepOne(user);
     await user.click(screen.getByRole("button", { name: "choose category" }));
     const continueButton = screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") });
-    expect(continueButton).toBeDisabled();
+    expectContinueBlocked();
     await user.click(screen.getByRole("button", { name: translate("brandFace.format.ugc", undefined, "ru") }));
     expect(continueButton).toBeEnabled();
     await user.click(screen.getByRole("button", { name: translate("brandFace.format.ugc", undefined, "ru") }));
-    expect(continueButton).toBeDisabled();
+    expectContinueBlocked();
     expect(screen.getByText(translate("brandFace.formatsRequired", undefined, "ru"))).toBeInTheDocument();
   });
 
@@ -145,7 +152,7 @@ describe("Brand Face profile wizard", () => {
     await user.tab();
     expect(screen.getAllByText(translate("form.validation.socialUsername", undefined, "ru")).length).toBeGreaterThan(0);
     expect(screen.getAllByText(translate("form.validation.website", undefined, "ru")).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeDisabled();
+    expectContinueBlocked();
   });
 
   it("refuses a non-image or too large gallery file and stops adding after four photos", async () => {
@@ -192,8 +199,8 @@ describe("Brand Face profile wizard", () => {
     const user = userEvent.setup();
     renderCreate();
     await user.click(screen.getByRole("button", { name: translate("brandFace.gender.female", undefined, "ru") }));
-    await user.type(screen.getByPlaceholderText("24"), "24");
-    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeDisabled();
+    await user.type(screen.getByPlaceholderText("Например, 24"), "24");
+    expectContinueBlocked();
     await pickLanguages(user, ["ru"]);
     await pickLanguages(user, ["ru"]);
     expect(screen.getByText(translate("brandFace.languagesRequired", undefined, "ru"))).toBeInTheDocument();
@@ -232,7 +239,7 @@ describe("Brand Face profile wizard", () => {
     renderCreate();
     await completeStepOne(user);
     await completeStepTwo(user);
-    expect(screen.getByRole("button", { name: translate("wizard.continue", undefined, "ru") })).toBeDisabled();
+    expectContinueBlocked();
     await user.click(screen.getByPlaceholderText("@username"));
     await user.tab();
     expect(screen.getByRole("heading", { level: 1, name: translate("wizard.brandFacePortfolioStep", undefined, "ru") })).toBeInTheDocument();
