@@ -135,11 +135,14 @@ function PhoneMock() {
   );
 }
 
-// Real totals, shown as they are (owner, 2026-10-21); the block appears only once the numbers have arrived.
+// Real totals (owner, 2026-10-21), but only once they look like a living marketplace: "5 bloggers" tells a visitor
+// from an ad that nobody is here (owner, 2026-11-07). Below the threshold the page simply has no numbers block.
+export const MIN_PUBLIC_BLOGGERS = 100;
+
 function Numbers() {
   const { t, language } = useI18n();
   const stats = usePublicStats();
-  if (!stats) return null;
+  if (!stats || stats.bloggers < MIN_PUBLIC_BLOGGERS) return null;
   const format = (value: number) => new Intl.NumberFormat(language === "uz" ? "uz-UZ" : "ru-RU").format(value);
   const items = [
     { key: "bloggers", value: stats.bloggers },

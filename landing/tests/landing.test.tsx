@@ -106,16 +106,23 @@ describe("numbers", () => {
   const answer = (body: unknown, ok = true) => vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok, json: async () => body }));
 
   it("shows the real totals with the right word forms", async () => {
-    answer({ bloggers: 1, businesses: 3, completedDeals: 1250 });
+    answer({ bloggers: 101, businesses: 3, completedDeals: 1250 });
     render(<I18nProvider><App /></I18nProvider>);
 
     const block = await screen.findByRole("region", { name: ru("numbers.title") });
-    expect(within(block).getByText("1")).toBeInTheDocument();
+    expect(within(block).getByText("101")).toBeInTheDocument();
     expect(within(block).getByText(ru("numbers.bloggers_one"))).toBeInTheDocument();
     expect(within(block).getByText(ru("numbers.businesses_few"))).toBeInTheDocument();
     expect(block.textContent).toContain(new Intl.NumberFormat("ru-RU").format(1250));
     expect(within(block).getByText(ru("numbers.completedDeals"))).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith("/api/public/stats", expect.objectContaining({ signal: expect.any(AbortSignal) }));
+  });
+
+  it("has no numbers block while there are fewer than 100 bloggers", async () => {
+    answer({ bloggers: 99, businesses: 40, completedDeals: 300 });
+    render(<I18nProvider><App /></I18nProvider>);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(screen.queryByRole("region", { name: ru("numbers.title") })).not.toBeInTheDocument();
   });
 
   it("has no numbers block when the totals are unavailable or malformed", async () => {
