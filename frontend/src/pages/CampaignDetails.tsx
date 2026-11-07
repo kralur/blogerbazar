@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
 import { applyToCampaign, getBusinessReviews, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type BusinessReviews, type CampaignDetails, type ContactDetails } from "../api/marketplace";
 import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { SuccessMoment } from "../components/SuccessMoment";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatBudgetRange, formatDate, isPastDay } from "../lib/currency";
 import { ChipList, DetailSection, FactGrid, ReviewsSection } from "../components/details/DetailBlocks";
@@ -30,6 +31,7 @@ export function CampaignDetails({ id }: { id: string }) {
   const [applicationLookupFailed, setApplicationLookupFailed] = useState(false);
   const [toast, setToast] = useState("");
   const [toastTone, setToastTone] = useState<"success" | "error" | "info">("success");
+  const [moment, setMoment] = useState<{ id: number; message: string } | null>(null);
 
   const requestIdRef = useRef(0);
   const applicationRequestRef = useRef(0);
@@ -169,8 +171,7 @@ export function CampaignDetails({ id }: { id: string }) {
       setApplicationOpen(false);
       setApplicationMessage("");
       setCanApply(false);
-      setToastTone("success");
-      setToast(t("campaign.applicationSent"));
+      setMoment({ id: Date.now(), message: t("campaign.applicationSent") });
     } catch (error) {
       if (mutationId !== applicationMutationRef.current || currentCampaignIdRef.current !== campaignId || controller.signal.aborted) return;
       if (error instanceof ApiError && error.status === 409) {
@@ -231,7 +232,7 @@ export function CampaignDetails({ id }: { id: string }) {
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
       {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary tap-target inline-flex w-full items-center justify-center gap-2 px-5" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}
       <Modal onClose={() => setApplicationOpen(false)} open={applicationOpen} title={t("campaign.applyTitle")}><p className="text-sm leading-6 text-brand-muted">{t("campaign.applyDescription")}</p><Textarea className="mt-4" maxLength={1000} onChange={(event) => setApplicationMessage(event.target.value)} placeholder={t("campaign.applyPlaceholder")} value={applicationMessage} /><Button className="mt-4 w-full" disabled={applying} onClick={apply}>{applying ? t("campaign.sending") : t("campaign.submitApplication")}</Button></Modal>
-      <Toast message={toast} tone={toastTone} /><BottomNav />
+      <SuccessMoment key={moment?.id} message={moment?.message ?? ""} /><Toast message={toast} tone={toastTone} /><BottomNav />
     </div>
   );
 }

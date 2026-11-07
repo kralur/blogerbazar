@@ -7,13 +7,32 @@ import funnelUz from "@bloggerbazar/shared/funnel/uz.json";
 import adminRu from "@bloggerbazar/shared/admin/ru.json";
 import adminUz from "@bloggerbazar/shared/admin/uz.json";
 import ru from "./ru.json";
-import uz from "./uz.json";
 
 export type { Language };
 export { russianPluralForm };
 // City and category names, the funnel texts and the admin labels (roles, journal, complaints) are shared with the web
 // admin (shared/taxonomy, shared/funnel, shared/admin).
-const dictionaries: Record<Language, Dictionary> = { ru: { ...taxonomyRu, ...funnelRu, ...adminRu, ...ru }, uz: { ...taxonomyUz, ...funnelUz, ...adminUz, ...uz } };
+// Speed: only Russian ships in the main script; the Uzbek app texts arrive as their own file when the app starts in
+// Uzbek (main.tsx waits for it) or when the language is switched. Until then an Uzbek text falls back to Russian.
+const dictionaries: Record<Language, Dictionary> = { ru: { ...taxonomyRu, ...funnelRu, ...adminRu, ...ru }, uz: { ...taxonomyUz, ...funnelUz, ...adminUz } };
+const loadedLanguages: Record<Language, boolean> = { ru: true, uz: false };
+let uzLoading: Promise<void> | undefined;
+
+export function isLanguageLoaded(language: Language) {
+  return loadedLanguages[language];
+}
+
+export function loadLanguage(language: Language): Promise<void> {
+  if (loadedLanguages[language]) return Promise.resolve();
+  uzLoading ??= import("./uz.json").then((module) => {
+    Object.assign(dictionaries.uz, module.default);
+    loadedLanguages.uz = true;
+  }).catch((error: unknown) => {
+    uzLoading = undefined;
+    throw error;
+  });
+  return uzLoading;
+}
 const storageKey = "bloggerbazar.language";
 
 function toSupportedLanguage(value?: string | null): Language | undefined {
@@ -79,7 +98,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     language,
     setLanguage: (nextLanguage) => {
       try { localStorage.setItem(storageKey, nextLanguage); } catch {}
-      setLanguageState(nextLanguage);
+      if (isLanguageLoaded(nextLanguage)) { setLanguageState(nextLanguage); return; }
+      // The screens switch once the dictionary is here; a failed download keeps the current language.
+      void loadLanguage(nextLanguage).then(() => setLanguageState(nextLanguage)).catch(() => undefined);
     },
     t: (key, values) => translate(key, values, language)
   }), [language]);

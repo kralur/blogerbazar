@@ -35,7 +35,7 @@ export function BrandFaceGallery({ saved, pending, disabled = false, onRemoveSav
   };
 
   const tile = (src: string, label: string, remove: () => void, key: string) => <li className="brand-face-gallery__item" key={key}>
-    <img alt="" className="brand-face-gallery__image" src={src} />
+    <img alt="" className="brand-face-gallery__image" decoding="async" loading="lazy" src={src} />
     <button aria-label={label} className="brand-face-gallery__remove" disabled={disabled} onClick={remove} type="button"><Icon className="h-4 w-4" name="close" /></button>
   </li>;
 

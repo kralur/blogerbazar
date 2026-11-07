@@ -758,6 +758,17 @@
   .home-quick-chips { display: flex; gap: .5rem; margin: .75rem -1rem 0; padding: 0 1rem; overflow-x: auto; }
   .home-quick-chips .home-category-chip { flex: 0 0 auto; }
 
+  /* Profile progress: the next step to fill in, with the form one tap away; gone at 100%. */
+  .home-progress { margin-top: 1.25rem; padding: .875rem 1rem; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-card); background: var(--bb-surface); }
+  .home-progress__head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+  .home-progress__head h2 { margin: 0; font-size: .9375rem; font-weight: 800; line-height: 1.3; }
+  .home-progress__action { flex: 0 0 auto; min-height: 2.25rem; display: inline-flex; align-items: center; padding: 0 .875rem; border-radius: 999px; background: var(--bb-accent); color: var(--bb-accent-text); font-size: .8125rem; font-weight: 800; text-decoration: none; }
+  .home-progress__action:active { background: var(--bb-accent-pressed); }
+  /* The track uses the border color: the secondary surface disappears against the card in the dark theme. */
+  .home-progress__track { margin-top: .625rem; height: .375rem; overflow: hidden; border-radius: 999px; background: var(--bb-border); }
+  .home-progress__value { display: block; height: 100%; border-radius: inherit; background: var(--bb-accent); transition: width 420ms cubic-bezier(.2,.8,.2,1); }
+  .home-progress p { margin: .5rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.4; }
+
   .home-activity { margin-top: 1.5rem; }
   .home-activity__list { display: grid; grid-template-columns: minmax(0, 1fr); overflow: hidden; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-card); background: var(--bb-surface); }
   .home-activity__item { display: flex; min-height: 3.75rem; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; color: var(--bb-text); text-decoration: none; }
@@ -1560,3 +1571,21 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 .admin-funnel__bar { height: .5rem; margin-top: .375rem; overflow: hidden; border-radius: 999px; background: var(--bb-surface-secondary); }
 .admin-funnel__bar > span { display: block; height: 100%; border-radius: inherit; background: var(--bb-action); }
 .admin-funnel__rates { margin: .25rem 0 0; color: var(--bb-text-secondary); font-size: .75rem; line-height: 1.3; }
+
+/* Success moment: a drawn check for the actions that matter, gone by itself (components/SuccessMoment.tsx). */
+.success-moment { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 1rem; background: rgba(0, 0, 0, .35); pointer-events: none; animation: fade-in 160ms ease-out both; }
+.success-moment__card { display: grid; min-width: 12rem; max-width: 18rem; justify-items: center; gap: .75rem; padding: 1.5rem 1.25rem; border: 1px solid var(--bb-border); border-radius: 1.25rem; background: var(--bb-surface); color: var(--bb-text); box-shadow: 0 16px 40px rgba(0, 0, 0, .18); animation: success-pop 360ms cubic-bezier(.2, .9, .3, 1.2) both; }
+.success-moment__card p { margin: 0; font-size: .9375rem; font-weight: 800; line-height: 1.35; text-align: center; }
+.success-moment__mark { width: 4rem; height: 4rem; fill: none; stroke: var(--bb-success); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.success-moment__ring { stroke-dasharray: 183; stroke-dashoffset: 183; animation: success-draw 520ms ease-out 80ms forwards; }
+.success-moment__check { stroke-dasharray: 40; stroke-dashoffset: 40; animation: success-draw 320ms ease-out 480ms forwards; }
+@keyframes success-pop { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes success-draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .success-moment, .success-moment__card { animation: none; }
+  .success-moment__ring, .success-moment__check { animation: none; stroke-dashoffset: 0; }
+}
+
+/* Requests, offers and deals while loading: three row-shaped placeholders (pages/MyRequests.tsx). */
+.request-list-skeleton { display: grid; gap: .5rem; margin-top: 1.25rem; }
+.request-list-skeleton__row { height: 4.75rem; }

@@ -33,7 +33,7 @@ export function CampaignCard({ campaign, variant = "default" }: { campaign: Camp
   const requirements = variant === "home" ? [] : campaign.requirements?.filter(Boolean).slice(0, 2) ?? [];
   return <a aria-label={t("campaigns.openCampaignAria", { title: campaign.title })} className={`campaign-catalog-card card-enter${variant === "home" ? " catalog-card--rail" : ""}`} href={`#/campaign/${campaign.id}`}>
     <div className="campaign-catalog-card__identity">
-      <Avatar name={businessName} size="sm" src={businessAvatarUrl} variant="neutral" />
+      <Avatar name={businessName} priority={variant === "home"} size="sm" src={businessAvatarUrl} variant="neutral" />
       <div className="campaign-catalog-card__heading">
         <div className="campaign-catalog-card__name-row"><strong>{businessName}</strong></div>
         <h2>{campaign.title}</h2>
