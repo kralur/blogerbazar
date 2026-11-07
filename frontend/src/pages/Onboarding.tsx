@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { selectMarketplaceRole, type MarketplaceRole } from "../api/marketplace";
+import { AtlasBackground } from "../components/AtlasBackground";
 import { Button, Icon, Toast } from "../components/ui";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
@@ -40,7 +41,8 @@ export function Onboarding({ onRoleSelected }: { onRoleSelected?: (role: Marketp
     }
   };
 
-  return <main className="ftue-screen ftue-role-selection">
+  return <main className="ftue-screen ftue-screen--atlas ftue-role-selection">
+    <AtlasBackground />
     <div className="ftue-screen__layout">
       <div className="ftue-role-selection__header" data-content-header>
         <div className="ftue-role-selection__language"><LanguageSwitcher /></div>

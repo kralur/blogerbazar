@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { getCurrentPlatformUser } from "../api/marketplace";
+import { AtlasBackground } from "../components/AtlasBackground";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { Button, Icon } from "../components/ui";
 import { useI18n } from "../i18n";
 import { telegramBridge } from "../telegram/TelegramProvider";
-import officialLogo from "../assets/bloggerbazar-logo-original.png";
 
 const pollAttempts = 8;
 const pollDelayMs = 1500;
@@ -42,11 +42,12 @@ export function PhoneVerification({ onVerified }: { onVerified: () => void }) {
   };
 
   const note = state === "declined" ? t("phone.declined") : state === "failed" ? t("phone.notReceived") : null;
-  return <main className="ftue-screen">
+  return <main className="ftue-screen ftue-screen--atlas">
+    <AtlasBackground />
     <div className="ftue-screen__layout">
       <section className="ftue-screen__content" data-content-header>
         <div className="ftue-screen__language"><LanguageSwitcher /></div>
-        <img alt={t("common.appName")} className="ftue-screen__logo ftue-screen__logo--compact" src={officialLogo} />
+        <p className="ftue-screen__kicker">{t("common.appName")}</p>
         <h1 className="ftue-screen__title">{t("phone.title")}</h1>
         <p className="ftue-screen__description ftue-screen__description--left">{t("phone.subtitle")}</p>
         <div className="ftue-screen__info"><Icon className="h-5 w-5" name="lock" /><p>{t("phone.privacy")}</p></div>

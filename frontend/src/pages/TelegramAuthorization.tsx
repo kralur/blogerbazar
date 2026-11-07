@@ -1,7 +1,7 @@
+import { AtlasBackground } from "../components/AtlasBackground";
 import { Button, Icon } from "../components/ui";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
-import officialLogo from "../assets/bloggerbazar-logo-original.png";
 
 export function TelegramAuthorization({ isTelegram, loading, failed, onContinue }: { isTelegram: boolean; loading: boolean; failed: boolean; onContinue: () => void }) {
   const { t } = useI18n();
@@ -9,11 +9,12 @@ export function TelegramAuthorization({ isTelegram, loading, failed, onContinue 
   const subtitle = failed ? t("firstRun.authFailedSubtitle") : isTelegram ? t("firstRun.telegramSubtitle") : t("firstRun.telegramOutsideSubtitle");
   const action = failed || !isTelegram ? t("common.retry") : t("firstRun.continueTelegram");
   const showRetryIcon = !isTelegram && !loading;
-  return <main className="ftue-screen">
+  return <main className="ftue-screen ftue-screen--atlas">
+    <AtlasBackground />
     <div className="ftue-screen__layout">
       <section className="ftue-screen__content" data-content-header>
         <div className="ftue-screen__language"><LanguageSwitcher /></div>
-        <img alt={t("common.appName")} className="ftue-screen__logo ftue-screen__logo--compact" src={officialLogo} />
+        <p className="ftue-screen__kicker">{t("common.appName")}</p>
         <h1 className="ftue-screen__title">{title}</h1>
         <p className="ftue-screen__description ftue-screen__description--left">{subtitle}</p>
         <div className="ftue-screen__info"><Icon className="h-5 w-5" name="lock" /><p>{t("firstRun.telegramPrivacy")}</p></div>
