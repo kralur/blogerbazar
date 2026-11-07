@@ -2,18 +2,19 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { getMarketplaceHome, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaigns, getMyDeals, getMyOffers, getRecommendations, type MarketplaceRole } from "../api/marketplace";
 import { profileCompleteness, type ProfileCompleteness } from "../lib/profileCompleteness";
 import { readHomeSnapshot, writeHomeSnapshot } from "../data/homeSnapshot";
-import { BloggerCard } from "../components/BloggerCard";
-import { BrandFaceCard } from "../components/BrandFaceCard";
-import { CampaignCard } from "../components/CampaignCard";
-import { BottomNav, Icon, Skeleton } from "../components/ui";
+import type { BloggerCardData } from "../components/BloggerCard";
+import type { CampaignCardData } from "../components/CampaignCard";
+import { AtlasStrip } from "../components/AtlasStrip";
+import { Avatar, BottomNav, Icon, Skeleton } from "../components/ui";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
-import { categoryLabel, useI18n } from "../i18n";
-import { PageHeader } from "../components/PageHeader";
+import { categoryLabel, cityLabel, useI18n } from "../i18n";
+import { formatCompactNumber, formatNumber, formatShortDate } from "../lib/currency";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type HomeData = Awaited<ReturnType<typeof getMarketplaceHome>>;
 type Recommendations = Awaited<ReturnType<typeof getRecommendations>>;
+type BrandFaceRow = HomeData["newBrandFaces"][number];
 
 // D53: the "For you" rail; a missing or failed answer simply hides it.
 function useRecommendations(enabled: boolean, reloadKey: number) {
@@ -28,14 +29,20 @@ function useRecommendations(enabled: boolean, reloadKey: number) {
 }
 type HomeRole = MarketplaceRole;
 
-// The selected role's own profile, measured for the progress bar; a failed or missing profile hides the bar.
-function useProfileProgress(role: HomeRole, enabled: boolean, reloadKey: number) {
-  const [value, setValue] = useState<ProfileCompleteness | null>(null);
+// The selected role's own profile: its name and city for the top of the hero, its completeness for the progress
+// bar. A failed or missing profile hides both.
+type OwnProfile = { name: string; city?: string | null; progress: ProfileCompleteness };
+function useOwnProfile(role: HomeRole, enabled: boolean, reloadKey: number) {
+  const [value, setValue] = useState<OwnProfile | null>(null);
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
     const request = role === "Business" ? getMyBusinessProfile() : role === "BrandFace" ? getMyBrandFaceProfile() : getMyBloggerProfile();
-    request.then((profile) => { if (!cancelled) setValue(profileCompleteness(role, profile)); }).catch(() => { if (!cancelled) setValue(null); });
+    request.then((profile) => {
+      if (cancelled) return;
+      const lastName = "lastName" in profile ? profile.lastName : null;
+      setValue({ name: [profile.name, lastName].filter(Boolean).join(" "), city: profile.city, progress: profileCompleteness(role, profile) });
+    }).catch(() => { if (!cancelled) setValue(null); });
     return () => { cancelled = true; };
   }, [enabled, reloadKey, role]);
   return value;
@@ -59,8 +66,43 @@ function HomeSection({ title, actionHref, children }: { title: string; actionHre
       <h2>{title}</h2>
       {actionHref && <a aria-label={t("home.viewAllSection", { section: title })} className="home-section__action" href={actionHref}>{t("home.viewAll")}</a>}
     </div>
-    <div className="home-rail no-scrollbar">{children}</div>
+    <div className="home-list">{children}</div>
   </section>;
+}
+
+// One row of a Home list (D62): avatar, name, a line of facts, the price on the right when the API sent one.
+function HomeRow({ href, avatarUrl, avatarName, name, meta, price, unit, neutral = false }: { href: string; avatarUrl?: string | null; avatarName: string; name: string; meta: string; price?: string | null; unit?: string; neutral?: boolean }) {
+  return <a className="home-row" href={href}>
+    <Avatar name={avatarName} priority size="sm" src={avatarUrl} variant={neutral ? "neutral" : "catalog"} />
+    <span className="home-row__text"><strong>{name}</strong><span>{meta}</span></span>
+    {price && <span className="home-row__price"><strong>{price}</strong>{unit && <span>{unit}</span>}</span>}
+  </a>;
+}
+
+// Millions are shown short (13.2 mln), so a big budget leaves room for the title; smaller sums stay exact.
+const rowAmount = (value: number) => value >= 1_000_000 ? formatCompactNumber(value) : formatNumber(value);
+
+function BloggerRow({ blogger }: { blogger: BloggerCardData }) {
+  const { language, t } = useI18n();
+  const meta = [cityLabel(blogger.city, language), ...blogger.categories.slice(0, 2).map((category) => categoryLabel(category, language))].join(", ");
+  const [price, unit] = blogger.reelsPrice ? [rowAmount(blogger.reelsPrice), t("home.row.perReels")]
+    : blogger.storiesPrice ? [rowAmount(blogger.storiesPrice), t("home.row.perStories")]
+      : blogger.priceFrom ? [t("home.row.from", { amount: rowAmount(blogger.priceFrom) }), t("currency.uzs")] : [null, undefined];
+  return <HomeRow avatarName={blogger.name} avatarUrl={blogger.avatarUrl} href={`#/blogger/${blogger.id}`} meta={meta} name={blogger.name} price={price} unit={unit} />;
+}
+
+function CampaignRow({ campaign }: { campaign: CampaignCardData }) {
+  const { language, t } = useI18n();
+  const businessName = campaign.businessName ?? campaign.business?.name ?? t("common.business");
+  const meta = [businessName, campaign.city ? cityLabel(campaign.city, language) : null, campaign.deadline ? t("home.row.until", { date: formatShortDate(campaign.deadline, language) }) : null].filter(Boolean).join(" · ");
+  const price = campaign.budgetFrom ? t("home.row.from", { amount: rowAmount(campaign.budgetFrom) }) : campaign.budgetTo ? t("home.row.upTo", { amount: rowAmount(campaign.budgetTo) }) : null;
+  return <HomeRow avatarName={businessName} avatarUrl={campaign.businessAvatarUrl ?? campaign.business?.avatarUrl} href={`#/campaign/${campaign.id}`} meta={meta} name={campaign.title} neutral price={price} unit={price ? t("currency.uzs") : undefined} />;
+}
+
+function BrandFaceRow({ profile }: { profile: BrandFaceRow }) {
+  const { language, t } = useI18n();
+  const meta = [cityLabel(profile.city, language), ...profile.categories.slice(0, 2).map((category) => categoryLabel(category, language))].join(", ");
+  return <HomeRow avatarName={profile.name} avatarUrl={profile.avatarUrl} href={`#/brand-face-detail/${profile.id}`} meta={meta} name={profile.name} price={profile.collaborationPrice ? rowAmount(profile.collaborationPrice) : null} unit={t("home.row.collaboration")} />;
 }
 
 function HomeEmptyAction({ href, title, description }: { href: string; title: string; description: string }) {
@@ -87,8 +129,9 @@ const platformChips = [
   ["youtube", "search.platformYoutube"]
 ] as const;
 
-// Search is the main action of Home: Business looks for creators, creators look for campaigns.
-function HomeSearch({ role, categories }: { role: HomeRole; categories: string[] }) {
+// The lapis hero (D62): who is signed in, the question of the day, the search and the quick chips. Search is the
+// main action of Home: Business looks for creators, creators look for campaigns.
+function HomeHero({ role, categories, me }: { role: HomeRole; categories: string[]; me: OwnProfile | null }) {
   const { language, t } = useI18n();
   const [value, setValue] = useState("");
   const findsCreators = role === "Business";
@@ -98,8 +141,10 @@ function HomeSearch({ role, categories }: { role: HomeRole; categories: string[]
     const query = value.trim();
     window.location.hash = query ? `${route}?q=${encodeURIComponent(query)}` : route;
   };
-  return <section aria-labelledby="home-search-title" className="home-search">
-    <h2 id="home-search-title">{t(findsCreators ? "home.searchCreatorsTitle" : "home.searchCampaignsTitle")}</h2>
+  const meLine = me ? [me.name, me.city ? cityLabel(me.city, language) : null].filter(Boolean).join(", ") : null;
+  return <section aria-labelledby="home-search-title" className="home-hero">
+    <p className="home-hero__me">{meLine ?? " "}</p>
+    <h2 className="home-hero__title" id="home-search-title">{t(findsCreators ? "home.searchCreatorsTitle" : "home.searchCampaignsTitle")}</h2>
     <form className="home-search__form" onSubmit={submit} role="search">
       <Icon className="home-search__icon" name="search" />
       <input aria-label={t(findsCreators ? "home.searchCreatorsTitle" : "home.searchCampaignsTitle")} enterKeyHint="search" onChange={(event) => setValue(event.target.value)} placeholder={t(findsCreators ? "home.searchCreatorsPlaceholder" : "home.searchCampaignsPlaceholder")} type="search" value={value} />
@@ -114,7 +159,7 @@ function HomeSearch({ role, categories }: { role: HomeRole; categories: string[]
 
 type ActivityItem = { key: string; title: string; detail: string; href: string };
 
-// "Your tasks": only real, actionable items from existing endpoints; hidden when there is nothing to do.
+// "Waiting for your decision": only real, actionable items from existing endpoints; hidden when there is nothing to do.
 function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
   const { t } = useI18n();
   const [items, setItems] = useState<ActivityItem[] | null>(null);
@@ -218,24 +263,24 @@ export function Home({ role, initialData, initialError = false, initialLoading =
 
   const activity = useHomeActivity(resolvedRole, !isPreview, activityReloadKey);
   const forYou = useRecommendations(!isPreview, activityReloadKey);
-  const progress = useProfileProgress(resolvedRole, !isPreview, activityReloadKey);
+  const me = useOwnProfile(resolvedRole, !isPreview, activityReloadKey);
   const forYouCount = forYou ? forYou.campaigns.length + forYou.bloggers.length + forYou.brandFaces.length : 0;
-  const forYouRail = forYou && forYouCount > 0 && <HomeSection actionHref={forYou.audience === "business" ? "#/search" : "#/campaigns"} title={t("home.forYou")}>
-    {forYou.campaigns.map((campaign) => <div className="home-rail__campaign" key={campaign.id}><CampaignCard campaign={campaign} variant="home" /></div>)}
-    {forYou.bloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}
-    {forYou.brandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceCard profile={profile} variant="home" /></div>)}
+  const forYouRail = forYou && forYouCount > 0 && <HomeSection actionHref={forYou.audience === "business" ? "#/search" : "#/campaigns"} title={t(forYou.audience === "business" ? "home.forYouBusiness" : "home.forYou")}>
+    {forYou.campaigns.map((campaign) => <CampaignRow campaign={campaign} key={campaign.id} />)}
+    {forYou.bloggers.map((blogger) => <BloggerRow blogger={blogger} key={blogger.id} />)}
+    {forYou.brandFaces.map((profile) => <BrandFaceRow key={profile.id} profile={profile} />)}
   </HomeSection>;
   const hasAnyBlogger = Boolean(data?.promotedBloggers.length || data?.topRatedBloggers.length || data?.newBloggers.length);
   const hasCampaigns = Boolean(data?.promotedCampaigns.length);
-  const bloggerRail = (title: string, bloggers: HomeData["topRatedBloggers"]) => bloggers.length > 0 && <HomeSection actionHref="#/search" title={title}>{bloggers.map((blogger) => <div className="home-rail__blogger" key={blogger.id}><BloggerCard blogger={blogger} variant="home" /></div>)}</HomeSection>;
-  const brandFaceRail = data && data.newBrandFaces.length > 0 && <HomeSection actionHref="#/search?type=brand-face" title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <div className="home-rail__brand-face" key={profile.id}><BrandFaceCard profile={profile} variant="home" /></div>)}</HomeSection>;
-  const campaignRail = data && data.promotedCampaigns.length > 0 && <HomeSection actionHref="#/campaigns" title={t("home.promotedCampaigns")}>{data.promotedCampaigns.map((campaign) => <div className="home-rail__campaign" key={campaign.id}><CampaignCard campaign={campaign} variant="home" /></div>)}</HomeSection>;
+  const bloggerRail = (title: string, bloggers: HomeData["topRatedBloggers"]) => bloggers.length > 0 && <HomeSection actionHref="#/search" title={title}>{bloggers.map((blogger) => <BloggerRow blogger={blogger} key={blogger.id} />)}</HomeSection>;
+  const brandFaceRail = data && data.newBrandFaces.length > 0 && <HomeSection actionHref="#/search?type=brand-face" title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <BrandFaceRow key={profile.id} profile={profile} />)}</HomeSection>;
+  const campaignRail = data && data.promotedCampaigns.length > 0 && <HomeSection actionHref="#/campaigns" title={t("home.promotedCampaigns")}>{data.promotedCampaigns.map((campaign) => <CampaignRow campaign={campaign} key={campaign.id} />)}</HomeSection>;
 
   return <div className="home screen screen--with-nav">
-    <PageHeader eyebrow={t("home.marketplaceSubtitle")} title={t("common.appName")} />
-    <HomeSearch categories={data?.categories ?? []} role={resolvedRole} />
-    {progress && progress.next && <HomeProgress progress={progress} />}
+    <HomeHero categories={data?.categories ?? []} me={me} role={resolvedRole} />
+    <AtlasStrip />
     {activity && activity.length > 0 && <HomeActivity items={activity} />}
+    {me?.progress.next && <HomeProgress progress={me.progress} />}
     {failed && !data ? <HomeError offline={offline} onRetry={load} /> : !data ? <HomeSkeleton role={resolvedRole} /> : <div className="home-content">
       {failed && <p className="text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       {forYouRail}
@@ -264,11 +309,10 @@ export function Home({ role, initialData, initialError = false, initialLoading =
 
 function HomeSkeleton({ role }: { role: HomeRole }) {
   const { t } = useI18n();
-  const showCampaignRail = role !== "Business";
+  const rows = role === "Business" ? 3 : 2;
   return <div aria-busy="true" aria-label={t("home.loading")} className="home-skeleton">
     <span className="sr-only">{t("home.loading")}</span>
-    <section><Skeleton className="h-6 w-40" /><div className="home-skeleton__rail">{[0, 1].map((item) => <Skeleton className="h-48 w-[17.75rem] shrink-0" key={item} />)}</div></section>
-    {showCampaignRail && <section><Skeleton className="h-6 w-44" /><div className="home-skeleton__rail">{[0, 1].map((item) => <Skeleton className="h-40 w-[17.75rem] shrink-0" key={item} />)}</div></section>}
-    <section><Skeleton className="h-6 w-48" /><div className="grid grid-cols-2 gap-2"><Skeleton className="h-24" /><Skeleton className="h-24" /></div></section>
+    <section><Skeleton className="h-6 w-40" /><div className="home-skeleton__list">{Array.from({ length: rows }, (_, item) => <Skeleton className="h-20" key={item} />)}</div></section>
+    <section><Skeleton className="h-6 w-48" /><div className="home-skeleton__list"><Skeleton className="h-20" /><Skeleton className="h-20" /></div></section>
   </div>;
 }

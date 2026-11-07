@@ -16,7 +16,7 @@ vi.mock("../src/components/BloggerCard", () => ({ BloggerCard: ({ blogger }: { b
 vi.mock("../src/components/BrandFaceCard", () => ({ BrandFaceCard: ({ profile }: { profile: { name: string } }) => <span>{profile.name}</span> }));
 vi.mock("../src/components/CampaignCard", () => ({ CampaignCard: ({ campaign }: { campaign: { title: string } }) => <span>{campaign.title}</span> }));
 vi.mock("../src/components/ui", () => ({
-  Avatar: ({ name }: { name: string }) => <span>{name}</span>,
+  Avatar: () => <span data-testid="avatar" />,
   BottomNav: () => <nav aria-label="bottom-nav" />,
   Icon: () => <svg />,
   Skeleton: ({ className }: { className?: string }) => <div className={className} data-testid="skeleton" />

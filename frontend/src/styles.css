@@ -1589,3 +1589,107 @@ a.settings-row:active { background: var(--bb-surface-secondary); }
 /* Requests, offers and deals while loading: three row-shaped placeholders (pages/MyRequests.tsx). */
 .request-list-skeleton { display: grid; gap: .5rem; margin-top: 1.25rem; }
 .request-list-skeleton__row { height: 4.75rem; }
+
+/* ---------------------------------------------------------------------------------------------------------------
+   Direction "Bazar" in the Mini App (D62): Unbounded for display text, lapis hero with the atlas strip on Home,
+   night lapis instead of black in the dark theme. Appended after the layers so these rules win over DS v2 defaults.
+   --------------------------------------------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("./fonts/unbounded-cyrillic-wght-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("./fonts/unbounded-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* Lapis and lime are the same in both themes; the page around them changes. */
+  --bb-lapis: #17307A;
+  --bb-lapis-text: #AFC0EA;
+  --bb-ink: #0C1838;
+  --bb-tile: #19A59C;
+  --bb-tile-subtle: #D9F3F1;
+  --bb-tile-text: #0D6B65;
+  --bb-saffron: #F2B01E;
+  --bb-coral: #E8572F;
+  --bb-quiet: #E8EDF7;
+  --bb-display: "Unbounded", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Night lapis instead of black: the Mini App only (the web admin keeps the shared dark tokens). */
+html[data-telegram-theme="dark"] {
+  --bb-background: #0E1B45;
+  --bb-surface: #142457;
+  --bb-surface-secondary: #1B2D66;
+  --bb-surface-elevated: #1B2D66;
+  --bb-text-secondary: #AFC0EA;
+  --bb-border: #2A3C78;
+  --bb-tile-subtle: rgba(25, 165, 156, .18);
+  --bb-tile-text: #7FE0D8;
+  --bb-quiet: #1B2D66;
+}
+
+/* The lapis hero: it runs under the Telegram chrome (the screen padding is pulled back) and ends in the strip. */
+.home-hero { margin: calc(-1 * var(--app-content-top)) -1rem 0; padding: calc(var(--app-content-top) + .25rem) 1rem 1rem; background: var(--bb-lapis); color: #FFFFFF; }
+.home-hero__me { min-height: 1.25rem; margin: 0 0 .375rem; color: var(--bb-lapis-text); font-size: .875rem; font-weight: 600; line-height: 1.3; }
+.home-hero__title { margin: 0 0 .875rem; font-family: var(--bb-display); font-size: 1.625rem; font-weight: 700; line-height: 1.15; letter-spacing: -.01em; color: #FFFFFF; }
+.home-hero .home-search__form { margin-top: 0; border-color: #FFFFFF; background: #FFFFFF; }
+.home-hero .home-search__form input { color: var(--bb-ink); }
+.home-hero .home-search__form input::placeholder { color: #6F6F68; }
+.home-hero .home-search__icon { color: #6F6F68; }
+.home-hero .home-quick-chips { margin-top: .75rem; }
+.home-hero .home-category-chip { border-color: transparent; background: rgba(255, 255, 255, .14); color: #FFFFFF; }
+.home-hero .home-category-chip:hover,
+.home-hero .home-category-chip:active { border-color: var(--bb-accent); background: rgba(255, 255, 255, .22); }
+.atlas-strip { margin: 0 -1rem; overflow: hidden; background: var(--bb-lapis); }
+.atlas-strip svg { display: block; width: 100%; }
+
+/* Headings in the display face; the "view all" link in tile. */
+.home-section__heading h2,
+.home-activity .home-section__heading h2,
+.home-steps .home-section__heading h2 { font-family: var(--bb-display); font-size: 1.1875rem; font-weight: 700; line-height: 1.2; letter-spacing: -.01em; }
+.home-section__action { color: var(--bb-tile-text); font-weight: 800; text-decoration: underline; text-decoration-color: var(--bb-tile); text-underline-offset: .2em; }
+.home-section__action:hover { color: var(--bb-tile-text); }
+
+/* "Waiting for your decision": a lime edge on a quiet surface. */
+.home-activity { margin-top: 1.25rem; }
+.home-activity__list { gap: .5rem; border: 0; background: transparent; }
+.home-activity__item { border-left: 4px solid var(--bb-accent); border-radius: .75rem; background: var(--bb-quiet); }
+.home-activity__item + .home-activity__item { border-top: 0; }
+.home-activity__item:active { background: var(--bb-surface-secondary); }
+
+/* Profile progress under the decisions: a link instead of a button, the bar in tile. */
+.home-progress { margin-top: 1.25rem; }
+.home-progress__action { min-height: 0; padding: 0; border-radius: 0; background: transparent; color: var(--bb-tile-text); text-decoration: underline; text-decoration-color: var(--bb-tile); text-underline-offset: .2em; }
+.home-progress__action:active { background: transparent; color: var(--bb-tile-text); }
+.home-progress__value { background: var(--bb-tile); }
+
+/* Lists instead of rails: one row per blogger, campaign or brand face, the price on the right. */
+.home-content { margin-top: 1.5rem; }
+.home-section { margin-top: 1.75rem; }
+.home-list { display: grid; }
+.home-row { display: flex; min-width: 0; align-items: center; gap: .875rem; padding: .875rem 0; border-bottom: 1px solid var(--bb-border); color: var(--bb-text); text-decoration: none; }
+.home-row:active { background: var(--bb-surface-secondary); }
+.home-row__text { flex: 1 1 auto; min-width: 0; }
+.home-row__text strong { display: block; overflow: hidden; font-size: 1.0625rem; font-weight: 800; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.home-row__text span { display: block; margin-top: .125rem; overflow: hidden; color: var(--bb-text-secondary); font-size: .875rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.home-row__price { flex: 0 0 auto; max-width: 9.5rem; text-align: right; }
+.home-row__price strong { display: block; font-family: var(--bb-display); font-size: 1.0625rem; font-weight: 700; line-height: 1.15; white-space: nowrap; }
+.home-row__price span { display: block; margin-top: .125rem; color: var(--bb-text-secondary); font-size: .75rem; line-height: 1.3; }
+.home-skeleton { margin-top: 1.5rem; }
+.home-skeleton__list { display: grid; gap: .5rem; margin-top: .75rem; }
+.home-steps li { border: 0; border-bottom: 1px solid var(--bb-border); border-radius: 0; padding: .875rem 0; background: transparent; }
+.home-steps li > span { background: var(--bb-lapis); color: #FFFFFF; }
+/* The band under the Telegram chrome continues the lapis header (the Home hero runs under it; other screens show
+   the lapis band above their paper page, like the landing's header). */
+.app-top-scrim { background: var(--bb-lapis); }
+.home-row__text strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; }

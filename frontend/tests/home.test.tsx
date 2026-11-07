@@ -28,7 +28,7 @@ vi.mock("../src/components/CampaignCard", () => ({
   CampaignCard: ({ campaign, variant }: { campaign: { id: string; title: string }; variant?: string }) => <a data-variant={variant} href={`#/campaign/${campaign.id}`}>{campaign.title}</a>
 }));
 vi.mock("../src/components/ui", () => ({
-  Avatar: ({ name }: { name: string }) => <span>{name}</span>,
+  Avatar: () => <span data-testid="avatar" />,
   BottomNav: () => <nav aria-label="bottom-nav" />,
   Icon: () => <svg />,
   Skeleton: ({ className }: { className?: string }) => <div className={className} data-testid="skeleton" />
@@ -91,7 +91,7 @@ describe("Home", () => {
     api.getRecommendations.mockResolvedValue({ audience: "business", campaigns: [], bloggers: [{ id: "fit", name: "Fitting blogger", city: "tashkent", categories: ["beauty"], totalFollowers: 1000, reviewsCount: 0, completedDealsCount: 0 }], brandFaces: [] });
     renderHome("Business");
 
-    expect(await screen.findByRole("region", { name: ru("home.forYou") })).toHaveTextContent("Fitting blogger");
+    expect(await screen.findByRole("region", { name: ru("home.forYouBusiness") })).toHaveTextContent("Fitting blogger");
   });
 
   it("puts creator search first for Business and drops the hero and marketplace statistics", async () => {
@@ -191,7 +191,7 @@ describe("Home", () => {
 
   it("keeps new Home copy localized in Uzbek", () => {
     expect(translate("home.promotedCampaigns", undefined, "uz")).toContain("Targ‘ib");
-    expect(translate("home.searchCreatorsTitle", undefined, "uz")).toBe("Reklama uchun bloger toping");
+    expect(translate("home.searchCreatorsTitle", undefined, "uz")).toBe("Kimni reklamaga chaqiramiz?");
     expect(translate("home.activityTitle", undefined, "uz")).not.toBe("home.activityTitle");
   });
 
@@ -203,7 +203,6 @@ describe("Home", () => {
     expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
     await act(async () => rejectFirst());
     expect(await screen.findByText(translate("home.errorTitle", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getAllByText(translate("common.appName", undefined, "ru"))).toHaveLength(1);
     expect(screen.getByRole("heading", { name: ru("home.searchCreatorsTitle") })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: translate("common.retry", undefined, "ru") }));
     await waitForData();

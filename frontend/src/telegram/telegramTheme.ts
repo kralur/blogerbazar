@@ -1,8 +1,9 @@
+// D62 "Bazar": the Telegram header is lapis in both themes (the Home hero continues it); the dark page is night lapis.
 export const TelegramLaunch = {
   splashBackground: "#F6F6F2",
-  splashBackgroundDark: "#090909",
-  splashHeader: "#F6F6F2",
-  splashHeaderDark: "#090909",
+  splashBackgroundDark: "#0E1B45",
+  splashHeader: "#17307A",
+  splashHeaderDark: "#17307A",
   accent: "#C8FF00",
   accentHighlight: "#B5E600"
 } as const;

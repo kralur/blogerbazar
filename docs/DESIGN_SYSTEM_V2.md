@@ -130,3 +130,17 @@ When redesigning a screen:
 5. Verify RU and UZ with long labels and empty/error/loading states.
 6. Verify keyboard, Telegram BackButton, bottom navigation, and safe-area clearance.
 7. Run frontend tests, production build, and i18n audit.
+
+## Direction "Bazar" (D61, D62)
+
+The landing (D61) and, from 2026-11-07, the Mini App Home (D62) follow the "Bazar" direction on top of DS v2:
+
+- `--bb-lapis` `#17307A` (the Telegram header, the Home hero), `--bb-lapis-text`, `--bb-ink`, `--bb-tile` `#19A59C`
+  (links such as "view all", counters, the progress bar), `--bb-saffron` and `--bb-coral` (only inside the atlas
+  strip), `--bb-quiet` (the "waiting for your decision" surface). Defined in `frontend/src/styles.css`, not in
+  `shared/tokens.css`: the web admin stays on DS v2.
+- `--bb-display`: Unbounded for titles and prices only (`frontend/src/fonts/`, SIL OFL); body text stays on the
+  system font.
+- Dark theme in the Mini App: night lapis `#0E1B45` page with `#142457` / `#1B2D66` surfaces instead of black.
+- `components/AtlasStrip.tsx`: the abrband strip, 26 px on Home; the same drawing as the landing's `Ikat`.
+- Acid lime keeps its DS v2 meaning: the primary action, the selected tab, the edge of an item waiting for a decision.
