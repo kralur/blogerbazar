@@ -21,9 +21,12 @@ public static class DevelopmentDataSeeder
         "Tashkent", "Samarkand", "Bukhara", "Navoi", "Fergana", "Namangan", "Andijan", "Urgench", "Karshi", "Nukus", "Jizzakh"
     ];
 
+    // The same keys the profile forms store (frontend/src/lib/taxonomy.ts): the nine catalog categories and custom
+    // "other:" ones, so the seeded screens look like real data and category filters match.
     private static readonly string[] Categories =
     [
-        "Lifestyle", "Beauty", "Fashion", "Food", "Travel", "Tech", "Auto", "Finance", "Business", "Sport", "Gaming", "Medicine", "Education", "Music", "Comedy", "Kids", "Pets"
+        "lifestyle", "beauty", "fashion", "food", "travel", "technology", "finance", "sport", "gaming",
+        "other:auto", "other:business", "other:medicine", "other:education", "other:music", "other:comedy", "other:kids", "other:pets"
     ];
 
     private static readonly string[] Platforms = ["Instagram", "Telegram", "TikTok", "YouTube"];
@@ -335,7 +338,7 @@ public static class DevelopmentDataSeeder
         return bloggers.SelectMany((blogger, bloggerIndex) => Enumerable.Range(0, 2).Select(itemIndex =>
             PortfolioItem.Create(
                 blogger.Id,
-                $"{blogger.Categories.ElementAt(itemIndex)}: рекламная интеграция",
+                $"{CategoryTitle(blogger.Categories.ElementAt(itemIndex))}: рекламная интеграция",
                 (bloggerIndex + itemIndex) % 3 == 0 ? PortfolioItemType.Video : PortfolioItemType.Image,
                 $"https://api.dicebear.com/9.x/shapes/svg?seed=portfolio-{blogger.Username}-{itemIndex}"))).ToList();
     }
@@ -404,6 +407,13 @@ public static class DevelopmentDataSeeder
         // Both sides reviewed every seeded deal, so the blind reviews are already revealed.
         reviews.ForEach(review => review.Publish(review.CreatedAtUtc));
         return reviews;
+    }
+
+    // "other:auto" -> "Auto", "beauty" -> "Beauty": a readable word for seeded titles.
+    private static string CategoryTitle(string category)
+    {
+        var word = category.StartsWith("other:", StringComparison.Ordinal) ? category["other:".Length..] : category;
+        return word.Length == 0 ? word : char.ToUpperInvariant(word[0]) + word[1..];
     }
 
     private static string[] GetCategories(int index)
