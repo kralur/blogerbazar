@@ -1,0 +1,48 @@
+# Weekly check of the packages that ship to production for known vulnerabilities, independent of code changes:
+# a vulnerability published after the last merge shows up here within a week, not at the next push.
+# The same checks as in ci.yml. A weekly Claude routine reads the result and reports to the owner.
+name: Weekly audit
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"   # Monday 03:17 UTC = 08:17 Tashkent
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nuget:
+    name: NuGet packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Restore .NET dependencies
+        run: dotnet restore BloggerBazar.sln
+      - name: Check production NuGet packages for known vulnerabilities
+        run: |
+          failed=0
+          for project in src/*/*.csproj; do
+            report=$(dotnet list "$project" package --vulnerable --include-transitive)
+            echo "$report"
+            if echo "$report" | grep -q "has the following vulnerable packages"; then failed=1; fi
+          done
+          exit $failed
+
+  npm:
+    name: npm packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Check production npm packages for known vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
