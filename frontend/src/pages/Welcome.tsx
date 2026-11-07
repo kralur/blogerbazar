@@ -1,3 +1,4 @@
+import { AtlasBackground } from "../components/AtlasBackground";
 import { Button } from "../components/ui";
 import { cityLabel, useI18n } from "../i18n";
 import { formatCompactNumber, formatNumber } from "../lib/currency";
@@ -13,7 +14,7 @@ const exampleTags = [
 
 export function Welcome({ onContinue }: { onContinue: () => void }) {
   const { language, t } = useI18n();
-  return <main className="ftue-screen bazar-welcome"><div className="ftue-screen__layout bazar-welcome__layout">
+  return <main className="ftue-screen ftue-screen--atlas bazar-welcome"><AtlasBackground /><div className="ftue-screen__layout bazar-welcome__layout">
     <section className="bazar-welcome__content" data-content-header>
       <p className="bazar-welcome__brand">{t("common.appName")}</p>
       <h1 className="bazar-welcome__title">{t("firstRun.welcomeTitle")}</h1>
