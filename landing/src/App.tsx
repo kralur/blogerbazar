@@ -159,17 +159,20 @@ function Ikat() {
             <feTurbulence type="fractalNoise" baseFrequency=".015 .7" numOctaves={3} seed={7} result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale={5} xChannelSelector="R" yChannelSelector="G" />
           </filter>
-          <pattern id="ikat-motif" width="176" height="48" patternUnits="userSpaceOnUse">
-            <rect width="176" height="48" fill="var(--l-lapis)" />
-            {flame(28, "var(--l-saffron)", "var(--l-ink)", "#FFFFFF")}
-            {flame(88, "var(--l-lime)", "var(--l-tile)", "var(--l-ink)")}
-            {flame(148, "var(--l-coral)", "#FFFFFF", "var(--l-lapis)")}
-            <rect x="2" width="3" height="48" fill="var(--l-tile)" />
-            <rect x="57" width="3" height="48" fill="var(--l-lime)" />
-            <rect x="117" width="3" height="48" fill="var(--l-saffron)" />
+          {/* The motif is drawn at 176x48 and shown at 110x30 (owner, 2026-11-07: the strip was too big). */}
+          <pattern id="ikat-motif" width="110" height="30" patternUnits="userSpaceOnUse">
+            <g transform="scale(.625)">
+              <rect width="176" height="48" fill="var(--l-lapis)" />
+              {flame(28, "var(--l-saffron)", "var(--l-ink)", "#FFFFFF")}
+              {flame(88, "var(--l-lime)", "var(--l-tile)", "var(--l-ink)")}
+              {flame(148, "var(--l-coral)", "#FFFFFF", "var(--l-lapis)")}
+              <rect x="2" width="3" height="48" fill="var(--l-tile)" />
+              <rect x="57" width="3" height="48" fill="var(--l-lime)" />
+              <rect x="117" width="3" height="48" fill="var(--l-saffron)" />
+            </g>
           </pattern>
         </defs>
-        <rect width="100%" height="48" fill="url(#ikat-motif)" filter="url(#ikat-feather)" />
+        <rect width="100%" height="30" fill="url(#ikat-motif)" filter="url(#ikat-feather)" />
       </svg>
     </div>
   );

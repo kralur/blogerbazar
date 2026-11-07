@@ -152,7 +152,7 @@
   /* A strip of atlas (abrband): flame motifs in five colours with crisp, lightly feathered edges on lapis, only
      between the lapis blocks and the page (owner, 2026-11-07: "вариант первый, чёткий"). */
   .ikat {
-    height: 48px;
+    height: 30px;
     background: var(--l-lapis);
     overflow: hidden;
   }
@@ -160,6 +160,6 @@
   .ikat svg {
     display: block;
     width: 100%;
-    height: 48px;
+    height: 30px;
   }
 }
