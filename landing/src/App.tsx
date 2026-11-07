@@ -5,12 +5,15 @@ import { usePublicStats } from "./stats";
 import { useTheme } from "./theme";
 
 // The public landing page: what BloggerBazar is, how it works, and buttons that open the bot.
+// Direction A "Bazar" (owner, 2026-11-07): a lapis first screen with offers hung as price tags, an ikat strip, then a
+// quiet page. Lime is kept for the action that opens the bot.
 export function App() {
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-ink">
+    <div className="min-h-screen bg-[var(--l-page)] text-[var(--l-text)]">
       <Header />
       <main>
         <Hero />
+        <Ikat />
         <Numbers />
         <HowItWorks />
         <Why />
@@ -24,17 +27,18 @@ export function App() {
 }
 
 const container = "mx-auto w-full max-w-6xl px-4 sm:px-6";
+const sectionTitle = "font-display text-[1.65rem] font-bold leading-tight tracking-[-0.02em] sm:text-4xl";
 
-function OpenButton({ start, children, variant = "primary", className = "" }: { start: StartLabel; children: ReactNode; variant?: "primary" | "secondary"; className?: string }) {
+function OpenButton({ start, children, variant = "primary", className = "" }: { start: StartLabel; children: ReactNode; variant?: "primary" | "outline"; className?: string }) {
   const look = variant === "primary"
-    ? "bg-[var(--bb-accent)] text-[var(--bb-accent-text)] hover:bg-[var(--bb-accent-pressed)]"
-    : "border border-brand-line bg-brand-surface text-brand-ink hover:bg-brand-soft";
+    ? "bg-[var(--l-lime)] text-[var(--l-on-lime)] hover:bg-[var(--l-lime-pressed)]"
+    : "text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,.55)] hover:shadow-[inset_0_0_0_2px_#fff]";
   return (
     <a
       href={botLink(start)}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex h-12 items-center justify-center rounded-[var(--bb-radius-control)] px-6 text-base font-bold transition-colors ${look} ${className}`}
+      className={`inline-flex h-[3.25rem] items-center justify-center rounded-[14px] px-6 text-[1.0625rem] font-semibold transition-[background-color,box-shadow] ${look} ${className}`}
     >
       {children}
     </a>
@@ -46,25 +50,25 @@ function Header() {
   const { dark, toggle } = useTheme();
   const languages: Language[] = ["ru", "uz"];
   return (
-    <header className="sticky top-0 z-10 border-b border-brand-line bg-[color-mix(in_srgb,var(--bb-background)_90%,transparent)] backdrop-blur">
+    <header className="on-lapis sticky top-0 z-10 bg-[var(--l-lapis)] text-white">
       <div className={`${container} flex h-16 items-center gap-2 sm:gap-3`}>
-        <a href="#top" aria-label={t("nav.home")} className="text-base font-extrabold tracking-tight sm:text-lg">
-          Blogger<span className="text-brand-blue">Bazar</span>
+        <a href="#top" aria-label={t("nav.home")} className="font-display text-base font-bold tracking-[-0.01em] sm:text-lg">
+          Blogger<span className="text-[var(--l-lime)]">Bazar</span>
         </a>
-        <nav className="ml-6 hidden gap-6 text-sm font-semibold text-brand-muted md:flex">
-          <a className="hover:text-brand-ink" href="#how">{t("nav.how")}</a>
-          <a className="hover:text-brand-ink" href="#why">{t("nav.why")}</a>
-          <a className="hover:text-brand-ink" href="#faq">{t("nav.faq")}</a>
+        <nav className="ml-8 hidden gap-6 text-sm font-medium text-[var(--l-lapis-text)] md:flex">
+          <a className="hover:text-white" href="#how">{t("nav.how")}</a>
+          <a className="hover:text-white" href="#why">{t("nav.why")}</a>
+          <a className="hover:text-white" href="#faq">{t("nav.faq")}</a>
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <div role="group" aria-label={t("lang.label")} className="flex rounded-[var(--bb-radius-control)] border border-brand-line p-0.5">
+          <div role="group" aria-label={t("lang.label")} className="flex gap-0.5">
             {languages.map((value) => (
               <button
                 key={value}
                 type="button"
                 aria-pressed={language === value}
                 onClick={() => setLanguage(value)}
-                className={`h-9 min-w-[2.5rem] rounded-[calc(var(--bb-radius-control)-2px)] px-2 text-sm font-bold ${language === value ? "bg-brand-ink text-brand-bg" : "text-brand-muted hover:text-brand-ink"}`}
+                className={`h-9 min-w-[2.75rem] rounded-full px-2.5 text-sm font-semibold ${language === value ? "bg-white text-[var(--l-lapis)]" : "text-[var(--l-lapis-text)] hover:text-white"}`}
               >
                 {t(`lang.${value}`)}
               </button>
@@ -74,11 +78,11 @@ function Header() {
             type="button"
             onClick={toggle}
             aria-label={dark ? t("theme.toLight") : t("theme.toDark")}
-            className="grid h-10 w-10 place-items-center rounded-[var(--bb-radius-control)] border border-brand-line text-brand-muted hover:text-brand-ink"
+            className="grid h-10 w-10 place-items-center rounded-full text-[var(--l-lapis-text)] hover:text-white"
           >
             {dark ? <SunIcon /> : <MoonIcon />}
           </button>
-          <OpenButton start="site" className="hidden h-10 px-4 text-sm sm:inline-flex">{t("nav.open")}</OpenButton>
+          <OpenButton start="site" className="hidden !h-10 px-4 text-sm sm:inline-flex">{t("nav.open")}</OpenButton>
         </div>
       </div>
     </header>
@@ -88,50 +92,76 @@ function Header() {
 function Hero() {
   const { t } = useI18n();
   return (
-    <section id="top" className={`${container} grid items-center gap-10 py-12 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] [&>*]:min-w-0`}>
-      <div>
-        <p className="inline-flex rounded-full bg-[var(--bb-accent)] px-3 py-1 text-sm font-bold text-[var(--bb-accent-text)]">{t("hero.badge")}</p>
-        <h1 className="mt-5 break-words text-[2rem] font-extrabold leading-[1.05] tracking-tight min-[360px]:text-4xl sm:text-5xl lg:text-6xl">{t("hero.title")}</h1>
-        <p className="mt-5 max-w-xl text-lg leading-8 text-brand-muted">{t("hero.subtitle")}</p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <OpenButton start="site_blogger">{t("hero.blogger")}</OpenButton>
-          <OpenButton start="site_business" variant="secondary">{t("hero.business")}</OpenButton>
+    <section id="top" className="on-lapis bg-[var(--l-lapis)] text-white">
+      <div className={`${container} grid items-center gap-10 pb-14 pt-10 sm:pb-20 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] [&>*]:min-w-0`}>
+        <div>
+          <h1 className="font-display max-w-[14ch] text-[1.8rem] font-extrabold leading-[1.04] tracking-[-0.03em] [hyphens:manual] min-[360px]:text-[2.1rem] min-[400px]:text-[2.3rem] sm:text-6xl lg:text-[3.6rem] xl:text-[3.9rem]">{t("hero.title")}</h1>
+          <p className="mt-6 max-w-[44ch] text-lg leading-[1.55] text-[var(--l-lapis-text)]">{t("hero.subtitle")}</p>
+          <div className="mt-8 flex flex-col gap-3 min-[400px]:flex-row">
+            <OpenButton start="site_business">{t("hero.business")}</OpenButton>
+            <OpenButton start="site_blogger" variant="outline">{t("hero.blogger")}</OpenButton>
+          </div>
+          <p className="mt-4 text-sm text-[var(--l-lapis-muted)]">{t("hero.note")}</p>
         </div>
-        <p className="mt-4 text-sm text-brand-muted">{t("hero.note")}</p>
+        <PriceTags />
       </div>
-      <PhoneMock />
     </section>
   );
 }
 
-// A drawn screen of the app (not a screenshot): a campaign, a blogger who answered, a finished deal.
-function PhoneMock() {
+// Example offers, drawn (not real listings): what a business sees in the app, priced in sum like a bazaar stall.
+const tags = [
+  { key: "1", price: 1_500_000, place: "lg:left-0 lg:top-[34px] lg:-rotate-2" },
+  { key: "2", price: 3_200_000, place: "self-end lg:left-[250px] lg:top-[118px] lg:rotate-[1.5deg]" },
+  { key: "3", price: 800_000, place: "lg:left-6 lg:top-[284px] lg:-rotate-1" }
+];
+
+function PriceTags() {
   const { t } = useI18n();
+  // Prices are grouped with spaces in both languages, as on price tags in Uzbekistan ("1 500 000 so‘m").
+  const format = (value: number) => new Intl.NumberFormat("ru-RU").format(value);
   return (
-    <figure aria-label={t("mock.label")} className="mx-auto w-full max-w-[20rem]">
-      <div className="rounded-[2.25rem] border border-brand-line bg-brand-surface p-3 shadow-soft">
-        <div className="rounded-[1.75rem] bg-brand-bg p-4">
-          <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-brand-line" />
-          <div className="rounded-[var(--bb-radius-card)] bg-brand-surface p-4 shadow-card">
-            <p className="text-xs font-semibold text-brand-muted">{t("mock.campaign")}</p>
-            <p className="mt-1 font-extrabold leading-snug">{t("mock.campaignTitle")}</p>
-            <p className="mt-2 text-sm text-brand-muted">{t("mock.budget")}</p>
-            <p className="mt-3 inline-flex rounded-full bg-[var(--bb-action-subtle)] px-2.5 py-1 text-xs font-bold text-brand-blue">{t("mock.responses")}</p>
-          </div>
-          <div className="mt-3 flex items-center gap-3 rounded-[var(--bb-radius-card)] bg-brand-surface p-4 shadow-card">
-            <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-blue text-lg font-extrabold text-brand-bg">{t("mock.bloggerName").slice(0, 1)}</span>
-            <div className="min-w-0">
-              <p className="font-bold">{t("mock.bloggerName")}</p>
-              <p className="truncate text-xs text-brand-muted">{t("mock.bloggerMeta")}</p>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-[var(--bb-radius-card)] bg-[var(--bb-accent)] p-4 text-[var(--bb-accent-text)]">
-            <p className="text-sm font-extrabold">{t("mock.deal")}</p>
-            <p className="shrink-0 text-sm font-bold">★ {t("mock.review")}</p>
-          </div>
-        </div>
-      </div>
+    <figure aria-labelledby="tags-caption" className="relative mx-auto w-full max-w-[33rem]">
+      <div aria-hidden="true" className="absolute left-[8%] right-[4%] top-0 hidden h-16 rounded-[50%] border-t-2 border-white/35 lg:block" />
+      <ul className="flex flex-col gap-3.5 pt-2 lg:block lg:h-[29rem] lg:pt-0">
+        {tags.map(({ key, price, place }) => (
+          <li key={key} className={`price-tag w-[min(18.5rem,88vw)] lg:absolute lg:w-[17.5rem] ${place}`}>
+            <p className="text-[0.8125rem] text-[var(--l-tag-muted)]">{t(`tag.${key}.who`)}</p>
+            <p className="mt-1 font-semibold leading-snug">{t(`tag.${key}.what`)}</p>
+            <p className="font-display mt-3 whitespace-nowrap text-2xl font-bold tracking-[-0.02em]">
+              {format(price)}<span className="ml-1.5 font-sans text-sm font-semibold">{t("tag.currency")}</span>
+            </p>
+            <p className="mt-2.5 flex flex-wrap gap-1.5 text-xs font-semibold">
+              <span className="rounded-full bg-[#E8EDF7] px-2 py-1">{t(`tag.${key}.category`)}</span>
+              <span className="rounded-full bg-[#D9F3F1] px-2 py-1 text-[#0D6B65]">{t(`tag.${key}.responses`)}</span>
+            </p>
+          </li>
+        ))}
+      </ul>
+      <figcaption id="tags-caption" className="mt-4 text-sm text-[var(--l-lapis-muted)] lg:mt-0">{t("tag.caption")}</figcaption>
     </figure>
+  );
+}
+
+function Ikat() {
+  return (
+    <div aria-hidden="true" className="ikat">
+      <svg preserveAspectRatio="none">
+        <defs>
+          <filter id="ikat-feather">
+            <feTurbulence type="fractalNoise" baseFrequency=".9 .08" numOctaves={2} seed={4} />
+            <feDisplacementMap in="SourceGraphic" scale={5} />
+          </filter>
+          <pattern id="ikat-motif" width="64" height="34" patternUnits="userSpaceOnUse">
+            <path d="M16 2 L26 17 L16 32 L6 17 Z" fill="#C8FF00" />
+            <path d="M16 9 L21 17 L16 25 L11 17 Z" fill="#0C1838" />
+            <path d="M48 5 L55 17 L48 29 L41 17 Z" fill="#19A59C" />
+            <path d="M48 12 L51 17 L48 22 L45 17 Z" fill="#FFFFFF" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="34" fill="url(#ikat-motif)" filter="url(#ikat-feather)" />
+      </svg>
+    </div>
   );
 }
 
@@ -150,14 +180,14 @@ function Numbers() {
     { key: "completedDeals", value: stats.completedDeals }
   ];
   return (
-    <section aria-labelledby="numbers-title" className={`${container} pb-4`}>
-      <h2 id="numbers-title" className="text-sm font-bold text-brand-muted">{t("numbers.title")}</h2>
-      <dl className="mt-3 grid grid-cols-1 gap-3 min-[360px]:grid-cols-3">
+    <section aria-labelledby="numbers-title" className={`${container} pt-12 sm:pt-16`}>
+      <h2 id="numbers-title" className="text-sm font-semibold text-[var(--l-muted)]">{t("numbers.title")}</h2>
+      <dl className="mt-3 grid grid-cols-1 gap-6 min-[360px]:grid-cols-3">
         {items.map(({ key, value }) => (
           // The label comes first for screen readers (dt before dd); the number is shown on top.
-          <div key={key} className="flex min-w-0 flex-col-reverse justify-end rounded-[var(--bb-radius-card)] border border-brand-line bg-brand-surface p-3 sm:p-6">
-            <dt className="mt-1 text-xs leading-5 text-brand-muted sm:text-sm">{t(`numbers.${key}`, { count: value })}</dt>
-            <dd className="break-words text-xl font-extrabold tracking-tight min-[360px]:text-2xl sm:text-4xl">{format(value)}</dd>
+          <div key={key} className="flex min-w-0 flex-col-reverse justify-end border-t-[3px] border-[var(--l-text)] pt-3">
+            <dt className="mt-1 text-sm text-[var(--l-muted)]">{t(`numbers.${key}`, { count: value })}</dt>
+            <dd className="font-display break-words text-2xl font-extrabold tracking-[-0.02em] sm:text-5xl">{format(value)}</dd>
           </div>
         ))}
       </dl>
@@ -181,33 +211,39 @@ function HowItWorks() {
     tabs.current[next]?.focus();
   };
   return (
-    <section id="how" className={`${container} py-12 sm:py-16`}>
-      <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t("how.title")}</h2>
-      <div role="tablist" aria-label={t("how.tabs")} className="mt-6 inline-flex rounded-[var(--bb-radius-control)] bg-brand-soft p-1">
-        {sides.map((value, index) => (
-          <button
-            key={value}
-            ref={(element) => { tabs.current[index] = element; }}
-            id={`how-tab-${value}`}
-            type="button"
-            role="tab"
-            aria-selected={side === value}
-            aria-controls="how-panel"
-            tabIndex={side === value ? 0 : -1}
-            onClick={() => setSide(value)}
-            onKeyDown={(event) => onKeyDown(event, index)}
-            className={`h-10 rounded-[calc(var(--bb-radius-control)-2px)] px-4 text-sm font-bold ${side === value ? "bg-brand-surface text-brand-ink shadow-card" : "text-brand-muted hover:text-brand-ink"}`}
-          >
-            {t(`how.tab.${value}`)}
-          </button>
-        ))}
+    <section id="how" className={`${container} py-14 sm:py-20`}>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <h2 className={sectionTitle}>{t("how.title")}</h2>
+        <div role="tablist" aria-label={t("how.tabs")} className="inline-flex self-start rounded-full bg-[var(--l-quiet)] p-1 sm:self-auto">
+          {sides.map((value, index) => (
+            <button
+              key={value}
+              ref={(element) => { tabs.current[index] = element; }}
+              id={`how-tab-${value}`}
+              type="button"
+              role="tab"
+              aria-selected={side === value}
+              aria-controls="how-panel"
+              tabIndex={side === value ? 0 : -1}
+              onClick={() => setSide(value)}
+              onKeyDown={(event) => onKeyDown(event, index)}
+              className={`h-10 rounded-full px-4 text-sm font-semibold ${side === value ? "bg-[var(--l-lapis)] text-white" : "text-[var(--l-muted)] hover:text-[var(--l-text)]"}`}
+            >
+              {t(`how.tab.${value}`)}
+            </button>
+          ))}
+        </div>
       </div>
-      <ol id="how-panel" role="tabpanel" aria-labelledby={`how-tab-${side}`} className="mt-6 grid gap-4 md:grid-cols-3">
+      {/* A real sequence, so the steps carry numbers. */}
+      <ol id="how-panel" role="tabpanel" aria-labelledby={`how-tab-${side}`} className="mt-10 grid gap-8 md:grid-cols-3 md:gap-10">
         {[1, 2, 3].map((number) => (
-          <li key={number} className="rounded-[var(--bb-radius-card)] border border-brand-line bg-brand-surface p-6">
-            <p className="text-sm font-bold text-brand-blue">{t("how.step", { number })}</p>
-            <h3 className="mt-2 text-xl font-extrabold">{t(`how.${side}.${number}.title`)}</h3>
-            <p className="mt-2 leading-7 text-brand-muted">{t(`how.${side}.${number}.text`)}</p>
+          <li key={number} className="border-t-[3px] border-[var(--l-text)] pt-4">
+            <p aria-hidden="true" className="font-display text-[2.75rem] font-extrabold leading-none text-[var(--l-numeral)]">{number}</p>
+            <h3 className="mt-3 text-[1.1875rem] font-semibold">
+              <span className="sr-only">{t("how.step", { number })}. </span>
+              {t(`how.${side}.${number}.title`)}
+            </h3>
+            <p className="mt-2 max-w-[34ch] leading-[1.6] text-[var(--l-muted)]">{t(`how.${side}.${number}.text`)}</p>
           </li>
         ))}
       </ol>
@@ -215,51 +251,45 @@ function HowItWorks() {
   );
 }
 
-const reasons = [
-  { key: "moderation", icon: <ShieldIcon /> },
-  { key: "direct", icon: <HandshakeIcon /> },
-  { key: "reviews", icon: <StarIcon /> },
-  { key: "telegram", icon: <PlaneIcon /> }
-];
+const reasons = ["moderation", "direct", "reviews", "telegram"];
 
 function Why() {
   const { t } = useI18n();
   return (
-    <section id="why" className="bg-brand-surface py-12 sm:py-16">
-      <div className={container}>
-        <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t("why.title")}</h2>
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {reasons.map(({ key, icon }) => (
-            <li key={key} className="rounded-[var(--bb-radius-card)] bg-brand-bg p-6">
-              <span aria-hidden="true" className="grid h-11 w-11 place-items-center rounded-[var(--bb-radius-control)] bg-[var(--bb-action-subtle)] text-brand-blue">{icon}</span>
-              <h3 className="mt-4 text-lg font-extrabold">{t(`why.${key}.title`)}</h3>
-              <p className="mt-2 leading-7 text-brand-muted">{t(`why.${key}.text`)}</p>
-            </li>
+    <section id="why" className="bg-[var(--l-quiet)] py-14 sm:py-20">
+      <div className={`${container} grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16`}>
+        <h2 className={sectionTitle}>{t("why.title")}</h2>
+        <dl className="divide-y divide-[var(--l-line)] border-y border-[var(--l-line)]">
+          {reasons.map((key) => (
+            <div key={key} className="grid gap-1 py-5 sm:grid-cols-[14rem_1fr] sm:gap-6">
+              <dt className="text-lg font-semibold">{t(`why.${key}.title`)}</dt>
+              <dd className="leading-[1.6] text-[var(--l-muted)]">{t(`why.${key}.text`)}</dd>
+            </div>
           ))}
-        </ul>
+        </dl>
       </div>
     </section>
   );
 }
 
 const audiences: { key: string; start: StartLabel }[] = [
+  { key: "business", start: "site_business" },
   { key: "blogger", start: "site_blogger" },
-  { key: "brandFace", start: "site_blogger" },
-  { key: "business", start: "site_business" }
+  { key: "brandFace", start: "site_blogger" }
 ];
 
 function ForWhom() {
   const { t } = useI18n();
   return (
-    <section className={`${container} py-12 sm:py-16`}>
-      <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t("who.title")}</h2>
-      <ul className="mt-8 grid gap-4 md:grid-cols-3">
+    <section className={`${container} py-14 sm:py-20`}>
+      <h2 className={sectionTitle}>{t("who.title")}</h2>
+      <ul className="mt-8 border-t border-[var(--l-line)]">
         {audiences.map(({ key, start }) => (
-          <li key={key} className="flex flex-col rounded-[var(--bb-radius-card)] border border-brand-line bg-brand-surface p-6">
-            <h3 className="text-xl font-extrabold">{t(`who.${key}.title`)}</h3>
-            <p className="mt-2 flex-1 leading-7 text-brand-muted">{t(`who.${key}.text`)}</p>
-            <a href={botLink(start)} target="_blank" rel="noopener noreferrer" className="mt-4 font-bold text-brand-blue underline-offset-4 hover:underline">
-              {t("nav.open")} →
+          <li key={key} className="grid gap-2 border-b border-[var(--l-line)] py-6 md:grid-cols-[14rem_1fr_auto] md:items-center md:gap-8">
+            <h3 className="font-display text-xl font-bold tracking-[-0.01em]">{t(`who.${key}.title`)}</h3>
+            <p className="max-w-[52ch] leading-[1.6] text-[var(--l-muted)]">{t(`who.${key}.text`)}</p>
+            <a href={botLink(start)} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--l-text)] underline decoration-[var(--l-tile)] decoration-2 underline-offset-4 hover:decoration-[var(--l-text)]">
+              {t("nav.open")}
             </a>
           </li>
         ))}
@@ -273,17 +303,17 @@ const questions = ["price", "check", "brandFace", "contact", "language", "proble
 function Faq() {
   const { t } = useI18n();
   return (
-    <section id="faq" className="bg-brand-surface py-12 sm:py-16">
+    <section id="faq" className="bg-[var(--l-quiet)] py-14 sm:py-20">
       <div className={`${container} max-w-3xl`}>
-        <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t("faq.title")}</h2>
-        <div className="mt-8 divide-y divide-brand-line border-y border-brand-line">
+        <h2 className={sectionTitle}>{t("faq.title")}</h2>
+        <div className="mt-8 divide-y divide-[var(--l-line)] border-y border-[var(--l-line)]">
           {questions.map((key) => (
             <details key={key} className="group py-1">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg font-bold">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg font-semibold">
                 {t(`faq.${key}.question`)}
-                <span aria-hidden="true" className="text-2xl leading-none text-brand-muted transition-transform group-open:rotate-45">+</span>
+                <span aria-hidden="true" className="text-2xl leading-none text-[var(--l-muted)] transition-transform group-open:rotate-45 motion-reduce:transition-none">+</span>
               </summary>
-              <p className="pb-5 leading-7 text-brand-muted">{t(`faq.${key}.answer`)}</p>
+              <p className="max-w-[62ch] pb-5 leading-[1.6] text-[var(--l-muted)]">{t(`faq.${key}.answer`)}</p>
             </details>
           ))}
         </div>
@@ -295,10 +325,11 @@ function Faq() {
 function FinalCall() {
   const { t } = useI18n();
   return (
-    <section className={`${container} py-12 sm:py-20`}>
-      <div className="rounded-[var(--bb-radius-overlay)] bg-brand-ink px-6 py-12 text-center text-brand-bg sm:px-12">
-        <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t("cta.title")}</h2>
-        <p className="mx-auto mt-3 max-w-xl text-lg opacity-80">{t("cta.text")}</p>
+    <section className="on-lapis bg-[var(--l-lapis)] text-white">
+      <Ikat />
+      <div className={`${container} py-14 sm:py-20`}>
+        <h2 className="font-display max-w-[16ch] text-[1.9rem] font-extrabold leading-[1.05] tracking-[-0.03em] sm:text-5xl">{t("cta.title")}</h2>
+        <p className="mt-4 max-w-[44ch] text-lg text-[var(--l-lapis-text)]">{t("cta.text")}</p>
         <OpenButton start="site" className="mt-8">{t("nav.open")}</OpenButton>
       </div>
     </section>
@@ -308,19 +339,15 @@ function FinalCall() {
 function Footer() {
   const { t } = useI18n();
   return (
-    <footer className="border-t border-brand-line">
-      <div className={`${container} flex flex-col gap-2 py-8 text-sm text-brand-muted sm:flex-row sm:items-center sm:justify-between`}>
+    <footer className="bg-[var(--l-ink)] text-[var(--l-lapis-muted)]">
+      <div className={`${container} flex flex-col gap-2 py-8 text-sm sm:flex-row sm:items-center sm:justify-between`}>
         <p>{t("footer.rights", { year: new Date().getFullYear() })}</p>
-        <a href={botLink("site")} target="_blank" rel="noopener noreferrer" className="font-semibold hover:text-brand-ink">{t("footer.bot")}</a>
+        <a href={botLink("site")} target="_blank" rel="noopener noreferrer" className="font-semibold hover:text-white">{t("footer.bot")}</a>
       </div>
     </footer>
   );
 }
 
 const iconProps = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-function ShieldIcon() { return <svg {...iconProps}><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z" /><path d="M9 12l2 2 4-4" /></svg>; }
-function HandshakeIcon() { return <svg {...iconProps}><path d="M3 12l4-4 4 3 3-3 7 6" /><path d="M7 14l3 3a2 2 0 003 0l5-5" /></svg>; }
-function StarIcon() { return <svg {...iconProps}><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3z" /></svg>; }
-function PlaneIcon() { return <svg {...iconProps}><path d="M21 4L3 11l6 2 2 6 3-4 4 3 3-14z" /><path d="M9 13l12-9" /></svg>; }
 function MoonIcon() { return <svg {...iconProps} width={18} height={18}><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z" /></svg>; }
 function SunIcon() { return <svg {...iconProps} width={18} height={18}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>; }

@@ -74,6 +74,15 @@ describe("landing", () => {
     expect(screen.getByRole("button", { name: ru("theme.toLight") })).toBeInTheDocument();
   });
 
+  it("shows example offers as price tags and says they are examples", () => {
+    render(<I18nProvider><App /></I18nProvider>);
+
+    const tags = screen.getByRole("figure", { name: ru("tag.caption") });
+    expect(within(tags).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(tags).getByText(ru("tag.1.what"))).toBeInTheDocument();
+    expect(tags.textContent).toContain(new Intl.NumberFormat("ru-RU").format(1500000));
+  });
+
   it("answers that it is free", () => {
     render(<I18nProvider><App /></I18nProvider>);
 
@@ -89,6 +98,7 @@ describe("dictionaries", () => {
     ...["moderation", "direct", "reviews", "telegram"].flatMap((key) => [`why.${key}.title`, `why.${key}.text`]),
     ...["blogger", "brandFace", "business"].flatMap((key) => [`who.${key}.title`, `who.${key}.text`]),
     ...["price", "check", "brandFace", "contact", "language", "problem"].flatMap((key) => [`faq.${key}.question`, `faq.${key}.answer`]),
+    ...["1", "2", "3"].flatMap((key) => [`tag.${key}.who`, `tag.${key}.what`, `tag.${key}.category`, `tag.${key}.responses`]),
     "lang.ru", "lang.uz"
   ];
 
