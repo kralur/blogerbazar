@@ -109,7 +109,6 @@ public sealed class BrowserSessionApiTests
         // The person's other roles do not exist for the browser.
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Get, "/api/bloggers/me", cookie)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Get, "/api/brand-faces/me", cookie)).StatusCode);
-        Assert.Equal("[]", await (await SendAsync(browser, HttpMethod.Get, "/api/campaign-applications/me", cookie)).Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Put, "/api/users/me/roles/blogger/visibility", cookie, MiniApp, new { hidden = true })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Delete, "/api/profile-media/blogger", cookie, MiniApp)).StatusCode);
 

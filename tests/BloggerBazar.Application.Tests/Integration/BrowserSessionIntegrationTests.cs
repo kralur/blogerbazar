@@ -39,6 +39,8 @@ public sealed class BrowserSessionIntegrationTests(BloggerBazarApiFactory factor
         Assert.Equal("Browser Coffee", (await company.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("name").GetString());
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(browser, HttpMethod.Get, "/api/deals/me", cookie)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(browser, HttpMethod.Get, "/api/campaigns/mine", cookie)).StatusCode);
+        // The company's incoming applications (the list is scoped by the selected role, Business here).
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(browser, HttpMethod.Get, "/api/campaign-applications/me", cookie)).StatusCode);
         // The team role still limits the browser: a manager does not hide the company.
         var hide = await SendAsync(browser, HttpMethod.Put, "/api/users/me/roles/business/visibility", cookie, Origin, new { hidden = true });
         Assert.Equal(HttpStatusCode.Forbidden, hide.StatusCode);
