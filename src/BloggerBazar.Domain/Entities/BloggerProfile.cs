@@ -10,7 +10,7 @@ public sealed class BloggerProfile
     {
         Id = Guid.NewGuid();
         TelegramUserId = telegramUserId;
-        Name = name;
+        Name = PersonName.Normalize(name);
         City = city;
         Categories = categories.ToList();
         Status = BloggerStatus.Pending;
@@ -91,8 +91,8 @@ public sealed class BloggerProfile
         int? integrationPrice,
         bool barterEnabled)
     {
-        Name = name;
-        LastName = lastName;
+        Name = PersonName.Normalize(name);
+        LastName = lastName is null ? null : PersonName.Normalize(lastName);
         Username = username;
         City = city;
         Categories = categories.ToList();

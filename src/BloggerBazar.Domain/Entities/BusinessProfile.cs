@@ -10,7 +10,7 @@ public sealed class BusinessProfile
     {
         Id = Guid.NewGuid();
         TelegramUserId = telegramUserId;
-        Name = name;
+        Name = PersonName.Normalize(name);
         City = city;
         CreatedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = CreatedAtUtc;
@@ -44,7 +44,7 @@ public sealed class BusinessProfile
 
     public void Update(string name, string? username, string? city, string? logoUrl, string? websiteUrl, string? description, string? phone, string? email)
     {
-        Name = name;
+        Name = PersonName.Normalize(name);
         Username = username;
         City = city;
         LogoUrl = logoUrl;

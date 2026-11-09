@@ -49,7 +49,8 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
             var pattern = PostgresSearchPattern.Contains(search.Query.Trim());
-            query = query.Where(profile => EF.Functions.ILike(profile.Name, pattern)
+            var namePatterns = PostgresSearchPattern.ContainsAnyScript(search.Query);
+            query = query.Where(profile => namePatterns.Any(namePattern => EF.Functions.ILike(profile.Name, namePattern))
                 || EF.Functions.ILike(profile.City, pattern)
                 || profile.Categories.Any(category => EF.Functions.ILike(category, pattern)));
         }

@@ -28,7 +28,8 @@ internal sealed class BrandFaceProfileRepository(BloggerBazarDbContext dbContext
         if (!string.IsNullOrWhiteSpace(query))
         {
             var pattern = PostgresSearchPattern.Contains(query.Trim());
-            profiles = profiles.Where(profile => EF.Functions.ILike(profile.Name, pattern)
+            var namePatterns = PostgresSearchPattern.ContainsAnyScript(query);
+            profiles = profiles.Where(profile => namePatterns.Any(namePattern => EF.Functions.ILike(profile.Name, namePattern))
                 || EF.Functions.ILike(profile.City, pattern)
                 || profile.Categories.Any(categoryValue => EF.Functions.ILike(categoryValue, pattern)));
         }

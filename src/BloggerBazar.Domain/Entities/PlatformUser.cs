@@ -10,7 +10,7 @@ public sealed class PlatformUser
     {
         Id = Guid.NewGuid();
         TelegramUserId = telegramUserId;
-        FirstName = firstName;
+        FirstName = PersonName.Normalize(firstName);
         Username = username;
         Role = PlatformRole.Member;
         CreatedAtUtc = DateTime.UtcNow;
@@ -47,8 +47,9 @@ public sealed class PlatformUser
     // (an UPDATE and a commit per open) when nothing in the Telegram profile moved.
     public void SyncTelegramIdentity(string firstName, string? username)
     {
-        if (FirstName == firstName && Username == username) return;
-        FirstName = firstName;
+        var plainName = PersonName.Normalize(firstName);
+        if (FirstName == plainName && Username == username) return;
+        FirstName = plainName;
         Username = username;
         UpdatedAtUtc = DateTime.UtcNow;
     }

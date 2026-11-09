@@ -48,11 +48,12 @@ internal static class CampaignCatalogFiltering
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
             var pattern = PostgresSearchPattern.Contains(search.Query);
-            query = query.Where(campaign => EF.Functions.ILike(campaign.Title, pattern)
+            var namePatterns = PostgresSearchPattern.ContainsAnyScript(search.Query);
+            query = query.Where(campaign => namePatterns.Any(namePattern => EF.Functions.ILike(campaign.Title, namePattern))
                 || EF.Functions.ILike(campaign.Description, pattern)
                 || (campaign.City != null && EF.Functions.ILike(campaign.City, pattern))
                 || campaign.Categories.Any(category => EF.Functions.ILike(category, pattern))
-                || EF.Functions.ILike(campaign.Business.Name, pattern));
+                || namePatterns.Any(namePattern => EF.Functions.ILike(campaign.Business.Name, namePattern)));
         }
 
         if (!string.IsNullOrWhiteSpace(search.City))

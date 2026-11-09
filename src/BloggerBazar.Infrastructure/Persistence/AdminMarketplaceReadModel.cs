@@ -41,10 +41,11 @@ internal sealed class AdminMarketplaceReadModel(BloggerBazarDbContext dbContext)
         if (search is not null)
         {
             var pattern = PostgresSearchPattern.Contains(search.TrimStart('@'));
+            var namePatterns = PostgresSearchPattern.ContainsAnyScript(search.TrimStart('@'));
             // A phone is searched by its digits, so "90 123 45 67" finds "+998901234567".
             var digits = new string(search.Where(char.IsDigit).ToArray());
             var digitsPattern = digits.Length >= 3 ? PostgresSearchPattern.Contains(digits) : null;
-            users = users.Where(user => EF.Functions.ILike(user.FirstName, pattern)
+            users = users.Where(user => namePatterns.Any(namePattern => EF.Functions.ILike(user.FirstName, namePattern))
                 || (user.Username != null && EF.Functions.ILike(user.Username, pattern))
                 || (digitsPattern != null && user.VerifiedPhone != null && EF.Functions.Like(user.VerifiedPhone, digitsPattern))
                 || (digitsPattern != null && EF.Functions.Like(user.TelegramUserId.ToString(), digitsPattern)));

@@ -1,5 +1,6 @@
 import { telegramBridge } from "../telegram/TelegramProvider";
 import { translate } from "../i18n";
+import { plainNames } from "../lib/personName";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
 
@@ -86,5 +87,5 @@ export async function api<T>(path: string, options?: ApiOptions): Promise<T> {
     throw new ApiError(response.status, data?.code, Object.keys(data?.errors ?? {}));
   }
 
-  return data as T;
+  return plainNames(data as T);
 }

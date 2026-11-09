@@ -5,7 +5,7 @@ public sealed class BrandFaceProfile
     private BrandFaceProfile() { }
     private BrandFaceProfile(long telegramUserId, string name, string city, IReadOnlyCollection<string> categories)
     {
-        Id = Guid.NewGuid(); TelegramUserId = telegramUserId; Name = name; City = city; Categories = categories.ToArray(); CreatedAtUtc = DateTime.UtcNow; UpdatedAtUtc = CreatedAtUtc;
+        Id = Guid.NewGuid(); TelegramUserId = telegramUserId; Name = PersonName.Normalize(name); City = city; Categories = categories.ToArray(); CreatedAtUtc = DateTime.UtcNow; UpdatedAtUtc = CreatedAtUtc;
     }
     public Guid Id { get; private set; }
     public long TelegramUserId { get; private set; }
@@ -38,7 +38,7 @@ public sealed class BrandFaceProfile
     public DateTime UpdatedAtUtc { get; private set; }
     public static BrandFaceProfile Create(long telegramUserId, string name, string city, IReadOnlyCollection<string> categories) => new(telegramUserId, name, city, categories);
     public void Update(string name, string city, int? age, string? gender, IReadOnlyCollection<string> languages, IReadOnlyCollection<string> categories, string? experience, string? instagram, string? telegram, string? portfolioUrl, int? collaborationPrice, string? description, string? avatarUrl)
-    { Name = name; City = city; Age = age; Gender = gender; Languages = languages.ToArray(); Categories = categories.ToArray(); Experience = experience; Instagram = instagram; Telegram = telegram; PortfolioUrl = portfolioUrl; CollaborationPrice = collaborationPrice; Description = description; AvatarUrl = avatarUrl; UpdatedAtUtc = DateTime.UtcNow; }
+    { Name = PersonName.Normalize(name); City = city; Age = age; Gender = gender; Languages = languages.ToArray(); Categories = categories.ToArray(); Experience = experience; Instagram = instagram; Telegram = telegram; PortfolioUrl = portfolioUrl; CollaborationPrice = collaborationPrice; Description = description; AvatarUrl = avatarUrl; UpdatedAtUtc = DateTime.UtcNow; }
     public void SetPresentation(IReadOnlyCollection<string> formats, string? showreelUrl)
     { Formats = formats.Distinct().ToArray(); ShowreelUrl = showreelUrl; UpdatedAtUtc = DateTime.UtcNow; }
     public bool CanAddPhoto => PhotoUrls.Count < MaxPhotos;
