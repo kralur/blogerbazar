@@ -1,5 +1,5 @@
 import type { BloggerReview } from "../../api/marketplace";
-import { formatRating, formatShortDate } from "../../lib/currency";
+import { formatBudgetRange, formatCompactNumber, formatNumber, formatRating, formatShortDate } from "../../lib/currency";
 import { useI18n } from "../../i18n";
 import { Avatar, Card, Rating } from "../ui";
 
@@ -16,6 +16,17 @@ export function FactGrid({ facts, className }: { facts: Fact[]; className?: stri
     ...visible.filter((fact) => fact.wide)
   ];
   return <dl className={`fact-grid ${className ?? ""}`.trim()}>{paired.map((fact) => <div className={`fact-grid__item${fact.wide ? " fact-grid__item--wide" : ""}${fact.onSelect ? " fact-grid__item--action" : ""}`} key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd>{fact.onSelect && <button aria-label={fact.selectLabel} className="fact-grid__action" onClick={fact.onSelect} type="button"><span aria-hidden="true">›</span></button>}</div>)}</dl>;
+}
+
+// A budget range for a hero price: two short figures (compact millions) and the unit; one bound keeps the usual wording.
+export function compactBudgetRange(from: number | null | undefined, to: number | null | undefined, unit: string) {
+  const figure = (value: number) => value >= 1_000_000 ? formatCompactNumber(value) : formatNumber(value);
+  return from && to && from !== to ? `${figure(from)} – ${figure(to)} ${unit}` : formatBudgetRange(from, to);
+}
+
+// One sum for a tag: compact millions, so "12,5 mln" never breaks across lines.
+export function compactMoney(value: number, unit: string) {
+  return `${value >= 1_000_000 ? formatCompactNumber(value) : formatNumber(value)} ${unit}`;
 }
 
 export function ChipList({ items, label }: { items: string[]; label?: string }) {

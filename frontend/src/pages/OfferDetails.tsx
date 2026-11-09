@@ -11,7 +11,8 @@ import { offerFormatLabelKey, offerStateLabelKey, offerStateTone } from "../lib/
 import { profileRoute } from "../lib/profileRoutes";
 import { SwitchRoleHint } from "../components/SwitchRoleHint";
 import { PageHeader } from "../components/PageHeader";
-import { DetailSection, FactGrid } from "../components/details/DetailBlocks";
+import { ListHero } from "../components/ListHero";
+import { DetailSection, FactGrid, compactMoney } from "../components/details/DetailBlocks";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { CounterpartyRow } from "../components/CounterpartyRow";
 
@@ -86,16 +87,19 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
 
   const formatDate = (value: string, withTime = false) => formatShortDate(value, language, withTime ? { time: true } : { year: true });
 
+  // D63, package G: the lapis head carries the state, the format, the other side and the terms as tags.
   return <div className="screen screen--with-nav offer-details">
+    <ListHero className="detail-hero">
     <PageHeader actions={<><Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge></>} back={{ href: "#/requests", label: t("nav.requests") }} />
-    <p className="mt-4 text-sm font-semibold text-brand-muted">{t("offers.title")}</p>
-    <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{t(offerFormatLabelKey(offer.format))}</h1>
+    <p className="detail-hero__eyebrow">{t("offers.title")}</p>
+    <h1 className="detail-hero__title">{t(offerFormatLabelKey(offer.format))}</h1>
     <CounterpartyRow href={viewerRole === "Business" ? (offer.brandFaceId ? profileRoute("brandFace", offer.brandFaceId) : offer.bloggerId ? profileRoute("blogger", offer.bloggerId) : null) : (viewerRole === "Blogger" || viewerRole === "BrandFace") && offer.businessId ? `#/company/${offer.businessId}` : null} imageUrl={offer.counterpartyImageUrl} label={t(viewerRole === "Business" ? (offer.brandFaceId ? "offers.counterpartyBrandFace" : "offers.counterpartyBlogger") : viewerRole === "Blogger" || viewerRole === "BrandFace" ? "offers.counterpartyBusiness" : "offers.counterparty")} name={offer.counterpartyName} />
-    <FactGrid className="mt-4" facts={[
-      { label: t("offers.budget"), value: offer.offeredBudget != null ? formatCurrency(offer.offeredBudget) : t("offers.budgetNegotiable") },
+    <FactGrid className="hero-tags fact-grid--three" facts={[
+      { label: t("offers.budget"), value: offer.offeredBudget != null ? compactMoney(offer.offeredBudget, t("currency.uzs")) : t("offers.budgetNegotiable") },
       { label: t("offers.deadline"), value: offer.deadline ? formatDate(offer.deadline) : null },
-      { label: t("offers.expiresAt"), value: offer.state === "pending" && offer.expiresAtUtc ? formatDate(offer.expiresAtUtc, true) : null, wide: true }
+      { label: t("offers.expiresAt"), value: offer.state === "pending" && offer.expiresAtUtc ? formatDate(offer.expiresAtUtc, true) : null }
     ]} />
+    </ListHero>
     <DetailSection title={t("offers.message")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{offer.message}</p></Card></DetailSection>
     {offer.canRespond && <div className="offer-respond mt-5">
       {offer.expiresAtUtc && <OfferTimeLeft expiresAtUtc={offer.expiresAtUtc} />}

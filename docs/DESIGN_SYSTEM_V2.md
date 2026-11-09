@@ -159,6 +159,9 @@ The landing (D61) and, from 2026-11-07, the Mini App Home (D62) follow the "Baza
   steps as beads on a cord (lime done and current, saffron cord).
 - Sheets (`Modal`, `BottomSheet`): edge to edge, title in the display face, a grip the finger can pull; a short pull
   snaps back, a long or fast one closes.
+- Detail screens (D63, package G): `ListHero` with `detail-hero` on blogger, brand face, campaign, my campaign, deal,
+  offer, application and settings; facts as tags (`FactGrid` with `hero-tags`), the price or status large in the head,
+  text and actions below. Sums in narrow tags are compact (`compactMoney`, `compactBudgetRange` in `DetailBlocks`).
 - Atlas switch (D63, package I): `lib/atlasPreference.ts`; off, the strip and the first-screen background are not
   drawn (the Settings previews still are). The strip is silent: no tick, no sound.
 - Seasons (D63): `lib/season.ts` sets `data-season` on `<html>`: the calendar season by default, or the one the

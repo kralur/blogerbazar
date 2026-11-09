@@ -11,7 +11,7 @@ const momentKeys = new Set(["requests.completedToast", "requests.reviewPublished
 import { DealResults, digitsToNumber, isHttpsLink } from "../components/DealResults";
 import { ReportButton } from "../components/ReportButton";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatShortDate, formatBudgetRange, formatCurrency, formatNumericInput } from "../lib/currency";
+import { formatShortDate, formatCurrency, formatNumericInput } from "../lib/currency";
 import { DealStatus, dealSourceLabelKey, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey } from "../lib/offerStatus";
 import { profileRoute } from "../lib/profileRoutes";
@@ -19,7 +19,8 @@ import { markDealSeen } from "../data/seenDeals";
 import { BlessingButton } from "../components/BlessingButton";
 import { SwitchRoleHint } from "../components/SwitchRoleHint";
 import { PageHeader } from "../components/PageHeader";
-import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
+import { ChipList, DetailSection, FactGrid, compactBudgetRange, compactMoney } from "../components/details/DetailBlocks";
+import { ListHero } from "../components/ListHero";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { CounterpartyRow } from "../components/CounterpartyRow";
 
@@ -145,38 +146,43 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     contact?.websiteUrl ? { kind: "website" as const, value: contact.websiteUrl } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   const terms = deal.terms;
-  const budget = terms ? formatBudgetRange(terms.budgetFrom, terms.budgetTo) : null;
+  const budget = terms ? compactBudgetRange(terms.budgetFrom, terms.budgetTo, t("currency.uzs")) : null;
+  // D63, package G: the lapis head carries the state, the title, the partner and three tags; the offer's own terms or the
+  // campaign's, whichever the deal came from.
+  // The format is already the title, so the offer tags are budget, deadline and the start of the deal.
+  const heroFacts = deal.offer ? [
+    { label: t("offers.budget"), value: deal.offer.offeredBudget != null ? compactMoney(deal.offer.offeredBudget, t("currency.uzs")) : t("offers.budgetNegotiable") },
+    { label: t("offers.deadline"), value: deal.offer.deadline ? formatDate(deal.offer.deadline) : null },
+    { label: t("deals.startedAt"), value: formatDate(deal.createdAtUtc) }
+  ] : terms ? [
+    { label: t("common.city"), value: terms.city ? cityLabel(terms.city, language) : t("common.notSpecified") },
+    { label: t("deals.deadline"), value: terms.deadline ? formatDate(terms.deadline) : null },
+    { label: t("deals.campaignBudget"), value: budget }
+  ] : [];
 
   return <div className="screen screen--with-nav deal-details">
-    <PageHeader actions={<><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge></>} back={{ href: "#/requests", label: t("nav.requests") }} />
-    <p className="mt-4 text-sm font-semibold text-brand-muted">{t(dealSourceLabelKey(deal.sourceType))}</p>
-    <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">{terms?.title ?? (deal.offer ? t(offerFormatLabelKey(deal.offer.format)) : t("deals.source.collaborationRequest"))}</h1>
-    <CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
+    <ListHero className="detail-hero">
+      <PageHeader actions={<><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge></>} back={{ href: "#/requests", label: t("nav.requests") }} />
+      <p className="detail-hero__eyebrow">{t(dealSourceLabelKey(deal.sourceType))}</p>
+      <h1 className="detail-hero__title">{terms?.title ?? (deal.offer ? t(offerFormatLabelKey(deal.offer.format)) : t("deals.source.collaborationRequest"))}</h1>
+      <CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
+      <FactGrid className="hero-tags fact-grid--three" facts={heroFacts} />
+    </ListHero>
     {deal.status === DealStatus.Active && !deal.counterpartyDeleted && <BlessingButton />}
     {deal.counterpartyDeleted && <p className="mt-3 text-sm leading-6 text-brand-muted" role="status">{t("deals.partnerDeletedNote")}</p>}
     {deal.termsSource === "liveCampaignFallback" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.termsFallbackNote")}</p>}
     {deal.termsSource === "collaboration" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.collaborationNote")}</p>}
-    {terms && <DetailSection title={t("deals.terms")}>
-      <FactGrid facts={[
-        { label: t("common.city"), value: terms.city ? cityLabel(terms.city, language) : t("common.notSpecified") },
-        { label: t("deals.deadline"), value: terms.deadline ? formatDate(terms.deadline) : null },
-        { label: t("deals.campaignBudget"), value: budget, wide: true }
-      ]} />
-      {terms.description && <Card className="mt-2"><p className="text-sm leading-6 text-brand-muted">{terms.description}</p></Card>}
+    {terms && (terms.description || terms.categories.length > 0) && <DetailSection title={t("deals.terms")}>
+      {terms.description && <Card><p className="text-sm leading-6 text-brand-muted">{terms.description}</p></Card>}
       {terms.categories.length > 0 && <div className="mt-3"><ChipList items={terms.categories.map((category) => categoryLabel(category, language))} /></div>}
     </DetailSection>}
     {terms && terms.requirements.length > 0 && <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-2 text-sm text-brand-muted">{terms.requirements.map((value) => <li key={value}>{value}</li>)}</ul></Card></DetailSection>}
-    {deal.offer && <DetailSection title={t("deals.offerTerms")}>
-      <FactGrid facts={[
-        { label: t("offers.format"), value: t(offerFormatLabelKey(deal.offer.format)) },
-        { label: t("offers.budget"), value: deal.offer.offeredBudget != null ? formatCurrency(deal.offer.offeredBudget) : t("offers.budgetNegotiable") },
-        { label: t("offers.deadline"), value: deal.offer.deadline ? formatDate(deal.offer.deadline) : null }
-      ]} />
-      <Card className="mt-2"><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p></Card>
+    {deal.offer && <DetailSection title={t("offers.message")}>
+      <Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p></Card>
     </DetailSection>}
     {contactItems.length > 0 && hasContacts(contactItems) && <DetailSection title={t("deals.contacts")}><ContactList items={contactItems} onSendToChat={async () => { try { await shareDealContact(deal.id); return t("contacts.sentToChat"); } catch (error) { throw new Error(getApiErrorMessage(error, t("contacts.sendToChatFailed"))); } }} /></DetailSection>}
     <FactGrid className="mt-4" facts={[
-      { label: t("deals.startedAt"), value: formatDate(deal.createdAtUtc) },
+      { label: t("deals.startedAt"), value: deal.offer ? null : formatDate(deal.createdAtUtc) },
       { label: t("deals.completedAt"), value: deal.completedAtUtc ? formatDate(deal.completedAtUtc) : null }
     ]} />
     <DealResults deal={deal} onChanged={load} onMessage={(message, nextTone) => { setTone(nextTone); setToast(message); }} />

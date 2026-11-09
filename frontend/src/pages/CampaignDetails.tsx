@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client";
 import { applyToCampaign, getBusinessReviews, getCampaign, getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaignApplicationsPage, getPublicContact, normalizeMarketplaceRole, type BusinessReviews, type CampaignDetails, type ContactDetails } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Modal, Textarea, Toast } from "../components/ui";
 import { SuccessMoment } from "../components/SuccessMoment";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatBudgetRange, formatDate, isPastDay } from "../lib/currency";
-import { ChipList, DetailSection, FactGrid, ReviewsSection } from "../components/details/DetailBlocks";
+import { formatDate, isPastDay } from "../lib/currency";
+import { ChipList, DetailSection, ReviewsSection, compactBudgetRange } from "../components/details/DetailBlocks";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { ReportButton } from "../components/ReportButton";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { getCachedCampaignApplication, setCachedCampaignApplication } from "../data/campaignApplicationCache";
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
 import { PageHeader } from "../components/PageHeader";
+import { ListHero } from "../components/ListHero";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { profileRoute } from "../lib/profileRoutes";
 
@@ -206,23 +207,20 @@ export function CampaignDetails({ id }: { id: string }) {
     contact?.websiteUrl ? { kind: "website" as const, value: contact.websiteUrl } : null,
     contact?.email ? { kind: "email" as const, value: contact.email } : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
-  const budget = formatBudgetRange(campaign.budgetFrom, campaign.budgetTo);
+  const budget = compactBudgetRange(campaign.budgetFrom, campaign.budgetTo, t("currency.uzs"));
   const expired = isPastDay(campaign.deadline);
-  const companyInitials = campaign.company.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const meta = [campaign.city ? cityLabel(campaign.city, language) : null, campaign.deadline ? t("campaign.until", { date: formatDate(campaign.deadline) }) : null, campaign.categories.slice(0, 2).map((category) => categoryLabel(category, language)).join(", ") || null].filter(Boolean).join(" · ");
+  // D63, package G: the lapis head says whose campaign it is, its state, the budget large and the title; the text below.
   return (
     <div className="screen screen--with-nav">
-      <PageHeader actions={<><Badge tone={expired ? "gray" : campaign.isPromoted ? "gold" : "blue"}>{expired ? t("campaign.expired") : campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge></>} back={{ href: "#/campaigns", label: t("nav.campaigns") }} />
-      <Card className="mt-4 overflow-hidden p-0">
-        <div className="campaign-hero">
-          <a aria-label={t("company.openAria", { name: campaign.company })} className="campaign-hero__business" href={`#/company/${campaign.businessId}`}><Avatar name={companyInitials} size="sm" variant="neutral" /><span className="min-w-0 truncate text-sm font-semibold text-brand-muted">{campaign.company}</span><Icon className="campaign-hero__business-chevron" name="back" /></a>
-          <h1 className="campaign-hero__title">{campaign.title}</h1>
-        </div>
-        <div className="p-5"><FactGrid facts={[
-          { label: t("campaign.location"), value: campaign.city ? cityLabel(campaign.city, language) : null },
-          { label: t("campaigns.deadline"), value: campaign.deadline ? formatDate(campaign.deadline) : null },
-          { label: t("common.budget"), value: budget, wide: true }
-        ]} /><p className="mt-4 text-sm leading-6 text-brand-muted">{campaign.description}</p></div>
-      </Card>
+      <ListHero className="detail-hero">
+        <PageHeader actions={<><Badge tone={expired ? "gray" : campaign.isPromoted ? "gold" : "blue"}>{expired ? t("campaign.expired") : campaign.isPromoted ? t("campaign.promoted") : t("campaign.open")}</Badge></>} back={{ href: "#/campaigns", label: t("nav.campaigns") }} />
+        <a aria-label={t("company.openAria", { name: campaign.company })} className="detail-hero__eyebrow" href={`#/company/${campaign.businessId}`}>{t("campaign.eyebrow")} · {campaign.company}</a>
+        {budget && <><p className="detail-hero__price">{budget}</p><p className="detail-hero__price-unit">{t("common.budget")}</p></>}
+        <h1 className="detail-hero__title">{campaign.title}</h1>
+        {meta && <p className="detail-hero__meta">{meta}</p>}
+      </ListHero>
+      <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       {campaign.categories.length > 0 && <DetailSection title={t("campaign.suitable")}><ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
       <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></DetailSection>

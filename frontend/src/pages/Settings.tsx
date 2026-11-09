@@ -4,6 +4,7 @@ import { AccountActions } from "../components/AccountActions";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { AtlasStrip } from "../components/AtlasStrip";
 import { PageHeader } from "../components/PageHeader";
+import { ListHero } from "../components/ListHero";
 import { SeasonArt } from "../components/SeasonArt";
 import { BottomNav, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -19,7 +20,7 @@ const themeOptions: Array<{ value: ThemePreference; labelKey: string }> = [
 ];
 
 export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const { haptic } = useTelegram();
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
   // D63: five tiles, the standard design and the four seasons; "auto" follows the calendar and shows as its season.
@@ -81,8 +82,13 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
     saved();
   };
 
+  // D63, package G: the lapis head with the current state in one line, the rows below.
+  const state = [language.toUpperCase(), t(themeOptions.find((option) => option.value === theme)?.labelKey ?? "settings.themeTelegram"), shownSeason === "off" ? t("settings.seasonDefault") : t(`settings.season.${shownSeason}`)].join(" · ");
   return <div className="screen screen--with-nav space-y-5 px-4 pt-5">
-    <PageHeader back={{ href: "#/profile", label: t("nav.profile") }} eyebrow={t("profile.eyebrow")} title={t("profile.settings")} />
+    <ListHero className="detail-hero settings-hero">
+      <PageHeader back={{ href: "#/profile", label: t("nav.profile") }} eyebrow={t("profile.eyebrow")} title={t("profile.settings")} />
+      <p className="settings-hero__state">{state}</p>
+    </ListHero>
     <div className="settings-list">
       <div className="settings-row"><span className="settings-row__text"><strong>{t("language.interface")}</strong></span><LanguageSwitcher /></div>
       <div className="settings-row settings-row--stacked">

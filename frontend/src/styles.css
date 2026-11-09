@@ -1955,14 +1955,14 @@ html[data-telegram-theme] .profile-hero__account { margin-top: .75rem; padding: 
 .company-hero h1 { font-family: var(--bb-display); font-weight: 700; letter-spacing: -.01em; color: #FFFFFF; }
 .company-hero .text-brand-muted { color: var(--bb-lapis-text); }
 .company-hero .text-brand-warning { color: var(--bb-saffron); }
-.company-hero__facts { margin-top: 2.5rem; gap: .75rem; }
-.company-hero__facts .fact-grid__item { position: relative; padding: 1.125rem .75rem .875rem; border: 0; border-radius: .375rem .375rem .875rem .875rem; background: #FFFFFF; color: var(--bb-ink); text-align: center; }
-.company-hero__facts .fact-grid__item:nth-child(2) { margin-top: .75rem; }
-.company-hero__facts .fact-grid__item::before { content: ""; position: absolute; top: -1.5rem; left: 50%; width: 2px; height: 1.5rem; background: var(--bb-saffron); transform: translateX(-50%); }
-.company-hero__facts .fact-grid__item::after { content: ""; position: absolute; top: .375rem; left: 50%; width: .5rem; height: .5rem; border: 2px solid #D5DDEE; border-radius: 50%; background: var(--bb-lapis); transform: translateX(-50%); }
-.company-hero__facts .fact-grid__item dt { color: #4A5675; font-size: .75rem; font-weight: 750; }
-.company-hero__facts .fact-grid__item dd { font-family: var(--bb-display); font-size: 1.125rem; font-weight: 700; line-height: 1.15; color: var(--bb-lapis); }
-@media (max-width: 359px) { .company-hero__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.company-hero__facts, .hero-tags { margin-top: 2.5rem; gap: .75rem; }
+:is(.company-hero__facts, .hero-tags) .fact-grid__item { position: relative; padding: 1.125rem .75rem .875rem; border: 0; border-radius: .375rem .375rem .875rem .875rem; background: #FFFFFF; color: var(--bb-ink); text-align: center; }
+:is(.company-hero__facts, .hero-tags) .fact-grid__item:nth-child(2) { margin-top: .75rem; }
+:is(.company-hero__facts, .hero-tags) .fact-grid__item::before { content: ""; position: absolute; top: -1.5rem; left: 50%; width: 2px; height: 1.5rem; background: var(--bb-saffron); transform: translateX(-50%); }
+:is(.company-hero__facts, .hero-tags) .fact-grid__item::after { content: ""; position: absolute; top: .375rem; left: 50%; width: .5rem; height: .5rem; border: 2px solid #D5DDEE; border-radius: 50%; background: var(--bb-lapis); transform: translateX(-50%); }
+:is(.company-hero__facts, .hero-tags) .fact-grid__item dt { color: #4A5675; font-size: .75rem; font-weight: 750; }
+:is(.company-hero__facts, .hero-tags) .fact-grid__item dd { font-family: var(--bb-display); font-size: 1.125rem; font-weight: 700; line-height: 1.15; color: var(--bb-lapis); }
+@media (max-width: 359px) { .company-hero__facts, .hero-tags.fact-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* D63, package D: the wizard head on lapis with the steps as beads on a cord; the fields stay quiet below. */
 .wizard-screen__top-scrim { background: var(--bb-lapis); }
@@ -2001,3 +2001,38 @@ html[data-telegram-theme] .profile-hero__account { margin-top: .75rem; padding: 
 .bottom-sheet .ds-dialog__handle { width: 2.75rem; height: .3125rem; background: var(--bb-text-secondary); opacity: .5; }
 .bottom-sheet__head { margin-bottom: 1rem; }
 .bottom-sheet__title { font-family: var(--bb-display); font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; }
+
+/* D63, package G: the detail screens (blogger, brand face, campaign, my campaign, deal, offer, application, settings)
+   get the lapis head of the lists; what matters most sits in it, the facts hang as tags on cords, the text reads below. */
+.screen > .detail-hero + .atlas-strip { margin-top: 0 !important; }
+.detail-hero .page-header { min-height: 0; }
+.detail-hero h1 { font-family: var(--bb-display); font-weight: 700; letter-spacing: -.01em; color: #FFFFFF; }
+.detail-hero .text-brand-muted,
+.detail-hero .request-row__meta { color: var(--bb-lapis-text); }
+.detail-hero .text-brand-warning { color: var(--bb-saffron); }
+.detail-hero .ds-badge { border-color: transparent; background: rgba(255, 255, 255, .14); color: #FFFFFF; }
+.detail-hero .detail-promoted { border-color: var(--bb-accent); background: transparent; color: var(--bb-accent); }
+.detail-hero .catalog-favorite-button { border-color: transparent; background: rgba(255, 255, 255, .14); color: #FFFFFF; }
+.detail-hero .request-row,
+.detail-hero .request-row--static:active { border-color: transparent; background: rgba(255, 255, 255, .12); color: #FFFFFF; }
+.detail-hero .request-row:active { background: rgba(255, 255, 255, .2); }
+.detail-hero .home-activity__chevron { color: #FFFFFF; }
+.detail-hero .profile-cover { margin: .75rem 0 0; border: 0; border-radius: 1rem; }
+.detail-hero__eyebrow { display: inline-block; margin: .75rem 0 0; color: var(--bb-lapis-text); font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+a.detail-hero__eyebrow:active { color: #FFFFFF; }
+.detail-hero__status { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .75rem; }
+.detail-hero__price { margin: .75rem 0 0; font-family: var(--bb-display); font-size: 2rem; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; color: var(--bb-accent); overflow-wrap: normal; word-break: keep-all; }
+.detail-hero__price-unit { margin: .25rem 0 0; color: var(--bb-lapis-text); font-size: .8125rem; }
+.detail-hero__title { margin: .75rem 0 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
+.detail-hero__meta { margin: .5rem 0 0; color: var(--bb-lapis-text); font-size: .875rem; line-height: 1.4; }
+.detail-hero .application-details__business { color: #FFFFFF; }
+.detail-hero .hero-tags { margin-top: 2.25rem; }
+/* Three tags in a row are narrow: values break between words, never inside a figure, and size down a little. */
+.hero-tags.fact-grid--three .fact-grid__item { padding-right: .5rem; padding-left: .5rem; }
+.hero-tags.fact-grid--three .fact-grid__item dd { font-size: .9375rem; letter-spacing: -.01em; overflow-wrap: break-word; word-break: normal; hyphens: none; }
+/* Two tags left (a third fact missing) share the row instead of leaving a hole. */
+.hero-tags.fact-grid--three:has(> :nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.detail-hero .campaign-menu__trigger { background: rgba(255, 255, 255, .14); color: #FFFFFF; }
+.detail-hero .campaign-menu__trigger:active { background: rgba(255, 255, 255, .24); }
+.detail-hero ~ .detail-section:first-of-type { margin-top: 1.25rem; }
+.settings-hero__state { display: inline-flex; margin: .75rem 0 0; padding: .5rem .875rem; border-radius: 999px; background: rgba(255, 255, 255, .14); color: #FFFFFF; font-size: .875rem; font-weight: 800; }

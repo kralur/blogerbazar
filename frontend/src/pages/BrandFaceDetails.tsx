@@ -11,6 +11,7 @@ import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { FavoriteButton } from "../components/FavoriteButton";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
+import { ListHero } from "../components/ListHero";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { safeExternalUrl, socialUrl } from "../lib/contacts";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -89,16 +90,18 @@ export function BrandFaceDetails({ id }: { id: string }) {
   ].filter(Boolean).join(" · ");
   const open = (href: string) => { if (openLink) openLink(href); else window.open(href, "_blank", "noopener,noreferrer"); };
   return <div className="screen screen--with-nav">
+    <ListHero className="detail-hero">
     <PageHeader actions={<><FavoriteButton brandFaceId={profile.id} /></>} back={{ href: "#/", label: t("common.back") }} />
     <div className="mt-4 text-center"><div className="mx-auto w-fit"><Avatar name={profile.name} size="xl" src={profile.avatarUrl} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{profile.name}</h1><p className="mt-1 text-sm text-brand-muted">{t("onboarding.brandFace")} · {identity}</p>{reviews && reviews.reviewsCount > 0 && <div className="mt-2"><Rating count={reviews.reviewsCount} value={reviews.rating ?? undefined} /></div>}{profile.isPromoted && <div className="mt-3 flex justify-center"><span className="catalog-card__promoted detail-promoted">{t("card.promoted")}</span></div>}</div>
+    <FactGrid className="hero-tags" facts={[
+      { label: t("common.price"), value: profile.collaborationPrice ? formatCurrency(profile.collaborationPrice) : t("card.onRequest") },
+      { label: t("brandFace.languages"), value: profile.languages.map((code) => spokenLanguageLabelKey(code) ? t(spokenLanguageLabelKey(code)!) : code).join(" · ") || null }
+    ]} />
+    </ListHero>
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     {photos.length > 0 && <ul aria-label={t("brandFace.galleryTitle")} className="brand-face-photos no-scrollbar">{photos.map((url) => <li className="brand-face-photos__item" key={url}><img alt={profile.name} loading="lazy" src={url} /></li>)}</ul>}
     {instagramHref && <Button className="brand-face-instagram" onClick={() => open(instagramHref)} type="button"><Icon name="instagram" />{t("brandFace.openInstagram")}</Button>}
     {showreelHref && <Button className="mt-2 w-full" onClick={() => open(showreelHref)} type="button" variant="secondary"><Icon name="link" />{t("brandFace.watchShowreel")}</Button>}
-    <FactGrid className="mt-5" facts={[
-      { label: t("common.price"), value: profile.collaborationPrice ? formatCurrency(profile.collaborationPrice) : t("card.onRequest") },
-      { label: t("brandFace.languages"), value: profile.languages.map((code) => spokenLanguageLabelKey(code) ? t(spokenLanguageLabelKey(code)!) : code).join(" · ") || null }
-    ]} />
     {(profile.formats?.length ?? 0) > 0 && <DetailSection title={t("brandFace.formats")}><ChipList items={(profile.formats ?? []).map((format) => t(`brandFace.format.${format}`))} /></DetailSection>}
     {profile.categories.length > 0 && <DetailSection title={t("common.categories")}><ChipList items={profile.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
     {(profile.description || profile.experience) && <DetailSection title={t("brandFace.aboutTitle")}><Card>{profile.description && <p className="text-sm leading-6 text-brand-muted">{profile.description}</p>}{profile.experience && <><h3 className={`${profile.description ? "mt-4 " : ""}text-sm font-extrabold`}>{t("brandFace.experienceTitle")}</h3><p className="mt-1 text-sm leading-6 text-brand-muted">{profile.experience}</p></>}</Card></DetailSection>}

@@ -4,14 +4,15 @@ import { closeMyCampaign, getMyCampaign, type MyCampaignDetails as MyCampaignDet
 import { BottomNav, Badge, Button, Card, ErrorState, Icon, LoadingState, Modal, Toast } from "../components/ui";
 import { notifyCampaignDataChanged, useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatBudgetRange, formatDate, isPastDay } from "../lib/currency";
+import { formatDate, isPastDay } from "../lib/currency";
 import { campaignApplicationsLabel, campaignStatusLabel, campaignStatusTone } from "../lib/campaignStatus";
 import { navigateWithHistoryOrigin } from "../navigation/hashNavigation";
 import { getCachedMyCampaign, removeCachedMyCampaign, setCachedMyCampaign, updateCachedMyCampaign } from "../data/myCampaignCache";
 import { removeCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
 import { CampaignActionsMenu, myCampaignsFeedbackKey, type CampaignMenuResult } from "../components/CampaignActionsMenu";
-import { ChipList, DetailSection, FactGrid } from "../components/details/DetailBlocks";
+import { ChipList, DetailSection, FactGrid, compactBudgetRange } from "../components/details/DetailBlocks";
+import { ListHero } from "../components/ListHero";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
@@ -103,21 +104,27 @@ export function MyCampaignDetails({ id }: { id: string }) {
   if (loading && !campaign) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
   if (!campaign) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
 
-  const budget = formatBudgetRange(campaign.minBudget, campaign.maxBudget);
+  const budget = compactBudgetRange(campaign.minBudget, campaign.maxBudget, t("currency.uzs"));
   const canManage = campaign.status !== 2;
+  // D63, package G: the lapis head holds the state, the budget large, the title and the facts as tags; the inbox and the text below.
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
-    <PageHeader actions={<CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} />} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
-    <section className="my-campaign-details__hero"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}</div><h1>{campaign.title}</h1><p>{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p></div></section>
+    <ListHero className="detail-hero">
+      <PageHeader actions={<CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} />} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
+      <div className="detail-hero__status"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}</div>
+      <p className="detail-hero__price">{budget ?? t("myCampaigns.budgetNotSpecified")}</p>
+      {budget && <p className="detail-hero__price-unit">{t("common.budget")}</p>}
+      <h1 className="detail-hero__title">{campaign.title}</h1>
+      <p className="detail-hero__meta">{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p>
+      <FactGrid className="hero-tags fact-grid--three" facts={[
+        { label: t("common.city"), value: campaign.city ? cityLabel(campaign.city, language) : t("common.notSpecified") },
+        { label: t("campaigns.deadline"), value: campaign.deadline ? formatDate(campaign.deadline) : t("myCampaigns.deadlineNotSpecified") },
+        { label: t("myCampaignDetails.created"), value: formatDate(campaign.createdAtUtc) },
+        { label: t("myCampaigns.applications"), value: canManage ? null : campaignApplicationsLabel(campaign.applicationsCount, language, t) }
+      ]} />
+    </ListHero>
     {campaign.status === 1 && isPastDay(campaign.deadline) && <p className="campaign-details__expired" role="status">{t("myCampaignDetails.expiredNote")}</p>}
     {canManage && campaign.applicationsCount === 0 && <div className="my-campaign-details__inbox my-campaign-details__inbox--empty" role="status"><span><strong>{t("applications.emptyTitle")}</strong><span>{t("myCampaignDetails.noApplicationsHint")}</span></span></div>}
     {canManage && campaign.applicationsCount > 0 && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}
-    <FactGrid className="mt-4" facts={[
-      { label: t("common.city"), value: campaign.city ? cityLabel(campaign.city, language) : t("common.notSpecified") },
-      { label: t("campaigns.deadline"), value: campaign.deadline ? formatDate(campaign.deadline) : t("myCampaigns.deadlineNotSpecified") },
-      { label: t("myCampaignDetails.created"), value: formatDate(campaign.createdAtUtc) },
-      { label: t("myCampaigns.applications"), value: canManage ? null : campaignApplicationsLabel(campaign.applicationsCount, language, t) },
-      { label: t("common.budget"), value: budget ?? t("myCampaigns.budgetNotSpecified"), wide: true }
-    ]} />
     <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
     <DetailSection title={t("common.categories")}>{campaign.categories.length ? <ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</DetailSection>
     <DetailSection title={t("common.requirements")}><Card>{campaign.requirements.length ? <ul className="grid gap-2">{campaign.requirements.map((requirement) => <li className="flex gap-2 text-sm text-brand-muted" key={requirement}><Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-success" name="check" />{requirement}</li>)}</ul> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</Card></DetailSection>

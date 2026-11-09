@@ -14,6 +14,7 @@ import { useTelegram } from "../telegram/TelegramProvider";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
+import { ListHero } from "../components/ListHero";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 export function BloggerDetails({ id }: { id: string }) {
@@ -105,15 +106,19 @@ export function BloggerDetails({ id }: { id: string }) {
   const hasPrices = prices.some((price) => price.value);
   const platformStats = blogger.platforms.filter((platform) => platform.followers > 0);
   const tags = [blogger.barterEnabled ? t("card.barter") : null].filter((tag): tag is string => tag !== null);
+  // D63, package G: the lapis head carries the person and three tags on cords; the platform rows stay below.
   return <div className="screen screen--with-nav">
-    <PageHeader actions={<><FavoriteButton bloggerId={blogger.id} /></>} back={{ href: "#/search", label: t("common.back") }} />
-    {blogger.coverUrl && <div className="profile-cover"><img alt="" className="image-fade h-full w-full object-cover" decoding="async" src={blogger.coverUrl} /></div>}
-    <div className={`relative text-center ${blogger.coverUrl ? "-mt-14" : "mt-2"}`}><div className="mx-auto w-fit"><Avatar name={blogger.name} size="xl" src={blogger.avatarUrl} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{blogger.name}</h1><p className="mt-1 text-sm text-brand-muted">{blogger.categories.map((category) => categoryLabel(category, language)).join(" · ")} · {cityLabel(blogger.city, language)}</p><div className="mt-2">{blogger.reviewsCount || blogger.completedDealsCount ? <><Rating count={blogger.reviewsCount} value={blogger.rating} /> <span className="text-sm text-brand-muted">· {t("details.deals", { count: blogger.completedDealsCount })}</span></> : <span className="text-sm text-brand-muted">{t("details.newProfile")}</span>}</div></div>
-    {platformStats.length > 0 ? <PlatformStats platforms={platformStats} total={blogger.totalFollowers} /> : <FactGrid className="mt-5 fact-grid--three" facts={[
-      { label: t("details.followers"), value: formatCompactNumber(blogger.totalFollowers) },
-      { label: t("search.er"), value: blogger.engagementRate ? formatPercentage(blogger.engagementRate) : null },
-      { label: t("details.reach"), value: blogger.averageReach ? formatCompactNumber(blogger.averageReach) : null }
-    ]} />}
+    <ListHero className="detail-hero">
+      <PageHeader actions={<><FavoriteButton bloggerId={blogger.id} /></>} back={{ href: "#/search", label: t("common.back") }} />
+      {blogger.coverUrl && <div className="profile-cover"><img alt="" className="image-fade h-full w-full object-cover" decoding="async" src={blogger.coverUrl} /></div>}
+      <div className={`relative text-center ${blogger.coverUrl ? "-mt-14" : "mt-2"}`}><div className="mx-auto w-fit"><Avatar name={blogger.name} size="xl" src={blogger.avatarUrl} /></div><h1 className="mt-3 text-2xl font-extrabold tracking-tight">{blogger.name}</h1><p className="mt-1 text-sm text-brand-muted">{blogger.categories.map((category) => categoryLabel(category, language)).join(" · ")} · {cityLabel(blogger.city, language)}</p><div className="mt-2">{blogger.reviewsCount || blogger.completedDealsCount ? <><Rating count={blogger.reviewsCount} value={blogger.rating} /> <span className="text-sm text-brand-muted">· {t("details.deals", { count: blogger.completedDealsCount })}</span></> : <span className="text-sm text-brand-muted">{t("details.newProfile")}</span>}</div></div>
+      <FactGrid className="hero-tags fact-grid--three" facts={[
+        { label: t("details.followers"), value: formatCompactNumber(blogger.totalFollowers) },
+        { label: t("search.er"), value: blogger.engagementRate ? formatPercentage(blogger.engagementRate) : null },
+        { label: t("details.reach"), value: blogger.averageReach ? formatCompactNumber(blogger.averageReach) : null }
+      ]} />
+    </ListHero>
+    {platformStats.length > 0 && <PlatformStats platforms={platformStats} total={blogger.totalFollowers} />}
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     <DetailSection title={t("details.adPrices")}>{hasPrices ? <FactGrid facts={prices} /> : <Card><p className="text-sm text-brand-muted">{t("details.pricesOnRequest")}</p></Card>}</DetailSection>
     <DetailSection title={t("details.about")}><Card><p className="text-sm leading-6 text-brand-muted">{blogger.bio ?? t("details.filling")}</p>{tags.length > 0 && <div className="mt-3"><ChipList items={tags} /></div>}</Card></DetailSection>
