@@ -4,7 +4,8 @@ import type { Season } from "../../lib/season";
 // The two layers every drawn season shares (D63, package H): a few static pieces pinned to the top right corner of
 // a lapis block (the Home hero) and a set of pieces drifting down the whole screen (the first screens), each at its
 // own pace, swaying on its own timer. A falling piece can be caught with a finger and carried; released, it keeps
-// falling from where it was left. The season modules only say what a piece looks like and where it starts.
+// falling from where it was left. `rise` sends the pieces up instead (the fireflies of summer). The season modules
+// only say what a piece looks like and where it starts.
 export type StaticPiece = { x: number; y: number; scale: number; rotate: number; opacity: number };
 // x, size, opacity, start offset and fall duration in seconds, sway period in seconds, sway reach in px and degrees
 export type FallingPiece = { x: number; scale: number; opacity: number; delay: number; duration: number; sway: number; swayX?: number; swayDeg?: number };
@@ -17,8 +18,8 @@ export function StaticPieceAt({ piece, children }: { piece: StaticPiece; childre
   return <g opacity={piece.opacity} transform={`translate(${piece.x} ${piece.y})`}><g transform={`scale(${piece.scale}) rotate(${piece.rotate})`}>{children}</g></g>;
 }
 
-export function FallingArt({ season, pieces, draw }: { season: Season; pieces: readonly FallingPiece[]; draw: (piece: FallingPiece, index: number) => ReactNode }) {
-  return <svg aria-hidden="true" className={`season-art season-art--falling season-art--${season}`} preserveAspectRatio="none" viewBox="0 0 390 844">
+export function FallingArt({ season, pieces, draw, rise = false }: { season: Season; pieces: readonly FallingPiece[]; draw: (piece: FallingPiece, index: number) => ReactNode; rise?: boolean }) {
+  return <svg aria-hidden="true" className={`season-art season-art--falling season-art--${season}${rise ? " season-art--rising" : ""}`} preserveAspectRatio="none" viewBox="0 0 390 844">
     {pieces.map((piece, index) => <g key={index} onPointerCancel={releasePiece} onPointerDown={grabPiece} onPointerMove={dragPiece} onPointerUp={releasePiece} style={pieceStyle(piece)}>
       <g>{draw(piece, index)}</g>
     </g>)}
@@ -38,9 +39,11 @@ function pieceStyle(piece: FallingPiece) {
   return style as CSSProperties;
 }
 
-// The fall runs from -60 to 880 in the 390x844 drawing; a released piece continues from where the finger left it.
+// The fall runs from -60 to 880 in the 390x844 drawing (a rise the other way); a released piece continues from
+// where the finger left it.
 const fallStart = -60;
-const fallLength = 940;
+const fallEnd = 880;
+const fallLength = fallEnd - fallStart;
 const grabbed = new WeakMap<Element, { dx: number; dy: number }>();
 
 // Finger (or mouse) position in the drawing's units, whatever size the svg is stretched to.
@@ -89,7 +92,9 @@ function releasePiece(event: ReactPointerEvent<SVGGElement>) {
   grabbed.delete(piece);
   const at = currentTranslate(piece);
   const duration = parseFloat(piece.style.getPropertyValue("--art-duration")) || 20;
-  const progress = Math.min(Math.max((at.y - fallStart) / fallLength, 0), 1);
+  const rising = piece.ownerSVGElement?.classList.contains("season-art--rising") ?? false;
+  const travelled = rising ? fallEnd - at.y : at.y - fallStart;
+  const progress = Math.min(Math.max(travelled / fallLength, 0), 1);
   piece.style.setProperty("--art-x", `${Math.min(Math.max(at.x, 0), 390)}px`);
   piece.style.transform = "";
   piece.style.opacity = "";

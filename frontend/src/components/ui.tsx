@@ -356,6 +356,8 @@ export function Modal({ open, title, children, onClose, id, variant = "default" 
   // The sheet follows the finger from its grip (owner, 2026-11-09): a short pull snaps back, a long or fast one closes.
   const beginDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
+    // The close button sits in the grip: capturing its pointer would swallow its click (owner, 2026-11-09: the cross did nothing).
+    if (event.target instanceof Element && event.target.closest("button")) return;
     drag.current = { startY: event.clientY, startTime: performance.now(), moved: 0 };
     dialogRef.current?.classList.add("bottom-sheet--dragging");
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -382,7 +384,7 @@ export function Modal({ open, title, children, onClose, id, variant = "default" 
     sheet.style.transform = "";
   };
   return createPortal(
-    <div aria-modal="true" className={cn("bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end backdrop-blur-sm", variant === "neutral" && "bottom-sheet-backdrop--neutral")} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
+    <div aria-modal="true" className={cn("bottom-sheet-backdrop fixed inset-0 z-[60] grid items-end justify-items-center backdrop-blur-sm", variant === "neutral" && "bottom-sheet-backdrop--neutral")} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
       <div aria-labelledby={titleId} className={cn("bottom-sheet w-full max-w-[430px] rounded-t-[var(--bb-radius-overlay)] p-5", variant === "neutral" && "bottom-sheet--neutral")} data-keyboard-scroll-container id={id} ref={dialogRef} tabIndex={-1}>
         <div className="bottom-sheet__grip" onPointerCancel={endDrag} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={endDrag}>
           <div className="ds-dialog__handle mx-auto h-1 w-10 rounded-full" />

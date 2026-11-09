@@ -21,16 +21,27 @@ describe("season", () => {
     expect(seasonOf(new Date(2027, 5, 15))).toBe("summer");
   });
 
-  it("shows autumn in autumn, winter in winter and the plain design in a season without artefacts", () => {
+  it("follows the calendar by default", () => {
     expect(activeSeason(new Date(2026, 9, 10))).toBe("autumn");
     expect(activeSeason(new Date(2026, 11, 10))).toBe("winter");
-    expect(activeSeason(new Date(2027, 3, 10))).toBeNull();
+    expect(activeSeason(new Date(2027, 3, 10))).toBe("spring");
+    expect(activeSeason(new Date(2027, 6, 10))).toBe("summer");
+  });
+
+  // Package I: the person can pin any season; it then stays whatever the calendar says.
+  it("keeps a pinned season through the year and marks <html> with it", () => {
+    setSeasonPreference("summer");
+    expect(getSeasonPreference()).toBe("summer");
+    expect(activeSeason(new Date(2026, 10, 9))).toBe("summer");
+    expect(activeSeason(new Date(2027, 0, 9))).toBe("summer");
+    expect(document.documentElement.dataset.season).toBe("summer");
+    const { container } = render(<SeasonArt variant="falling" />);
+    expect(container.querySelector(".season-art--summer.season-art--rising")).toBeInTheDocument();
   });
 
   // Package H: a season is added in one place; every season the calendar can switch on has a drawing.
   it("has a drawing for every drawn season", () => {
     for (const season of drawnSeasons) expect(hasSeasonArt(season)).toBe(true);
-    expect(hasSeasonArt("spring")).toBe(false);
   });
 
   it("is off when the person switched it off, and marks <html> accordingly", () => {
@@ -52,6 +63,8 @@ describe("season", () => {
     expect(container.querySelector(".season-art")).toBeNull();
     rerender(<SeasonArt force variant="static" />);
     expect(container.querySelector(".season-art--static.season-art--autumn")).toBeInTheDocument();
+    rerender(<SeasonArt season="spring" variant="static" />);
+    expect(container.querySelector(".season-art--static.season-art--spring")).toBeInTheDocument();
   });
 
   it("draws snow in winter on the same screens, with no screen changed", () => {
