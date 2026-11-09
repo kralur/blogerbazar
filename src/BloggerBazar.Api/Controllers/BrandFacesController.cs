@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Features.Reviews;
 using BloggerBazar.Application.Validation;
 using BloggerBazar.Api.Contracts.BrandFaces;
@@ -13,6 +14,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("catalog")]
+    [BrowserSessionAllowed]
     public async Task<ActionResult<BrandFaceCatalogResult>> Catalog(
         [FromQuery] string? query,
         [FromQuery] string? city,
@@ -34,6 +36,7 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
     }
 
     [HttpGet]
+    [BrowserSessionAllowed]
     public async Task<ActionResult<IReadOnlyList<BrandFacePublicDto>>> Search([FromQuery] string? query, [FromQuery] string? city, [FromQuery] string? category, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         GetTelegramUser();
@@ -41,6 +44,7 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
     }
 
     [HttpGet("{id:guid}")]
+    [BrowserSessionAllowed]
     public async Task<ActionResult<BrandFacePublicDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         GetTelegramUser();
@@ -49,6 +53,7 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
     }
 
     [HttpGet("{id:guid}/reviews")]
+    [BrowserSessionAllowed]
     public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
     {
         GetTelegramUser();

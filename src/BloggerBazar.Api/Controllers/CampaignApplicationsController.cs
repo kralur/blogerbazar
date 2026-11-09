@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Campaigns;
 using BloggerBazar.Application.Features.Deals;
@@ -51,6 +52,7 @@ public sealed class CampaignApplicationsController(ISender sender, ITelegramWebA
     }
 
     [HttpPost("{applicationId:guid}/accept")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<DealDto>(StatusCodes.Status201Created)]
     public async Task<ActionResult<DealDto>> Accept(Guid applicationId, CancellationToken cancellationToken)
     {

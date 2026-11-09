@@ -15,6 +15,7 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
 {
     public const string BotToken = "123456:integration-test-token";
     public const string AdminWebOrigin = "https://admin.integration.test";
+    public const string MiniAppOrigin = "https://app.integration.test";
 
     private readonly PostgreSqlContainer postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -70,6 +71,10 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         // Web admin on, with room for every sign-in of a test class (the test server has no client address).
         builder.UseSetting("AdminWeb:Origin", AdminWebOrigin);
         builder.UseSetting("RateLimiting:AdminWebSignIn:PermitLimit", "1000");
+        // Browser sign-in for company members (D64 stage B) on the Mini App's address.
+        builder.UseSetting("Telegram:MiniAppUrl", MiniAppOrigin + "/");
+        builder.UseSetting("Telegram:BotUsername", "BloggerBazarIntegrationBot");
+        builder.UseSetting("RateLimiting:BrowserSignIn:PermitLimit", "1000");
         // Every anonymous request of the whole run shares one address budget here; the route walk alone takes dozens.
         builder.UseSetting("RateLimiting:PermitLimit", "100000");
         // Owner counts only while the id is in the settings (audit 2026-10-22): the owners the tests seed are listed.

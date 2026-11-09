@@ -30,6 +30,9 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
         return actorId ?? throw new AuthenticationException("Telegram initData authorization is required.");
     }
 
+    // True when this request comes from a company member's browser session rather than from Telegram.
+    protected bool IsBrowserSession => BrowserRequestGuard.Current(HttpContext) is not null;
+
     // The phone on a profile is the one Telegram confirmed for this user, never the form value (D41).
     protected static async Task<string> RequireVerifiedPhoneAsync(ISender sender, long telegramUserId, CancellationToken cancellationToken) =>
         await sender.Send(new GetVerifiedPhoneQuery(telegramUserId), cancellationToken)
@@ -41,6 +44,13 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
         const string scheme = "tma ";
         if (!authorization.StartsWith(scheme, StringComparison.OrdinalIgnoreCase))
         {
+            // D64 stage B: on a [BrowserSessionAllowed] action a company member's browser session stands in for
+            // initData; the stored name keeps GetCurrentPlatformUser from changing it.
+            if (BrowserRequestGuard.Current(HttpContext) is { } browser)
+            {
+                return new TelegramWebAppUser(browser.User.TelegramUserId, browser.User.Username, browser.User.FirstName);
+            }
+
             throw new AuthenticationException("Telegram initData authorization is required.");
         }
 

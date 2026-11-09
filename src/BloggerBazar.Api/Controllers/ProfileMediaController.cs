@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Features.BrandFaces;
 using BloggerBazar.Api.Contracts.ProfileMedia;
 using BloggerBazar.Application.Abstractions.Media;
@@ -15,6 +16,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class ProfileMediaController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpPut("{target}")]
+    [BrowserSessionAllowed]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(ProfileMediaOptions.DefaultMaxFileSizeBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = ProfileMediaOptions.DefaultMaxFileSizeBytes)]
@@ -77,6 +79,7 @@ public sealed class ProfileMediaController(ISender sender, ITelegramWebAppValida
     }
 
     [HttpDelete("{target}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -87,10 +90,11 @@ public sealed class ProfileMediaController(ISender sender, ITelegramWebAppValida
         return NoContent();
     }
 
-    private static ProfileMediaTarget ParseTarget(string target) => target.ToLowerInvariant() switch
+    private ProfileMediaTarget ParseTarget(string target) => target.ToLowerInvariant() switch
     {
-        "blogger" => ProfileMediaTarget.Blogger,
-        "brand-face" => ProfileMediaTarget.BrandFace,
+        // A browser session acts for the company only.
+        "blogger" when !IsBrowserSession => ProfileMediaTarget.Blogger,
+        "brand-face" when !IsBrowserSession => ProfileMediaTarget.BrandFace,
         "business" => ProfileMediaTarget.Business,
         _ => throw new InvalidOperationException("Profile not found.")
     };

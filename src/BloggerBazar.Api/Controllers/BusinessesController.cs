@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Validation;
 using BloggerBazar.Api.Contracts.Businesses;
 using BloggerBazar.Application.Abstractions.Security;
@@ -13,6 +14,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class BusinessesController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("me")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<MyBusinessProfileDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MyBusinessProfileDto>> GetMine(CancellationToken cancellationToken)
@@ -23,6 +25,7 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
     }
 
     [HttpGet("{id:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<PublicBusinessProfileDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicBusinessProfileDto>> GetById(Guid id, CancellationToken cancellationToken)
@@ -34,6 +37,7 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
     }
 
     [HttpGet("{id:guid}/reviews")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<BusinessReviewsDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<BusinessReviewsDto>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
     {
@@ -52,6 +56,7 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
     }
 
     [HttpPut("me")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<BusinessProfileDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<BusinessProfileDto>> Update(CreateBusinessProfileRequest request, CancellationToken cancellationToken)
     {

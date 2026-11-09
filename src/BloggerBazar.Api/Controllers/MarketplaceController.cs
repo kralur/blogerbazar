@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Marketplace;
 using MediatR;
@@ -12,6 +13,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class MarketplaceController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("home")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<MarketplaceHomeDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<MarketplaceHomeDto>> GetHome(CancellationToken cancellationToken)
     {
@@ -20,6 +22,7 @@ public sealed class MarketplaceController(ISender sender, ITelegramWebAppValidat
     }
 
     [HttpGet("taxonomy/categories")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<IReadOnlyList<string>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<string>>> GetCategories(CancellationToken cancellationToken)
     {

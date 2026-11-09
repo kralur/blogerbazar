@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Contacts;
 using BloggerBazar.Domain.Enums;
@@ -11,6 +12,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class ContactsController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("{targetType}/{targetId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<ContactDetailsDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<ContactDetailsDto>> Get(ContactTargetType targetType, Guid targetId, CancellationToken cancellationToken)
     {

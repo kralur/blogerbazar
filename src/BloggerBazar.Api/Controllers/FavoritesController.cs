@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Favorites;
 using MediatR;
@@ -10,6 +11,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class FavoritesController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet]
+    [BrowserSessionAllowed]
     [ProducesResponseType<FavoritesPageDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<FavoritesPageDto>> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
@@ -18,6 +20,7 @@ public sealed class FavoritesController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpPost("{bloggerId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<FavoriteOperationDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<FavoriteOperationDto>> Save(Guid bloggerId, CancellationToken cancellationToken)
     {
@@ -26,6 +29,7 @@ public sealed class FavoritesController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpDelete("{bloggerId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<FavoriteOperationDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<FavoriteOperationDto>> Delete(Guid bloggerId, CancellationToken cancellationToken)
     {
@@ -34,6 +38,7 @@ public sealed class FavoritesController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpGet("brand-faces")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<BrandFaceFavoritesPageDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<BrandFaceFavoritesPageDto>> GetBrandFaces([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
@@ -42,6 +47,7 @@ public sealed class FavoritesController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpPost("brand-faces/{brandFaceId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<FavoriteOperationDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<FavoriteOperationDto>> SaveBrandFace(Guid brandFaceId, CancellationToken cancellationToken)
     {
@@ -50,6 +56,7 @@ public sealed class FavoritesController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpDelete("brand-faces/{brandFaceId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<FavoriteOperationDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<FavoriteOperationDto>> DeleteBrandFace(Guid brandFaceId, CancellationToken cancellationToken)
     {
