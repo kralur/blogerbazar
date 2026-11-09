@@ -2031,3 +2031,84 @@ html[data-telegram-theme] .profile-hero__account { margin-top: .75rem; padding: 
 .browser-sessions__item + .browser-sessions__item { border-top: 1px solid var(--bb-border); }
 .browser-sessions__current { margin-left: .5rem; padding: .125rem .5rem; border-radius: 999px; background: var(--bb-accent); color: var(--bb-accent-text) !important; font-size: .75rem !important; font-weight: 700; vertical-align: .1em; }
 .browser-sessions__end { flex: none; min-height: 2.5rem; padding-inline: 1rem; }
+
+/* D64 stage B2: the website on a computer (outside Telegram, 1024 px and wider). A lapis side menu takes the place
+   of the bottom bar; the content gets the width of a desktop page; lists become grids; sheets open as dialogs in
+   the middle. Telegram keeps the phone layout untouched (html[data-desktop] is never set there). */
+html[data-desktop="true"] {
+  --desktop-nav-width: 15.5rem;
+  --desktop-content-width: 76rem;
+  --desktop-detail-width: 54rem;
+  /* The free space on each side of the content column, so lapis bands can reach the window's edges. */
+  --desktop-outside: max(0px, calc((100vw - var(--desktop-nav-width) - var(--desktop-content-width)) / 2));
+}
+html[data-desktop="true"] body { background: var(--bb-background); }
+html[data-desktop="true"] .app-shell { max-width: none; box-shadow: none; overflow-x: clip; }
+html[data-desktop="true"] .app-shell:not(.app-shell--first-run) { padding-left: var(--desktop-nav-width); }
+html[data-desktop="true"] .bottom-nav { display: none; }
+html[data-desktop="true"] .app-top-scrim { display: none; }
+
+.desktop-nav {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 45;
+  display: flex;
+  width: var(--desktop-nav-width);
+  flex-direction: column;
+  gap: .25rem;
+  padding: 1.75rem 1rem 1.5rem;
+  overflow-y: auto;
+  background: var(--bb-lapis);
+  color: #FFFFFF;
+}
+.desktop-nav__brand { margin: 0 .75rem; color: var(--bb-accent); font-family: var(--bb-display); font-size: 1.125rem; font-weight: 800; letter-spacing: .01em; text-decoration: none; }
+.desktop-nav__company { margin: .375rem .75rem 1.25rem; color: var(--bb-lapis-text); font-size: .875rem; line-height: 1.35; overflow-wrap: anywhere; }
+.desktop-nav__items { display: grid; gap: .125rem; margin: 0; padding: 0; list-style: none; }
+.desktop-nav__items--secondary { margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, .14); }
+.desktop-nav__item { position: relative; display: flex; min-height: 2.75rem; align-items: center; gap: .75rem; padding: .5rem .75rem; border-radius: .75rem; color: #FFFFFF; font-size: .9375rem; font-weight: 650; text-decoration: none; }
+.desktop-nav__item:hover { background: rgba(255, 255, 255, .1); }
+.desktop-nav__item[aria-current="page"] { background: var(--bb-accent); color: var(--bb-accent-text); }
+.desktop-nav__item:focus-visible { outline: 3px solid var(--bb-accent); outline-offset: 2px; }
+.desktop-nav__item .action-badge { position: static; margin-left: auto; }
+
+/* Pages: a desktop column instead of the phone column. */
+html[data-desktop="true"] .screen { width: 100%; max-width: var(--desktop-content-width); margin: 0 auto; padding: 2rem 2.5rem 3rem !important; min-height: 100vh; }
+/* Lists open with a lapis band across the whole content area, the atlas strip under it, as on the phone. */
+html[data-desktop="true"] .list-hero,
+html[data-desktop="true"] .home-hero { margin: -2rem calc(-2.5rem - var(--desktop-outside)) 0; padding: 2.25rem calc(2.5rem + var(--desktop-outside)) 1.75rem; }
+html[data-desktop="true"] .list-hero + .atlas-strip,
+html[data-desktop="true"] .home-hero + .atlas-strip { margin: 0 calc(-2.5rem - var(--desktop-outside)); }
+html[data-desktop="true"] .page-header__title { font-size: 2rem; line-height: 1.15; }
+/* Detail pages, forms and settings read better in a narrower column. */
+html[data-desktop="true"] .screen:not(:has(.list-hero, .home-hero)) { max-width: calc(var(--desktop-detail-width) + 5rem); }
+html[data-desktop="true"] .toast-enter { left: calc(var(--desktop-nav-width) + 1rem); }
+html[data-desktop="true"] .catalog-search__results,
+html[data-desktop="true"] .home-list { grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1rem; align-items: start; }
+html[data-desktop="true"] .request-list { grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr)); gap: .75rem; align-items: start; }
+html[data-desktop="true"] .catalog-search__end,
+html[data-desktop="true"] .catalog-search__results > [role="status"],
+html[data-desktop="true"] .catalog-search__results > .ds-empty { grid-column: 1 / -1; }
+
+/* Sheets and dialogs open in the middle of the window, not from its bottom edge. */
+html[data-desktop="true"] .bottom-sheet-backdrop { place-items: center; padding: 2rem; }
+html[data-desktop="true"] .bottom-sheet { max-width: 34rem; max-height: min(85vh, 48rem); border-radius: var(--bb-radius-overlay); }
+html[data-desktop="true"] .bottom-sheet__grip .ds-dialog__handle { display: none; }
+
+/* Bars fixed to the bottom stay inside the content column. */
+html[data-desktop="true"] .fixed-action-bar,
+html[data-desktop="true"] .wizard-action-bar,
+html[data-desktop="true"] .wizard-screen__top-scrim { left: var(--desktop-nav-width); width: auto; max-width: none; margin: 0; }
+html[data-desktop="true"] .fixed-action-bar { right: 0; padding-inline: max(2.5rem, calc((100vw - var(--desktop-nav-width) - var(--desktop-content-width)) / 2 + 2.5rem)); }
+html[data-desktop="true"] .wizard-action-bar { right: 0; padding-inline: max(2.5rem, calc((100vw - var(--desktop-nav-width) - 40rem) / 2)); }
+
+/* Forms (wizards): a 40rem column, the lapis header band across the content area like the lists. */
+html[data-desktop="true"] .wizard-screen { padding-inline: 2.5rem; }
+html[data-desktop="true"] .wizard-screen__content { --wizard-bleed: max(2.5rem, calc((100vw - var(--desktop-nav-width) - 40rem) / 2)); max-width: 40rem; }
+html[data-desktop="true"] .wizard-header { margin-inline: calc(-1 * var(--wizard-bleed)); padding-inline: var(--wizard-bleed); }
+html[data-desktop="true"] .wizard-header + .atlas-strip { margin-inline: calc(-1 * var(--wizard-bleed)); }
+
+/* The sign-in page fills the window: the lapis and atlas behind a readable column. */
+html[data-desktop="true"] .app-shell--first-run .ftue-screen { min-height: 100vh; }
+html[data-desktop="true"] .browser-sign-in .ftue-screen__layout { width: min(100%, 36rem); margin: 0 auto; padding-top: 4rem; }
+html[data-desktop="true"] .browser-sign-in .ftue-screen__title { font-size: 2.75rem; }
+html[data-desktop="true"] .browser-sign-in .price-tag-number { font-size: 4rem; min-width: 10rem; }
