@@ -823,4 +823,8 @@
   ,"home.seasonOff": "Выключить"
   ,"home.seasonHide": "Скрыть подсказку"
   ,"settings.saved": "Сохранено"
+  ,"settings.atlasSound": "Звук атласа"
+  ,"settings.atlasSoundHint": "Щипок струны на каждом узоре, когда ведёте полосу атласа пальцем. По умолчанию выключен."
+  ,"settings.atlasSoundOn": "Включён"
+  ,"settings.atlasSoundOff": "Выключен"
 }

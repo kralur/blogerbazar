@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type CSSProperties } from "react";
+import { pluckForTile, warmAtlasSound } from "../lib/atlasSound";
 
 // The atlas (abrband) strip under the Home hero (D62): three flames with three-layer cores in the bazaar colours on
 // lapis, drawn at 176x48 and scaled to the strip height, with a light feathering filter so the edges read as weave
@@ -19,14 +20,23 @@ export function AtlasStrip({ fixed = false, height = 26 }: { fixed?: boolean; he
     const el = ref.current;
     if (el && !fixed) el.scrollLeft = el.scrollWidth / 3;
   }, [fixed]);
-  const recentre = () => {
+  // Each tile the finger drags past answers with a selection tick and, when the sound is on, a plucked note
+  // (owner, 2026-11-09). A recentre jump moves by several tiles at once and is not a tick.
+  const lastTile = useRef<number | null>(null);
+  const onScroll = () => {
     const el = ref.current;
     if (!el || tile <= 0) return;
+    const index = Math.floor(el.scrollLeft / tile);
+    if (lastTile.current !== null && Math.abs(index - lastTile.current) === 1) {
+      (window as Window & { Telegram?: { WebApp?: { HapticFeedback?: { selectionChanged?: () => void } } } }).Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
+      pluckForTile(index);
+    }
+    lastTile.current = index;
     const third = el.scrollWidth / 3;
     const jump = Math.floor(third / tile) * tile;
     if (jump <= 0) return;
-    if (el.scrollLeft < tile) el.scrollLeft += jump;
-    else if (el.scrollLeft > el.scrollWidth - el.clientWidth - tile) el.scrollLeft -= jump;
+    if (el.scrollLeft < tile) { el.scrollLeft += jump; lastTile.current = Math.floor(el.scrollLeft / tile); }
+    else if (el.scrollLeft > el.scrollWidth - el.clientWidth - tile) { el.scrollLeft -= jump; lastTile.current = Math.floor(el.scrollLeft / tile); }
   };
   const flame = (x: number, outer: string, middle: string, core: string) => <>
     <path d={`M${x} 0 C${x + 12} 10 ${x + 16} 20 ${x + 16} 24 C${x + 16} 28 ${x + 12} 38 ${x} 48 C${x - 12} 38 ${x - 16} 28 ${x - 16} 24 C${x - 16} 20 ${x - 12} 10 ${x} 0 Z`} fill={outer} />
@@ -34,7 +44,7 @@ export function AtlasStrip({ fixed = false, height = 26 }: { fixed?: boolean; he
     <path d={`M${x} 17 C${x + 3} 20 ${x + 4} 22 ${x + 4} 24 C${x + 4} 26 ${x + 3} 28 ${x} 31 C${x - 3} 28 ${x - 4} 26 ${x - 4} 24 C${x - 4} 22 ${x - 3} 20 ${x} 17 Z`} fill={core} />
   </>;
   return (
-    <div aria-hidden="true" className={fixed ? "atlas-strip atlas-strip--fixed" : "atlas-strip"} onScroll={fixed ? undefined : recentre} ref={ref} style={{ height, "--atlas-tile": `${tile}px` } as CSSProperties}>
+    <div aria-hidden="true" className={fixed ? "atlas-strip atlas-strip--fixed" : "atlas-strip"} onPointerDown={fixed ? undefined : warmAtlasSound} onScroll={fixed ? undefined : onScroll} ref={ref} style={{ height, "--atlas-tile": `${tile}px` } as CSSProperties}>
       <div className="atlas-strip__track" style={{ height }}>
         <svg height={height} preserveAspectRatio="none" style={{ width: fixed ? "100%" : `calc(100% + ${tile}px)` }}>
           <defs>

@@ -7,6 +7,7 @@ import { PageHeader } from "../components/PageHeader";
 import { SeasonLeaves } from "../components/SeasonLeaves";
 import { BottomNav, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
+import { isAtlasSoundOn, setAtlasSound } from "../lib/atlasSound";
 import { getSeasonPreference, isSeasonDrawn, seasonOf, setSeasonPreference, type SeasonPreference } from "../lib/season";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../lib/themePreference";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -24,6 +25,13 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
   // D63: the seasonal design row appears only while the calendar season has drawn artefacts.
   const [seasonPreference, setSeasonPreferenceState] = useState<SeasonPreference>(getSeasonPreference);
   const seasonDrawn = isSeasonDrawn();
+  const [atlasSound, setAtlasSoundState] = useState<boolean>(isAtlasSoundOn);
+  const chooseAtlasSound = (on: boolean) => {
+    if (on === atlasSound) return;
+    setAtlasSoundState(on);
+    setAtlasSound(on);
+    saved();
+  };
   const calendarSeason = seasonOf(new Date());
   // Owners and admins (platform roles 3 and 4) get the way into the admin panel; nobody else sees it.
   // The account loaded at app start draws these rows at once (no jump a second later); the request below refreshes them.
@@ -95,6 +103,13 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
           </button>
         </div>
       </div>}
+      <div className="settings-row settings-row--stacked">
+        <span className="settings-row__text"><strong>{t("settings.atlasSound")}</strong><span className="text-sm text-brand-muted">{t("settings.atlasSoundHint")}</span></span>
+        <div aria-label={t("settings.atlasSound")} className="language-switcher language-switcher--three language-switcher--two" role="group">
+          <button aria-pressed={atlasSound} className="language-switcher__option" onClick={() => chooseAtlasSound(true)} type="button">{t("settings.atlasSoundOn")}</button>
+          <button aria-pressed={!atlasSound} className="language-switcher__option" onClick={() => chooseAtlasSound(false)} type="button">{t("settings.atlasSoundOff")}</button>
+        </div>
+      </div>
       {tipsEnabled !== null && <div className="settings-row settings-row--stacked">
         <span className="settings-row__text"><strong>{t("settings.tips")}</strong><span className="text-sm text-brand-muted">{t("settings.tipsHint")}</span></span>
         <div aria-label={t("settings.tips")} className="language-switcher language-switcher--three language-switcher--two" role="group">

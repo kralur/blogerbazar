@@ -822,4 +822,8 @@
   ,"home.seasonOff": "O‘chirish"
   ,"home.seasonHide": "Maslahatni yashirish"
   ,"settings.saved": "Saqlandi"
+  ,"settings.atlasSound": "Atlas ovozi"
+  ,"settings.atlasSoundHint": "Atlas chizig‘ini barmoq bilan yurgizganda har bir naqshda tor chertiladi. Odatda o‘chiq."
+  ,"settings.atlasSoundOn": "Yoqilgan"
+  ,"settings.atlasSoundOff": "O‘chiq"
 }
