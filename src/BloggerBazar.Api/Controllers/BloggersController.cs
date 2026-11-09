@@ -15,11 +15,14 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class BloggersController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("me")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<MyBloggerProfileDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MyBloggerProfileDto>> GetMine(CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
+        // A browser session acts for the company only: there it has no blogger profile.
+        if (IsBrowserSession) return NotFound();
         var profile = await sender.Send(new GetMyBloggerProfileQuery(actor.Id), cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
     }

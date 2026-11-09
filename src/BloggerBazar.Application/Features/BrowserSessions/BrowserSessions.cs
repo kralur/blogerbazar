@@ -52,6 +52,18 @@ public static class BrowserSessionCodes
     public const string CompanyRequired = "browser_company_required";
     // The number chosen in the Mini App is not the one the browser shows; the sign-in is cancelled.
     public const string NumberMismatch = "browser_number_mismatch";
+    // The link was opened from a chat with somebody else: somebody sent it, so the sign-in is cancelled.
+    public const string LinkShared = "browser_link_shared";
+}
+
+// A sign-in link is for the screen it was shown on. Telegram signs where a direct link was opened from: nothing for a
+// QR code or a link opened from the browser, "sender" for the person's own chat (Saved Messages), anything else for a
+// chat with somebody else. A link that arrived in such a chat was sent by somebody, which is how a company is taken
+// over with someone else's sign-in ("open this and tap 42"), so it cannot be confirmed.
+public static class BrowserLaunch
+{
+    public static bool IsFromAnotherChat(string? launchChatType) =>
+        launchChatType is not null && !string.Equals(launchChatType, "sender", StringComparison.Ordinal);
 }
 
 // Whether this person may sign in to a browser now, as a D26 string.
@@ -60,6 +72,7 @@ public static class BrowserEligibility
     public const string Ok = "ok";
     public const string SwitchToBusiness = "switchToBusiness";
     public const string NoCompany = "noCompany";
+    public const string SharedLink = "sharedLink";
 
     public static async Task<(string Eligibility, BusinessMembership? Membership)> CheckAsync(PlatformUser user, IBusinessProfileRepository businesses, CancellationToken cancellationToken)
     {
@@ -122,8 +135,8 @@ public sealed record BrowserSessionDto(
 public sealed record BrowserSessionIdentity(BrowserSession Session, PlatformUser User);
 
 public sealed record StartBrowserSignInCommand(BrowserDevice Device) : IRequest<BrowserSignInStarted>;
-public sealed record PreviewBrowserSignInQuery(long TelegramUserId, string Code) : IRequest<BrowserSignInPreviewDto>;
-public sealed record ConfirmBrowserSignInCommand(long TelegramUserId, string Code, int Number) : IRequest;
+public sealed record PreviewBrowserSignInQuery(long TelegramUserId, string Code, string? LaunchChatType = null) : IRequest<BrowserSignInPreviewDto>;
+public sealed record ConfirmBrowserSignInCommand(long TelegramUserId, string Code, int Number, string? LaunchChatType = null) : IRequest;
 public sealed record DeclineBrowserSignInCommand(long TelegramUserId, string Code) : IRequest;
 public sealed record CheckBrowserSignInCommand(string Code, string Secret, string? CorrelationId = null) : IRequest<BrowserSignInCheck>;
 public sealed record GetBrowserSessionsQuery(long TelegramUserId, string? CurrentSessionId) : IRequest<IReadOnlyList<BrowserSessionDto>>;
@@ -183,6 +196,12 @@ public sealed class PreviewBrowserSignInHandler(IBrowserSessionStore sessions, I
         var signIn = await BrowserSignInLookup.RequirePendingAsync(sessions, query.Code, cancellationToken);
         var user = await users.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
         var (eligibility, membership) = user is null ? (BrowserEligibility.NoCompany, null) : await BrowserEligibility.CheckAsync(user, businesses, cancellationToken);
+        if (BrowserLaunch.IsFromAnotherChat(query.LaunchChatType))
+        {
+            // No numbers to tap and no company name for a link somebody sent.
+            return new BrowserSignInPreviewDto(signIn.Device.Browser, signIn.Device.Os, signIn.CreatedAtUtc, signIn.ExpiresAtUtc, [], BrowserEligibility.SharedLink, null);
+        }
+
         return new BrowserSignInPreviewDto(signIn.Device.Browser, signIn.Device.Os, signIn.CreatedAtUtc, signIn.ExpiresAtUtc, signIn.Options, eligibility, membership?.Business.Name);
     }
 }
@@ -193,6 +212,12 @@ public sealed class ConfirmBrowserSignInHandler(IBrowserSessionStore sessions, I
     public async Task Handle(ConfirmBrowserSignInCommand command, CancellationToken cancellationToken)
     {
         var signIn = await BrowserSignInLookup.RequirePendingAsync(sessions, command.Code, cancellationToken);
+        if (BrowserLaunch.IsFromAnotherChat(command.LaunchChatType))
+        {
+            await sessions.DecideSignInAsync(command.Code, null, cancellationToken);
+            throw new BusinessRuleConflictException(BrowserSessionCodes.LinkShared, "A sign-in link sent in a chat cannot be confirmed.");
+        }
+
         var user = await users.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
             ?? throw new BusinessRuleConflictException(BrowserSessionCodes.CompanyRequired, "Only a member of a company signs in to a browser.");
         switch ((await BrowserEligibility.CheckAsync(user, businesses, cancellationToken)).Eligibility)

@@ -44,10 +44,13 @@ public sealed class CampaignApplicationsController(ISender sender, ITelegramWebA
     }
 
     [HttpGet("me")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<IReadOnlyList<MyCampaignApplicationDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<MyCampaignApplicationDto>>> GetMine(CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
+        // A blogger's own applications; a browser session acts for the company only.
+        if (IsBrowserSession) return Ok(Array.Empty<MyCampaignApplicationDto>());
         return Ok(await sender.Send(new GetMyCampaignApplicationsQuery(actor.Id), cancellationToken));
     }
 
