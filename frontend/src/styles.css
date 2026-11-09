@@ -1899,3 +1899,36 @@ html[data-telegram-theme="dark"] .my-campaign-card__budget strong { color: var(-
 .my-campaign-card__applications { display: inline-flex; align-items: center; gap: .3rem; color: var(--bb-tile-text); font-weight: 800; white-space: nowrap; }
 .my-campaign-card__applications svg { width: 1rem; height: 1rem; }
 .catalog-search__results:has(> .my-campaign-card) { gap: 1.5rem; padding-top: .5rem; }
+
+/* D63, package C: Profile and the public company page. */
+.screen > .profile-hero + .atlas-strip,
+.screen > .company-hero + .atlas-strip { margin-top: 0 !important; }
+.profile-hero__account { margin-top: .75rem; padding: 0; border: 0; background: transparent !important; box-shadow: none; color: #FFFFFF; }
+.company-hero .page-header { min-height: 0; }
+.company-hero .page-header:not(:has(.management-back-link:not([hidden]))) + .mt-4 { margin-top: .25rem; }
+.profile-hero__account .text-brand-muted { color: var(--bb-lapis-text); }
+.profile-hero__account .ds-badge { border-color: transparent; background: rgba(255, 255, 255, .14); color: #FFFFFF; }
+.profile-hero__roles { margin-top: 1rem; }
+.profile-hero__roles h2 { margin: 0 0 .5rem; color: var(--bb-lapis-text); font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.profile-hero .profile-role-card,
+.profile-hero .profile-role-card--selected { padding: .75rem .625rem; border: 2px solid #FFFFFF; border-radius: .875rem; background: #FFFFFF; color: var(--bb-ink); box-shadow: none; }
+.profile-hero .profile-role-card svg,
+.profile-hero .profile-role-card--selected svg { display: grid; width: 1.75rem; height: 1.75rem; padding: .3rem; border-radius: .5rem; background: #E8EDF7; color: var(--bb-ink); }
+.profile-hero .profile-role-card--selected { border-color: var(--bb-accent); box-shadow: 0 0 0 1px var(--bb-accent); }
+.profile-hero .profile-role-card--selected svg { background: var(--bb-accent); }
+.profile-hero .profile-role-card .text-brand-muted,
+.profile-hero .profile-role-card--selected .text-brand-muted { color: #4A5675; }
+.profile-hero .profile-role-card--missing:not(.profile-role-card--selected) { border: 2px dashed rgba(255, 255, 255, .4); background: transparent; color: #FFFFFF; }
+.profile-hero .profile-role-card--missing:not(.profile-role-card--selected) svg { background: rgba(255, 255, 255, .14); color: #FFFFFF; opacity: 1; }
+.profile-hero .profile-role-card--missing:not(.profile-role-card--selected) .text-brand-muted { color: var(--bb-lapis-text); }
+.company-hero h1 { font-family: var(--bb-display); font-weight: 700; letter-spacing: -.01em; color: #FFFFFF; }
+.company-hero .text-brand-muted { color: var(--bb-lapis-text); }
+.company-hero .text-brand-warning { color: var(--bb-saffron); }
+.company-hero__facts { margin-top: 2.5rem; gap: .75rem; }
+.company-hero__facts .fact-grid__item { position: relative; padding: 1.125rem .75rem .875rem; border: 0; border-radius: .375rem .375rem .875rem .875rem; background: #FFFFFF; color: var(--bb-ink); text-align: center; }
+.company-hero__facts .fact-grid__item:nth-child(2) { margin-top: .75rem; }
+.company-hero__facts .fact-grid__item::before { content: ""; position: absolute; top: -1.5rem; left: 50%; width: 2px; height: 1.5rem; background: var(--bb-saffron); transform: translateX(-50%); }
+.company-hero__facts .fact-grid__item::after { content: ""; position: absolute; top: .375rem; left: 50%; width: .5rem; height: .5rem; border: 2px solid #D5DDEE; border-radius: 50%; background: var(--bb-lapis); transform: translateX(-50%); }
+.company-hero__facts .fact-grid__item dt { color: #4A5675; font-size: .75rem; font-weight: 750; }
+.company-hero__facts .fact-grid__item dd { font-family: var(--bb-display); font-size: 1.125rem; font-weight: 700; line-height: 1.15; color: var(--bb-lapis); }
+@media (max-width: 359px) { .company-hero__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

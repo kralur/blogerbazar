@@ -7,6 +7,7 @@ import { cityLabel, useI18n } from "../i18n";
 import { formatBudgetRange, formatShortDate } from "../lib/currency";
 import { ContactList } from "../components/ContactList";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
+import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { profileRoute } from "../lib/profileRoutes";
@@ -45,6 +46,7 @@ export function BusinessDetails({ id }: { id: string }) {
   if (!profile) return <div className="screen screen--with-nav"><ErrorState onRetry={() => void load()} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   const website = profile.websiteUrl ? [{ kind: "website" as const, value: profile.websiteUrl }] : [];
   return <div className="screen screen--with-nav">
+    <ListHero className="company-hero">
     <PageHeader back={{ href: "#/campaigns", label: t("common.back") }} />
     <div className="mt-4 text-center">
       <div className="mx-auto w-fit"><Avatar name={profile.name} size="xl" src={profile.logoUrl} /></div>
@@ -52,11 +54,12 @@ export function BusinessDetails({ id }: { id: string }) {
       <p className="mt-1 text-sm text-brand-muted">{[t("common.business"), profile.city ? cityLabel(profile.city, language) : null].filter(Boolean).join(" · ")}</p>
       {profile.reviewsCount > 0 && <div className="mt-2 flex justify-center"><Rating count={profile.reviewsCount} value={profile.rating} /></div>}
     </div>
-    {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
-    <FactGrid className="mt-5" facts={[
+    <FactGrid className="mt-5 company-hero__facts" facts={[
       { label: t("company.completedDeals"), value: String(profile.completedDealsCount) },
       { label: t("company.onPlatformSince"), value: formatShortDate(profile.createdAtUtc, language, { year: true }) }
     ]} />
+    </ListHero>
+    {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     {profile.description && <DetailSection title={t("company.about")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{profile.description}</p></Card></DetailSection>}
     <DetailSection title={t("company.openCampaigns")}>
       {profile.openCampaigns.length === 0
