@@ -65,3 +65,22 @@ describe("season", () => {
     expect(screen.queryByText(ru("home.season.autumn"))).toBeNull();
   });
 });
+
+// A leaf can be caught and carried (owner, 2026-11-09); released, it keeps falling from where the finger left it.
+describe("dragging a leaf", () => {
+  beforeEach(() => { localStorage.clear(); vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 10, 9)); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("follows the pointer and resumes the fall on release", () => {
+    const { container } = render(<SeasonLeaves variant="falling" />);
+    const leaf = container.querySelector(".season-leaves--falling > g") as SVGGElement;
+    fireEvent.pointerDown(leaf, { clientX: 40, clientY: 100, pointerId: 1 });
+    expect(leaf.style.animation).toBe("none");
+    fireEvent.pointerMove(leaf, { clientX: 90, clientY: 300, pointerId: 1 });
+    expect(leaf.style.transform).toContain("translate(");
+    fireEvent.pointerUp(leaf, { clientX: 90, clientY: 300, pointerId: 1 });
+    expect(leaf.style.animation).toBe("");
+    expect(leaf.style.transform).toBe("");
+    expect(leaf.style.animationDelay).toMatch(/^-\d/);
+  });
+});

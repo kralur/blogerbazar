@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getCurrentPlatformUser } from "../api/marketplace";
 import { AtlasBackground } from "../components/AtlasBackground";
+import { SeasonLeaves } from "../components/SeasonLeaves";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { Button, Icon } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -44,6 +45,7 @@ export function PhoneVerification({ onVerified }: { onVerified: () => void }) {
   const note = state === "declined" ? t("phone.declined") : state === "failed" ? t("phone.notReceived") : null;
   return <main className="ftue-screen ftue-screen--atlas">
     <AtlasBackground />
+    <SeasonLeaves variant="falling" />
     <div className="ftue-screen__layout">
       <section className="ftue-screen__content" data-content-header>
         <div className="ftue-screen__language"><LanguageSwitcher /></div>

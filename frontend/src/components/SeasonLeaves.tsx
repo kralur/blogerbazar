@@ -1,4 +1,4 @@
-import { type CSSProperties } from "react";
+import { type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { seasonOf, useSeason } from "../lib/season";
 
 // Autumn artefacts (D63): chinar leaves, the autumn tree of Tashkent and Samarkand. "static" pins three leaves to
@@ -44,8 +44,67 @@ export function SeasonLeaves({ force = false, variant }: { force?: boolean; vari
     </svg>;
   }
   return <svg aria-hidden="true" className="season-leaves season-leaves--falling" preserveAspectRatio="none" viewBox="0 0 390 844">
-    {fallingLeaves.map((leaf, index) => <g key={index} style={{ "--leaf-x": `${leaf.x}px`, "--leaf-opacity": leaf.opacity, "--leaf-delay": `-${leaf.delay}s`, "--leaf-duration": `${leaf.duration}s`, "--leaf-sway": `${leaf.sway}s` } as CSSProperties}>
+    {fallingLeaves.map((leaf, index) => <g key={index} onPointerCancel={releaseLeaf} onPointerDown={grabLeaf} onPointerMove={dragLeaf} onPointerUp={releaseLeaf} style={{ "--leaf-x": `${leaf.x}px`, "--leaf-opacity": leaf.opacity, "--leaf-delay": `-${leaf.delay}s`, "--leaf-duration": `${leaf.duration}s`, "--leaf-sway": `${leaf.sway}s` } as CSSProperties}>
       <g><Leaf color={leaf.color} rotate={(leaf.x * 7) % 60} scale={leaf.scale} /></g>
     </g>)}
   </svg>;
+}
+
+// The fall runs from -60 to 880 in the 390x844 drawing; a released leaf continues from where the finger left it.
+const fallStart = -60;
+const fallLength = 940;
+const grabbed = new WeakMap<Element, { dx: number; dy: number }>();
+
+// Finger (or mouse) position in the drawing's units, whatever size the svg is stretched to.
+function drawingPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
+  const matrix = svg.getScreenCTM?.();
+  if (!matrix) return { x: clientX, y: clientY };
+  const point = new DOMPoint(clientX, clientY).matrixTransform(matrix.inverse());
+  return { x: point.x, y: point.y };
+}
+
+function currentTranslate(element: Element) {
+  // Browsers answer with a matrix; a plain translate() is what an inline style reads back as in tests.
+  const transform = getComputedStyle(element).transform || (element as HTMLElement | SVGElement).style?.transform || "";
+  const matrix = /matrix\(([^)]+)\)/.exec(transform);
+  if (matrix) { const parts = matrix[1].split(",").map(Number); return { x: parts[4], y: parts[5] }; }
+  const translate = /translate\(\s*(-?[\d.]+)px,\s*(-?[\d.]+)px\)/.exec(transform);
+  if (translate) return { x: Number(translate[1]), y: Number(translate[2]) };
+  return { x: 0, y: fallStart };
+}
+
+function grabLeaf(event: ReactPointerEvent<SVGGElement>) {
+  const leaf = event.currentTarget;
+  const svg = leaf.ownerSVGElement;
+  if (!svg) return;
+  const at = currentTranslate(leaf);
+  const finger = drawingPoint(svg, event.clientX, event.clientY);
+  grabbed.set(leaf, { dx: finger.x - at.x, dy: finger.y - at.y });
+  leaf.style.animation = "none";
+  leaf.style.transform = `translate(${at.x}px, ${at.y}px)`;
+  leaf.style.opacity = "1";
+  leaf.setPointerCapture?.(event.pointerId);
+}
+
+function dragLeaf(event: ReactPointerEvent<SVGGElement>) {
+  const leaf = event.currentTarget;
+  const grip = grabbed.get(leaf);
+  const svg = leaf.ownerSVGElement;
+  if (!grip || !svg) return;
+  const finger = drawingPoint(svg, event.clientX, event.clientY);
+  leaf.style.transform = `translate(${finger.x - grip.dx}px, ${finger.y - grip.dy}px)`;
+}
+
+function releaseLeaf(event: ReactPointerEvent<SVGGElement>) {
+  const leaf = event.currentTarget;
+  if (!grabbed.has(leaf)) return;
+  grabbed.delete(leaf);
+  const at = currentTranslate(leaf);
+  const duration = parseFloat(leaf.style.getPropertyValue("--leaf-duration")) || 20;
+  const progress = Math.min(Math.max((at.y - fallStart) / fallLength, 0), 1);
+  leaf.style.setProperty("--leaf-x", `${Math.min(Math.max(at.x, 0), 390)}px`);
+  leaf.style.transform = "";
+  leaf.style.opacity = "";
+  leaf.style.animation = "";
+  leaf.style.animationDelay = `-${(progress * duration).toFixed(2)}s`;
 }

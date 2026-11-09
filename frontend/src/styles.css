@@ -1791,7 +1791,8 @@ html .ftue-screen--atlas .ftue-primary-button:disabled { border-color: rgba(255,
 .season-leaves--static { top: var(--app-content-top, 0px); right: 0; width: 11.25rem; height: 8.75rem; }
 .season-preview .season-leaves--static { top: 0; }
 .season-leaves--falling { inset: 0; width: 100%; height: 100%; overflow: hidden; }
-.season-leaves--falling > g { animation: season-leaf-fall var(--leaf-duration, 20s) linear var(--leaf-delay, 0s) infinite; }
+.season-leaves--falling > g { animation: season-leaf-fall var(--leaf-duration, 20s) linear var(--leaf-delay, 0s) infinite; pointer-events: auto; cursor: grab; touch-action: none; }
+.season-leaves--falling > g:active { cursor: grabbing; }
 .season-leaves--falling > g > g { animation: season-leaf-sway var(--leaf-sway, 3.5s) ease-in-out var(--leaf-delay, 0s) infinite alternate; transform-box: fill-box; transform-origin: center; }
 @keyframes season-leaf-fall { 0% { transform: translate(var(--leaf-x), -60px); opacity: 0; } 6% { opacity: var(--leaf-opacity, .8); } 94% { opacity: var(--leaf-opacity, .8); } 100% { transform: translate(var(--leaf-x), 880px); opacity: 0; } }
 @keyframes season-leaf-sway { from { transform: translateX(-16px) rotate(-14deg); } to { transform: translateX(16px) rotate(14deg); } }
