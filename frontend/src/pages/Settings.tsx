@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { getCurrentPlatformUser, peekCurrentPlatformUser, setBotTips } from "../api/marketplace";
+import { signOutBrowser } from "../api/browserSessions";
+import { getCurrentPlatformUser, normalizeMarketplaceRole, peekCurrentPlatformUser, setBotTips } from "../api/marketplace";
 import { AccountActions } from "../components/AccountActions";
+import { BrowserSessions } from "../components/BrowserSessions";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { AtlasStrip } from "../components/AtlasStrip";
 import { PageHeader } from "../components/PageHeader";
 import { SeasonArt } from "../components/SeasonArt";
-import { BottomNav, Toast } from "../components/ui";
+import { BottomNav, Button, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { isAtlasSoundOn, setAtlasSound } from "../lib/atlasSound";
+import { isBrowserSession } from "../lib/browserSession";
 import { getSeasonPreference, isSeasonDrawn, seasonOf, setSeasonPreference, type SeasonPreference } from "../lib/season";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../lib/themePreference";
 import { useTelegram } from "../telegram/TelegramProvider";
@@ -18,7 +21,8 @@ const themeOptions: Array<{ value: ThemePreference; labelKey: string }> = [
   { value: "dark", labelKey: "settings.themeDark" }
 ];
 
-export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
+// onBrowserSignedOut: in a browser session (D64 stage B), this browser has just been signed out.
+export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionReset?: () => void; onBrowserSignedOut?: () => void }) {
   const { t } = useI18n();
   const { haptic } = useTelegram();
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
@@ -36,7 +40,11 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
   // Owners and admins (platform roles 3 and 4) get the way into the admin panel; nobody else sees it.
   // The account loaded at app start draws these rows at once (no jump a second later); the request below refreshes them.
   const known = peekCurrentPlatformUser();
+  const inBrowser = isBrowserSession();
   const [isAdmin, setIsAdmin] = useState(() => Boolean(known && known.role >= 3 && !known.isBlocked));
+  // D64 stage B: company members see their browsers; in a browser the list is always there.
+  const [isBusiness, setIsBusiness] = useState(() => normalizeMarketplaceRole(known?.selectedMarketplaceRole) === "Business");
+  const [signingOut, setSigningOut] = useState(false);
   // D54: bot tips; null until the account is known, so the switch never shows a guess.
   const [tipsEnabled, setTipsEnabled] = useState<boolean | null>(() => known ? known.tipsEnabled ?? true : null);
   const [toast, setToast] = useState<{ id: number; message: string; tone: "success" | "error" } | null>(null);
@@ -46,6 +54,7 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
     getCurrentPlatformUser().then((user) => {
       if (!active) return;
       setIsAdmin(user.role >= 3 && !user.isBlocked);
+      setIsBusiness(normalizeMarketplaceRole(user.selectedMarketplaceRole) === "Business");
       setTipsEnabled(user.tipsEnabled ?? true);
     }).catch(() => undefined);
     return () => { active = false; };
@@ -64,6 +73,12 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
       setTipsEnabled(previous);
       setToast({ id: Date.now(), message: t("settings.tipsFailed"), tone: "error" });
     }
+  };
+
+  const signOut = async () => {
+    setSigningOut(true);
+    try { await signOutBrowser(); } catch { /* the cookie ends with the session anyway */ }
+    onBrowserSignedOut?.();
   };
 
   const chooseSeason = (value: SeasonPreference) => {
@@ -117,9 +132,12 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
           <button aria-pressed={!tipsEnabled} className="language-switcher__option" onClick={() => void chooseTips(false)} type="button">{t("settings.tipsOff")}</button>
         </div>
       </div>}
-      {isAdmin && <a className="settings-row" href="#/admin"><span className="settings-row__text"><strong>{t("settings.adminPanel")}</strong><span className="text-sm text-brand-muted">{t("settings.adminPanelHint")}</span></span><span aria-hidden="true">›</span></a>}
+      {isAdmin && !inBrowser && <a className="settings-row" href="#/admin"><span className="settings-row__text"><strong>{t("settings.adminPanel")}</strong><span className="text-sm text-brand-muted">{t("settings.adminPanelHint")}</span></span><span aria-hidden="true">›</span></a>}
     </div>
-    <AccountActions onSessionReset={onSessionReset} />
+    {(isBusiness || inBrowser) && <BrowserSessions onSignedOut={onBrowserSignedOut} />}
+    {inBrowser
+      ? <div className="grid gap-2"><Button aria-busy={signingOut} className="w-full" disabled={signingOut} onClick={() => void signOut()} type="button" variant="secondary">{t("browser.signOut")}</Button><p className="text-center text-xs text-brand-muted">{t("browser.telegramOnly")}</p></div>
+      : <AccountActions onSessionReset={onSessionReset} />}
     <p className="text-center text-xs text-brand-muted">BloggerBazar · {t("common.version", { version: "1.0.0" })}</p>
     <Toast key={toast?.id} message={toast?.message ?? ""} tone={toast?.tone ?? "success"} />
     <BottomNav />

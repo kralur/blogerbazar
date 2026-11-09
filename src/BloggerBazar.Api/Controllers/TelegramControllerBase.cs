@@ -27,6 +27,12 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
         }
 
         var actorId = await HttpContext.RequestServices.GetRequiredService<AdminWebRequestGuard>().TryAuthenticateAsync(HttpContext, cancellationToken);
+        if (actorId is null && BrowserCookies.Read(Request, BrowserCookies.Session) is not null)
+        {
+            // A company member's browser session is not an admin login (D64 stage B).
+            throw new TelegramOnlyException();
+        }
+
         return actorId ?? throw new AuthenticationException("Telegram initData authorization is required.");
     }
 
