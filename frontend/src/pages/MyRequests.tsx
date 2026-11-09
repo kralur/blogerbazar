@@ -20,6 +20,7 @@ import { subscribeDealCache } from "../data/dealCache";
 import { seenDealsChangedEvent, unseenActiveDealIds } from "../data/seenDeals";
 import { dealRoute, dealStatusLabelKey, dealStatusTone } from "../lib/dealStatus";
 import { offerFormatLabelKey, offerRoute, offerStateLabelKey, offerStateTone } from "../lib/offerStatus";
+import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { RequestRow } from "../components/RequestRow";
 import { CounterpartyRow } from "../components/CounterpartyRow";
@@ -163,11 +164,13 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
 
   return (
     <div className="screen screen--with-nav">
+      <ListHero>
       <PageHeader actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
 
       <div aria-label={t("requests.title")} className="catalog-search__segments catalog-search__segments--three" role="group">
         {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews + actionCounts.newDeals]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button">{label}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}
       </div>
+      </ListHero>
 
       {view === "offers" ? (
         offersLoading ? <RequestListSkeleton label={t("offers.loading")} /> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState icon="send" subtitle={t(isCreator ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (

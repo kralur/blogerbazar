@@ -22,5 +22,9 @@ export function SearchSkeleton({ count, compact = false }: { count: number; comp
 
 export function CatalogState({ title, subtitle, icon, onRetry, actionLabel, compact = false }: { title: string; subtitle: string; icon: string; onRetry?: () => void; actionLabel?: string; compact?: boolean }) {
   const { t } = useI18n();
-  return <div className={`catalog-search__state${compact ? " catalog-search__state--compact" : ""}`} role="status"><span aria-hidden="true" className="catalog-search__state-icon"><Icon name={icon} /></span><h2>{title}</h2><p>{subtitle}</p>{onRetry && <button className="catalog-search__primary-button" onClick={onRetry} type="button">{actionLabel ?? t("common.retry")}</button>}</div>;
+  const body = <><span aria-hidden="true" className="catalog-search__state-icon"><Icon name={icon} /></span><h2>{title}</h2><p>{subtitle}</p></>;
+  const action = onRetry && <button className="catalog-search__primary-button" onClick={onRetry} type="button">{actionLabel ?? t("common.retry")}</button>;
+  // D63: the full-size state is a price tag on a cord; the compact one between loaded items stays a quiet card.
+  if (compact) return <div className="catalog-search__state catalog-search__state--compact" role="status">{body}{action}</div>;
+  return <div className="catalog-search__state tag-state" role="status"><div className="tag-state__card">{body}</div>{action}</div>;
 }

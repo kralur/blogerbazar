@@ -11,6 +11,7 @@ import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useI18n } from "../i18n";
 import { campaignStatusLabel } from "../lib/campaignStatus";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
+import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
@@ -110,14 +111,18 @@ export function MyCampaigns() {
   }, [refreshCampaigns]);
 
   return <div aria-hidden={!active} className="campaign-management-screen my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
+    <ListHero>
     <PageHeader actions={access === "allowed" ? <a className="my-campaigns__create" href="#/campaigns?create=1">{t("myCampaigns.create")}</a> : undefined} back={{ href: "#/profile", label: t("myCampaigns.backAria") }} eyebrow={t("myCampaigns.eyebrow")} title={t("myCampaigns.title")} />
-    {access === "checking" ? <SearchSkeleton count={3} /> : access === "denied" ? <CatalogState icon="lock" subtitle={t("myCampaigns.deniedSubtitle")} title={t("myCampaigns.deniedTitle")} /> : access === "failed" ? <CatalogState icon="refresh" onRetry={refreshAccess} subtitle={t("myCampaigns.accessErrorSubtitle")} title={t("myCampaigns.accessErrorTitle")} /> : <>
+    {access === "allowed" && <>
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("myCampaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("myCampaigns.searchPlaceholder")} value={query} /></div>
     <div className="my-campaigns__controls">
       <FilterSelect label={t("myCampaigns.statusFilter")} onChange={(value) => setStatus(value === "" ? undefined : Number(value) as MyCampaignStatus)} options={[["", t("common.all")], ...([0, 1, 2, 3] as MyCampaignStatus[]).map((value) => [String(value), campaignStatusLabel(value, t)])]} value={status == null ? "" : String(status)} />
       <FilterSelect label={t("search.sort")} onChange={(value) => setSort(value as MyCampaignSort)} options={sortOptions(t)} value={sort} />
       {hasFilters && <button className="catalog-search__reset-all" onClick={reset} type="button">{t("myCampaigns.clearFilters")}</button>}
     </div>
+    </>}
+    </ListHero>
+    {access === "checking" ? <SearchSkeleton count={3} /> : access === "denied" ? <CatalogState icon="lock" subtitle={t("myCampaigns.deniedSubtitle")} title={t("myCampaigns.deniedTitle")} /> : access === "failed" ? <CatalogState icon="refresh" onRetry={refreshAccess} subtitle={t("myCampaigns.accessErrorSubtitle")} title={t("myCampaigns.accessErrorTitle")} /> : <>
     {!(failure && !loadedInitialResult) && <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("myCampaigns.loading") : t("myCampaigns.found", { count: total })}</p>}
     <section aria-busy={loading || loadingMore} aria-live="polite" className="catalog-search__results">
       {loading && !loadedInitialResult && <SearchSkeleton count={3} />}

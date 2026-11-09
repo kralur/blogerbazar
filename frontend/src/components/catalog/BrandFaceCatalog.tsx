@@ -13,6 +13,7 @@ import { BottomSheet, Icon, SearchBar } from "../ui";
 import { CatalogState, FilterSelect, SearchSkeleton, ActiveFilterChips } from "./CatalogShared";
 import { CatalogTypeSegmentedControl } from "./CatalogTypeSegmentedControl";
 import { usePaginatedCatalog } from "./usePaginatedCatalog";
+import { ListHero } from "../ListHero";
 import { PageHeader } from "../PageHeader";
 import { useScreenRefresh } from "../../hooks/useScreenRefresh";
 
@@ -171,11 +172,13 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
   const activeChips = useMemo(() => buildActiveChips(appliedFilters, t), [appliedFilters, t]);
 
   return <div aria-hidden={!active} className="catalog-search screen screen--with-nav" hidden={!active}>
+    <ListHero>
     <PageHeader eyebrow={t("search.eyebrow")} title={t("search.title")} />
     <CatalogTypeSegmentedControl onChange={onSelectType} value="brand-face" />
     <div className="catalog-search__searchbar"><SearchBar className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} placeholder={t("search.brandFacePlaceholder")} value={query} /></div>
     <div className="catalog-search__controls"><button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("search.filters")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button><label className="catalog-search__sort"><span>{t("search.sort")}</span><select aria-label={t("search.sort")} onChange={(event) => changeSort(event.target.value as BrandFaceCatalogSort)} value={appliedFilters.sort ?? "promoted"}>{sortOptions(t).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetFilters} />
+    </ListHero>
     <BottomSheet id={filterSheetId} onClose={() => setFiltersOpen(false)} open={filtersOpen} title={t("search.filters")}><div className="catalog-search__sheet-content">
       <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, categoryLabel(category)])]} value={draftFilters.category ?? ""} />
       <FilterSelect label={t("common.city")} onChange={(value) => setDraft("city", value)} options={[["", t("common.any")], ...uzbekistanRegions.map((city) => [city, cityLabel(city)])]} value={draftFilters.city ?? ""} />

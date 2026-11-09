@@ -10,6 +10,7 @@ import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useI18n } from "../i18n";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
+import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
@@ -29,11 +30,13 @@ export function Favorites() {
   }, [canManageBrandFaceFavorites, ready]);
 
   return <div className="screen screen--with-nav">
+    <ListHero>
     <PageHeader back={{ href: "#/profile", label: t("favorites.backAria") }} eyebrow={t("profile.eyebrow")} title={activeTab === "brandFace" ? t("favorites.brandFacesTitle") : t("favorites.title")} />
     {canManageBrandFaceFavorites && <div aria-label={t("favorites.creatorType")} className="catalog-search__segments mt-5" role="group">
       <FavoriteTabButton label={t("favorites.typeBloggers")} onClick={() => setActiveTab("blogger")} selected={activeTab === "blogger"} />
       <FavoriteTabButton label={t("favorites.typeBrandFaces")} onClick={() => setActiveTab("brandFace")} selected={activeTab === "brandFace"} />
     </div>}
+    </ListHero>
     <div className="mt-5" hidden={activeTab !== "blogger"}><BloggerFavorites active={rootScreenVisible && activeTab === "blogger"} /></div>
     {canManageBrandFaceFavorites && <div className="mt-5" hidden={activeTab !== "brandFace"}><BrandFaceFavorites active={rootScreenVisible && activeTab === "brandFace"} /></div>}
     <BottomNav />

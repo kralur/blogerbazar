@@ -20,12 +20,14 @@ describe("BloggerCard", () => {
 
   it("shows the lowest known price as a starting price and omits unknown facts", () => {
     const { rerender } = render(<I18nProvider><BloggerCard blogger={{ ...blogger, storiesPrice: 300000, reelsPrice: 250000, engagementRate: 8.4 }} /></I18nProvider>);
-    expect(screen.getByText(/^250.*000 сум$/)).toBeInTheDocument();
+    // D63: the price is a figure with the unit under it; ER sits in the one-line facts.
+    expect(screen.getByText(/^250.*000$/)).toBeInTheDocument();
+    expect(screen.getByText(ru("currency.uzs"))).toBeInTheDocument();
     expect(screen.getByText(translate("card.priceFrom", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getByText(ru("search.er"))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`${ru("search.er")} 8,4`))).toBeInTheDocument();
 
     rerender(<I18nProvider><BloggerCard blogger={blogger} /></I18nProvider>);
-    expect(screen.queryByText(ru("search.er"))).not.toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(`${ru("search.er")} `))).not.toBeInTheDocument();
     expect(screen.queryByText(ru("card.priceFrom"))).not.toBeInTheDocument();
     expect(screen.queryByText("-")).not.toBeInTheDocument();
   });

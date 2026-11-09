@@ -16,6 +16,7 @@ import { formatShortDate, formatNumericInput, localDay, normalizeNumericInput } 
 import { uzbekistanRegions } from "../lib/taxonomy";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { replaceHistoryRoute } from "../navigation/hashNavigation";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
@@ -252,6 +253,7 @@ export function Campaigns() {
   };
 
   return <div aria-hidden={!active} className="campaign-catalog catalog-search screen screen--with-nav" hidden={!active}>
+    <ListHero>
     <PageHeader actions={canCreate ? <><a className="page-header__secondary" href="#/my-campaigns">{t("myCampaigns.open")}</a>{!isDefaultEmpty && <button aria-label={t("campaigns.createAria")} className="my-campaigns__create" onClick={() => setCreateOpen(true)} type="button"><Icon className="h-4 w-4" name="plus" />{t("campaigns.createShort")}</button>}</> : createCapability === "blogger" ? <a className="page-header__secondary" href="#/requests?tab=applications">{t("applications.title")}</a> : undefined} eyebrow={t("campaigns.eyebrow")} title={t("campaigns.title")} />
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("campaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("campaigns.search")} value={query} /></div>
     <div className="catalog-search__controls">
@@ -259,6 +261,7 @@ export function Campaigns() {
       <label className="catalog-search__sort"><span>{t("search.sort")}</span><select aria-label={t("search.sort")} onChange={(event) => changeSort(event.target.value as CampaignCatalogSort)} value={appliedFilters.sort ?? "promoted"}>{sortOptions(t).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     </div>
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetCatalog} showReset={activeChips.length >= 2} />
+    </ListHero>
     {!(failure && !loadedInitialResult) && <p aria-live="polite" className="catalog-search__results-count">{loading && !loadedInitialResult ? t("campaigns.loading") : t("campaigns.found", { count: total })}</p>}
     <section aria-busy={loading || loadingMore} aria-live="polite" className="catalog-search__results">
       {loading && !loadedInitialResult ? <SearchSkeleton count={3} /> : failure && !loadedInitialResult ? <CatalogState icon="refresh" onRetry={refreshCatalog} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "campaigns.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "campaigns.loadFailedTitle")} /> : !failure && items.length === 0 ? <CatalogState actionLabel={hasFilterOrQuery ? t("search.resetAll") : canCreate ? t("campaigns.create") : needsBusinessProfile ? t("campaigns.createBusinessProfile") : undefined} icon="search" onRetry={hasFilterOrQuery ? resetCatalog : canCreate ? () => setCreateOpen(true) : needsBusinessProfile ? () => { window.location.hash = "/business"; } : undefined} subtitle={hasFilterOrQuery ? t("campaigns.emptySearchSubtitle") : canCreate ? t("campaigns.emptyBusinessSubtitle") : needsBusinessProfile ? t("campaigns.emptyBusinessProfileSubtitle") : t("campaigns.emptySubtitle")} title={hasFilterOrQuery ? t("campaigns.emptySearchTitle") : t("campaigns.emptyTitle")} /> : null}

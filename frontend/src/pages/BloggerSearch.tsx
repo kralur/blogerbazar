@@ -13,6 +13,7 @@ import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatCurrency, formatNumber, formatPercentage } from "../lib/currency";
 import { uzbekistanRegions } from "../lib/taxonomy";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
@@ -195,6 +196,7 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
   const activeChips = useMemo(() => buildActiveChips(appliedFilters, t), [appliedFilters, t]);
 
   return <div aria-hidden={!active} className="catalog-search screen screen--with-nav" hidden={!active}>
+    <ListHero>
     <PageHeader eyebrow={t("search.eyebrow")} title={t("search.title")} />
     <CatalogTypeSegmentedControl onChange={onSelectType} value="blogger" />
     <div className="catalog-search__searchbar"><SearchBar className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} placeholder={t("search.placeholder")} value={query} /></div>
@@ -203,6 +205,7 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
       <label className="catalog-search__sort"><span>{t("search.sort")}</span><select aria-label={t("search.sort")} onChange={(event) => changeSort(event.target.value as NonNullable<BloggerSearchFilters["sort"]>)} value={appliedFilters.sort ?? "popular"}>{sortOptions(t).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     </div>
     <ActiveFilterChips chips={activeChips} onRemove={removeFilter} onReset={resetFilters} />
+    </ListHero>
     <BottomSheet id={filterSheetId} onClose={() => setFiltersOpen(false)} open={filtersOpen} title={t("search.filters")}><div className="catalog-search__sheet-content">
       <FilterSelect label={t("common.categories")} onChange={(value) => setDraft("category", value)} options={[["", t("common.all")], ...categories.map((category) => [category, categoryLabel(category)])]} value={draftFilters.category ?? ""} />
       <FilterSelect label={t("common.city")} onChange={(value) => setDraft("city", value)} options={[["", t("common.any")], ...uzbekistanRegions.map((city) => [city, cityLabel(city)])]} value={draftFilters.city ?? ""} />

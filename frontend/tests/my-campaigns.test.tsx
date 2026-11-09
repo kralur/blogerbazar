@@ -97,7 +97,7 @@ describe("My Campaigns management", () => {
     expect(api.getMyCampaigns).toHaveBeenCalledWith({ page: 1, pageSize: 20, query: undefined, sort: "newest", status: undefined }, expect.any(AbortSignal));
     expect(screen.getByRole("link", { name: translate("myCampaigns.openAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign/campaign-a");
     expect(screen.getByText("0 заявок")).toBeInTheDocument();
-    expect(screen.getByText("от 500", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText(/500.000/)).toBeInTheDocument();
   });
 
   it("does not fetch or expose management controls outside the active Business role", async () => {

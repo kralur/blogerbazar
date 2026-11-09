@@ -239,14 +239,15 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 export function EmptyState({ title, subtitle, icon = "search" }: { title: string; subtitle: string; icon?: string }) {
+  // D63: an empty state is a price tag on a cord, like the examples on the first screen.
   return (
-    <Card className="ds-state" role="status">
-      <div aria-hidden="true" className="ds-state__icon mx-auto grid h-14 w-14 place-items-center">
-        <Icon name={icon} />
+    <div className="ds-state tag-state" role="status">
+      <div className="tag-state__card">
+        <div aria-hidden="true" className="ds-state__icon"><Icon name={icon} /></div>
+        <h3 className="ds-state__title">{title}</h3>
+        <p className="ds-state__subtitle">{subtitle}</p>
       </div>
-      <h3 className="ds-state__title mt-4">{title}</h3>
-      <p className="ds-state__subtitle mt-2">{subtitle}</p>
-    </Card>
+    </div>
   );
 }
 
