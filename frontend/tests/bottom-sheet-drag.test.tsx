@@ -37,4 +37,16 @@ describe("bottom sheet drag", () => {
     vi.advanceTimersByTime(300);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  // Owner, 2026-11-09: the cross in the sheet's head did nothing with a mouse, the grip had captured its pointer.
+  it("leaves the close button alone: a press on it is not a drag, and it closes", () => {
+    const onClose = vi.fn();
+    render(<I18nProvider><Modal onClose={onClose} open title="Sheet"><p>body</p></Modal></I18nProvider>);
+    const close = screen.getByRole("button", { name: "Закрыть" });
+    fireEvent.pointerDown(close, { clientY: 100, pointerId: 1, pointerType: "mouse", button: 0 });
+    expect(sheet().classList.contains("bottom-sheet--dragging")).toBe(false);
+    fireEvent.pointerUp(close, { clientY: 100, pointerId: 1, pointerType: "mouse", button: 0 });
+    fireEvent.click(close);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

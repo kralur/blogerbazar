@@ -1,7 +1,11 @@
+import { useAtlasOn } from "../lib/atlasPreference";
+
 // A full-screen atlas (abrband) behind the first-run screens (owner, 2026-11-07: variant 1, the crisp one): two
 // staggered rows of the AtlasStrip flames under a lapis veil that gets denser towards the bottom, so the white text
-// and the cards stay readable. Decorative only.
+// and the cards stay readable. Decorative only; gone when the atlas is switched off in Settings.
 export function AtlasBackground() {
+  const on = useAtlasOn();
+  if (!on) return null;
   const flame = (x: number, outer: string, middle: string, core: string) => <>
     <path d={`M${x} 0 C${x + 12} 10 ${x + 16} 20 ${x + 16} 24 C${x + 16} 28 ${x + 12} 38 ${x} 48 C${x - 12} 38 ${x - 16} 28 ${x - 16} 24 C${x - 16} 20 ${x - 12} 10 ${x} 0 Z`} fill={outer} />
     <path d={`M${x} 8 C${x + 7} 15 ${x + 9} 20 ${x + 9} 24 C${x + 9} 28 ${x + 7} 33 ${x} 40 C${x - 7} 33 ${x - 9} 28 ${x - 9} 24 C${x - 9} 20 ${x - 7} 15 ${x} 8 Z`} fill={middle} />

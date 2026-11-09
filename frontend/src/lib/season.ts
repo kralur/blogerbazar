@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 
-// Seasonal artefacts on top of the "Bazar" design (D63): the season follows the calendar, the person can switch
-// it off on their phone. Only seasons with drawn artefacts show anything; the rest fall back to the plain design.
+// Seasonal artefacts on top of the "Bazar" design (D63): by default the season follows the calendar; the person can
+// pin any of the four seasons or the standard design on their phone (owner, 2026-11-09, package I).
 export type Season = "winter" | "spring" | "summer" | "autumn";
-export type SeasonPreference = "auto" | "off";
+export type SeasonPreference = "auto" | "off" | Season;
+export const seasons: readonly Season[] = ["autumn", "winter", "spring", "summer"];
+// Every season has a drawing in `components/SeasonArt.tsx`.
+export const drawnSeasons: readonly Season[] = seasons;
 
 const storageKey = "bloggerbazar.season";
 const noteKey = "bloggerbazar.seasonNoteDismissed";
 export const seasonPreferenceChangedEvent = "bloggerbazar:season-preference-changed";
-// Seasons with drawings in `components/SeasonArt.tsx`; the others fall back to the plain design.
-export const drawnSeasons: readonly Season[] = ["autumn", "winter"];
 
 export function seasonOf(date: Date): Season {
   const month = date.getMonth();
@@ -21,7 +22,10 @@ export function seasonOf(date: Date): Season {
 
 export function getSeasonPreference(): SeasonPreference {
   try {
-    return localStorage.getItem(storageKey) === "off" ? "off" : "auto";
+    const value = localStorage.getItem(storageKey);
+    if (value === "off") return "off";
+    if (value && (seasons as readonly string[]).includes(value)) return value as Season;
+    return "auto";
   } catch {
     return "auto";
   }
@@ -36,16 +40,12 @@ export function setSeasonPreference(value: SeasonPreference) {
   window.dispatchEvent(new Event(seasonPreferenceChangedEvent));
 }
 
-// The season the design shows right now, or null for the plain design.
+// The season the design shows right now, or null for the standard design: the pinned one, else the calendar's.
 export function activeSeason(date = new Date()): Season | null {
-  if (getSeasonPreference() === "off") return null;
-  const season = seasonOf(date);
+  const preference = getSeasonPreference();
+  if (preference === "off") return null;
+  const season = preference === "auto" ? seasonOf(date) : preference;
   return drawnSeasons.includes(season) ? season : null;
-}
-
-// Whether the current calendar season has artefacts at all (the settings row is shown only then).
-export function isSeasonDrawn(date = new Date()) {
-  return drawnSeasons.includes(seasonOf(date));
 }
 
 // `data-season` on <html> drives the atlas palette in CSS.

@@ -159,11 +159,12 @@ The landing (D61) and, from 2026-11-07, the Mini App Home (D62) follow the "Baza
   steps as beads on a cord (lime done and current, saffron cord).
 - Sheets (`Modal`, `BottomSheet`): edge to edge, title in the display face, a grip the finger can pull; a short pull
   snaps back, a long or fast one closes.
-- Atlas strip feedback (D63, package F): a selection tick per tile while the finger drags the strip; an optional
-  plucked pentatonic note (`lib/atlasSound.ts`, off by default, switch in Settings).
-- Seasons (D63): `lib/season.ts` sets `data-season` on `<html>` from the calendar (autumn and winter drawn so far);
-  the atlas is drawn from `--bb-atlas-*` tokens so a season recolours it without touching lime or tile.
-  `components/SeasonArt.tsx` picks the season's drawing for the two layers every season shares
-  (`components/season/FallingArt.tsx`: static pieces on the Home hero, falling and catchable pieces on the first
-  screens); autumn is chinar leaves, winter is snowflakes. A new season is one module plus an entry in `SeasonArt`. The person switches the season off in
+- Atlas switch (D63, package I): `lib/atlasPreference.ts`; off, the strip and the first-screen background are not
+  drawn (the Settings previews still are). The strip is silent: no tick, no sound.
+- Seasons (D63): `lib/season.ts` sets `data-season` on `<html>`: the calendar season by default, or the one the
+  person pinned in Settings (five tiles: standard and the four seasons); the atlas is drawn from `--bb-atlas-*`
+  tokens so a season recolours it without touching lime or tile. `components/SeasonArt.tsx` picks the season's
+  drawing for the two layers every season shares (`components/season/FallingArt.tsx`: static pieces on the Home
+  hero, falling or rising and catchable pieces on the first screens): autumn chinar leaves, winter snowflakes,
+  spring apricot blossom, summer fireflies. The person switches the season off in
   Settings or from the note under the Home strip.

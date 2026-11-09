@@ -1792,6 +1792,20 @@ html .ftue-screen--atlas .ftue-primary-button:disabled { border-color: rgba(255,
   --bb-atlas-flame-3: #FFFFFF; --bb-atlas-core-3: #5B8DD6; --bb-atlas-dot-3: #17307A;
   --bb-atlas-thread-1: #B6D7F0; --bb-atlas-thread-2: #FFFFFF; --bb-atlas-thread-3: #5B8DD6;
 }
+/* Spring: apricot blossom. Pink and fresh green flames with cream and lapis cores, green and pink threads. */
+[data-season="spring"] {
+  --bb-atlas-flame-1: #F4A7B9; --bb-atlas-core-1: #17307A; --bb-atlas-dot-1: #FFF6E5;
+  --bb-atlas-flame-2: #8CC63F; --bb-atlas-core-2: #0C1838; --bb-atlas-dot-2: #F4A7B9;
+  --bb-atlas-flame-3: #FFF6E5; --bb-atlas-core-3: #C2185B; --bb-atlas-dot-3: #8CC63F;
+  --bb-atlas-thread-1: #8CC63F; --bb-atlas-thread-2: #F4A7B9; --bb-atlas-thread-3: #F2B01E;
+}
+/* Summer: a hot evening. Sun-yellow, orange and turquoise flames on plum cores, melon-red threads. */
+[data-season="summer"] {
+  --bb-atlas-flame-1: #FFE066; --bb-atlas-core-1: #7A1E3A; --bb-atlas-dot-1: #FFFFFF;
+  --bb-atlas-flame-2: #2EC4B6; --bb-atlas-core-2: #0C1838; --bb-atlas-dot-2: #FFE066;
+  --bb-atlas-flame-3: #FF9F1C; --bb-atlas-core-3: #FFFFFF; --bb-atlas-dot-3: #7A1E3A;
+  --bb-atlas-thread-1: #FF6B6B; --bb-atlas-thread-2: #FFE066; --bb-atlas-thread-3: #2EC4B6;
+}
 /* The two layers every season draws (components/season/FallingArt.tsx): static pieces in the corner of the Home
    hero, falling pieces over a first screen. The pieces set their own pace and reach through --art-* variables. */
 .home-hero { position: relative; overflow: hidden; }
@@ -1804,10 +1818,16 @@ html .ftue-screen--atlas .ftue-primary-button:disabled { border-color: rgba(255,
 .season-art--falling > g:active { cursor: grabbing; }
 .season-art--falling > g > g { animation: season-art-sway var(--art-sway, 3.5s) ease-in-out var(--art-delay, 0s) infinite alternate; transform-box: fill-box; transform-origin: center; }
 @keyframes season-art-fall { 0% { transform: translate(var(--art-x), -60px); opacity: 0; } 6% { opacity: var(--art-opacity, .8); } 94% { opacity: var(--art-opacity, .8); } 100% { transform: translate(var(--art-x), 880px); opacity: 0; } }
+.season-art--rising > g { animation-name: season-art-rise; }
+@keyframes season-art-rise { 0% { transform: translate(var(--art-x), 880px); opacity: 0; } 6% { opacity: var(--art-opacity, .8); } 94% { opacity: var(--art-opacity, .8); } 100% { transform: translate(var(--art-x), -60px); opacity: 0; } }
+/* Fireflies breathe; the negative --art-delay spreads the pulses. */
+.season-firefly { animation: season-firefly-pulse 2.6s ease-in-out var(--art-delay, 0s) infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes season-firefly-pulse { from { opacity: .45; transform: scale(.8); } to { opacity: 1; transform: scale(1.1); } }
 @keyframes season-art-sway { from { transform: translateX(calc(-1 * var(--art-sway-x, 16px))) rotate(calc(-1 * var(--art-sway-deg, 14deg))); } to { transform: translateX(var(--art-sway-x, 16px)) rotate(var(--art-sway-deg, 14deg)); } }
 @media (prefers-reduced-motion: reduce) {
   .season-art--falling > g { animation: none; transform: translate(var(--art-x), 640px); opacity: var(--art-opacity, .8); }
   .season-art--falling > g > g { animation: none; }
+  .season-firefly { animation: none; }
 }
 .ftue-screen--atlas .season-art--falling { position: absolute; z-index: 0; }
 /* The quiet line under the Home strip while a season is on. */
@@ -1816,8 +1836,9 @@ html .ftue-screen--atlas .ftue-primary-button:disabled { border-color: rgba(255,
 .season-note__action { flex: none; color: var(--bb-tile-text); font-weight: 800; text-decoration: underline; text-decoration-color: var(--bb-tile); text-underline-offset: .2em; }
 .season-note__hide { flex: none; width: 1.75rem; height: 1.75rem; border-radius: 50%; color: var(--bb-text-secondary); font-size: 1.125rem; line-height: 1; }
 .season-note__hide:active { background: var(--bb-surface-secondary); }
-/* Settings: two small previews of the strip, the season one with its pieces. */
+/* Settings: five small previews of the strip, the standard design across the top and the four seasons with their pieces. */
 .season-previews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; }
+.season-preview--standard { grid-column: 1 / -1; height: 3.75rem; }
 .season-preview { position: relative; height: 5.375rem; overflow: hidden; border: 2px solid transparent; border-radius: .875rem; background: var(--bb-lapis); color: #FFFFFF; text-align: left; }
 .season-preview[aria-pressed="true"] { border-color: var(--bb-accent); }
 .season-preview:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }

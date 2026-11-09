@@ -7,8 +7,8 @@ import { PageHeader } from "../components/PageHeader";
 import { SeasonArt } from "../components/SeasonArt";
 import { BottomNav, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
-import { isAtlasSoundOn, setAtlasSound } from "../lib/atlasSound";
-import { getSeasonPreference, isSeasonDrawn, seasonOf, setSeasonPreference, type SeasonPreference } from "../lib/season";
+import { isAtlasOn, setAtlas } from "../lib/atlasPreference";
+import { getSeasonPreference, seasonOf, seasons, setSeasonPreference, type Season, type SeasonPreference } from "../lib/season";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../lib/themePreference";
 import { useTelegram } from "../telegram/TelegramProvider";
 
@@ -22,17 +22,17 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
   const { t } = useI18n();
   const { haptic } = useTelegram();
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
-  // D63: the seasonal design row appears only while the calendar season has drawn artefacts.
+  // D63: five tiles, the standard design and the four seasons; "auto" follows the calendar and shows as its season.
   const [seasonPreference, setSeasonPreferenceState] = useState<SeasonPreference>(getSeasonPreference);
-  const seasonDrawn = isSeasonDrawn();
-  const [atlasSound, setAtlasSoundState] = useState<boolean>(isAtlasSoundOn);
-  const chooseAtlasSound = (on: boolean) => {
-    if (on === atlasSound) return;
-    setAtlasSoundState(on);
-    setAtlasSound(on);
+  const calendarSeason = seasonOf(new Date());
+  const shownSeason: Season | "off" = seasonPreference === "auto" ? calendarSeason : seasonPreference;
+  const [atlasOn, setAtlasOnState] = useState<boolean>(isAtlasOn);
+  const chooseAtlas = (on: boolean) => {
+    if (on === atlasOn) return;
+    setAtlasOnState(on);
+    setAtlas(on);
     saved();
   };
-  const calendarSeason = seasonOf(new Date());
   // Owners and admins (platform roles 3 and 4) get the way into the admin panel; nobody else sees it.
   // The account loaded at app start draws these rows at once (no jump a second later); the request below refreshes them.
   const known = peekCurrentPlatformUser();
@@ -66,8 +66,10 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
     }
   };
 
-  const chooseSeason = (value: SeasonPreference) => {
-    if (value === seasonPreference) return;
+  // Picking the calendar's own season keeps following the calendar, so the design still turns with the year.
+  const chooseSeason = (tile: Season | "off") => {
+    if (tile === shownSeason) return;
+    const value: SeasonPreference = tile === calendarSeason ? "auto" : tile;
     setSeasonPreferenceState(value);
     setSeasonPreference(value);
     saved();
@@ -89,25 +91,25 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
           {themeOptions.map((option) => <button aria-pressed={theme === option.value} className="language-switcher__option" key={option.value} onClick={() => chooseTheme(option.value)} type="button">{t(option.labelKey)}</button>)}
         </div>
       </div>
-      {seasonDrawn && <div className="settings-row settings-row--stacked">
-        <span className="settings-row__text"><strong>{t("settings.season")}</strong><span className="text-sm text-brand-muted">{t(`settings.seasonHint.${calendarSeason}`)}</span></span>
+      <div className="settings-row settings-row--stacked">
+        <span className="settings-row__text"><strong>{t("settings.season")}</strong><span className="text-sm text-brand-muted">{t("settings.seasonHint")}</span></span>
         <div aria-label={t("settings.season")} className="season-previews" role="group">
-          <button aria-pressed={seasonPreference === "auto"} className="season-preview" data-season={calendarSeason} onClick={() => chooseSeason("auto")} type="button">
-            <span className="season-preview__label">{t(`settings.season.${calendarSeason}`)}</span>
-            <span className="season-preview__art"><SeasonArt force variant="static" /></span>
-            <AtlasStrip fixed height={18} />
-          </button>
-          <button aria-pressed={seasonPreference === "off"} className="season-preview" data-season="none" onClick={() => chooseSeason("off")} type="button">
+          <button aria-pressed={shownSeason === "off"} className="season-preview season-preview--standard" data-season="none" onClick={() => chooseSeason("off")} type="button">
             <span className="season-preview__label">{t("settings.seasonDefault")}</span>
             <AtlasStrip fixed height={18} />
           </button>
+          {seasons.map((season) => <button aria-pressed={shownSeason === season} className="season-preview" data-season={season} key={season} onClick={() => chooseSeason(season)} type="button">
+            <span className="season-preview__label">{t(`settings.season.${season}`)}</span>
+            <span className="season-preview__art"><SeasonArt season={season} variant="static" /></span>
+            <AtlasStrip fixed height={18} />
+          </button>)}
         </div>
-      </div>}
+      </div>
       <div className="settings-row settings-row--stacked">
-        <span className="settings-row__text"><strong>{t("settings.atlasSound")}</strong><span className="text-sm text-brand-muted">{t("settings.atlasSoundHint")}</span></span>
-        <div aria-label={t("settings.atlasSound")} className="language-switcher language-switcher--three language-switcher--two" role="group">
-          <button aria-pressed={atlasSound} className="language-switcher__option" onClick={() => chooseAtlasSound(true)} type="button">{t("settings.atlasSoundOn")}</button>
-          <button aria-pressed={!atlasSound} className="language-switcher__option" onClick={() => chooseAtlasSound(false)} type="button">{t("settings.atlasSoundOff")}</button>
+        <span className="settings-row__text"><strong>{t("settings.atlas")}</strong><span className="text-sm text-brand-muted">{t("settings.atlasHint")}</span></span>
+        <div aria-label={t("settings.atlas")} className="language-switcher language-switcher--three language-switcher--two" role="group">
+          <button aria-pressed={atlasOn} className="language-switcher__option" onClick={() => chooseAtlas(true)} type="button">{t("settings.atlasOn")}</button>
+          <button aria-pressed={!atlasOn} className="language-switcher__option" onClick={() => chooseAtlas(false)} type="button">{t("settings.atlasOff")}</button>
         </div>
       </div>
       {tipsEnabled !== null && <div className="settings-row settings-row--stacked">
