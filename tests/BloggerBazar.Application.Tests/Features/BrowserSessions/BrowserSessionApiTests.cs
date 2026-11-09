@@ -88,13 +88,28 @@ public sealed class BrowserSessionApiTests
         var fromMiniApp = await miniApp.GetFromJsonAsync<JsonElement>("/api/v1/web/sessions");
         Assert.False(fromMiniApp[0].GetProperty("isCurrent").GetBoolean());
 
-        // Not a business action: account deletion, role switch, admin, profiles of other roles, approving browsers.
-        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(browser, HttpMethod.Delete, "/api/users/me", cookie, MiniApp)).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(browser, HttpMethod.Put, "/api/users/me/selected-role", cookie, MiniApp, new { role = "Blogger" })).StatusCode);
+        // Not a business action: account deletion, role switch, approving browsers, applying as a blogger. The browser
+        // hears "in Telegram only", not "sign in again".
+        foreach (var (method, path, body) in new (HttpMethod, string, object?)[]
+        {
+            (HttpMethod.Delete, "/api/users/me", null),
+            (HttpMethod.Put, "/api/users/me/selected-role", new { role = "Blogger" }),
+            (HttpMethod.Post, "/api/web/sign-in/preview", new { code = "x" }),
+            (HttpMethod.Post, $"/api/campaigns/{Guid.NewGuid()}/applications", new { message = "Hi" })
+        })
+        {
+            var refused = await SendAsync(browser, method, path, cookie, MiniApp, body);
+            Assert.True(refused.StatusCode == HttpStatusCode.Forbidden, $"{method} {path} answered {(int)refused.StatusCode}");
+            Assert.Equal("telegram_only", (await refused.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
+        }
+
         Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(browser, HttpMethod.Get, "/api/admin/dashboard", cookie)).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(browser, HttpMethod.Get, "/api/bloggers/me", cookie)).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(browser, HttpMethod.Post, "/api/web/sign-in/preview", cookie, MiniApp, new { code = "x" })).StatusCode);
+        // The person's other roles do not exist for the browser.
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Get, "/api/bloggers/me", cookie)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Get, "/api/brand-faces/me", cookie)).StatusCode);
+        Assert.Equal("[]", await (await SendAsync(browser, HttpMethod.Get, "/api/campaign-applications/me", cookie)).Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Put, "/api/users/me/roles/blogger/visibility", cookie, MiniApp, new { hidden = true })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Delete, "/api/profile-media/blogger", cookie, MiniApp)).StatusCode);
 
         // A change with the cookie must come from the Mini App page.
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(browser, HttpMethod.Post, "/api/web/sessions/end-all", cookie)).StatusCode);
@@ -164,6 +179,28 @@ public sealed class BrowserSessionApiTests
         Assert.Equal(BrowserSessionCodes.NumberMismatch, (await wrong.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
         Assert.Equal(HttpStatusCode.NotFound, retry.StatusCode);
         Assert.Equal(BrowserSignInStatuses.Declined, check.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task A_sign_in_link_opened_from_a_chat_with_somebody_else_is_refused()
+    {
+        var world = new World();
+        using var factory = new TestApiFactory(world);
+        using var browser = CreateClient(factory);
+        using var victim = CreateClient(factory);
+        victim.DefaultRequestHeaders.Authorization = new("tma", BloggerBazarApiFactory.CreateInitData(Owner, chatType: "private"));
+        var (code, number, pending) = await StartForCodeAsync(browser);
+
+        var preview = await (await victim.PostAsJsonAsync("/api/web/sign-in/preview", new { code })).Content.ReadFromJsonAsync<JsonElement>();
+        var confirm = await victim.PostAsJsonAsync("/api/web/sign-in/confirm", new { code, number });
+        var check = await (await SendAsync(browser, HttpMethod.Post, "/api/web/sign-in/check", pending, MiniApp)).Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(BrowserEligibility.SharedLink, preview.GetProperty("eligibility").GetString());
+        Assert.Equal(0, preview.GetProperty("options").GetArrayLength());
+        Assert.Equal(HttpStatusCode.Conflict, confirm.StatusCode);
+        Assert.Equal(BrowserSessionCodes.LinkShared, (await confirm.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
+        Assert.Equal(BrowserSignInStatuses.Declined, check.GetProperty("status").GetString());
+        Assert.Empty(world.Bot.NotifiedChats);
     }
 
     [Fact]

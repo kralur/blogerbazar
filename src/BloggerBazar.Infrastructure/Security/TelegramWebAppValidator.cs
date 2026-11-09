@@ -72,7 +72,8 @@ internal sealed class TelegramWebAppValidator(IOptions<TelegramOptions> options)
 
         var user = JsonSerializer.Deserialize<TelegramUserPayload>(userValue.ToString())
             ?? throw new AuthenticationException("Telegram user payload is invalid.");
-        return new TelegramWebAppUser(user.Id, user.Username, user.FirstName);
+        var chatType = values.TryGetValue("chat_type", out var chatTypeValue) && !string.IsNullOrWhiteSpace(chatTypeValue) ? chatTypeValue.ToString() : null;
+        return new TelegramWebAppUser(user.Id, user.Username, user.FirstName, chatType);
     }
 
     private sealed record TelegramUserPayload(

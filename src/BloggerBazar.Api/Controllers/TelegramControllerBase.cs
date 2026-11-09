@@ -51,6 +51,12 @@ public abstract class TelegramControllerBase(ITelegramWebAppValidator telegramVa
                 return new TelegramWebAppUser(browser.User.TelegramUserId, browser.User.Username, browser.User.FirstName);
             }
 
+            // A browser with a session cookie on an action that is not for browsers: "do it in Telegram", not "sign in".
+            if (BrowserCookies.Read(Request, BrowserCookies.Session) is not null)
+            {
+                throw new TelegramOnlyException();
+            }
+
             throw new AuthenticationException("Telegram initData authorization is required.");
         }
 

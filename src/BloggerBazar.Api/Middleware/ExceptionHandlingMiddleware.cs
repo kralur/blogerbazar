@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using FluentValidation;
 using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Api.Errors;
@@ -37,6 +38,11 @@ public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddlew
         {
             await ApiProblemWriter.WriteAsync(context, StatusCodes.Status401Unauthorized);
             logger.LogWarning("Authentication rejected for {Path}", context.Request.Path);
+        }
+        catch (TelegramOnlyException)
+        {
+            await ApiProblemWriter.WriteAsync(context, StatusCodes.Status403Forbidden, TelegramOnlyException.Code);
+            logger.LogInformation("Browser session refused outside the browser actions for {Path}", context.Request.Path);
         }
         catch (UnauthorizedAccessException)
         {

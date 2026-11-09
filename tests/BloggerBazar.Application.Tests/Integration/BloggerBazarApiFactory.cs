@@ -46,14 +46,17 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         return client;
     }
 
-    public static string CreateInitData(long telegramUserId)
+    // chatType: Telegram's chat_type, which it adds when the Mini App was opened from a direct link in a chat.
+    public static string CreateInitData(long telegramUserId, string? chatType = null)
     {
         var authDate = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
         var user = JsonSerializer.Serialize(new { id = telegramUserId, first_name = "Integration", username = $"integration{telegramUserId}" });
-        var dataCheckString = $"auth_date={authDate}\nuser={user}";
+        var chat = chatType is null ? string.Empty : $"\nchat_type={chatType}";
+        var dataCheckString = $"auth_date={authDate}{chat}\nuser={user}";
         var secret = HMACSHA256.HashData(Encoding.UTF8.GetBytes("WebAppData"), Encoding.UTF8.GetBytes(BotToken));
         var hash = Convert.ToHexString(HMACSHA256.HashData(secret, Encoding.UTF8.GetBytes(dataCheckString))).ToLowerInvariant();
-        return $"auth_date={authDate}&user={Uri.EscapeDataString(user)}&hash={hash}";
+        var chatField = chatType is null ? string.Empty : $"&chat_type={chatType}";
+        return $"auth_date={authDate}{chatField}&user={Uri.EscapeDataString(user)}&hash={hash}";
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

@@ -61,9 +61,12 @@ public sealed class BrandFacesController(ISender sender, ITelegramWebAppValidato
     }
 
     [HttpGet("me")]
+    [BrowserSessionAllowed]
     public async Task<ActionResult<BrandFaceProfileDto>> GetMine(CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
+        // A browser session acts for the company only: there it has no brand face profile.
+        if (IsBrowserSession) return NotFound();
         var profile = await sender.Send(new GetMyBrandFaceProfileQuery(actor.Id), cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
     }

@@ -52,6 +52,12 @@ public sealed class BrowserSessionAllowedAttribute : Attribute
 {
 }
 
+// An action outside the browser list was called with a browser session cookie: 403 "telegram_only".
+public sealed class TelegramOnlyException() : UnauthorizedAccessException("This action is available in Telegram only.")
+{
+    public const string Code = "telegram_only";
+}
+
 // Marks the browser sign-in request: the "api" rate limit policy gives it its own small per-address budget.
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class BrowserSignInLimitAttribute : Attribute
