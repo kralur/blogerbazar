@@ -21,6 +21,8 @@ import { clearCampaignApplicationCache } from "./data/campaignApplicationCache";
 import { clearDealCache } from "./data/dealCache";
 import { isDeepLinkRoute } from "./lib/deepLink";
 import { setBrowserSession } from "./lib/browserSession";
+import { useDesktopLayout } from "./lib/desktopLayout";
+import { DesktopNav } from "./components/DesktopNav";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 // The role of the last finished start. A returning user sees that role's screens at once while the account check runs
@@ -142,6 +144,8 @@ export function App() {
   const [sessionEpoch, setSessionEpoch] = useState(0);
   const [browserSignInCode, setBrowserSignInCode] = useState(() => isTelegram ? readBrowserSignInCode() : null);
   const browserSignInRoleChanged = useRef(false);
+  // D64 stage B2: a wide browser window gets the website layout; Telegram keeps the phone layout.
+  const desktop = useDesktopLayout(!isTelegram);
 
   useEffect(() => {
     if (onboardingStep === "complete" && rootRoutes.includes(route.path)) {
@@ -363,7 +367,7 @@ export function App() {
 
   if (!initialDestinationResolved) return <LaunchScreen />;
 
-  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" /><PullToRefresh enabled={onboardingStep === "complete"} /><SessionExpiredNotice enabled={isTelegram} /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
+  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" />{desktop && onboardingStep === "complete" && <DesktopNav />}<PullToRefresh enabled={onboardingStep === "complete"} /><SessionExpiredNotice enabled={isTelegram} /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome key={selectedRole ?? "none"} role={selectedRole} /></RootScreenVisibility>}
       {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={handleMarketplaceRoleSelected} /></RootScreenVisibility>}
