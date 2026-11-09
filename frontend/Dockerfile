@@ -14,6 +14,9 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm --workspace frontend run build
 
 FROM nginx:1.27-alpine AS runtime
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Railway sets API_UPSTREAM (the API on the private network); the default suits a local docker compose network.
+ENV API_UPSTREAM=http://api:8080 \
+    NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
+COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
 EXPOSE 80

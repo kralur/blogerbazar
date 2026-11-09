@@ -2,7 +2,10 @@ import { telegramBridge } from "../telegram/TelegramProvider";
 import { translate } from "../i18n";
 import { plainNames } from "../lib/personName";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+const TELEGRAM_API_URL = import.meta.env.VITE_API_URL ?? "";
+// D64 stage B: outside Telegram (a company's browser) requests go to /api/ on the page's own address, which its nginx
+// passes to the API, so the HttpOnly session cookie stays first-party. Inside Telegram nothing changes.
+const apiUrl = () => telegramBridge.isTelegram ? TELEGRAM_API_URL : "";
 
 type ApiOptions = RequestInit;
 type ProblemDetailsPayload = {
@@ -76,7 +79,7 @@ function authHeaders(options?: ApiOptions) {
 export const sessionExpiredEvent = "bloggerbazar:session-expired";
 
 export async function api<T>(path: string, options?: ApiOptions): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${apiUrl()}${path}`, {
     ...options,
     headers: authHeaders(options)
   });

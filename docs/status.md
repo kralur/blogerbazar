@@ -115,6 +115,9 @@ _Последнее обновление: 2026-11-09, D64 этап B (вход �
 - **D64 этап B: QR-код на входе в браузере (2026-11-09, владелец: «ок на QR»):** на компьютере ссылка входа показана
   и QR-кодом для камеры телефона; на телефоне QR не показывается. Библиотека `qrcode-generator` 2.0.4 (MIT, без
   зависимостей). Код со снимка страницы проверен сканером: читается ссылка входа.
+- **Вход в браузере через адрес Mini App (2026-11-09):** в браузере запросы к API идут через nginx Mini App
+  (`/api/` → `API_UPSTREAM`), иначе cookie входа не сохранялась и вход сбрасывался через 3 секунды. **Владельцу:**
+  сервису FRONTEND в Railway добавить переменную `API_UPSTREAM` = `http://${{API.RAILWAY_PRIVATE_DOMAIN}}:8080`.
 - **Адреса для проверки (Railway):** лендинг https://landing-production-101f.up.railway.app, приложение
   https://t.me/FindInfluencerBot, сайт для компаний https://frontend-production-d178e.up.railway.app, админка
   https://admin-web-production-3072.up.railway.app.
