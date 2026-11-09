@@ -42,6 +42,10 @@ describe("browser sign-in page", () => {
 
     expect(await screen.findByRole("img", { name: ru("browser.numberLabel", { number: 42 }) })).toHaveTextContent("42");
     expect(screen.getByRole("link", { name: ru("browser.openTelegram") })).toHaveAttribute("href", `https://t.me/BloggerBazarBot?startapp=web_${code}`);
+    // The same link as a QR code for the phone's camera: a square of modules with a quiet zone.
+    const qr = screen.getByRole("img", { name: ru("browser.qrLabel") });
+    expect(qr.getAttribute("viewBox")).toMatch(/^0 0 (\d+) \1$/);
+    expect(qr.querySelector("path")?.getAttribute("d")).toMatch(/^M\d+ \d+h1v1h-1z/);
     await act(async () => { await vi.advanceTimersByTimeAsync(3_000); });
     expect(onSignedIn).not.toHaveBeenCalled();
     await act(async () => { await vi.advanceTimersByTimeAsync(3_000); });

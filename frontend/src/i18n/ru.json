@@ -883,4 +883,6 @@
   ,"browser.sessions.endAllTitle": "Выйти во всех браузерах?"
   ,"browser.sessions.endAllDescription": "Во всех браузерах нужно будет войти заново. Telegram и компания останутся без изменений."
   ,"error.telegram_only": "Это действие доступно только в Telegram."
+  ,"browser.qrLabel": "QR-код для входа в Telegram"
+  ,"browser.stepOpenHintQr": "Наведите камеру телефона на QR-код или нажмите «Открыть Telegram», если Telegram Desktop стоит на этом компьютере. Переслать ссылку можно только себе в «Избранное»."
 }

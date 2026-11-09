@@ -3,6 +3,7 @@ import { checkBrowserSignIn, startBrowserSignIn, type BrowserSignInStart } from 
 import { getApiErrorMessage } from "../api/client";
 import { AtlasBackground } from "../components/AtlasBackground";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { QrCode } from "../components/QrCode";
 import { Button, Icon } from "../components/ui";
 import { useI18n } from "../i18n";
 
@@ -88,7 +89,10 @@ export function BrowserSignIn({ onSignedIn }: { onSignedIn: () => void }) {
         {waitingRequest ? <ol className="browser-sign-in__steps">
           <li>
             <span className="browser-sign-in__step-title">{t("browser.stepOpen")}</span>
-            <span className="browser-sign-in__step-hint">{t("browser.stepOpenHint")}</span>
+            {/* A computer shows the QR code for the phone's camera; a phone has nothing to scan it with. */}
+            <span className="browser-sign-in__qr"><QrCode className="browser-sign-in__qr-code" label={t("browser.qrLabel")} value={waitingRequest.link} /></span>
+            <span className="browser-sign-in__step-hint browser-sign-in__step-hint--qr">{t("browser.stepOpenHintQr")}</span>
+            <span className="browser-sign-in__step-hint browser-sign-in__step-hint--link">{t("browser.stepOpenHint")}</span>
             <span className="browser-sign-in__link-actions">
               <a className="ds-button ds-button--primary ftue-primary-button tap-target inline-flex items-center justify-center gap-2 px-5" href={waitingRequest.link} rel="noopener noreferrer" target="_blank"><Icon name="telegram" />{t("browser.openTelegram")}</a>
               <button className="browser-sign-in__copy" onClick={() => void copyLink()} type="button"><Icon className="h-4 w-4" name={copied ? "check" : "copy"} />{copied ? t("browser.linkCopied") : t("browser.copyLink")}</button>

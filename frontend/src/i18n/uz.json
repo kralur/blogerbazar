@@ -882,4 +882,6 @@
   ,"browser.sessions.endAllTitle": "Barcha brauzerlardan chiqilsinmi?"
   ,"browser.sessions.endAllDescription": "Barcha brauzerlarda qaytadan kirish kerak bo‘ladi. Telegram va kompaniya o‘zgarmaydi."
   ,"error.telegram_only": "Bu amal faqat Telegram’da mavjud."
+  ,"browser.qrLabel": "Telegram’da kirish uchun QR-kod"
+  ,"browser.stepOpenHintQr": "Telefon kamerasini QR-kodga qarating yoki Telegram Desktop shu kompyuterda bo‘lsa, «Telegram’ni ochish»ni bosing. Havolani faqat o‘zingizga, «Saqlangan xabarlar»ga yuborish mumkin."
 }
