@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Marketplace;
 using MediatR;
@@ -11,6 +12,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class RecommendationsController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet]
+    [BrowserSessionAllowed]
     [ProducesResponseType<RecommendationsDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<RecommendationsDto>> Get(CancellationToken cancellationToken)
     {

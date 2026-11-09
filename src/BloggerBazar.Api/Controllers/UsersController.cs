@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Api.Contracts.Users;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Users;
@@ -12,10 +13,12 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class UsersController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet]
+    [BrowserSessionAllowed]
     public async Task<ActionResult<CurrentPlatformUserDto>> GetCurrent([FromQuery] string? source = null, CancellationToken cancellationToken = default)
     {
         var telegramUser = GetTelegramIdentity();
-        return Ok(await sender.Send(new GetCurrentPlatformUserCommand(telegramUser.Id, telegramUser.FirstName, telegramUser.Username, source), cancellationToken));
+        // An ad label comes from a Telegram link; a browser has none to report.
+        return Ok(await sender.Send(new GetCurrentPlatformUserCommand(telegramUser.Id, telegramUser.FirstName, telegramUser.Username, IsBrowserSession ? null : source), cancellationToken));
     }
 
     [HttpDelete]
@@ -28,6 +31,7 @@ public sealed class UsersController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpPut("language")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CurrentPlatformUserDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<CurrentPlatformUserDto>> SetLanguage(SetInterfaceLanguageRequest request, CancellationToken cancellationToken)
@@ -38,6 +42,7 @@ public sealed class UsersController(ISender sender, ITelegramWebAppValidator tel
 
     // D54: bot tips on or off.
     [HttpPut("tips")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CurrentPlatformUserDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<CurrentPlatformUserDto>> SetTips(SetBotTipsRequest request, CancellationToken cancellationToken)
     {
@@ -47,6 +52,7 @@ public sealed class UsersController(ISender sender, ITelegramWebAppValidator tel
 
     // D50: pause or resume one of the account's role profiles; role is "blogger", "brand-face" or "business".
     [HttpPut("roles/{role}/visibility")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<ProfileVisibilityDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProfileVisibilityDto>> SetProfileVisibility(string role, SetProfileVisibilityRequest request, CancellationToken cancellationToken)
@@ -59,6 +65,12 @@ public sealed class UsersController(ISender sender, ITelegramWebAppValidator tel
             "business" => MarketplaceRole.Business,
             _ => throw new InvalidOperationException("Profile was not found.")
         };
+        // A browser session acts for the company only.
+        if (IsBrowserSession && marketplaceRole != MarketplaceRole.Business)
+        {
+            throw new InvalidOperationException("Profile was not found.");
+        }
+
         return Ok(await sender.Send(new SetProfileVisibilityCommand(telegramUser.Id, marketplaceRole, request.Hidden), cancellationToken));
     }
 

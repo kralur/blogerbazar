@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Application.Validation;
 using BloggerBazar.Api.Contracts.Bloggers;
 using BloggerBazar.Application.Abstractions.Security;
@@ -24,6 +25,7 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     }
 
     [HttpGet]
+    [BrowserSessionAllowed]
     [ProducesResponseType<SearchBloggersResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<SearchBloggersResponse>> Search(
         [FromQuery] string? query,
@@ -47,6 +49,7 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     }
 
     [HttpGet("{id:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<BloggerProfileDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BloggerProfileDto>> GetById(Guid id, CancellationToken cancellationToken)
@@ -57,6 +60,7 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
     }
 
     [HttpGet("{id:guid}/reviews")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<IReadOnlyList<ReviewDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<ReviewDto>>> GetReviews(Guid id, [FromQuery] int take = 20, [FromQuery] int skip = 0, CancellationToken cancellationToken = default)
     {

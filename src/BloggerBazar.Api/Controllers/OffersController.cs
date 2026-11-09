@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Api.Contracts.Offers;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Offers;
@@ -11,6 +12,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class OffersController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpPost]
+    [BrowserSessionAllowed]
     [ProducesResponseType<OfferDto>(StatusCodes.Status201Created)]
     public async Task<ActionResult<OfferDto>> Create(CreateOfferRequest request, CancellationToken cancellationToken)
     {
@@ -20,6 +22,7 @@ public sealed class OffersController(ISender sender, ITelegramWebAppValidator te
     }
 
     [HttpGet("mine")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<IReadOnlyList<OfferDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<OfferDto>>> GetMine(CancellationToken cancellationToken)
     {
@@ -28,6 +31,7 @@ public sealed class OffersController(ISender sender, ITelegramWebAppValidator te
     }
 
     [HttpGet("mine/{offerId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<OfferDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<OfferDto>> GetMineById(Guid offerId, CancellationToken cancellationToken)
     {

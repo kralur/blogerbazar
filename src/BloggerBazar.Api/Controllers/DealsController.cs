@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Api.Contracts.Deals;
 using BloggerBazar.Api.Contracts.Reviews;
 using BloggerBazar.Application.Abstractions.Security;
@@ -14,6 +15,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class DealsController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("me")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<IReadOnlyList<MyDealDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<MyDealDto>>> GetMine(CancellationToken cancellationToken)
     {
@@ -22,6 +24,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpGet("me/{dealId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<DealDetailsDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<DealDetailsDto>> GetMineById(Guid dealId, CancellationToken cancellationToken)
     {
@@ -30,6 +33,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpGet("me/{dealId:guid}/contact")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<ContactDetailsDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<ContactDetailsDto>> GetMineContact(Guid dealId, CancellationToken cancellationToken)
     {
@@ -38,6 +42,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpPost("me/{dealId:guid}/contact/share")]
+    [BrowserSessionAllowed]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -50,6 +55,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
 
     // D51: the agreed price and links to published ads, both optional.
     [HttpPut("me/{dealId:guid}/price")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<DealPriceDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -60,6 +66,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpPost("me/{dealId:guid}/publications")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<DealPublicationDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -71,6 +78,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpPut("me/{dealId:guid}/publications/{publicationId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<DealPublicationDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DealPublicationDto>> UpdatePublication(Guid dealId, Guid publicationId, UpdateDealPublicationViewsRequest request, CancellationToken cancellationToken)
@@ -80,6 +88,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpDelete("me/{dealId:guid}/publications/{publicationId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -91,6 +100,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpPost("me/{dealId:guid}/publications/{publicationId:guid}/confirm")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<DealPublicationDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DealPublicationDto>> ConfirmPublication(Guid dealId, Guid publicationId, CancellationToken cancellationToken)
@@ -100,6 +110,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpPost("{dealId:guid}/complete")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<DealDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<DealDto>> Complete(Guid dealId, CancellationToken cancellationToken)
     {
@@ -108,6 +119,7 @@ public sealed class DealsController(ISender sender, ITelegramWebAppValidator tel
     }
 
     [HttpPost("{dealId:guid}/reviews")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<ReviewDto>(StatusCodes.Status201Created)]
     public async Task<ActionResult<ReviewDto>> CreateReview(Guid dealId, CreateReviewRequest request, CancellationToken cancellationToken)
     {

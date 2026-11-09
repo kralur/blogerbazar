@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Api.Contracts.Complaints;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Complaints;
@@ -11,6 +12,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class ComplaintsController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpPost("api/complaints")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<ComplaintDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

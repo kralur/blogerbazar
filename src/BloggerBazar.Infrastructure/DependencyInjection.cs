@@ -65,10 +65,12 @@ public static class DependencyInjection
         services.Configure<TelegramOptions>(configuration.GetSection(TelegramOptions.SectionName));
         services.Configure<AdministrationOptions>(configuration.GetSection(AdministrationOptions.SectionName));
         services.Configure<AdminWebOptions>(configuration.GetSection(AdminWebOptions.SectionName));
+        services.Configure<BrowserSessionOptions>(configuration.GetSection(BrowserSessionOptions.SectionName));
         services.AddSingleton<IConfiguredOwners, ConfiguredOwners>();
         services.AddSingleton<ITelegramWebAppValidator, TelegramWebAppValidator>();
         services.AddSingleton<ITelegramLoginWidgetValidator, TelegramLoginWidgetValidator>();
         services.AddSingleton<IAdminWebSessionStore, DistributedAdminWebSessionStore>();
+        services.AddSingleton<IBrowserSessionStore, DistributedBrowserSessionStore>();
         services.AddSingleton<ITelegramWebhookValidator, TelegramWebhookValidator>();
         services.AddScoped<IRecipientLanguageLookup, RecipientLanguageLookup>();
         services.AddHttpClient<ITelegramBotClient, TelegramBotClient>(client =>

@@ -1,3 +1,5 @@
+using System.Globalization;
+using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Abstractions.Telegram;
 using BloggerBazar.Domain.Enums;
 
@@ -177,4 +179,40 @@ internal static class BotMessages
     public static BotText BusinessProfileRejected => Bilingual(
         "Профиль компании не прошёл проверку.",
         "Kompaniya profili tekshiruvdan o‘tmadi.");
+
+    internal static readonly BotText BrowsersButton = new("Мои браузеры", "Brauzerlarim");
+
+    // D64 stage B: every new browser sign-in, with Tashkent time and the way out if it was not the person.
+    public static BotText BrowserSignedIn(BrowserDevice device, DateTime signedInAtUtc)
+    {
+        var time = (signedInAtUtc + TashkentOffset).ToString("HH:mm", CultureInfo.InvariantCulture);
+        return Bilingual(
+            $"Вход в BloggerBazar в браузере: {BrowserName(device.Browser, uzbek: false)}{SystemSuffix(device.Os)}, {time}. Если это были не вы, откройте «Мои браузеры» и нажмите «Выйти везде».",
+            $"Brauzerda BloggerBazar’ga kirildi: {BrowserName(device.Browser, uzbek: true)}{SystemSuffix(device.Os)}, {time}. Agar bu siz bo‘lmasangiz, «Brauzerlarim»ni ochib, «Hamma joydan chiqish»ni bosing.") with { Button = BrowsersButton };
+    }
+
+    // Tashkent has no daylight saving time.
+    private static readonly TimeSpan TashkentOffset = TimeSpan.FromHours(5);
+
+    private static string BrowserName(string browser, bool uzbek) => browser switch
+    {
+        "chrome" => "Chrome",
+        "edge" => "Edge",
+        "firefox" => "Firefox",
+        "safari" => "Safari",
+        "opera" => "Opera",
+        "yandex" => uzbek ? "Yandex Browser" : "Яндекс Браузер",
+        _ => uzbek ? "brauzer" : "браузер"
+    };
+
+    private static string SystemSuffix(string os) => os switch
+    {
+        "windows" => ", Windows",
+        "macos" => ", macOS",
+        "linux" => ", Linux",
+        "android" => ", Android",
+        "ios" => ", iOS",
+        "chromeos" => ", ChromeOS",
+        _ => string.Empty
+    };
 }

@@ -52,6 +52,8 @@ try
     {
         options.Conventions.Add(new ApiV1RouteConvention());
         options.Filters.Add<ProblemDetailsEnrichmentFilter>();
+        // D64 stage B: a company member's browser session on the actions marked [BrowserSessionAllowed].
+        options.Filters.Add<BrowserSessionFilter>();
     });
     builder.Services.AddOpenApi();
     builder.Services.AddHealthChecks()
@@ -79,6 +81,10 @@ try
     var writePermitLimit = builder.Configuration.GetValue("RateLimiting:WritePermitLimit", 30);
     // Web admin sign-in: a few attempts a minute per client address; a person needs one.
     var adminWebSignInPermitLimit = builder.Configuration.GetValue("RateLimiting:AdminWebSignIn:PermitLimit", 5);
+    // D64 stage B: a company's browsers share their office address, so the browser budget per address is a few
+    // people's worth; asking for a browser sign-in has its own small budget.
+    var browserPermitMultiplier = Math.Max(1, builder.Configuration.GetValue("RateLimiting:Browser:PermitMultiplier", 4));
+    var browserSignInPermitLimit = builder.Configuration.GetValue("RateLimiting:BrowserSignIn:PermitLimit", 10);
     if (adminWebSignInPermitLimit <= 0 || writePermitLimit <= 0 || permitLimit <= 0 || windowSeconds <= 0 || webhookPermitLimit <= 0 || webhookWindowSeconds <= 0
         || globalConcurrentPermitLimit <= 0 || globalQueueLimit < 0 || maxIpPartitions <= 0 || maxTelegramUserPartitions <= 0)
     {
@@ -128,12 +134,24 @@ try
                 });
             }
 
+            if (context.GetEndpoint()?.Metadata.GetMetadata<BrowserSignInLimitAttribute>() is not null)
+            {
+                return RateLimitPartition.GetFixedWindowLimiter(resolver.ResolveForwardedIpPartitionKey(context, "web-sign-in"), _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = browserSignInPermitLimit,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                });
+            }
+
             var partitionKey = context.Request.Path.StartsWithSegments("/api/webhooks/telegram")
                 ? resolver.ResolveIpPartitionKey(context, "telegram-webhook")
                 : resolver.ResolveApiPartitionKey(context);
             var isWebhook = context.Request.Path.StartsWithSegments("/api/webhooks/telegram");
             var method = context.Request.Method;
             var isWrite = !isWebhook && !HttpMethods.IsGet(method) && !HttpMethods.IsHead(method) && !HttpMethods.IsOptions(method);
+            var multiplier = partitionKey.StartsWith(RateLimitPartitionKeyResolver.BrowserScope + ":", StringComparison.Ordinal) ? browserPermitMultiplier : 1;
             if (isWrite)
             {
                 partitionKey = $"write:{partitionKey}";
@@ -141,7 +159,7 @@ try
 
             return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = isWebhook ? webhookPermitLimit : isWrite ? writePermitLimit : permitLimit,
+                PermitLimit = isWebhook ? webhookPermitLimit : (isWrite ? writePermitLimit : permitLimit) * multiplier,
                 Window = TimeSpan.FromSeconds(isWebhook ? webhookWindowSeconds : windowSeconds),
                 QueueLimit = 0,
                 AutoReplenishment = true
@@ -163,6 +181,7 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddScoped<AdminWebRequestGuard>();
+    builder.Services.AddScoped<BrowserRequestGuard>();
     builder.Services.AddSingleton(new ErrorSpikeMonitor(builder.Configuration.GetSection(ErrorSpikeOptions.SectionName).Get<ErrorSpikeOptions>() ?? new ErrorSpikeOptions()));
     builder.Services.AddScoped<ErrorSpikeAlertSender>();
     if (builder.Configuration.GetValue("DealReminders:Enabled", true))

@@ -10,6 +10,7 @@ internal sealed class RateLimitPartitionKeyResolver(
     int maxTelegramUserPartitions)
 {
     public const string PartitionKindItemKey = "rate-limit-partition-kind";
+    public const string BrowserScope = "web";
 
     private readonly object ipLock = new();
     private readonly HashSet<string> ipPartitions = new(StringComparer.Ordinal);
@@ -43,6 +44,14 @@ internal sealed class RateLimitPartitionKeyResolver(
         if (IsAdminPath(context.Request.Path) && AdminWebCookie.Read(context.Request) is not null)
         {
             return ResolveForwardedIpPartitionKey(context, "admin-web");
+        }
+
+        // D64 stage B: a company member's browser reaches the API through the Mini App's nginx; one budget per address
+        // (an office), not one for the proxy. The cookie is not checked here, so a made-up one only buys the
+        // browser budget of the caller's own address.
+        if (BrowserCookies.HasAny(context.Request))
+        {
+            return ResolveForwardedIpPartitionKey(context, BrowserScope);
         }
 
         return ResolveIpPartitionKey(context, "api");

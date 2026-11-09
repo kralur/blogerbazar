@@ -1,3 +1,4 @@
+using BloggerBazar.Api.Security;
 using BloggerBazar.Api.Contracts.Campaigns;
 using BloggerBazar.Application.Abstractions.Security;
 using BloggerBazar.Application.Features.Campaigns;
@@ -11,6 +12,7 @@ namespace BloggerBazar.Api.Controllers;
 public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator telegramValidator) : TelegramControllerBase(telegramValidator)
 {
     [HttpGet("catalog")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignCatalogResult>(StatusCodes.Status200OK)]
     public async Task<ActionResult<CampaignCatalogResult>> Catalog(
         [FromQuery] string? query,
@@ -31,6 +33,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpGet]
+    [BrowserSessionAllowed]
     [ProducesResponseType<SearchCampaignsResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<SearchCampaignsResponse>> Search(
         [FromQuery] string? city,
@@ -44,6 +47,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpGet("mine")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<MyCampaignsResult>(StatusCodes.Status200OK)]
     public async Task<ActionResult<MyCampaignsResult>> Mine(
         [FromQuery] int? status,
@@ -58,6 +62,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpGet("mine/{campaignId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<MyCampaignDetailsDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MyCampaignDetailsDto>> GetMineById(Guid campaignId, CancellationToken cancellationToken)
@@ -68,6 +73,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpGet("{campaignId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CampaignDto>> GetById(Guid campaignId, CancellationToken cancellationToken)
@@ -78,6 +84,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpPost]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignDto>(StatusCodes.Status201Created)]
     public async Task<ActionResult<CampaignDto>> Create(CreateCampaignRequest request, CancellationToken cancellationToken)
     {
@@ -87,6 +94,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpPut("mine/{campaignId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CampaignDto>> Update(Guid campaignId, UpdateCampaignRequest request, CancellationToken cancellationToken)
@@ -96,6 +104,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpPost("mine/{campaignId:guid}/close")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CampaignDto>> Close(Guid campaignId, CancellationToken cancellationToken)
@@ -105,6 +114,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpPost("mine/{campaignId:guid}/reopen")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -115,6 +125,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpDelete("mine/{campaignId:guid}")]
+    [BrowserSessionAllowed]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -126,6 +137,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpGet("mine/{campaignId:guid}/applications")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignApplicationInboxResult>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CampaignApplicationInboxResult>> GetApplications(
@@ -140,6 +152,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpPost("mine/{campaignId:guid}/applications/{applicationId:guid}/accept")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignApplicationDecisionDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CampaignApplicationDecisionDto>> AcceptApplication(Guid campaignId, Guid applicationId, CancellationToken cancellationToken)
@@ -149,6 +162,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     }
 
     [HttpPost("mine/{campaignId:guid}/applications/{applicationId:guid}/reject")]
+    [BrowserSessionAllowed]
     [ProducesResponseType<CampaignApplicationDecisionDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CampaignApplicationDecisionDto>> RejectApplication(Guid campaignId, Guid applicationId, CancellationToken cancellationToken)
