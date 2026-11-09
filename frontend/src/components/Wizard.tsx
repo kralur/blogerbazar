@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { getKeyboardViewportState, useVirtualKeyboard } from "../layout/VirtualKeyboardProvider";
+import { AtlasStrip } from "./AtlasStrip";
 import { Button, Icon } from "./ui";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -27,19 +28,29 @@ export function WizardHeader({ title, stepTitle, step, totalSteps, backLabel, pr
   // Language choice belongs to first-run onboarding; editing an existing profile keeps it in Profile settings.
   showLanguage?: boolean;
 }) {
-  return <header className={showLanguage ? "wizard-header wizard-header--with-language" : "wizard-header"} data-content-header>
-    {showLanguage && <div className="wizard-header__language"><LanguageSwitcher /></div>}
-    {showBackButton && <button aria-label={backLabel} className="wizard-header__back" onClick={onBack} type="button"><Icon name="back" /></button>}
-    <div className="wizard-header__copy">{title && <p>{title}</p>}<h1>{stepTitle}</h1></div>
-    <ProgressIndicator current={step} label={progressLabel} total={totalSteps} />
-  </header>;
+  // D63, package D: the header is the lapis head of the wizard, with the steps as beads on a cord and the atlas
+  // under it; the form itself stays quiet below.
+  return <>
+    <header className={showLanguage ? "wizard-header wizard-header--with-language" : "wizard-header"} data-content-header>
+      {showLanguage && <div className="wizard-header__language"><LanguageSwitcher /></div>}
+      {showBackButton && <button aria-label={backLabel} className="wizard-header__back" onClick={onBack} type="button"><Icon name="back" /></button>}
+      <div className="wizard-header__copy">{title && <p>{title}</p>}<h1>{stepTitle}</h1></div>
+      <ProgressIndicator current={step} label={progressLabel} total={totalSteps} />
+    </header>
+    <AtlasStrip />
+  </>;
 }
 
 export function ProgressIndicator({ current, total, label }: { current: number; total: number; label: string }) {
-  const progress = Math.round(current / total * 100);
+  // Beads on a cord: done and current steps in lime, the cord saffron up to the current step.
   return <div aria-label={label} aria-valuemax={total} aria-valuemin={1} aria-valuenow={current} aria-valuetext={label} className="wizard-progress" role="progressbar">
+    <span aria-hidden="true" className="wizard-progress__beads">
+      {Array.from({ length: total }, (_, index) => <span className="wizard-progress__bead-group" key={index}>
+        {index > 0 && <span className={`wizard-progress__cord${index < current ? " wizard-progress__cord--done" : ""}`} />}
+        <span className={`wizard-progress__bead${index + 1 < current ? " wizard-progress__bead--done" : index + 1 === current ? " wizard-progress__bead--now" : ""}`} />
+      </span>)}
+    </span>
     <span className="wizard-progress__label">{label}</span>
-    <span aria-hidden="true" className="wizard-progress__track"><span className="wizard-progress__value" style={{ width: `${progress}%` }} /></span>
   </div>;
 }
 

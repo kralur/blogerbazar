@@ -155,6 +155,8 @@ The landing (D61) and, from 2026-11-07, the Mini App Home (D62) follow the "Baza
   tags with the budget first.
 - Profile and the public company page (D63, package C) reuse `ListHero`: the account and the role cards, or the logo,
   name and two fact tags, sit in the lapis head.
+- Profile wizards (D63, package D): `WizardHeader` is a lapis head with the atlas strip; `ProgressIndicator` draws the
+  steps as beads on a cord (lime done and current, saffron cord).
 - Seasons (D63): `lib/season.ts` sets `data-season` on `<html>` from the calendar (autumn only so far); the atlas is
   drawn from `--bb-atlas-*` tokens so a season recolours it without touching lime or tile; `components/SeasonLeaves.tsx`
   adds chinar leaves (static on the Home hero, falling on the first screen). The person switches the season off in
