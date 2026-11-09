@@ -1814,6 +1814,7 @@ html .ftue-screen--atlas .ftue-primary-button:disabled { border-color: rgba(255,
 .season-preview__label { position: absolute; top: .5rem; left: .625rem; z-index: 1; font-size: .75rem; font-weight: 800; }
 .season-preview__leaves { position: absolute; inset: 0; }
 .season-preview__leaves .season-leaves--static { width: 5.25rem; height: 4rem; }
-.season-preview .atlas-strip { position: absolute; right: 0; bottom: 0; left: 0; margin: 0; overflow: hidden; }
-.season-preview .atlas-strip__track { width: 100%; }
-.season-preview .atlas-strip__track svg { width: 100%; animation: none; }
+.season-preview .atlas-strip { position: absolute; right: 0; bottom: 0; left: 0; margin: 0; }
+.atlas-strip--fixed { overflow: hidden; }
+.atlas-strip--fixed .atlas-strip__track { width: 100%; }
+.atlas-strip--fixed .atlas-strip__track svg { animation: none; }

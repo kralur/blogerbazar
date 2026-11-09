@@ -18,9 +18,9 @@ function Leaf({ color, scale, rotate }: { color: string; scale: number; rotate: 
 }
 
 const staticLeaves = [
-  { x: 150, y: 26, scale: .9, rotate: -25, color: terracotta, opacity: .95 },
-  { x: 106, y: 12, scale: .5, rotate: 40, color: saffron, opacity: .8 },
-  { x: 168, y: 90, scale: .6, rotate: 110, color: ochre, opacity: .75 }
+  { x: 144, y: 34, scale: .9, rotate: -25, color: terracotta, opacity: .95 },
+  { x: 100, y: 20, scale: .5, rotate: 40, color: saffron, opacity: .8 },
+  { x: 154, y: 100, scale: .6, rotate: 110, color: ochre, opacity: .75 }
 ];
 
 // x, size, colour, opacity, start offset and fall duration in seconds, sway period in seconds

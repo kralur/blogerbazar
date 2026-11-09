@@ -6,7 +6,8 @@ import { useEffect, useId, useRef, type CSSProperties } from "react";
 // vertical swipes still scroll the page because the browser picks the pan axis from the first move. The track is
 // three screens wide and starts in the middle; when the finger nears an end it jumps back by whole tiles, which is
 // invisible because the pattern repeats every tile. Decorative only.
-export function AtlasStrip({ height = 26 }: { height?: number }) {
+// `fixed` draws one screen width with no scroll and no drift (the previews in Settings).
+export function AtlasStrip({ fixed = false, height = 26 }: { fixed?: boolean; height?: number }) {
   const scale = height / 48;
   const tile = 176 * scale;
   const ref = useRef<HTMLDivElement>(null);
@@ -16,8 +17,8 @@ export function AtlasStrip({ height = 26 }: { height?: number }) {
   const motifId = `atlas-motif-${id}`;
   useEffect(() => {
     const el = ref.current;
-    if (el) el.scrollLeft = el.scrollWidth / 3;
-  }, []);
+    if (el && !fixed) el.scrollLeft = el.scrollWidth / 3;
+  }, [fixed]);
   const recentre = () => {
     const el = ref.current;
     if (!el || tile <= 0) return;
@@ -33,9 +34,9 @@ export function AtlasStrip({ height = 26 }: { height?: number }) {
     <path d={`M${x} 17 C${x + 3} 20 ${x + 4} 22 ${x + 4} 24 C${x + 4} 26 ${x + 3} 28 ${x} 31 C${x - 3} 28 ${x - 4} 26 ${x - 4} 24 C${x - 4} 22 ${x - 3} 20 ${x} 17 Z`} fill={core} />
   </>;
   return (
-    <div aria-hidden="true" className="atlas-strip" onScroll={recentre} ref={ref} style={{ height, "--atlas-tile": `${tile}px` } as CSSProperties}>
+    <div aria-hidden="true" className={fixed ? "atlas-strip atlas-strip--fixed" : "atlas-strip"} onScroll={fixed ? undefined : recentre} ref={ref} style={{ height, "--atlas-tile": `${tile}px` } as CSSProperties}>
       <div className="atlas-strip__track" style={{ height }}>
-        <svg height={height} preserveAspectRatio="none" style={{ width: `calc(100% + ${tile}px)` }}>
+        <svg height={height} preserveAspectRatio="none" style={{ width: fixed ? "100%" : `calc(100% + ${tile}px)` }}>
           <defs>
             <filter id={featherId} x="-5%" y="-10%" width="110%" height="120%">
               <feTurbulence type="fractalNoise" baseFrequency=".015 .7" numOctaves={3} seed={7} result="noise" />

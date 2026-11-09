@@ -86,11 +86,11 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
           <button aria-pressed={seasonPreference === "auto"} className="season-preview" data-season={calendarSeason} onClick={() => chooseSeason("auto")} type="button">
             <span className="season-preview__label">{t(`settings.season.${calendarSeason}`)}</span>
             <span className="season-preview__leaves"><SeasonLeaves force variant="static" /></span>
-            <AtlasStrip height={18} />
+            <AtlasStrip fixed height={18} />
           </button>
           <button aria-pressed={seasonPreference === "off"} className="season-preview" data-season="none" onClick={() => chooseSeason("off")} type="button">
             <span className="season-preview__label">{t("settings.seasonDefault")}</span>
-            <AtlasStrip height={18} />
+            <AtlasStrip fixed height={18} />
           </button>
         </div>
       </div>}
