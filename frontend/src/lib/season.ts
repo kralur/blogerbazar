@@ -8,7 +8,8 @@ export type SeasonPreference = "auto" | "off";
 const storageKey = "bloggerbazar.season";
 const noteKey = "bloggerbazar.seasonNoteDismissed";
 export const seasonPreferenceChangedEvent = "bloggerbazar:season-preference-changed";
-const drawnSeasons: readonly Season[] = ["autumn"];
+// Seasons with drawings in `components/SeasonArt.tsx`; the others fall back to the plain design.
+export const drawnSeasons: readonly Season[] = ["autumn", "winter"];
 
 export function seasonOf(date: Date): Season {
   const month = date.getMonth();

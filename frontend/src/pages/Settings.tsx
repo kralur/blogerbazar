@@ -4,7 +4,7 @@ import { AccountActions } from "../components/AccountActions";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { AtlasStrip } from "../components/AtlasStrip";
 import { PageHeader } from "../components/PageHeader";
-import { SeasonLeaves } from "../components/SeasonLeaves";
+import { SeasonArt } from "../components/SeasonArt";
 import { BottomNav, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
 import { isAtlasSoundOn, setAtlasSound } from "../lib/atlasSound";
@@ -94,7 +94,7 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
         <div aria-label={t("settings.season")} className="season-previews" role="group">
           <button aria-pressed={seasonPreference === "auto"} className="season-preview" data-season={calendarSeason} onClick={() => chooseSeason("auto")} type="button">
             <span className="season-preview__label">{t(`settings.season.${calendarSeason}`)}</span>
-            <span className="season-preview__leaves"><SeasonLeaves force variant="static" /></span>
+            <span className="season-preview__art"><SeasonArt force variant="static" /></span>
             <AtlasStrip fixed height={18} />
           </button>
           <button aria-pressed={seasonPreference === "off"} className="season-preview" data-season="none" onClick={() => chooseSeason("off")} type="button">

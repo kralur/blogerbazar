@@ -1,5 +1,5 @@
 import { AtlasBackground } from "../components/AtlasBackground";
-import { SeasonLeaves } from "../components/SeasonLeaves";
+import { SeasonArt } from "../components/SeasonArt";
 import { Button, Icon } from "../components/ui";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n";
@@ -12,7 +12,7 @@ export function TelegramAuthorization({ isTelegram, loading, failed, onContinue 
   const showRetryIcon = !isTelegram && !loading;
   return <main className="ftue-screen ftue-screen--atlas">
     <AtlasBackground />
-    <SeasonLeaves variant="falling" />
+    <SeasonArt variant="falling" />
     <div className="ftue-screen__layout">
       <section className="ftue-screen__content" data-content-header>
         <div className="ftue-screen__language"><LanguageSwitcher /></div>

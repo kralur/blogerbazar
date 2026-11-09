@@ -5,7 +5,7 @@ import { readHomeSnapshot, writeHomeSnapshot } from "../data/homeSnapshot";
 import type { BloggerCardData } from "../components/BloggerCard";
 import type { CampaignCardData } from "../components/CampaignCard";
 import { AtlasStrip } from "../components/AtlasStrip";
-import { SeasonLeaves } from "../components/SeasonLeaves";
+import { SeasonArt } from "../components/SeasonArt";
 import { SeasonNote } from "../components/SeasonNote";
 import { Avatar, BottomNav, Icon, Skeleton } from "../components/ui";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
@@ -145,7 +145,7 @@ function HomeHero({ role, categories, me }: { role: HomeRole; categories: string
   };
   const meLine = me ? [me.name, me.city ? cityLabel(me.city, language) : null].filter(Boolean).join(", ") : null;
   return <section aria-labelledby="home-search-title" className="home-hero">
-    <SeasonLeaves variant="static" />
+    <SeasonArt variant="static" />
     <p className="home-hero__me">{meLine ?? " "}</p>
     <h2 className="home-hero__title" id="home-search-title">{t(findsCreators ? "home.searchCreatorsTitle" : "home.searchCampaignsTitle")}</h2>
     <form className="home-search__form" onSubmit={submit} role="search">

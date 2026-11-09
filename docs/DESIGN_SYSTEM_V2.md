@@ -161,7 +161,9 @@ The landing (D61) and, from 2026-11-07, the Mini App Home (D62) follow the "Baza
   snaps back, a long or fast one closes.
 - Atlas strip feedback (D63, package F): a selection tick per tile while the finger drags the strip; an optional
   plucked pentatonic note (`lib/atlasSound.ts`, off by default, switch in Settings).
-- Seasons (D63): `lib/season.ts` sets `data-season` on `<html>` from the calendar (autumn only so far); the atlas is
-  drawn from `--bb-atlas-*` tokens so a season recolours it without touching lime or tile; `components/SeasonLeaves.tsx`
-  adds chinar leaves (static on the Home hero, falling on the first screen). The person switches the season off in
+- Seasons (D63): `lib/season.ts` sets `data-season` on `<html>` from the calendar (autumn and winter drawn so far);
+  the atlas is drawn from `--bb-atlas-*` tokens so a season recolours it without touching lime or tile.
+  `components/SeasonArt.tsx` picks the season's drawing for the two layers every season shares
+  (`components/season/FallingArt.tsx`: static pieces on the Home hero, falling and catchable pieces on the first
+  screens); autumn is chinar leaves, winter is snowflakes. A new season is one module plus an entry in `SeasonArt`. The person switches the season off in
   Settings or from the note under the Home strip.
