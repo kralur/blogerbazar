@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
 import { formatRating } from "../lib/currency";
@@ -314,6 +314,7 @@ export function Modal({ open, title, children, onClose, id, variant = "default" 
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const drag = useRef<{ startY: number; startTime: number; moved: number } | null>(null);
   const close = useCallback(() => onCloseRef.current(), []);
   useEffect(() => {
     if (!open) return;
@@ -352,15 +353,45 @@ export function Modal({ open, title, children, onClose, id, variant = "default" 
   }, [close, open, registerBackButtonHandler]);
   if (!open) return null;
   if (typeof document === "undefined") return null;
+  // The sheet follows the finger from its grip (owner, 2026-11-09): a short pull snaps back, a long or fast one closes.
+  const beginDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    drag.current = { startY: event.clientY, startTime: performance.now(), moved: 0 };
+    dialogRef.current?.classList.add("bottom-sheet--dragging");
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const moveDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const sheet = dialogRef.current;
+    if (!drag.current || !sheet) return;
+    drag.current.moved = Math.max(0, event.clientY - drag.current.startY);
+    sheet.style.transform = `translateY(${drag.current.moved}px)`;
+  };
+  const endDrag = () => {
+    const sheet = dialogRef.current;
+    const state = drag.current;
+    drag.current = null;
+    if (!sheet || !state) return;
+    sheet.classList.remove("bottom-sheet--dragging");
+    const velocity = state.moved / Math.max(1, performance.now() - state.startTime);
+    if (state.moved > 96 || (state.moved > 48 && velocity > 0.8)) {
+      sheet.classList.add("bottom-sheet--leaving");
+      sheet.style.transform = "translateY(110%)";
+      window.setTimeout(close, 200);
+      return;
+    }
+    sheet.style.transform = "";
+  };
   return createPortal(
-    <div aria-modal="true" className={cn("bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end px-3 backdrop-blur-sm", variant === "neutral" && "bottom-sheet-backdrop--neutral")} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
+    <div aria-modal="true" className={cn("bottom-sheet-backdrop fixed inset-0 z-[60] grid place-items-end backdrop-blur-sm", variant === "neutral" && "bottom-sheet-backdrop--neutral")} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }} role="dialog">
       <div aria-labelledby={titleId} className={cn("bottom-sheet w-full max-w-[430px] rounded-t-[var(--bb-radius-overlay)] p-5", variant === "neutral" && "bottom-sheet--neutral")} data-keyboard-scroll-container id={id} ref={dialogRef} tabIndex={-1}>
-        <div className="ds-dialog__handle mx-auto mb-4 h-1 w-10 rounded-full" />
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-xl font-extrabold" id={titleId}>{title}</h3>
-          <button aria-label={t("ui.close")} className="ds-icon-button grid h-10 w-10 place-items-center rounded-full" onClick={close} type="button">
-            <Icon className="h-4 w-4" name="close" />
-          </button>
+        <div className="bottom-sheet__grip" onPointerCancel={endDrag} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={endDrag}>
+          <div className="ds-dialog__handle mx-auto h-1 w-10 rounded-full" />
+          <div className="bottom-sheet__head mt-4 flex items-center justify-between">
+            <h3 className="bottom-sheet__title text-xl font-extrabold" id={titleId}>{title}</h3>
+            <button aria-label={t("ui.close")} className="ds-icon-button grid h-10 w-10 place-items-center rounded-full" onClick={close} type="button">
+              <Icon className="h-4 w-4" name="close" />
+            </button>
+          </div>
         </div>
         {children}
       </div>

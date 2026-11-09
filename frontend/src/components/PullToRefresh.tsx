@@ -14,6 +14,7 @@ export function PullToRefresh({ enabled }: { enabled: boolean }) {
   const [distance, setDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef<number | null>(null);
+  const startX = useRef(0);
   const distanceRef = useRef(0);
   const refreshingRef = useRef(false);
   const armedRef = useRef(false);
@@ -25,6 +26,8 @@ export function PullToRefresh({ enabled }: { enabled: boolean }) {
       if (document.querySelector("[aria-modal='true']")) return false;
       const element = target instanceof Element ? target : null;
       if (element?.closest("input, textarea, select, [contenteditable='true']")) return false;
+      // The atlas strip scrolls sideways under the finger; that swipe is not a pull.
+      if (element?.closest(".atlas-strip")) return false;
       // Inside a scrolled inner list the gesture belongs to that list.
       for (let node = element; node && node !== document.body; node = node.parentElement) {
         if (node.scrollTop > 0) return false;
@@ -33,10 +36,13 @@ export function PullToRefresh({ enabled }: { enabled: boolean }) {
     };
     const onStart = (event: TouchEvent) => {
       startY.current = event.touches.length === 1 && canStart(event.target) ? event.touches[0].clientY : null;
+      startX.current = event.touches[0]?.clientX ?? 0;
     };
     const onMove = (event: TouchEvent) => {
       if (startY.current === null) return;
       const delta = event.touches[0].clientY - startY.current;
+      // A mostly sideways move is a horizontal scroll, not a pull.
+      if (Math.abs(event.touches[0].clientX - startX.current) > Math.abs(delta) + 8) { startY.current = null; if (distanceRef.current) { distanceRef.current = 0; setDistance(0); } return; }
       if (delta <= 0 || window.scrollY > 0) {
         if (distanceRef.current) { distanceRef.current = 0; setDistance(0); }
         return;

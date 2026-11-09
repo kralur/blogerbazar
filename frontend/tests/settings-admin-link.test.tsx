@@ -55,7 +55,8 @@ describe("Settings admin link", () => {
     expect(off).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: ru("settings.tipsOn") }));
-    expect(await screen.findByRole("status")).toHaveTextContent(ru("settings.tipsFailed"));
+    // The successful switch before it already showed "saved"; the failure message replaces it.
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(ru("settings.tipsFailed")));
     expect(off).toHaveAttribute("aria-pressed", "true");
   });
 });

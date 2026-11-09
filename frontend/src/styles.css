@@ -1790,7 +1790,7 @@ html .ftue-screen--atlas .ftue-primary-button:disabled { border-color: rgba(255,
 .season-leaves { position: absolute; z-index: 0; pointer-events: none; }
 .season-leaves--static { top: var(--app-content-top, 0px); right: 0; width: 11.25rem; height: 8.75rem; }
 .season-preview .season-leaves--static { top: 0; }
-.season-leaves--falling { inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.season-leaves--falling { inset: 0; width: 100%; height: 100%; overflow: hidden; touch-action: none; }
 .season-leaves--falling > g { animation: season-leaf-fall var(--leaf-duration, 20s) linear var(--leaf-delay, 0s) infinite; pointer-events: auto; cursor: grab; touch-action: none; }
 .season-leaves--falling > g:active { cursor: grabbing; }
 .season-leaves--falling > g > g { animation: season-leaf-sway var(--leaf-sway, 3.5s) ease-in-out var(--leaf-delay, 0s) infinite alternate; transform-box: fill-box; transform-origin: center; }
@@ -1956,3 +1956,18 @@ html[data-telegram-theme] .profile-hero__account { margin-top: .75rem; padding: 
 .wizard-progress__bead--now { border-color: var(--bb-accent); background: var(--bb-accent); }
 .wizard-progress__bead--now { box-shadow: 0 0 0 4px rgba(200, 255, 0, .25); }
 .wizard-progress__label { color: var(--bb-lapis-text); }
+
+/* Package E. Empty parts of a first-run screen let the finger through to the leaves; controls still take the tap. */
+.ftue-screen--atlas .ftue-screen__layout,
+.ftue-screen--atlas .ftue-screen__layout * { pointer-events: none; }
+.ftue-screen--atlas .ftue-screen__layout :is(button, a, input, select, textarea, label, [role="radio"], [role="button"], .ftue-role-card, .ftue-screen__info, .bazar-welcome__tags) { pointer-events: auto; }
+/* Sheets: edge to edge, a grip that the finger can pull, the title in the display face. */
+.bottom-sheet-backdrop { padding-right: 0; padding-left: 0; }
+.bottom-sheet { border-right: 0; border-left: 0; transition: transform 200ms cubic-bezier(.2, .8, .2, 1); will-change: transform; }
+.bottom-sheet--dragging { transition: none; }
+.bottom-sheet--leaving { animation: none; }
+.bottom-sheet__grip { margin: -1.25rem -1.25rem 0; padding: 1.25rem 1.25rem 0; cursor: grab; touch-action: none; }
+.bottom-sheet__grip:active { cursor: grabbing; }
+.bottom-sheet .ds-dialog__handle { width: 2.75rem; height: .3125rem; background: var(--bb-text-secondary); opacity: .5; }
+.bottom-sheet__head { margin-bottom: 1rem; }
+.bottom-sheet__title { font-family: var(--bb-display); font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; }

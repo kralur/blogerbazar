@@ -31,7 +31,8 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
   const [isAdmin, setIsAdmin] = useState(() => Boolean(known && known.role >= 3 && !known.isBlocked));
   // D54: bot tips; null until the account is known, so the switch never shows a guess.
   const [tipsEnabled, setTipsEnabled] = useState<boolean | null>(() => known ? known.tipsEnabled ?? true : null);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState<{ id: number; message: string; tone: "success" | "error" } | null>(null);
+  const saved = () => { haptic.success(); setToast({ id: Date.now(), message: t("settings.saved"), tone: "success" }); };
   useEffect(() => {
     let active = true;
     getCurrentPlatformUser().then((user) => {
@@ -47,27 +48,27 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
     haptic.selection();
     const previous = tipsEnabled;
     setTipsEnabled(enabled);
-    setToast("");
     try {
       const user = await setBotTips(enabled);
       setTipsEnabled(user.tipsEnabled ?? enabled);
+      saved();
     } catch {
       setTipsEnabled(previous);
-      setToast(t("settings.tipsFailed"));
+      setToast({ id: Date.now(), message: t("settings.tipsFailed"), tone: "error" });
     }
   };
 
   const chooseSeason = (value: SeasonPreference) => {
     if (value === seasonPreference) return;
-    haptic.selection();
     setSeasonPreferenceState(value);
     setSeasonPreference(value);
+    saved();
   };
 
   const chooseTheme = (value: ThemePreference) => {
-    haptic.selection();
     setTheme(value);
     setThemePreference(value);
+    saved();
   };
 
   return <div className="screen screen--with-nav space-y-5 px-4 pt-5">
@@ -105,7 +106,7 @@ export function Settings({ onSessionReset }: { onSessionReset?: () => void }) {
     </div>
     <AccountActions onSessionReset={onSessionReset} />
     <p className="text-center text-xs text-brand-muted">BloggerBazar · {t("common.version", { version: "1.0.0" })}</p>
-    <Toast message={toast} tone="error" />
+    <Toast key={toast?.id} message={toast?.message ?? ""} tone={toast?.tone ?? "success"} />
     <BottomNav />
   </div>;
 }
