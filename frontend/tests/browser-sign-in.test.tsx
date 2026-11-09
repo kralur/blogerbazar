@@ -106,18 +106,6 @@ describe("browser sign-in confirmation in the Mini App", () => {
     expect(screen.queryByRole("button", { name: "42" })).not.toBeInTheDocument();
   });
 
-  it("refuses a link somebody sent in a chat and cancels it at once", async () => {
-    api.previewBrowserSignIn.mockResolvedValue(preview("sharedLink", { options: [], companyName: null }));
-    const onClose = vi.fn();
-    render(<I18nProvider><BrowserSignInConfirm code={code} onClose={onClose} onRoleChanged={vi.fn()} /></I18nProvider>);
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(ru("browser.confirm.sharedLink"));
-    expect(api.declineBrowserSignIn).toHaveBeenCalledWith(code);
-    expect(screen.queryByRole("button", { name: ru("browser.confirm.notMe") })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: ru("browser.confirm.close") }));
-    expect(onClose).toHaveBeenCalled();
-  });
-
   it("switches a member with another role to Business before the numbers appear", async () => {
     api.previewBrowserSignIn.mockResolvedValueOnce(preview("switchToBusiness")).mockResolvedValue(preview("ok"));
     marketplace.selectMarketplaceRole.mockResolvedValue(undefined);

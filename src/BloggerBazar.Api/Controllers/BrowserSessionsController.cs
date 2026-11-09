@@ -70,7 +70,7 @@ public sealed class BrowserSessionsController(ISender sender, BrowserRequestGuar
     {
         if (!guard.IsEnabled) return NotFound();
         var actor = GetTelegramUser();
-        return Ok(await sender.Send(new PreviewBrowserSignInQuery(actor.Id, request.Code, actor.LaunchChatType), cancellationToken));
+        return Ok(await sender.Send(new PreviewBrowserSignInQuery(actor.Id, request.Code), cancellationToken));
     }
 
     [HttpPost("sign-in/confirm")]
@@ -79,7 +79,7 @@ public sealed class BrowserSessionsController(ISender sender, BrowserRequestGuar
     {
         if (!guard.IsEnabled) return NotFound();
         var actor = GetTelegramUser();
-        await sender.Send(new ConfirmBrowserSignInCommand(actor.Id, request.Code, request.Number, actor.LaunchChatType), cancellationToken);
+        await sender.Send(new ConfirmBrowserSignInCommand(actor.Id, request.Code, request.Number), cancellationToken);
         return NoContent();
     }
 

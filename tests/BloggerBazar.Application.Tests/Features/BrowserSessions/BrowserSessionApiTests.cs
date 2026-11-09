@@ -182,26 +182,24 @@ public sealed class BrowserSessionApiTests
         Assert.Equal(BrowserSignInStatuses.Declined, check.GetProperty("status").GetString());
     }
 
+    // Owner's test, 2026-11-09: Telegram Desktop opening the link from the browser reports the chat open at that moment
+    // (chat_type "private"), so where the link was opened from says nothing about who sent it. It must not refuse.
     [Fact]
-    public async Task A_sign_in_link_opened_from_a_chat_with_somebody_else_is_refused()
+    public async Task A_link_opened_while_a_chat_is_open_in_telegram_still_signs_in()
     {
-        var world = new World();
-        using var factory = new TestApiFactory(world);
+        using var factory = new TestApiFactory(new World());
         using var browser = CreateClient(factory);
-        using var victim = CreateClient(factory);
-        victim.DefaultRequestHeaders.Authorization = new("tma", BloggerBazarApiFactory.CreateInitData(Owner, chatType: "private"));
+        using var desktop = CreateClient(factory);
+        desktop.DefaultRequestHeaders.Authorization = new("tma", InitDataOpenedFromChat(Owner, "private"));
         var (code, number, pending) = await StartForCodeAsync(browser);
 
-        var preview = await (await victim.PostAsJsonAsync("/api/web/sign-in/preview", new { code })).Content.ReadFromJsonAsync<JsonElement>();
-        var confirm = await victim.PostAsJsonAsync("/api/web/sign-in/confirm", new { code, number });
+        var preview = await (await desktop.PostAsJsonAsync("/api/web/sign-in/preview", new { code })).Content.ReadFromJsonAsync<JsonElement>();
+        var confirm = await desktop.PostAsJsonAsync("/api/web/sign-in/confirm", new { code, number });
         var check = await (await SendAsync(browser, HttpMethod.Post, "/api/web/sign-in/check", pending, MiniApp)).Content.ReadFromJsonAsync<JsonElement>();
 
-        Assert.Equal(BrowserEligibility.SharedLink, preview.GetProperty("eligibility").GetString());
-        Assert.Equal(0, preview.GetProperty("options").GetArrayLength());
-        Assert.Equal(HttpStatusCode.Conflict, confirm.StatusCode);
-        Assert.Equal(BrowserSessionCodes.LinkShared, (await confirm.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
-        Assert.Equal(BrowserSignInStatuses.Declined, check.GetProperty("status").GetString());
-        Assert.Empty(world.Bot.NotifiedChats);
+        Assert.Equal(BrowserEligibility.Ok, preview.GetProperty("eligibility").GetString());
+        Assert.Equal(HttpStatusCode.NoContent, confirm.StatusCode);
+        Assert.Equal(BrowserSignInStatuses.Approved, check.GetProperty("status").GetString());
     }
 
     [Fact]
@@ -273,6 +271,17 @@ public sealed class BrowserSessionApiTests
         if (origin is not null) request.Headers.Add("Origin", origin);
         if (body is not null) request.Content = JsonContent.Create(body);
         return await client.SendAsync(request);
+    }
+
+    // Signed initData as Telegram sends it for a direct link opened while a chat is open (chat_type is signed too).
+    private static string InitDataOpenedFromChat(long telegramUserId, string chatType)
+    {
+        var authDate = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var user = JsonSerializer.Serialize(new { id = telegramUserId, first_name = "Owner" });
+        var dataCheckString = $"auth_date={authDate}\nchat_type={chatType}\nuser={user}";
+        var secret = System.Security.Cryptography.HMACSHA256.HashData(System.Text.Encoding.UTF8.GetBytes("WebAppData"), System.Text.Encoding.UTF8.GetBytes(BloggerBazarApiFactory.BotToken));
+        var hash = Convert.ToHexString(System.Security.Cryptography.HMACSHA256.HashData(secret, System.Text.Encoding.UTF8.GetBytes(dataCheckString))).ToLowerInvariant();
+        return $"auth_date={authDate}&chat_type={chatType}&user={Uri.EscapeDataString(user)}&hash={hash}";
     }
 
     private static HttpClient CreateClient(WebApplicationFactory<Program> factory) => factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });

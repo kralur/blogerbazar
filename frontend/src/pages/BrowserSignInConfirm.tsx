@@ -28,7 +28,6 @@ export function BrowserSignInConfirm({ code, onClose, onRoleChanged }: { code: s
     const code = error instanceof ApiError ? error.code : undefined;
     const key = code === "browser_number_mismatch" ? "browser.confirm.mismatch"
       : code === "browser_company_required" ? "browser.confirm.noCompany"
-        : code === "browser_link_shared" ? "browser.confirm.sharedLink"
         : error instanceof ApiError && error.status === 404 ? "browser.confirm.gone"
           : "browser.confirm.failed";
     return t(key);
@@ -37,10 +36,7 @@ export function BrowserSignInConfirm({ code, onClose, onRoleChanged }: { code: s
   const load = useCallback(async () => {
     setState({ kind: "loading" });
     try {
-      const preview = await previewBrowserSignIn(code);
-      // Somebody sent this link: cancel it at once, so their browser stops waiting.
-      if (preview.eligibility === "sharedLink") void declineBrowserSignIn(code).catch(() => undefined);
-      setState({ kind: "ready", preview });
+      setState({ kind: "ready", preview: await previewBrowserSignIn(code) });
     } catch (error) {
       setState({ kind: "failed", message: failure(error) });
     }
@@ -101,13 +97,12 @@ export function BrowserSignInConfirm({ code, onClose, onRoleChanged }: { code: s
         </>}
         {preview?.eligibility === "switchToBusiness" && <p className="ftue-screen__description ftue-screen__description--left">{t("browser.confirm.switchHint")}</p>}
         {preview?.eligibility === "noCompany" && <p className="ftue-screen__description ftue-screen__description--left">{t("browser.confirm.noCompany")}</p>}
-        {preview?.eligibility === "sharedLink" && <p className="phone-verification__note" role="alert">{t("browser.confirm.sharedLink")}</p>}
         {message && <p className="phone-verification__note" role="status">{message}</p>}
       </section>
       <div className="grid gap-2">
         {preview?.eligibility === "switchToBusiness" && <Button aria-busy={busy} className="ftue-primary-button w-full" disabled={busy} onClick={() => void switchToBusiness(preview)} type="button">{t("browser.confirm.switch")}</Button>}
-        {preview && (preview.eligibility === "ok" || preview.eligibility === "switchToBusiness") && <Button className="w-full" disabled={busy} onClick={() => void decline()} type="button" variant="secondary">{t("browser.confirm.notMe")}</Button>}
-        {(!preview || preview.eligibility === "noCompany" || preview.eligibility === "sharedLink") && state.kind !== "loading" && <Button className={`w-full ${state.kind === "done" ? "ftue-primary-button" : ""}`} onClick={onClose} type="button" variant={state.kind === "done" ? "primary" : "secondary"}>{t("browser.confirm.close")}</Button>}
+        {preview && preview.eligibility !== "noCompany" && <Button className="w-full" disabled={busy} onClick={() => void decline()} type="button" variant="secondary">{t("browser.confirm.notMe")}</Button>}
+        {(!preview || preview.eligibility === "noCompany") && state.kind !== "loading" && <Button className={`w-full ${state.kind === "done" ? "ftue-primary-button" : ""}`} onClick={onClose} type="button" variant={state.kind === "done" ? "primary" : "secondary"}>{t("browser.confirm.close")}</Button>}
       </div>
     </div>
   </main>;

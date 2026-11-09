@@ -75,44 +75,6 @@ public sealed class BrowserSignInTests
         Assert.Equal(BrowserSessionCodes.CompanyRequired, error.Code);
     }
 
-    // Device-code phishing: "open this link and tap 42" sent in a chat. Telegram signs where the link was opened from.
-    [Theory]
-    [InlineData("private")]
-    [InlineData("group")]
-    [InlineData("supergroup")]
-    [InlineData("channel")]
-    public async Task A_link_somebody_sent_in_a_chat_cannot_be_confirmed(string chatType)
-    {
-        var (store, users, businesses) = Setup();
-        var ticket = await store.StartSignInAsync(Laptop, CancellationToken.None);
-
-        var preview = await new PreviewBrowserSignInHandler(store, users, businesses).Handle(new PreviewBrowserSignInQuery(Owner, ticket.Code, chatType), CancellationToken.None);
-        var error = await Assert.ThrowsAsync<BusinessRuleConflictException>(() =>
-            new ConfirmBrowserSignInHandler(store, users, businesses).Handle(new ConfirmBrowserSignInCommand(Owner, ticket.Code, ticket.SignIn.Number, chatType), CancellationToken.None));
-        var check = await CheckHandler(store, users, businesses).Handle(new CheckBrowserSignInCommand(ticket.Code, ticket.Secret), CancellationToken.None);
-
-        Assert.Equal(BrowserEligibility.SharedLink, preview.Eligibility);
-        Assert.Empty(preview.Options);
-        Assert.Null(preview.CompanyName);
-        Assert.Equal(BrowserSessionCodes.LinkShared, error.Code);
-        Assert.Equal(BrowserSignInStatuses.Declined, check.Status);
-    }
-
-    [Fact]
-    public async Task A_link_opened_from_the_persons_own_chat_or_a_qr_code_is_fine()
-    {
-        var (store, users, businesses) = Setup();
-        var fromSavedMessages = await store.StartSignInAsync(Laptop, CancellationToken.None);
-        var fromQrCode = await store.StartSignInAsync(Laptop, CancellationToken.None);
-        var confirm = new ConfirmBrowserSignInHandler(store, users, businesses);
-
-        await confirm.Handle(new ConfirmBrowserSignInCommand(Owner, fromSavedMessages.Code, fromSavedMessages.SignIn.Number, "sender"), CancellationToken.None);
-        await confirm.Handle(new ConfirmBrowserSignInCommand(Owner, fromQrCode.Code, fromQrCode.SignIn.Number), CancellationToken.None);
-
-        Assert.Equal(BrowserSignInStatuses.Approved, (await store.GetSignInAsync(fromSavedMessages.Code, CancellationToken.None))?.Status);
-        Assert.Equal(BrowserSignInStatuses.Approved, (await store.GetSignInAsync(fromQrCode.Code, CancellationToken.None))?.Status);
-    }
-
     [Fact]
     public async Task A_wrong_number_cancels_the_sign_in_for_good()
     {

@@ -6,8 +6,7 @@ import { api } from "./client";
 
 export type BrowserSignInStart = { code: string; number: number; link: string; expiresAtUtc: string };
 export type BrowserSignInStatus = "pending" | "approved" | "declined" | "expired";
-// sharedLink: the link was opened from a chat with somebody else, so somebody sent it; it cannot be confirmed.
-export type BrowserEligibility = "ok" | "switchToBusiness" | "noCompany" | "sharedLink";
+export type BrowserEligibility = "ok" | "switchToBusiness" | "noCompany";
 export type BrowserSignInPreview = {
   browser: string;
   os: string;

@@ -862,7 +862,6 @@
   ,"browser.confirm.switchHint": "Brauzerda kompaniya nomidan ishlanadi. Kirish uchun «Biznes» roliga o‘ting."
   ,"browser.confirm.switch": "«Biznes»ga o‘tish"
   ,"browser.confirm.noCompany": "Brauzerda faqat kompaniya xodimlari ishlaydi. BloggerBazar’da kompaniya yarating yoki egasidan sizni taklif qilishini so‘rang."
-  ,"browser.confirm.sharedLink": "Bu havola sizga chatda yuborilgan. Begona havola orqali kirish tasdiqlanmaydi: shu yo‘l bilan kompaniyaga kirishga urinishadi. Kirish bekor qilindi."
   ,"browser.confirm.mismatch": "Raqam mos kelmadi, kirish bekor qilindi. Brauzerda kirishni qaytadan boshlang."
   ,"browser.confirm.gone": "Havola eskirgan yoki allaqachon ishlatilgan. Brauzerda kirishni qaytadan boshlang."
   ,"browser.confirm.failed": "Kirishni tasdiqlab bo‘lmadi. Yana urinib ko‘ring."
