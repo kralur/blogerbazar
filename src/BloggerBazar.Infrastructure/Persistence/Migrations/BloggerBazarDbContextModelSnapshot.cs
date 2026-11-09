@@ -373,6 +373,45 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.ToTable("brand_face_profiles", (string)null);
                 });
 
+            modelBuilder.Entity("BloggerBazar.Domain.Entities.BusinessMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long?>("InvitedByTelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("JoinedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("RemovedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("TelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessId");
+
+                    b.HasIndex(new[] { "BusinessId" }, "IX_business_members_active_owner")
+                        .IsUnique()
+                        .HasFilter("\"RemovedAtUtc\" IS NULL AND \"Role\" = 0");
+
+                    b.HasIndex(new[] { "TelegramUserId" }, "IX_business_members_active_person")
+                        .IsUnique()
+                        .HasFilter("\"RemovedAtUtc\" IS NULL");
+
+                    b.ToTable("business_members", (string)null);
+                });
+
             modelBuilder.Entity("BloggerBazar.Domain.Entities.BusinessProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1217,6 +1256,15 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.HasOne("BloggerBazar.Domain.Entities.PlatformUser", null)
                         .WithMany()
                         .HasForeignKey("PlatformUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BloggerBazar.Domain.Entities.BusinessMember", b =>
+                {
+                    b.HasOne("BloggerBazar.Domain.Entities.BusinessProfile", null)
+                        .WithMany()
+                        .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -34,7 +34,8 @@ public sealed class GetMyCampaignApplicationsHandler(
         }
 
         var blogger = role is null or MarketplaceRole.Blogger ? await bloggers.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;
-        var business = role is null or MarketplaceRole.Business ? await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;
+        // D64: the company the caller works for (any team role can see its applications).
+        var business = role is null or MarketplaceRole.Business ? (await businesses.GetMembershipAsync(query.TelegramUserId, cancellationToken))?.Business : null;
         var brandFace = brandFaces is not null && role == MarketplaceRole.BrandFace ? await brandFaces.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) : null;
         return await catalog.GetCampaignApplicationsAsync(blogger?.Id, business?.Id, cancellationToken, brandFace?.Id);
     }

@@ -1,5 +1,6 @@
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Domain.Entities;
+using BloggerBazar.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -9,6 +10,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
 {
     public DbSet<BloggerProfile> BloggerProfiles => Set<BloggerProfile>();
     public DbSet<BusinessProfile> BusinessProfiles => Set<BusinessProfile>();
+    public DbSet<BusinessMember> BusinessMembers => Set<BusinessMember>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignApplication> CampaignApplications => Set<CampaignApplication>();
     public DbSet<Deal> Deals => Set<Deal>();
@@ -190,6 +192,19 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         platform.HasOne(entity => entity.Blogger).WithMany(entity => entity.Platforms).HasForeignKey(entity => entity.BloggerId).OnDelete(DeleteBehavior.Cascade);
         platform.HasIndex(entity => entity.BloggerId);
 
+        // D64: a company's team. One active owner per company, one active company per person; removed members stay
+        // for the journal and drop out of both rules.
+        var member = modelBuilder.Entity<BusinessMember>();
+        member.ToTable("business_members");
+        member.HasKey(entity => entity.Id);
+        member.Property(entity => entity.Role).HasConversion<int>();
+        member.Ignore(entity => entity.IsActive);
+        member.HasOne<BusinessProfile>().WithMany().HasForeignKey(entity => entity.BusinessId).OnDelete(DeleteBehavior.Cascade);
+        member.HasIndex(entity => entity.BusinessId);
+        // Named indexes: two indexes on BusinessId must stay two (an unnamed HasIndex on the same column is one index).
+        member.HasIndex(entity => entity.TelegramUserId, "IX_business_members_active_person").IsUnique().HasFilter("\"RemovedAtUtc\" IS NULL");
+        member.HasIndex(entity => entity.BusinessId, "IX_business_members_active_owner").IsUnique().HasFilter("\"RemovedAtUtc\" IS NULL AND \"Role\" = 0");
+
         var business = modelBuilder.Entity<BusinessProfile>();
         business.ToTable("business_profiles");
         business.HasKey(entity => entity.Id);
@@ -333,5 +348,24 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         creditLedgerEntry.HasIndex(entity => entity.TelegramUserId);
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => base.SaveChangesAsync(cancellationToken);
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        AddOwnerMembersForNewCompanies();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    // D64: a company never exists without its owner in the team, whoever creates it (the profile form, the
+    // development seed, a test). A revived company gets its owner back in CreateBusinessProfile.
+    private void AddOwnerMembersForNewCompanies()
+    {
+        var added = ChangeTracker.Entries<BusinessProfile>().Where(entry => entry.State == EntityState.Added).Select(entry => entry.Entity).ToList();
+        if (added.Count == 0) return;
+        var withOwner = ChangeTracker.Entries<BusinessMember>()
+            .Where(entry => entry.State != EntityState.Deleted && entry.Entity.Role == BusinessMemberRole.Owner)
+            .Select(entry => entry.Entity.BusinessId).ToHashSet();
+        foreach (var company in added.Where(company => !withOwner.Contains(company.Id)))
+        {
+            BusinessMembers.Add(BusinessMember.Owner(company.Id, company.TelegramUserId, company.CreatedAtUtc));
+        }
+    }
 }

@@ -79,6 +79,7 @@ internal static class DealResultRules
     public static void RequireBusiness(DealParticipantContext participant)
     {
         if (participant.Role != MarketplaceRole.Business) throw new UnauthorizedAccessException("Only the business of the deal does this.");
+        DealAccess.EnsureCanOperate(participant);
     }
 
     public static InvalidOperationException PublicationNotFound() => new("Publication was not found.");

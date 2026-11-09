@@ -53,7 +53,7 @@ public sealed class GetRecommendationsHandler(
             case MarketplaceRole.BrandFace when await brandFaces.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) is { IsDeleted: false } brandFace:
                 return new RecommendationsDto(RecommendationAudiences.Creator,
                     await recommendations.CampaignsForCreatorAsync(MarketplaceRole.BrandFace, brandFace.Id, brandFace.Categories.ToArray(), brandFace.City, Take, cancellationToken), [], []);
-            case MarketplaceRole.Business when await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken) is { } business:
+            case MarketplaceRole.Business when (await businesses.GetMembershipAsync(query.TelegramUserId, cancellationToken))?.Business is { } business:
                 var (matchedBloggers, matchedBrandFaces) = await recommendations.CreatorsForBusinessAsync(business.Id, Take, cancellationToken);
                 return new RecommendationsDto(RecommendationAudiences.Business, [], matchedBloggers, matchedBrandFaces);
             default:

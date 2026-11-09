@@ -62,7 +62,8 @@ public sealed class UploadProfileMediaHandler(
         {
             ProfileMediaTarget.Blogger => ToOwnedProfile(await bloggers.GetByTelegramUserIdAsync(telegramUserId, cancellationToken)),
             ProfileMediaTarget.BrandFace => ToOwnedProfile(await brandFaces.GetByTelegramUserIdAsync(telegramUserId, cancellationToken)),
-            ProfileMediaTarget.Business => ToOwnedProfile(await businesses.GetByTelegramUserIdAsync(telegramUserId, cancellationToken)),
+            // D64: the company's photo belongs to the profile, so the owner or an admin changes it.
+            ProfileMediaTarget.Business => ToOwnedProfile(await Businesses.BusinessTeamAccess.FindAsync(businesses, telegramUserId, BloggerBazar.Domain.Enums.BusinessPermission.ManageProfile, cancellationToken)),
             _ => throw new InvalidOperationException("Profile not found.")
         };
     }

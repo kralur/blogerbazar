@@ -180,7 +180,8 @@ public sealed class CreateOfferHandler(
             throw new InvalidOperationException("Blogger profile was not found.");
         }
 
-        if (recipient.TelegramUserId == business.TelegramUserId)
+        // D64: nobody from the company's team receives the company's offer.
+        if (recipient.TelegramUserId == business.TelegramUserId || await businesses.IsMemberAsync(business.Id, recipient.TelegramUserId, cancellationToken))
         {
             throw new InvalidOperationException("You cannot send an offer to your own profile.");
         }

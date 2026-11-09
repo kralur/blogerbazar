@@ -46,6 +46,13 @@ public sealed class DeleteCurrentAccountHandler(
             blogger?.SoftDelete();
             brandFace?.SoftDelete();
             business?.SoftDelete();
+            // D64: the owner's company goes away with its team's access; a team member just leaves the company.
+            var leftAtUtc = DateTime.UtcNow;
+            if (business is not null)
+            {
+                await businesses.RemoveOtherMembersAsync(business.Id, command.TelegramUserId, leftAtUtc, transactionCancellationToken);
+            }
+            await businesses.RemoveMembershipAsync(command.TelegramUserId, leftAtUtc, transactionCancellationToken);
             await favorites.DeleteForPlatformUserAsync(user.Id, transactionCancellationToken);
             await brandFaceFavorites.DeleteForPlatformUserAsync(user.Id, transactionCancellationToken);
             if (blogger is not null)

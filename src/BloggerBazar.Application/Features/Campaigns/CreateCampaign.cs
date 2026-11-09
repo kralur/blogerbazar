@@ -38,7 +38,7 @@ public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses,
         // Selected-role rule: only an account working as Business publishes campaigns, never a blogger who also owns one.
         var business = users is not null
             ? await CampaignManagementAccess.RequireBusinessAsync(users, businesses, command.TelegramUserId, cancellationToken)
-            : await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
+            : (await businesses.GetMembershipAsync(command.TelegramUserId, cancellationToken))?.Business
                 ?? throw new InvalidOperationException("Create a business profile before publishing a campaign.");
         // Keeps one business from flooding the catalog; real businesses create a handful a week.
         if (await campaigns.CountCreatedSinceAsync(business.Id, DateTime.UtcNow.AddDays(-1), cancellationToken) >= DailyLimit)

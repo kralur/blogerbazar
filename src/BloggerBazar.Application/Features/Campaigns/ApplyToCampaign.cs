@@ -73,8 +73,8 @@ public sealed class ApplyToCampaignHandler(
             throw new BusinessRuleConflictException("campaign_expired", "The campaign deadline has passed.");
         }
 
-        var business = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken);
-        if (business?.Id == campaign.BusinessId)
+        // D64: nobody from the company's team applies to its own campaign.
+        if (await businesses.IsMemberAsync(campaign.BusinessId, command.TelegramUserId, cancellationToken))
         {
             throw new InvalidOperationException("You cannot apply to your own campaign.");
         }

@@ -47,7 +47,8 @@ public sealed class SetProfileVisibilityHandler(
         var found = command.Role switch
         {
             MarketplaceRole.Blogger => await bloggers.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken) is { } blogger && Apply(blogger.SetHidden),
-            MarketplaceRole.Business => await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken) is { } business && Apply(business.SetHidden),
+            // D64: pausing the company is a profile decision (owner or admin).
+            MarketplaceRole.Business => await Businesses.BusinessTeamAccess.FindAsync(businesses, command.TelegramUserId, BusinessPermission.ManageProfile, cancellationToken) is { } business && Apply(business.SetHidden),
             MarketplaceRole.BrandFace => await brandFaces.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken) is { } brandFace && Apply(brandFace.SetHidden),
             _ => false
         };

@@ -68,6 +68,8 @@ public sealed class CreateReviewHandler(
     {
         var participant = await DealAccess.FindDealParticipantAsync(users, bloggers, businesses, command.TelegramUserId, cancellationToken, brandFaces)
             ?? throw DealAccess.DealNotFound();
+        // D64: a viewer in the company's team sees the deal but does not act on it.
+        DealAccess.EnsureCanOperate(participant);
         var deal = await deals.GetForParticipantAsync(command.DealId, participant.Role, participant.ProfileId, cancellationToken)
             ?? throw DealAccess.DealNotFound();
         if (deal.Status != DealStatus.Completed)

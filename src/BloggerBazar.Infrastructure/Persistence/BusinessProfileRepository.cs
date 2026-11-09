@@ -32,4 +32,43 @@ internal sealed class BusinessProfileRepository(BloggerBazarDbContext dbContext)
             .OrderBy(profile => profile.CreatedAtUtc).Take(take).ToListAsync(cancellationToken);
 
     public async Task AddAsync(BusinessProfile profile, CancellationToken cancellationToken) => await dbContext.BusinessProfiles.AddAsync(profile, cancellationToken);
+
+    // D64: the company of the caller's active membership; a deleted company gives nobody access.
+    public async Task<BusinessMembership?> GetMembershipAsync(long telegramUserId, CancellationToken cancellationToken)
+    {
+        var row = await (
+            from member in dbContext.BusinessMembers
+            where member.TelegramUserId == telegramUserId && member.RemovedAtUtc == null
+            join business in dbContext.BusinessProfiles on member.BusinessId equals business.Id
+            where !business.IsDeleted
+            select new { business, member.Role }).SingleOrDefaultAsync(cancellationToken);
+        return row is null ? null : new BusinessMembership(row.business, row.Role);
+    }
+
+    public Task<bool> IsMemberAsync(Guid businessId, long telegramUserId, CancellationToken cancellationToken) =>
+        dbContext.BusinessMembers.AnyAsync(member => member.BusinessId == businessId && member.TelegramUserId == telegramUserId && member.RemovedAtUtc == null, cancellationToken);
+
+    public async Task EnsureOwnerMemberAsync(BusinessProfile profile, CancellationToken cancellationToken)
+    {
+        var owner = await dbContext.BusinessMembers.SingleOrDefaultAsync(
+            member => member.BusinessId == profile.Id && member.TelegramUserId == profile.TelegramUserId && member.Role == BusinessMemberRole.Owner, cancellationToken);
+        if (owner is null)
+        {
+            await dbContext.BusinessMembers.AddAsync(BusinessMember.Owner(profile.Id, profile.TelegramUserId, DateTime.UtcNow), cancellationToken);
+        }
+        else
+        {
+            owner.Reactivate();
+        }
+    }
+
+    public Task RemoveOtherMembersAsync(Guid businessId, long ownerTelegramUserId, DateTime removedAtUtc, CancellationToken cancellationToken) =>
+        dbContext.BusinessMembers
+            .Where(member => member.BusinessId == businessId && member.TelegramUserId != ownerTelegramUserId && member.RemovedAtUtc == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(member => member.RemovedAtUtc, removedAtUtc), cancellationToken);
+
+    public Task RemoveMembershipAsync(long telegramUserId, DateTime removedAtUtc, CancellationToken cancellationToken) =>
+        dbContext.BusinessMembers
+            .Where(member => member.TelegramUserId == telegramUserId && member.RemovedAtUtc == null && member.Role != BusinessMemberRole.Owner)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(member => member.RemovedAtUtc, removedAtUtc), cancellationToken);
 }

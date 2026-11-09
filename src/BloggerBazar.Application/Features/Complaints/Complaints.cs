@@ -161,9 +161,11 @@ public sealed class CreateComplaintHandler(
         {
             ComplaintTargets.Blogger => await bloggers.GetByIdAsync(command.TargetId, cancellationToken) is { IsDeleted: false } blogger ? blogger.TelegramUserId : throw NotFound(),
             ComplaintTargets.BrandFace => await brandFaces.GetByIdAsync(command.TargetId, cancellationToken) is { IsDeleted: false } brandFace ? brandFace.TelegramUserId : throw NotFound(),
-            ComplaintTargets.Business => await businesses.GetByIdAsync(command.TargetId, cancellationToken) is { IsDeleted: false } business ? business.TelegramUserId : throw NotFound(),
+            ComplaintTargets.Business => await businesses.GetByIdAsync(command.TargetId, cancellationToken) is { IsDeleted: false } business
+                ? await OwnCompanyAsync(business, reporter, cancellationToken)
+                : throw NotFound(),
             ComplaintTargets.Campaign => await campaigns.GetByIdAsync(command.TargetId, cancellationToken) is { } campaign
-                ? (await businesses.GetByIdAsync(campaign.BusinessId, cancellationToken))?.TelegramUserId
+                ? await businesses.GetByIdAsync(campaign.BusinessId, cancellationToken) is { } campaignBusiness ? await OwnCompanyAsync(campaignBusiness, reporter, cancellationToken) : null
                 : throw NotFound(),
             ComplaintTargets.Offer => await RequireOfferAsync(command, cancellationToken),
             ComplaintTargets.Deal => await RequireDealAsync(command, cancellationToken),
@@ -189,6 +191,10 @@ public sealed class CreateComplaintHandler(
         _ = await deals.GetForParticipantAsync(command.TargetId, participant.Role, participant.ProfileId, cancellationToken) ?? throw NotFound();
         return null;
     }
+
+    // D64: a company counts as "your own" for everybody in its team, not only its owner.
+    private async Task<long?> OwnCompanyAsync(BloggerBazar.Domain.Entities.BusinessProfile business, long reporter, CancellationToken cancellationToken) =>
+        await businesses.IsMemberAsync(business.Id, reporter, cancellationToken) ? reporter : business.TelegramUserId;
 
     private static InvalidOperationException NotFound() => new("Complaint target was not found.");
 }

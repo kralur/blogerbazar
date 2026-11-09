@@ -192,7 +192,7 @@ public sealed class GetCampaignApplicationInboxHandler(
 {
     public async Task<CampaignApplicationInboxResult> Handle(GetCampaignApplicationInboxQuery query, CancellationToken cancellationToken)
     {
-        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, query.TelegramUserId, cancellationToken);
+        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, query.TelegramUserId, cancellationToken, BusinessPermission.View);
         var campaign = await campaigns.GetByIdForBusinessAsync(query.CampaignId, business.Id, cancellationToken)
             ?? throw new InvalidOperationException("Campaign was not found.");
         return await applications.SearchForBusinessAsync(business.Id, campaign.Id, new CampaignApplicationSearch(query.Status, query.Page, query.PageSize), cancellationToken);

@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Domain.Entities;
@@ -37,6 +38,12 @@ public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository busi
             throw new InvalidOperationException("A business profile already exists for this Telegram user.");
         }
 
+        // D64: one person works for one company; a member of another company's team does not open a second one.
+        if (await businesses.GetMembershipAsync(command.TelegramUserId, cancellationToken) is { } membership && membership.Business.TelegramUserId != command.TelegramUserId)
+        {
+            throw new BusinessRuleConflictException(BusinessTeamCodes.MemberOfAnotherCompany, "The caller already works for another company.");
+        }
+
         if (command.Username is not null && await businesses.GetByUsernameAsync(command.Username.Trim(), cancellationToken) is not null)
         {
             throw new InvalidOperationException("This Telegram username is already used by another business profile.");
@@ -55,6 +62,8 @@ public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository busi
         {
             await businesses.AddAsync(profile, cancellationToken);
         }
+        // D64: the company's creator is its owner in the team (a revived company gets its owner back).
+        await businesses.EnsureOwnerMemberAsync(profile, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null)
         {

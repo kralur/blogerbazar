@@ -1,3 +1,4 @@
+using BloggerBazar.Domain.Enums;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Domain.Entities;
 using MediatR;
@@ -38,7 +39,7 @@ public sealed class GetMyBusinessProfileHandler(IBusinessProfileRepository busin
 {
     public async Task<MyBusinessProfileDto?> Handle(GetMyBusinessProfileQuery query, CancellationToken cancellationToken)
     {
-        var profile = await businesses.GetByTelegramUserIdAsync(query.TelegramUserId, cancellationToken);
+        var profile = await BusinessTeamAccess.FindAsync(businesses, query.TelegramUserId, BusinessPermission.View, cancellationToken);
         return profile is null ? null : MyBusinessProfileDto.From(profile);
     }
 }

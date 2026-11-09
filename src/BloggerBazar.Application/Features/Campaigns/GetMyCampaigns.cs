@@ -83,7 +83,7 @@ public sealed class SearchMyCampaignsHandler(
 {
     public async Task<MyCampaignsResult> Handle(SearchMyCampaignsQuery query, CancellationToken cancellationToken)
     {
-        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, query.TelegramUserId, cancellationToken);
+        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, query.TelegramUserId, cancellationToken, BusinessPermission.View);
         var search = new MyCampaignsSearch(
             query.Status,
             string.IsNullOrWhiteSpace(query.Query) ? null : query.Query.Trim(),
@@ -101,7 +101,7 @@ public sealed class GetMyCampaignHandler(
 {
     public async Task<MyCampaignDetailsDto?> Handle(GetMyCampaignQuery query, CancellationToken cancellationToken)
     {
-        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, query.TelegramUserId, cancellationToken);
+        var business = await CampaignManagementAccess.RequireBusinessAsync(users, businesses, query.TelegramUserId, cancellationToken, BusinessPermission.View);
         return await campaigns.GetByIdAsync(business.Id, query.CampaignId, cancellationToken);
     }
 }
@@ -112,7 +112,8 @@ internal static class CampaignManagementAccess
         IPlatformUserRepository users,
         IBusinessProfileRepository businesses,
         long telegramUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        BusinessPermission permission = BusinessPermission.Operate)
     {
         var user = await users.GetByTelegramUserIdAsync(telegramUserId, cancellationToken);
         if (user is null || user.IsBlocked || user.IsDeleted || user.SelectedMarketplaceRole != MarketplaceRole.Business)
@@ -120,7 +121,11 @@ internal static class CampaignManagementAccess
             throw new UnauthorizedAccessException("An active business marketplace role is required.");
         }
 
-        return await businesses.GetByTelegramUserIdAsync(telegramUserId, cancellationToken)
+        // D64: the company of the caller's membership, if their team role allows the action.
+        var membership = await businesses.GetMembershipAsync(telegramUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("An active business profile is required.");
+        return membership.Allows(permission)
+            ? membership.Business
+            : throw new UnauthorizedAccessException("The caller's role in the company does not allow this action.");
     }
 }

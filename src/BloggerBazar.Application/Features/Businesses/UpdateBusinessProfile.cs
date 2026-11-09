@@ -1,3 +1,4 @@
+using BloggerBazar.Domain.Enums;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
 using FluentValidation;
@@ -39,7 +40,8 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
 {
     public async Task<BusinessProfileDto> Handle(UpdateBusinessProfileCommand command, CancellationToken cancellationToken)
     {
-        var profile = await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, cancellationToken)
+        // D64: the owner or an admin of the company edits its profile.
+        var profile = await BusinessTeamAccess.FindAsync(businesses, command.TelegramUserId, BusinessPermission.ManageProfile, cancellationToken)
             ?? throw new InvalidOperationException("Create a business profile before updating it.");
 
         var usernameOwner = command.Username is null ? null : await businesses.GetByUsernameAsync(command.Username.Trim(), cancellationToken);
