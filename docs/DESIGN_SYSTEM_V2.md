@@ -149,3 +149,7 @@ The landing (D61) and, from 2026-11-07, the Mini App Home (D62) follow the "Baza
   (`.ftue-screen--atlas`), under a lapis veil that thickens towards the bottom; white text and white role cards on top,
   the same in both themes.
 - Acid lime keeps its DS v2 meaning: the primary action, the selected tab, the edge of an item waiting for a decision.
+- Seasons (D63): `lib/season.ts` sets `data-season` on `<html>` from the calendar (autumn only so far); the atlas is
+  drawn from `--bb-atlas-*` tokens so a season recolours it without touching lime or tile; `components/SeasonLeaves.tsx`
+  adds chinar leaves (static on the Home hero, falling on the first screen). The person switches the season off in
+  Settings or from the note under the Home strip.

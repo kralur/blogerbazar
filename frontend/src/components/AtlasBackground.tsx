@@ -8,13 +8,13 @@ export function AtlasBackground() {
     <path d={`M${x} 17 C${x + 3} 20 ${x + 4} 22 ${x + 4} 24 C${x + 4} 26 ${x + 3} 28 ${x} 31 C${x - 3} 28 ${x - 4} 26 ${x - 4} 24 C${x - 4} 22 ${x - 3} 20 ${x} 17 Z`} fill={core} />
   </>;
   const row = (dx: number) => <>
-    {flame(28 + dx, "var(--bb-saffron)", "var(--bb-ink)", "#FFFFFF")}
-    {flame(88 + dx, "var(--bb-accent)", "var(--bb-tile)", "var(--bb-ink)")}
-    {flame(148 + dx, "var(--bb-coral)", "#FFFFFF", "var(--bb-lapis)")}
-    {flame(dx - 28, "var(--bb-coral)", "#FFFFFF", "var(--bb-lapis)")}
-    <rect x={2 + dx} width="3" height="48" fill="var(--bb-tile)" />
-    <rect x={57 + dx} width="3" height="48" fill="var(--bb-accent)" />
-    <rect x={117 + dx} width="3" height="48" fill="var(--bb-saffron)" />
+    {flame(28 + dx, "var(--bb-atlas-flame-1)", "var(--bb-atlas-core-1)", "var(--bb-atlas-dot-1)")}
+    {flame(88 + dx, "var(--bb-atlas-flame-2)", "var(--bb-atlas-core-2)", "var(--bb-atlas-dot-2)")}
+    {flame(148 + dx, "var(--bb-atlas-flame-3)", "var(--bb-atlas-core-3)", "var(--bb-atlas-dot-3)")}
+    {flame(dx - 28, "var(--bb-atlas-flame-3)", "var(--bb-atlas-core-3)", "var(--bb-atlas-dot-3)")}
+    <rect x={2 + dx} width="3" height="48" fill="var(--bb-atlas-thread-1)" />
+    <rect x={57 + dx} width="3" height="48" fill="var(--bb-atlas-thread-2)" />
+    <rect x={117 + dx} width="3" height="48" fill="var(--bb-atlas-thread-3)" />
   </>;
   return (
     <div aria-hidden="true" className="atlas-background">

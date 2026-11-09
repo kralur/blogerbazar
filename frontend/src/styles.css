@@ -1769,3 +1769,51 @@ html .ftue-screen--atlas .ftue-primary-button:disabled { border-color: rgba(255,
 .atlas-strip__track svg { animation: atlas-drift var(--atlas-drift-duration, 14s) linear infinite; }
 @keyframes atlas-drift { from { transform: translateX(0); } to { transform: translateX(calc(-1 * var(--atlas-tile, 95.33px))); } }
 @media (prefers-reduced-motion: reduce) { .atlas-strip__track svg { animation: none; } }
+
+/* Seasonal artefacts (D63). The atlas is drawn from its own tokens so a season can recolour it without touching
+   lime, tile or the other semantic colours; `data-season` on <html> (or on a preview card) picks the palette. */
+:root, [data-season="none"] {
+  --bb-atlas-flame-1: var(--bb-saffron); --bb-atlas-core-1: var(--bb-ink); --bb-atlas-dot-1: #FFFFFF;
+  --bb-atlas-flame-2: var(--bb-accent); --bb-atlas-core-2: var(--bb-tile); --bb-atlas-dot-2: var(--bb-ink);
+  --bb-atlas-flame-3: var(--bb-coral); --bb-atlas-core-3: #FFFFFF; --bb-atlas-dot-3: var(--bb-lapis);
+  --bb-atlas-thread-1: var(--bb-tile); --bb-atlas-thread-2: var(--bb-accent); --bb-atlas-thread-3: var(--bb-saffron);
+}
+/* Autumn: saffron, terracotta, ochre and burgundy flames with olive threads; the chinar leaves use the same colours. */
+[data-season="autumn"] {
+  --bb-atlas-flame-1: #F2B01E; --bb-atlas-core-1: #8C2F39; --bb-atlas-dot-1: #FFF3DC;
+  --bb-atlas-flame-2: #D96A2B; --bb-atlas-core-2: #0C1838; --bb-atlas-dot-2: #F2B01E;
+  --bb-atlas-flame-3: #C9A227; --bb-atlas-core-3: #FFF3DC; --bb-atlas-dot-3: #8C2F39;
+  --bb-atlas-thread-1: #7A8A2E; --bb-atlas-thread-2: #D96A2B; --bb-atlas-thread-3: #F2B01E;
+}
+.home-hero { position: relative; overflow: hidden; }
+.home-hero > :not(.season-leaves) { position: relative; z-index: 1; }
+.season-leaves { position: absolute; z-index: 0; pointer-events: none; }
+.season-leaves--static { top: var(--app-content-top, 0px); right: 0; width: 11.25rem; height: 8.75rem; }
+.season-preview .season-leaves--static { top: 0; }
+.season-leaves--falling { inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.season-leaves--falling > g { animation: season-leaf-fall var(--leaf-duration, 20s) linear var(--leaf-delay, 0s) infinite; }
+.season-leaves--falling > g > g { animation: season-leaf-sway var(--leaf-sway, 3.5s) ease-in-out var(--leaf-delay, 0s) infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes season-leaf-fall { 0% { transform: translate(var(--leaf-x), -60px); opacity: 0; } 6% { opacity: var(--leaf-opacity, .8); } 94% { opacity: var(--leaf-opacity, .8); } 100% { transform: translate(var(--leaf-x), 880px); opacity: 0; } }
+@keyframes season-leaf-sway { from { transform: translateX(-16px) rotate(-14deg); } to { transform: translateX(16px) rotate(14deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .season-leaves--falling > g { animation: none; transform: translate(var(--leaf-x), 640px); opacity: var(--leaf-opacity, .8); }
+  .season-leaves--falling > g > g { animation: none; }
+}
+.ftue-screen--atlas .season-leaves--falling { position: absolute; z-index: 0; }
+/* The quiet line under the Home strip while a season is on. */
+.season-note { display: flex; align-items: center; gap: .75rem; margin: .5rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.3; }
+.season-note__text { flex: 1 1 auto; min-width: 0; }
+.season-note__action { flex: none; color: var(--bb-tile-text); font-weight: 800; text-decoration: underline; text-decoration-color: var(--bb-tile); text-underline-offset: .2em; }
+.season-note__hide { flex: none; width: 1.75rem; height: 1.75rem; border-radius: 50%; color: var(--bb-text-secondary); font-size: 1.125rem; line-height: 1; }
+.season-note__hide:active { background: var(--bb-surface-secondary); }
+/* Settings: two small previews of the strip, the season one with its leaves. */
+.season-previews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; }
+.season-preview { position: relative; height: 5.375rem; overflow: hidden; border: 2px solid transparent; border-radius: .875rem; background: var(--bb-lapis); color: #FFFFFF; text-align: left; }
+.season-preview[aria-pressed="true"] { border-color: var(--bb-accent); }
+.season-preview:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
+.season-preview__label { position: absolute; top: .5rem; left: .625rem; z-index: 1; font-size: .75rem; font-weight: 800; }
+.season-preview__leaves { position: absolute; inset: 0; }
+.season-preview__leaves .season-leaves--static { width: 5.25rem; height: 4rem; }
+.season-preview .atlas-strip { position: absolute; right: 0; bottom: 0; left: 0; margin: 0; overflow: hidden; }
+.season-preview .atlas-strip__track { width: 100%; }
+.season-preview .atlas-strip__track svg { width: 100%; animation: none; }

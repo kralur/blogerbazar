@@ -815,4 +815,11 @@
   ,"admin.activityActive": "Заходили в приложение: сегодня {today}, за 7 дней {week}"
   ,"admin.siteTitle": "Полная админка"
   ,"admin.siteHint": "Списки, аналитика, воронка, журнал и безопасность. Откроется в браузере."
+  ,"settings.season": "Сезонное оформление"
+  ,"settings.season.autumn": "Осень"
+  ,"settings.seasonDefault": "Обычное"
+  ,"settings.seasonHint.autumn": "Листья чинары и осенние цвета атласа. Само сменится зимой, выключить можно в любой момент."
+  ,"home.season.autumn": "Осеннее оформление"
+  ,"home.seasonOff": "Выключить"
+  ,"home.seasonHide": "Скрыть подсказку"
 }

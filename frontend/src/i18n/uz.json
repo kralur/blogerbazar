@@ -814,4 +814,11 @@
   ,"admin.activityActive": "Ilovaga kirganlar: bugun {today}, 7 kunda {week}"
   ,"admin.siteTitle": "To‘liq admin panel"
   ,"admin.siteHint": "Ro‘yxatlar, tahlil, voronka, jurnal va xavfsizlik. Brauzerda ochiladi."
+  ,"settings.season": "Mavsumiy bezak"
+  ,"settings.season.autumn": "Kuz"
+  ,"settings.seasonDefault": "Oddiy"
+  ,"settings.seasonHint.autumn": "Chinor barglari va atlasning kuzgi ranglari. Qishda o‘zi almashadi, istalgan payt o‘chirish mumkin."
+  ,"home.season.autumn": "Kuzgi bezak"
+  ,"home.seasonOff": "O‘chirish"
+  ,"home.seasonHide": "Maslahatni yashirish"
 }
