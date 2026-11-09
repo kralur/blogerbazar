@@ -817,6 +817,8 @@ const launchSource = (() => {
   if (typeof window === "undefined") return null;
   // Read straight from Telegram's object: tests mock the provider module, and this runs at module load.
   const value = (new URLSearchParams(window.location.search).get("bb_src") ?? window.Telegram?.WebApp?.initDataUnsafe?.start_param ?? "").toLowerCase();
+  // A browser sign-in link (web_<code>, D64 stage B) is not an ad label.
+  if (value.startsWith("web_")) return null;
   return /^[a-z0-9_-]{1,32}$/.test(value) ? value : null;
 })();
 

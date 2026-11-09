@@ -1,5 +1,6 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { ApiError } from "./api/client";
+import { browserSignInCodeFrom } from "./api/browserSessions";
+import { ApiError, sessionExpiredEvent } from "./api/client";
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, updateInterfaceLanguage, type MarketplaceRole } from "./api/marketplace";
 import { useI18n } from "./i18n";
 import { PullToRefresh } from "./components/PullToRefresh";
@@ -19,6 +20,7 @@ import { clearPublicDetailCache } from "./data/publicDetailCache";
 import { clearCampaignApplicationCache } from "./data/campaignApplicationCache";
 import { clearDealCache } from "./data/dealCache";
 import { isDeepLinkRoute } from "./lib/deepLink";
+import { setBrowserSession } from "./lib/browserSession";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
 // The role of the last finished start. A returning user sees that role's screens at once while the account check runs
@@ -29,7 +31,8 @@ function rememberedRole(): MarketplaceRole | undefined {
   return value === "Blogger" || value === "BrandFace" || value === "Business" ? value : undefined;
 }
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
-type OnboardingStep = "welcome" | "telegram" | "checking" | "phone" | "role" | "profile" | "success" | "complete";
+// browser: D64 stage B, the page outside Telegram asks a company member to sign this browser in.
+type OnboardingStep = "welcome" | "telegram" | "browser" | "checking" | "phone" | "role" | "profile" | "success" | "complete";
 
 const Admin = lazy(async () => ({ default: (await import("./pages/Admin")).Admin }));
 const AdminUserCard = lazy(async () => ({ default: (await import("./pages/AdminUserCard")).AdminUserCard }));
@@ -56,6 +59,8 @@ const Onboarding = lazy(async () => ({ default: (await import("./pages/Onboardin
 const OnboardingSuccess = lazy(async () => ({ default: (await import("./pages/OnboardingSuccess")).OnboardingSuccess }));
 const ProfileDashboard = lazy(async () => ({ default: (await import("./pages/ProfileDashboard")).ProfileDashboard }));
 const Settings = lazy(async () => ({ default: (await import("./pages/Settings")).Settings }));
+const BrowserSignIn = lazy(async () => ({ default: (await import("./pages/BrowserSignIn")).BrowserSignIn }));
+const BrowserSignInConfirm = lazy(async () => ({ default: (await import("./pages/BrowserSignInConfirm")).BrowserSignInConfirm }));
 const TelegramAuthorization = lazy(async () => ({ default: (await import("./pages/TelegramAuthorization")).TelegramAuthorization }));
 const PhoneVerification = lazy(async () => ({ default: (await import("./pages/PhoneVerification")).PhoneVerification }));
 const Welcome = lazy(async () => ({ default: (await import("./pages/Welcome")).Welcome }));
@@ -88,6 +93,18 @@ function readInitialDeepLink() {
   return isDeepLinkRoute(route) ? route : null;
 }
 const initialDeepLink = readInitialDeepLink();
+
+// D64 stage B: the Mini App opened from a browser's sign-in link (startapp=web_<code>), once per code.
+const browserSignInSeenKey = "bloggerbazar.browserSignIn.seen";
+function readBrowserSignInCode() {
+  if (typeof window === "undefined") return null;
+  const code = browserSignInCodeFrom(window.Telegram?.WebApp?.initDataUnsafe?.start_param);
+  try {
+    return code && sessionStorage.getItem(browserSignInSeenKey) !== code ? code : null;
+  } catch {
+    return code;
+  }
+}
 
 function initialOnboardingStep(): OnboardingStep {
   if (localStorage.getItem(onboardingCompletedKey) === "true") return "complete";
@@ -123,6 +140,8 @@ export function App() {
   const [visitedMyCampaigns, setVisitedMyCampaigns] = useState(() => ["/my-campaigns", "/my-campaign", "/my-campaign-edit"].includes(route.path));
   const [visitedFavorites, setVisitedFavorites] = useState(() => route.path === "/favorites");
   const [sessionEpoch, setSessionEpoch] = useState(0);
+  const [browserSignInCode, setBrowserSignInCode] = useState(() => isTelegram ? readBrowserSignInCode() : null);
+  const browserSignInRoleChanged = useRef(false);
 
   useEffect(() => {
     if (onboardingStep === "complete" && rootRoutes.includes(route.path)) {
@@ -171,7 +190,19 @@ export function App() {
   const resolveDestination = useCallback(async ({ quiet = false }: { quiet?: boolean } = {}) => {
     setAuthorizationFailed(false);
     if (!isTelegram) {
-      setOnboardingStep("telegram");
+      // D64 stage B: outside Telegram only a company member's browser session works; without one, sign in.
+      try {
+        if (!quiet) setOnboardingStep("checking");
+        const user = await getCurrentPlatformUser();
+        if (normalizeMarketplaceRole(user.selectedMarketplaceRole) !== "Business") throw new ApiError(401);
+        setBrowserSession(true);
+        setSelectedRole("Business");
+        setOnboardingStep("complete");
+        window.location.hash = initialDeepLink ?? (window.location.hash.replace("#", "") || "/");
+      } catch {
+        setBrowserSession(false);
+        setOnboardingStep("browser");
+      }
       return;
     }
 
@@ -212,7 +243,7 @@ export function App() {
     if (initialBootstrapStarted.current) return;
     initialBootstrapStarted.current = true;
 
-    if (localStorage.getItem(onboardingWelcomeKey) !== "true") {
+    if (isTelegram && localStorage.getItem(onboardingWelcomeKey) !== "true") {
       setOnboardingStep("welcome");
       setInitialDestinationResolved(true);
       return;
@@ -220,7 +251,18 @@ export function App() {
 
     if (quickStart && initialDeepLink) window.location.hash = initialDeepLink;
     void resolveDestination({ quiet: quickStart }).finally(() => setInitialDestinationResolved(true));
-  }, [quickStart, resolveDestination]);
+  }, [isTelegram, quickStart, resolveDestination]);
+
+  // A browser session that ended (signed out elsewhere, removed from the team, 12 hours over): sign in again.
+  useEffect(() => {
+    if (isTelegram) return;
+    const showSignIn = () => {
+      setBrowserSession(false);
+      setOnboardingStep((current) => current === "browser" ? current : "browser");
+    };
+    window.addEventListener(sessionExpiredEvent, showSignIn);
+    return () => window.removeEventListener(sessionExpiredEvent, showSignIn);
+  }, [isTelegram]);
 
   const authorize = async () => {
     await resolveDestination();
@@ -256,6 +298,28 @@ export function App() {
     if (window.location.hash !== "#/") window.location.hash = "/";
   }, [setBackButtonHandler]);
 
+  const handleBrowserSignedOut = useCallback(() => {
+    setBrowserSession(false);
+    setSelectedRole(undefined);
+    clearMyCampaignCache();
+    clearCampaignApplicationCache();
+    clearDealCache();
+    clearPublicDetailCache();
+    setSessionEpoch((current) => current + 1);
+    setOnboardingStep("browser");
+    if (window.location.hash !== "#/") window.location.hash = "/";
+  }, []);
+
+  const closeBrowserSignInConfirm = useCallback(() => {
+    try { if (browserSignInCode) sessionStorage.setItem(browserSignInSeenKey, browserSignInCode); } catch { /* shown again next time */ }
+    setBrowserSignInCode(null);
+    // Switching to Business on that screen changes which screens the app shows.
+    if (browserSignInRoleChanged.current) {
+      browserSignInRoleChanged.current = false;
+      void resolveDestination();
+    }
+  }, [browserSignInCode, resolveDestination]);
+
   const handleMarketplaceRoleSelected = useCallback((role: MarketplaceRole) => {
     clearMyCampaignCache();
     clearCampaignApplicationCache();
@@ -282,6 +346,7 @@ export function App() {
 
   const knownRoutes = ["/", "/profile", "/settings", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/brand-face-reviews", "/company", "/company-reviews", "/search", "/blogger", "/blogger-reviews", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
+    : onboardingStep === "browser" ? <BrowserSignIn onSignedIn={() => void resolveDestination()} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
       : onboardingStep === "phone" ? <PhoneVerification onVerified={() => void resolveDestination()} />
@@ -292,13 +357,17 @@ export function App() {
                 : onboardingStep === "success" ? <OnboardingSuccess onContinue={finishOnboarding} />
                   : <div className="screen"><LoadingState /></div>;
 
+  if (browserSignInCode) {
+    return <Suspense fallback={<LaunchScreen />}><BrowserSignInConfirm code={browserSignInCode} onClose={closeBrowserSignInConfirm} onRoleChanged={() => { browserSignInRoleChanged.current = true; }} /></Suspense>;
+  }
+
   if (!initialDestinationResolved) return <LaunchScreen />;
 
-  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" /><PullToRefresh enabled={onboardingStep === "complete"} /><SessionExpiredNotice /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
+  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" /><PullToRefresh enabled={onboardingStep === "complete"} /><SessionExpiredNotice enabled={isTelegram} /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome key={selectedRole ?? "none"} role={selectedRole} /></RootScreenVisibility>}
       {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={handleMarketplaceRoleSelected} /></RootScreenVisibility>}
-      {route.path === "/settings" && <Settings onSessionReset={resetToWelcome} />}
+      {route.path === "/settings" && <Settings onBrowserSignedOut={handleBrowserSignedOut} onSessionReset={resetToWelcome} />}
       {(visitedFavorites || route.path === "/favorites") && <RootScreenVisibility active={route.path === "/favorites"}><CachedFavorites /></RootScreenVisibility>}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
       {route.path === "/business" && <BusinessProfileForm />}

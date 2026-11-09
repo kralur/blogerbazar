@@ -11,6 +11,7 @@ import { notifyProfileDataChanged, useProfileDataRefresh } from "../hooks/usePro
 import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
+import { isBrowserSession } from "../lib/browserSession";
 
 type SelectedRole = "blogger" | "brandFace" | "business";
 const selectedRoleKey = "bloggerbazar.selectedRole";
@@ -49,6 +50,8 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
     values
   );
   const { refreshFavorites } = useFavorites();
+  // D64 stage B: a browser session works for the company only; roles are switched in Telegram.
+  const inBrowser = isBrowserSession();
 
   const loadDashboard = useCallback(() => {
     let cancelled = false;
@@ -179,7 +182,7 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
       <ListHero className="profile-hero">
       <PageHeader eyebrow={t("profile.eyebrow")} title={t("profile.title")} />
       <Card className="profile-hero__account flex items-center gap-4"><ProfileMediaPicker canRemove={Boolean(activeStoredImage)} compact currentUrl={activeStoredImage} disabled={!activeProfile || accountImageSaving} fallbackUrl={activeProfile ? undefined : telegramUser?.photo_url} name={activeProfile?.name || telegramUser?.first_name || t("profile.telegramUser")} onChange={(image) => void changeAccountImage(image)} pending={accountImagePending} /><div className="min-w-0"><div className="truncate text-lg font-extrabold">{activeProfile?.name || telegramUser?.first_name || t("profile.telegramUser")}</div><p className="mt-1 truncate text-sm text-brand-muted">{username}</p><Badge tone="blue">{t("profile.telegramAccount")}</Badge></div></Card>
-      {!loading && !loadFailed && <>
+      {!loading && !loadFailed && !inBrowser && <>
         <section className="profile-hero__roles"><h2>{t("profile.role")}</h2><div className="grid grid-cols-3 gap-3">
           <button aria-busy={switchingRole} className={`rounded-3xl border p-4 text-left transition ${role === "blogger" ? "profile-role-card--selected" : "profile-role-card"}${blogger ? "" : " profile-role-card--missing"}`} disabled={switchingRole} onClick={() => void selectRole("blogger")} type="button"><Icon className="mb-3 text-brand-ink" name="user" /><div className="font-extrabold">{t("profile.blogger")}</div><div className="mt-1 text-xs text-brand-muted">{blogger ? t("profile.created") : t("profile.create")}</div></button>
           <button aria-busy={switchingRole} className={`rounded-3xl border p-4 text-left transition ${role === "brandFace" ? "profile-role-card--selected" : "profile-role-card"}${brandFace ? "" : " profile-role-card--missing"}`} disabled={switchingRole} onClick={() => void selectRole("brandFace")} type="button"><Icon className="mb-3 text-brand-ink" name="star" /><div className="font-extrabold">{t("onboarding.brandFace")}</div><div className="mt-1 text-xs text-brand-muted">{brandFace ? t("profile.created") : t("profile.create")}</div></button>

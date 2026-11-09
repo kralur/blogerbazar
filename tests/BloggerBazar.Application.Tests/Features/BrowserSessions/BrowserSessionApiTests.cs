@@ -103,7 +103,9 @@ public sealed class BrowserSessionApiTests
             Assert.Equal("telegram_only", (await refused.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
         }
 
-        Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(browser, HttpMethod.Get, "/api/admin/dashboard", cookie)).StatusCode);
+        var admin = await SendAsync(browser, HttpMethod.Get, "/api/admin/dashboard", cookie);
+        Assert.Equal(HttpStatusCode.Forbidden, admin.StatusCode);
+        Assert.Equal("telegram_only", (await admin.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
         // The person's other roles do not exist for the browser.
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Get, "/api/bloggers/me", cookie)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(browser, HttpMethod.Get, "/api/brand-faces/me", cookie)).StatusCode);

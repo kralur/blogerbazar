@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 import { I18nProvider, translate } from "../src/i18n";
@@ -14,15 +13,14 @@ vi.mock("../src/telegram/TelegramProvider", () => ({
 }));
 
 describe("first-time flow", () => {
-  it("blocks a direct Home route until the user acknowledges Telegram access", async () => {
-    const user = userEvent.setup();
+  // D64 stage B: outside Telegram the app is the companies' browser sign-in; Home needs a browser session first.
+  it("blocks a direct Home route outside Telegram and offers the browser sign-in", async () => {
     window.location.hash = "#/";
     render(<I18nProvider><App /></I18nProvider>);
 
-    expect(await screen.findByText(translate("firstRun.welcomeSubtitle", undefined, "ru"))).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: translate("firstRun.start", undefined, "ru") }));
-
-    expect(await screen.findByText(translate("firstRun.telegramOutsideTitle", undefined, "ru"))).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: translate("browser.title", undefined, "ru") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: translate("browser.signIn", undefined, "ru") })).toBeInTheDocument();
+    expect(screen.queryByText(translate("firstRun.welcomeSubtitle", undefined, "ru"))).not.toBeInTheDocument();
     expect(screen.queryByText(translate("home.title", undefined, "ru"))).not.toBeInTheDocument();
   });
 

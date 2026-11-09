@@ -134,6 +134,29 @@ public sealed class RateLimitPartitionKeyResolverTests
         Assert.Equal("api:ip:fd12::1", resolver.ResolveApiPartitionKey(marketplace));
     }
 
+    // D64 stage B: a company's browsers come through the Mini App's nginx; each office address gets the browser budget
+    // instead of all of them sharing the proxy's one.
+    [Fact]
+    public void Browser_requests_get_a_budget_per_address_behind_the_mini_app_proxy()
+    {
+        var resolver = new RateLimitPartitionKeyResolver(new FakeTelegramValidator(), 10_000, 200_000);
+        var office = CreateContext("fd12::1");
+        office.Request.Path = "/api/deals/me";
+        office.Request.Headers.Cookie = "__Host-bb_web=abc";
+        office.Request.Headers["X-Forwarded-For"] = "198.51.100.7";
+        var signingIn = CreateContext("fd12::1");
+        signingIn.Request.Path = "/api/web/sign-in/check";
+        signingIn.Request.Headers.Cookie = "__Host-bb_web_sign_in=code.secret";
+        signingIn.Request.Headers["X-Forwarded-For"] = "198.51.100.7";
+        var miniApp = CreateContext("fd12::1", "tma valid-init-data");
+        miniApp.Request.Headers.Cookie = "__Host-bb_web=abc";
+
+        var officeKey = resolver.ResolveApiPartitionKey(office);
+        Assert.StartsWith($"{RateLimitPartitionKeyResolver.BrowserScope}:ip:bucket-", officeKey);
+        Assert.Equal(officeKey, resolver.ResolveApiPartitionKey(signingIn));
+        Assert.Equal($"telegram:{5044343262 % 200_000}", resolver.ResolveApiPartitionKey(miniApp));
+    }
+
     private static string SignInKey(RateLimitPartitionKeyResolver resolver, string address) =>
         resolver.ResolveForwardedIpPartitionKey(CreateContext(address), "admin-web-sign-in");
 
