@@ -18,7 +18,7 @@ function Leaf({ color, scale, rotate }: { color: string; scale: number; rotate: 
 }
 
 const staticLeaves = [
-  { x: 144, y: 34, scale: .9, rotate: -25, color: terracotta, opacity: .95 },
+  { x: 136, y: 36, scale: .9, rotate: -25, color: terracotta, opacity: .95 },
   { x: 100, y: 20, scale: .5, rotate: 40, color: saffron, opacity: .8 },
   { x: 154, y: 100, scale: .6, rotate: 110, color: ochre, opacity: .75 }
 ];
