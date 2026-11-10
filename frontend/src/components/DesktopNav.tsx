@@ -34,7 +34,7 @@ export function DesktopNav() {
 
   return <nav aria-label={t("nav.aria")} className="desktop-nav">
     <a className="desktop-nav__brand" href="#/">{t("common.appName")}</a>
-    {company && <p className="desktop-nav__company">{company}</p>}
+    <p aria-hidden={company ? undefined : true} className="desktop-nav__company">{company ?? "\u00a0"}</p>
     <ul className="desktop-nav__items">
       {main.map((item) => <li key={item.href}>
         <a aria-current={isActive(item.href) ? "page" : undefined} className="desktop-nav__item" href={item.href}>

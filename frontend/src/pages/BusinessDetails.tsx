@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ReportButton } from "../components/ReportButton";
 import { getPublicBusiness, type PublicBusinessProfile } from "../api/marketplace";
 import { Avatar, BottomNav, Card, ErrorState, Icon, LoadingState, Rating } from "../components/ui";
-import { DetailSection, FactGrid, ReviewsSection } from "../components/details/DetailBlocks";
+import { compactBudgetRange, DetailSection, FactGrid, ReviewsSection } from "../components/details/DetailBlocks";
+import { useIsDesktop } from "../lib/desktopLayout";
 import { cityLabel, useI18n } from "../i18n";
 import { formatBudgetRange, formatShortDate } from "../lib/currency";
 import { ContactList } from "../components/ContactList";
@@ -15,6 +16,7 @@ import { profileRoute } from "../lib/profileRoutes";
 
 // Public business profile: who placed a campaign or sent an offer, its rating and open campaigns.
 export function BusinessDetails({ id }: { id: string }) {
+  const desktop = useIsDesktop();
   const { language, t } = useI18n();
   const [profile, setProfile] = useState<PublicBusinessProfile | null>(() => getCachedPublicDetail<PublicBusinessProfile>("business", id));
   const [loading, setLoading] = useState(() => !getCachedPublicDetail<PublicBusinessProfile>("business", id));
@@ -69,7 +71,7 @@ export function BusinessDetails({ id }: { id: string }) {
       {profile.openCampaigns.length === 0
         ? <Card><p className="text-sm text-brand-muted">{t("company.noOpenCampaigns")}</p></Card>
         : <div className="grid gap-2">{profile.openCampaigns.map((campaign) => <a className="company-campaign" href={`#/campaign/${campaign.id}`} key={campaign.id}>
-          <span className="min-w-0"><strong>{campaign.title}</strong><span>{[campaign.city ? cityLabel(campaign.city, language) : null, formatBudgetRange(campaign.budgetFrom, campaign.budgetTo), campaign.deadline ? formatShortDate(campaign.deadline, language) : null].filter(Boolean).join(" · ")}</span></span>
+          <span className="min-w-0"><strong>{campaign.title}</strong><span>{[campaign.city ? cityLabel(campaign.city, language) : null, (desktop ? compactBudgetRange(campaign.budgetFrom, campaign.budgetTo, t("currency.uzs")) : formatBudgetRange(campaign.budgetFrom, campaign.budgetTo)), campaign.deadline ? formatShortDate(campaign.deadline, language) : null].filter(Boolean).join(" · ")}</span></span>
           <Icon className="company-campaign__chevron" name="back" />
         </a>)}</div>}
     </DetailSection>

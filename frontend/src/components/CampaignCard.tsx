@@ -1,6 +1,8 @@
 import { formatShortDate, formatBudgetRange } from "../lib/currency";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { Avatar } from "./ui";
+import { compactBudgetRange } from "./details/DetailBlocks";
+import { useIsDesktop } from "../lib/desktopLayout";
 
 export type CampaignCardData = {
   id: string;
@@ -27,7 +29,9 @@ export function CampaignCard({ campaign, variant = "default" }: { campaign: Camp
   const businessName = campaign.businessName ?? campaign.business?.name ?? t("common.business");
   const businessAvatarUrl = campaign.businessAvatarUrl ?? campaign.business?.avatarUrl;
   const deadline = campaign.deadline ? formatShortDate(campaign.deadline, language) : null;
-  const budget = formatBudgetRange(campaign.budgetFrom, campaign.budgetTo);
+  const desktop = useIsDesktop();
+  // On a computer the short form (13.7-19.3 mln) keeps the budget on one line, as on the campaign pages.
+  const budget = desktop ? compactBudgetRange(campaign.budgetFrom, campaign.budgetTo, t("currency.uzs")) : formatBudgetRange(campaign.budgetFrom, campaign.budgetTo);
 
   // One campaign card for Home rails and the catalog; rails hide requirements to keep a fixed height.
   const requirements = variant === "home" ? [] : campaign.requirements?.filter(Boolean).slice(0, 2) ?? [];

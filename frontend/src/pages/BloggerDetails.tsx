@@ -132,7 +132,7 @@ export function BloggerDetails({ id }: { id: string }) {
     </>}>
     <DetailSection title={t("details.about")}><Card><p className="text-sm leading-6 text-brand-muted">{blogger.bio ?? t("details.filling")}</p>{tags.length > 0 && <div className="mt-3"><ChipList items={tags} /></div>}</Card></DetailSection>
     {platformStats.length === 0 && blogger.platforms.length > 0 && <DetailSection title={t("details.platforms")}><FactGrid facts={blogger.platforms.map((platform) => ({ label: platformLabel(platform.type, t), value: platform.followers ? formatCompactNumber(platform.followers) : t("card.onRequest") }))} /></DetailSection>}
-    {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <PortfolioLink item={item} key={item.id} onOpen={openLink} />)}</div></DetailSection>}
+    {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="portfolio-row no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <PortfolioLink item={item} key={item.id} onOpen={openLink} />)}</div></DetailSection>}
     <ReviewsSection allHref={`#/blogger-reviews/${blogger.id}`} count={blogger.reviewsCount} emptyText={t("details.noReviews")} rating={blogger.reviewsCount > 0 ? blogger.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews} title={t("details.reviews")} />
     </DetailLayout>
     {role === "Business" && !blogger.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}

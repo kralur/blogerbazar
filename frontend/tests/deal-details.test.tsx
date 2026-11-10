@@ -19,6 +19,7 @@ vi.mock("../src/components/ContactList", () => ({
   ContactList: ({ items }: { items: Array<{ kind: string; value: string }> }) => <ul>{items.map((item) => <li key={item.kind}>{item.value}</li>)}</ul>
 }));
 vi.mock("../src/components/ui", () => ({
+  Icon: () => null,
   Avatar: ({ name }: { name: string }) => <span>{name}</span>,
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
   BottomNav: () => null,

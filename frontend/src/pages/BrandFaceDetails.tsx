@@ -102,14 +102,14 @@ export function BrandFaceDetails({ id }: { id: string }) {
       { label: t("brandFace.languages"), value: profile.languages.map((code) => spokenLanguageLabelKey(code) ? t(spokenLanguageLabelKey(code)!) : code).join(" · ") || null }
     ]} />
     </ListHero>
-    <DetailLayout footer={<><ReportButton targetId={profile.id} targetType="brandFace" /></>} actions={offerAction} side={<>
+    <DetailLayout actions={<>{offerAction}{instagramHref && <Button onClick={() => open(instagramHref)} type="button" variant="secondary"><Icon name="instagram" />{t("brandFace.openInstagram")}</Button>}{showreelHref && <Button onClick={() => open(showreelHref)} type="button" variant="secondary"><Icon name="link" />{t("brandFace.watchShowreel")}</Button>}</>} footer={<><ReportButton targetId={profile.id} targetType="brandFace" /></>} side={<>
     {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
     {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
     </>}>
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     {photos.length > 0 && <ul aria-label={t("brandFace.galleryTitle")} className="brand-face-photos no-scrollbar">{photos.map((url) => <li className="brand-face-photos__item" key={url}><img alt={profile.name} loading="lazy" src={url} /></li>)}</ul>}
-    {instagramHref && <Button className="brand-face-instagram" onClick={() => open(instagramHref)} type="button"><Icon name="instagram" />{t("brandFace.openInstagram")}</Button>}
-    {showreelHref && <Button className="mt-2 w-full" onClick={() => open(showreelHref)} type="button" variant="secondary"><Icon name="link" />{t("brandFace.watchShowreel")}</Button>}
+    {!desktop && instagramHref && <Button className="brand-face-instagram" onClick={() => open(instagramHref)} type="button"><Icon name="instagram" />{t("brandFace.openInstagram")}</Button>}
+    {!desktop && showreelHref && <Button className="mt-2 w-full" onClick={() => open(showreelHref)} type="button" variant="secondary"><Icon name="link" />{t("brandFace.watchShowreel")}</Button>}
     {(profile.formats?.length ?? 0) > 0 && <DetailSection title={t("brandFace.formats")}><ChipList items={(profile.formats ?? []).map((format) => t(`brandFace.format.${format}`))} /></DetailSection>}
     {profile.categories.length > 0 && <DetailSection title={t("common.categories")}><ChipList items={profile.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
     {(profile.description || profile.experience) && <DetailSection title={t("brandFace.aboutTitle")}><Card>{profile.description && <p className="text-sm leading-6 text-brand-muted">{profile.description}</p>}{profile.experience && <><h3 className={`${profile.description ? "mt-4 " : ""}text-sm font-extrabold`}>{t("brandFace.experienceTitle")}</h3><p className="mt-1 text-sm leading-6 text-brand-muted">{profile.experience}</p></>}</Card></DetailSection>}

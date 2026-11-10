@@ -11,7 +11,8 @@ export function DetailLayout({ top, side, actions, footer, children, className }
   const desktop = useIsDesktop();
   if (!desktop) return <>{top}{children}{side}{footer}</>;
   return <div className={`detail-layout${className ? ` ${className}` : ""}`}>
-    <div className="detail-layout__main">{children}{footer}</div>
+    <div className="detail-layout__main">{children}{footer && <div className="detail-layout__footer detail-layout__footer--column">{footer}</div>}</div>
     <aside className="detail-layout__side">{actions && <div className="detail-layout__actions">{actions}</div>}{top}{side}</aside>
+    {footer && <div className="detail-layout__footer detail-layout__footer--end">{footer}</div>}
   </div>;
 }

@@ -3,7 +3,7 @@ import { ApiError, getApiErrorMessage } from "../api/client";
 import { addDealPublication, completeDeal, createDealReview, setDealPrice, getDealContact, getMyDeal, shareDealContact, type ContactDetails, type DealDetails as Deal, type MarketplaceRole } from "../api/marketplace";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { getCachedDeal, setCachedDeal } from "../data/dealCache";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Input, LoadingState, Modal, Textarea, Toast } from "../components/ui";
+import { Avatar, Badge, BottomNav, Button, Card, ErrorState, Input, LoadingState, Modal, Textarea, Toast, Icon } from "../components/ui";
 import { SuccessMoment } from "../components/SuccessMoment";
 
 // Completing a deal and publishing a review get the drawn check; the smaller actions (price, link) keep the toast.
@@ -196,7 +196,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       {terms.description && <Card><p className="text-sm leading-6 text-brand-muted">{terms.description}</p></Card>}
       {terms.categories.length > 0 && <div className="mt-3"><ChipList items={terms.categories.map((category) => categoryLabel(category, language))} /></div>}
     </DetailSection>}
-    {terms && terms.requirements.length > 0 && <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-2 text-sm text-brand-muted">{terms.requirements.map((value) => <li key={value}>{value}</li>)}</ul></Card></DetailSection>}
+    {terms && terms.requirements.length > 0 && <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-2">{terms.requirements.map((value) => <li className="flex gap-2 text-sm text-brand-muted" key={value}><Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-success" name="check" />{value}</li>)}</ul></Card></DetailSection>}
     {deal.offer && <DetailSection title={t("offers.message")}>
       <Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p></Card>
     </DetailSection>}

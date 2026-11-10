@@ -2176,7 +2176,7 @@ html[data-desktop="true"] .screen:not(:has(.list-hero, .home-hero)) { max-width:
 html[data-desktop="true"] .screen:has(.detail-hero) > :not(.list-hero):not(.atlas-strip):not(.bottom-nav) { max-width: var(--desktop-detail-width); }
 html[data-desktop="true"] .toast-enter { left: calc(var(--desktop-nav-width) + 1rem); }
 html[data-desktop="true"] .catalog-search__results,
-html[data-desktop="true"] .home-list { grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1rem; align-items: start; }
+html[data-desktop="true"] .home-list { grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; align-items: start; }
 html[data-desktop="true"] .request-list { grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr)); gap: .75rem; align-items: start; }
 html[data-desktop="true"] .catalog-search__end,
 html[data-desktop="true"] .catalog-search__results > [role="status"],
@@ -2185,16 +2185,22 @@ html[data-desktop="true"] .catalog-search__results > .ds-empty { grid-column: 1 
 /* The home page on a computer: what waits for a decision next to the profile progress; picks without a half-empty
    last row (the full list is one click away); the season note lives in Settings. */
 .home-top { display: contents; }
-html[data-desktop="true"] .home-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr); gap: 1.25rem; align-items: start; margin-top: 1.5rem; }
+html[data-desktop="true"] .home-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(19rem, 1fr); column-gap: 1.25rem; row-gap: 0; align-items: start; margin-top: 1.5rem; }
+html[data-desktop="true"] .home-top > .home-activity { display: contents; }
+html[data-desktop="true"] .home-top > .home-activity > .home-section__heading { grid-column: 1 / -1; }
+html[data-desktop="true"] .home-top > .home-activity > .home-activity__list { grid-column: 1; }
+html[data-desktop="true"] .home-top > .home-activity ~ .home-progress { grid-column: 2; grid-row: 2; }
+html[data-desktop="true"] .home-top:not(:has(> .home-progress)) > .home-activity > .home-activity__list { grid-column: 1 / -1; }
+html[data-desktop="true"] .home-activity__item * { white-space: normal; text-overflow: clip; }
+html[data-desktop="true"] .home-progress__head h2 { white-space: nowrap; }
 html[data-desktop="true"] .home-top:empty { display: none; }
 html[data-desktop="true"] .home-top > * { margin-top: 0 !important; }
 html[data-desktop="true"] .home-top > :only-child { grid-column: 1 / -1; }
-/* Level with the list, below the "Waiting for you" heading. */
-html[data-desktop="true"] .home-top > .home-activity + .home-progress { margin-top: 2.25rem !important; }
+
 html[data-desktop="true"] .season-note { display: none; }
 html[data-desktop="true"] .home-activity__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: .75rem; }
 html[data-desktop="true"] .home-activity__list > * { margin: 0 !important; }
-html[data-desktop="true"] .home-list { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+html[data-desktop="true"] .home-list { grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
 @media (min-width: 75rem) {
   html[data-desktop="true"] .home-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   html[data-desktop="true"] .home-list:has(> :nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2214,7 +2220,10 @@ html[data-desktop="true"] .detail-hero .page-header__actions { margin-left: 0; }
 html[data-desktop="true"] .detail-layout__side .campaign-details__expired { margin: 0; }
 html[data-desktop="true"] .detail-layout__side > .report-button { order: 99; }
 /* The side panel starts level with the first card on the left, not with its heading. */
-html[data-desktop="true"] .detail-layout:has(> .detail-layout__main > .detail-section:first-child) > .detail-layout__side { padding-top: 4rem; }
+@media (min-width: 75rem) {
+  html[data-desktop="true"] .detail-layout:has(> .detail-layout__main > .detail-section:first-child) > .detail-layout__side { padding-top: 4rem; }
+  html[data-desktop="true"] .detail-layout:has(> .detail-layout__main > .detail-section:first-child):has(> .detail-layout__side > .detail-section:first-child) > .detail-layout__side { padding-top: 1.5rem; }
+}
 /* "Report" closes the left column, at its start, instead of floating in the middle under both columns. */
 html[data-desktop="true"] .detail-layout__main > .report-button { margin: 1.5rem 0 0; padding-left: 0; }
 
@@ -2228,7 +2237,7 @@ html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__facts
 html[data-desktop="true"] .catalog-search__results .my-campaign-card__facts { margin-top: auto !important; }
 html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__requirements,
 html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__categories:last-of-type { margin-bottom: 1rem; }
-html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__fact--budget dd { font-size: 1.125rem; }
+html[data-desktop="true"] .campaign-catalog-card__fact--budget dd { font-size: 1.125rem; }
 html[data-desktop="true"] .catalog-search__results > .catalog-brand-face-card > .catalog-brand-face-card__link { display: flex; height: 100%; flex-direction: column; }
 html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__price { margin-top: auto; }
 html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__chips { margin-bottom: 1rem; }
@@ -2285,7 +2294,11 @@ html[data-desktop="true"] .detail-layout__side .detail-section__heading { margin
 html[data-desktop="true"] .detail-layout__actions { display: grid; gap: .625rem; }
 html[data-desktop="true"] .detail-layout__actions > .ds-button { width: 100%; min-height: 3.25rem; }
 @media (max-width: 74.99rem) {
-  html[data-desktop="true"] .detail-layout__side { order: -1; }
+  html[data-desktop="true"] .detail-layout__side { display: contents; }
+  html[data-desktop="true"] .detail-layout__actions { order: -1; display: flex; flex-wrap: wrap; justify-self: start; margin-top: 1.5rem; }
+  html[data-desktop="true"] .detail-layout__actions > .ds-button { width: auto; }
+  html[data-desktop="true"] .detail-layout__main { order: 0; }
+  html[data-desktop="true"] .detail-layout__side > :not(.detail-layout__actions) { order: 1; }
   html[data-desktop="true"] .detail-layout__side .my-campaign-details__actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
 }
 @media (min-width: 75rem) {
@@ -2308,6 +2321,43 @@ html[data-desktop="true"] .application-inbox .catalog-search__results { display:
 html[data-desktop="true"] .application-inbox .request-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); gap: .75rem; align-items: start; }
 html[data-desktop="true"] .application-inbox .my-campaigns__controls { max-width: 28rem; }
 html[data-desktop="true"] .browser-sign-in .ftue-screen__description { max-width: none; }
+
+
+/* Audit 2026-11-10 (desktop): even rows, nothing cut, the same thing the same everywhere. */
+html[data-desktop="true"] :is(.catalog-search__results, .home-list) > .campaign-catalog-card h2 { min-height: 2.6em; -webkit-line-clamp: 3; }
+/* The reach line of a tile always takes two lines, so rows stay even whether it wraps or not. */
+html[data-desktop="true"] .catalog-tile .campaign-catalog-card__requirements { min-height: 2.9em; }
+html[data-desktop="true"] .portfolio-row { grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); }
+html[data-desktop="true"] .portfolio-row > a { height: auto; min-height: 7rem; }
+html[data-desktop="true"] .portfolio-row > a * { overflow: visible; text-overflow: clip; white-space: normal; }
+html[data-desktop="true"] .home-progress { padding: .875rem 1rem; }
+html[data-desktop="true"] .home-progress__head { flex-wrap: wrap; gap: .25rem .75rem; }
+/* Report: under the left column in two columns, at the very end of the page in one. */
+.detail-layout__footer--end { display: none; }
+@media (max-width: 74.99rem) {
+  html[data-desktop="true"] .detail-layout__footer--column { display: none; }
+  html[data-desktop="true"] .detail-layout__footer--end { display: block; order: 2; }
+  html[data-desktop="true"] .detail-layout__actions { margin-top: 1.5rem !important; }
+  html[data-desktop="true"] .detail-layout:has(.detail-layout__actions) > .detail-layout__main > :first-child { margin-top: 0; }
+}
+html[data-desktop="true"] .detail-layout__footer > .report-button { margin: 1.5rem 0 0; padding-left: 0; }
+html[data-desktop="true"] .campaign-catalog-card__requirements { margin-bottom: 1rem; }
+html[data-desktop="true"] .home-hero .season-art--static { width: 7.5rem; height: 5.5rem; }
+html[data-desktop="true"] .home-quick-chips { flex-wrap: wrap; margin-inline: 0; padding-inline: 0; overflow: visible; }
+html[data-desktop="true"] .review-carousel { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); margin: 0; padding: 0; overflow: visible; }
+html[data-desktop="true"] .review-carousel__item { width: auto; min-width: 0; }
+html[data-desktop="true"] .portfolio-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); margin-inline: 0; padding-inline: 0; overflow: visible; }
+html[data-desktop="true"] .portfolio-row > * { width: auto; }
+html[data-desktop="true"] .detail-layout__side .platform-stats__name { flex-wrap: wrap; row-gap: .125rem; }
+html[data-desktop="true"] .detail-layout__side .platform-stats__handle { flex-basis: 100%; }
+html[data-desktop="true"] .contact-list__value { overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; white-space: nowrap; }
+html[data-desktop="true"] .application-inbox .request-list { align-items: stretch; }
+html[data-desktop="true"] .application-inbox .request-card { display: flex; height: 100%; flex-direction: column; }
+html[data-desktop="true"] .application-inbox .request-card__message { margin-bottom: .75rem; }
+html[data-desktop="true"] .application-inbox .request-card > :last-child:not(.request-card__message) { margin-top: auto !important; }
+@media (max-width: 74.99rem) {
+  html[data-desktop="true"] .page-header__title { font-size: 1.75rem; }
+}
 
 /* Sheets and dialogs open in the middle of the window, not from its bottom edge. */
 html[data-desktop="true"] .bottom-sheet-backdrop { place-items: center; padding: 2rem; }

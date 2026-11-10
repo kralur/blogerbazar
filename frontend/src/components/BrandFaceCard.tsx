@@ -22,15 +22,15 @@ export function BrandFaceCard({ profile, onFavoriteChanged, variant = "default" 
         <div className="campaign-catalog-card__identity">
           <Avatar name={profile.name} size="sm" src={profile.avatarUrl} variant="catalog" />
           <div className="campaign-catalog-card__heading">
-            <div className="campaign-catalog-card__name-row"><strong>{person || t("onboarding.brandFace")}</strong></div>
+            <div className="campaign-catalog-card__name-row"><strong>{t("onboarding.brandFace")}</strong></div>
             <h2>{profile.name}</h2>
           </div>
         </div>
         {(profile.isPromoted || categories.length > 0) && <div className="campaign-catalog-card__categories">{profile.isPromoted && <span className="catalog-card__promoted">{t("search.promoted")}</span>}{categories.map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div>}
+        <p className="campaign-catalog-card__requirements">{[person, spoken].filter(Boolean).join(" · ") || "\u00a0"}</p>
         <dl className="campaign-catalog-card__facts">
           <div><dt>{t("common.city")}</dt><dd>{cityLabel(profile.city, language)}</dd></div>
           <div className="campaign-catalog-card__fact--budget"><dt>{t("common.price")}</dt><dd>{profile.collaborationPrice == null ? t("search.priceNotSpecified") : formatCurrency(profile.collaborationPrice)}</dd></div>
-          {spoken && <div><dt>{t("brandFace.languages")}</dt><dd>{spoken}</dd></div>}
         </dl>
       </a>
       <FavoriteButton brandFaceId={profile.id} className="catalog-tile__save" onChanged={onFavoriteChanged} />
