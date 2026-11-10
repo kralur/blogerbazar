@@ -101,7 +101,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
       { label: t("offers.expiresAt"), value: offer.state === "pending" && offer.expiresAtUtc ? formatDate(offer.expiresAtUtc, true) : null }
     ]} />
     </ListHero>
-    <DetailLayout side={<>
+    <DetailLayout footer={<><ReportButton targetId={offer.id} targetType="offer" /></>} side={<>
     {offer.canRespond && <div className="offer-respond mt-5">
       {offer.expiresAtUtc && <OfferTimeLeft expiresAtUtc={offer.expiresAtUtc} />}
       <p className="offer-respond__hint">{t("offers.acceptHint")}</p>
@@ -111,7 +111,6 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
     </>}>
     <DetailSection title={t("offers.message")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{offer.message}</p></Card></DetailSection>
     </DetailLayout>
-    <ReportButton targetId={offer.id} targetType="offer" />
     <SuccessMoment key={moment?.id} message={moment?.message ?? ""} onDone={() => { if (moment?.next) window.location.hash = moment.next; }} /><Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;

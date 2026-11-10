@@ -169,7 +169,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       <CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
       <FactGrid className="hero-tags fact-grid--three" facts={heroFacts} />
     </ListHero>
-    <DetailLayout top={<>
+    <DetailLayout footer={<>{!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}</>} top={<>
     {deal.status === DealStatus.Active && !deal.counterpartyDeleted && <BlessingButton />}
     </>} side={<>
     <FactGrid className="mt-4" facts={[
@@ -202,7 +202,6 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     </DetailSection>}
     {contactItems.length > 0 && hasContacts(contactItems) && <DetailSection title={t("deals.contacts")}><ContactList items={contactItems} onSendToChat={async () => { try { await shareDealContact(deal.id); return t("contacts.sentToChat"); } catch (error) { throw new Error(getApiErrorMessage(error, t("contacts.sendToChatFailed"))); } }} /></DetailSection>}
     </DetailLayout>
-    {!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}
     <Modal onClose={() => !busy && setCompleteOpen(false)} open={completeOpen} title={t("deals.completeTitle")}><p className="text-sm leading-6 text-brand-muted">{t("deals.completeDescription")}</p>
       {(askLink || askPrice) && <div className="mt-4 grid gap-3">
         {askLink && <Input inputMode="url" label={t("deals.completeLinkLabel")} onChange={(event) => { setCompleteLink(event.target.value); setCompleteError(""); }} placeholder="https://" type="url" value={completeLink} />}

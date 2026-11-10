@@ -60,7 +60,7 @@ export function BusinessDetails({ id }: { id: string }) {
       { label: t("company.onPlatformSince"), value: formatShortDate(profile.createdAtUtc, language, { year: true }) }
     ]} />
     </ListHero>
-    <DetailLayout side={<>
+    <DetailLayout footer={<><ReportButton targetId={profile.id} targetType="business" /></>} side={<>
     {website.length > 0 && <DetailSection title={t("company.website")}><ContactList items={website} /></DetailSection>}
     </>}>
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
@@ -76,7 +76,6 @@ export function BusinessDetails({ id }: { id: string }) {
     {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
     <ReviewsSection allHref={`#/company-reviews/${profile.id}`} count={profile.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={profile.rating} reviewerRoute={(profileId, role) => profileRoute(role ?? "blogger", profileId)} reviews={profile.reviews ?? []} title={t("campaign.businessReviews")} />
     </DetailLayout>
-    <ReportButton targetId={profile.id} targetType="business" />
     <BottomNav />
   </div>;
 }

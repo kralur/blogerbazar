@@ -2207,14 +2207,16 @@ html[data-desktop="true"] .home-list { grid-template-columns: repeat(auto-fit, m
   html[data-desktop="true"] .home-list > :nth-child(n+3):nth-child(2n+1):last-child { display: none; }
 }
 
-/* The hanging price tags in a page head stand on one line on a computer; the zigzag stays a phone detail. */
-html[data-desktop="true"] :is(.company-hero__facts, .hero-tags) .fact-grid__item:nth-child(2) { margin-top: 0; }
 
 /* A page head's badge or bookmark stands next to the back button, at the start of the column, not in the far corner. */
 html[data-desktop="true"] .detail-hero .page-header__actions { margin-left: 0; }
 /* What a visitor can do on a campaign (or why not) sits in the side panel. */
 html[data-desktop="true"] .detail-layout__side .campaign-details__expired { margin: 0; }
 html[data-desktop="true"] .detail-layout__side > .report-button { order: 99; }
+/* The side panel starts level with the first card on the left, not with its heading. */
+html[data-desktop="true"] .detail-layout:has(> .detail-layout__main > .detail-section:first-child) > .detail-layout__side { padding-top: 4rem; }
+/* "Report" closes the left column, at its start, instead of floating in the middle under both columns. */
+html[data-desktop="true"] .detail-layout__main > .report-button { margin: 1.5rem 0 0; padding-left: 0; }
 
 /* Cards in a row share one height and keep their facts (budget, city, deadline, price) on one line at the bottom, so
    rows read straight across. */

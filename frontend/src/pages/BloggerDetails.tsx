@@ -122,7 +122,7 @@ export function BloggerDetails({ id }: { id: string }) {
         { label: t("details.reach"), value: blogger.averageReach ? formatCompactNumber(blogger.averageReach) : null }
       ]} />
     </ListHero>
-    <DetailLayout actions={offerAction} top={<>
+    <DetailLayout footer={<><ReportButton targetId={blogger.id} targetType="blogger" /></>} actions={offerAction} top={<>
     {platformStats.length > 0 && <PlatformStats platforms={platformStats} total={blogger.totalFollowers} />}
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     <DetailSection title={t("details.adPrices")}>{hasPrices ? <FactGrid facts={prices} /> : <Card><p className="text-sm text-brand-muted">{t("details.pricesOnRequest")}</p></Card>}</DetailSection>
@@ -135,7 +135,6 @@ export function BloggerDetails({ id }: { id: string }) {
     {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <PortfolioLink item={item} key={item.id} onOpen={openLink} />)}</div></DetailSection>}
     <ReviewsSection allHref={`#/blogger-reviews/${blogger.id}`} count={blogger.reviewsCount} emptyText={t("details.noReviews")} rating={blogger.reviewsCount > 0 ? blogger.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews} title={t("details.reviews")} />
     </DetailLayout>
-    <ReportButton targetId={blogger.id} targetType="blogger" />
     {role === "Business" && !blogger.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm bloggerId={blogger.id} initialBudget={offerPreset?.budget} initialFormat={offerPreset?.format} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} /><BottomNav />
