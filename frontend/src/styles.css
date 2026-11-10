@@ -2177,6 +2177,31 @@ html[data-desktop="true"] .catalog-search__end,
 html[data-desktop="true"] .catalog-search__results > [role="status"],
 html[data-desktop="true"] .catalog-search__results > .ds-empty { grid-column: 1 / -1; }
 
+/* The home page on a computer: what waits for a decision next to the profile progress; picks without a half-empty
+   last row (the full list is one click away); the season note lives in Settings. */
+.home-top { display: contents; }
+html[data-desktop="true"] .home-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr); gap: 1.25rem; align-items: start; margin-top: 1.5rem; }
+html[data-desktop="true"] .home-top:empty { display: none; }
+html[data-desktop="true"] .home-top > * { margin-top: 0 !important; }
+html[data-desktop="true"] .home-top > :only-child { grid-column: 1 / -1; }
+/* Level with the list, below the "Waiting for you" heading. */
+html[data-desktop="true"] .home-top > .home-activity + .home-progress { margin-top: 2.25rem !important; }
+html[data-desktop="true"] .season-note { display: none; }
+html[data-desktop="true"] .home-activity__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: .75rem; }
+html[data-desktop="true"] .home-activity__list > * { margin: 0 !important; }
+html[data-desktop="true"] .home-list { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+@media (min-width: 75rem) {
+  html[data-desktop="true"] .home-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  html[data-desktop="true"] .home-list:has(> :nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-desktop="true"] .home-list:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+  html[data-desktop="true"] .home-list > :nth-child(n+4):nth-child(3n+1):last-child,
+  html[data-desktop="true"] .home-list > :nth-child(n+4):nth-child(3n+1):nth-last-child(2),
+  html[data-desktop="true"] .home-list > :nth-child(n+5):nth-child(3n+2):last-child { display: none; }
+}
+@media (max-width: 74.99rem) {
+  html[data-desktop="true"] .home-list > :nth-child(n+3):nth-child(2n+1):last-child { display: none; }
+}
+
 /* Two-column pages (DetailLayout): the content on the left, the page's actions and key facts in a panel on the right
    that stays in view while the page scrolls. Below 1200 px the panel comes first, above the content. */
 html[data-desktop="true"] .screen:has(.detail-layout) { max-width: var(--desktop-content-width); }

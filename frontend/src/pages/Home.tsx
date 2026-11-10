@@ -283,8 +283,10 @@ export function Home({ role, initialData, initialError = false, initialLoading =
     <HomeHero categories={data?.categories ?? []} me={me} role={resolvedRole} />
     <AtlasStrip />
     <SeasonNote />
-    {activity && activity.length > 0 && <HomeActivity items={activity} />}
-    {me?.progress.next && <HomeProgress progress={me.progress} />}
+    <div className="home-top">
+      {activity && activity.length > 0 && <HomeActivity items={activity} />}
+      {me?.progress.next && <HomeProgress progress={me.progress} />}
+    </div>
     {failed && !data ? <HomeError offline={offline} onRetry={load} /> : !data ? <HomeSkeleton role={resolvedRole} /> : <div className="home-content">
       {failed && <p className="text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       {forYouRail}
