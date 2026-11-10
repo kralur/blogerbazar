@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { getMarketplaceHome, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaigns, getMyDeals, getMyOffers, getRecommendations, type MarketplaceRole } from "../api/marketplace";
 import { profileCompleteness, type ProfileCompleteness } from "../lib/profileCompleteness";
 import { readHomeSnapshot, writeHomeSnapshot } from "../data/homeSnapshot";
-import type { BloggerCardData } from "../components/BloggerCard";
-import type { CampaignCardData } from "../components/CampaignCard";
+import { BloggerCard, type BloggerCardData } from "../components/BloggerCard";
+import { BrandFaceCard } from "../components/BrandFaceCard";
+import { CampaignCard, type CampaignCardData } from "../components/CampaignCard";
+import { useIsDesktop } from "../lib/desktopLayout";
 import { AtlasStrip } from "../components/AtlasStrip";
 import { SeasonArt } from "../components/SeasonArt";
 import { SeasonNote } from "../components/SeasonNote";
@@ -84,8 +86,11 @@ function HomeRow({ href, avatarUrl, avatarName, name, meta, price, unit, neutral
 // Millions are shown short (13.2 mln), so a big budget leaves room for the title; smaller sums stay exact.
 const rowAmount = (value: number) => value >= 1_000_000 ? formatCompactNumber(value) : formatNumber(value);
 
+// On a computer (the website) the Home picks use the same tiles as the catalog, so a blogger looks the same everywhere.
 function BloggerRow({ blogger }: { blogger: BloggerCardData }) {
   const { language, t } = useI18n();
+  const desktop = useIsDesktop();
+  if (desktop) return <BloggerCard blogger={blogger} />;
   const meta = [cityLabel(blogger.city, language), ...blogger.categories.slice(0, 2).map((category) => categoryLabel(category, language))].join(", ");
   const [price, unit] = blogger.reelsPrice ? [rowAmount(blogger.reelsPrice), t("home.row.perReels")]
     : blogger.storiesPrice ? [rowAmount(blogger.storiesPrice), t("home.row.perStories")]
@@ -95,6 +100,8 @@ function BloggerRow({ blogger }: { blogger: BloggerCardData }) {
 
 function CampaignRow({ campaign }: { campaign: CampaignCardData }) {
   const { language, t } = useI18n();
+  const desktop = useIsDesktop();
+  if (desktop) return <CampaignCard campaign={campaign} />;
   const businessName = campaign.businessName ?? campaign.business?.name ?? t("common.business");
   const meta = [businessName, campaign.city ? cityLabel(campaign.city, language) : null, campaign.deadline ? t("home.row.until", { date: formatShortDate(campaign.deadline, language) }) : null].filter(Boolean).join(" · ");
   const price = campaign.budgetFrom ? t("home.row.from", { amount: rowAmount(campaign.budgetFrom) }) : campaign.budgetTo ? t("home.row.upTo", { amount: rowAmount(campaign.budgetTo) }) : null;
@@ -103,6 +110,8 @@ function CampaignRow({ campaign }: { campaign: CampaignCardData }) {
 
 function BrandFaceRow({ profile }: { profile: BrandFaceRow }) {
   const { language, t } = useI18n();
+  const desktop = useIsDesktop();
+  if (desktop) return <BrandFaceCard profile={profile} />;
   const meta = [cityLabel(profile.city, language), ...profile.categories.slice(0, 2).map((category) => categoryLabel(category, language))].join(", ");
   return <HomeRow avatarName={profile.name} avatarUrl={profile.avatarUrl} href={`#/brand-face-detail/${profile.id}`} meta={meta} name={profile.name} price={profile.collaborationPrice ? rowAmount(profile.collaborationPrice) : null} unit={t("home.row.collaboration")} />;
 }

@@ -2233,6 +2233,13 @@ html[data-desktop="true"] .catalog-search__results > .catalog-brand-face-card > 
 html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__price { margin-top: auto; }
 html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__chips { margin-bottom: 1rem; }
 
+/* Home picks on a computer: the catalog tiles in even rows. */
+html[data-desktop="true"] .home-list:has(> .catalog-tile, > .campaign-catalog-card) { gap: 1rem; align-items: stretch; }
+html[data-desktop="true"] .home-list > .campaign-catalog-card { display: flex; height: 100%; flex-direction: column; }
+html[data-desktop="true"] .home-list .campaign-catalog-card__facts { margin-top: auto !important; }
+/* Two rows per pick on Home; the rest is one click away ("See all"). */
+html[data-desktop="true"] .home-list:has(> .catalog-tile, > .campaign-catalog-card) > :nth-child(n+7) { display: none; }
+
 /* Bloggers and brand faces as campaign tags on a computer (catalog, favorites): same tile, the bookmark in its corner. */
 .catalog-tile { position: relative; min-width: 0; }
 .catalog-tile > .campaign-catalog-card { display: flex; height: 100%; flex-direction: column; }
