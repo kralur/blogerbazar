@@ -4,11 +4,39 @@ import { formatCurrency } from "../lib/currency";
 import { Avatar } from "./ui";
 import { FavoriteButton } from "./FavoriteButton";
 import { spokenLanguageLabelKey } from "../lib/languages";
+import { useIsDesktop } from "../lib/desktopLayout";
 
 export function BrandFaceCard({ profile, onFavoriteChanged, variant = "default" }: { profile: Pick<BrandFaceCatalogItem, "id" | "name" | "city" | "categories" | "languages" | "collaborationPrice" | "avatarUrl" | "isPromoted"> & Partial<Pick<BrandFaceCatalogItem, "age" | "gender">>; onFavoriteChanged?: (isFavorite: boolean) => void; variant?: "default" | "home" }) {
   const { language, t } = useI18n();
   const categories = profile.categories.slice(0, 2);
   const languages = profile.languages.slice(0, 2);
+  const desktop = useIsDesktop();
+  const person = [profile.gender === "female" || profile.gender === "male" ? t(`brandFace.person.${profile.gender}`) : null, profile.age ? t("brandFace.ageYears", { count: profile.age }) : null].filter(Boolean).join(" · ");
+  const spoken = languages.map((code) => spokenLanguageLabelKey(code) ? t(spokenLanguageLabelKey(code)!) : code).join(", ");
+
+  // On a computer (the website) a brand face looks like a campaign in the catalog: a hanging tag, the price, city and
+  // languages at the bottom.
+  if (desktop && variant !== "home") {
+    return <article className="catalog-tile">
+      <a aria-label={t("search.openBrandFaceAria", { name: profile.name })} className="campaign-catalog-card" href={`#/brand-face-detail/${profile.id}`}>
+        <div className="campaign-catalog-card__identity">
+          <Avatar name={profile.name} size="sm" src={profile.avatarUrl} variant="catalog" />
+          <div className="campaign-catalog-card__heading">
+            <div className="campaign-catalog-card__name-row"><strong>{person || t("onboarding.brandFace")}</strong></div>
+            <h2>{profile.name}</h2>
+          </div>
+        </div>
+        {(profile.isPromoted || categories.length > 0) && <div className="campaign-catalog-card__categories">{profile.isPromoted && <span className="catalog-card__promoted">{t("search.promoted")}</span>}{categories.map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div>}
+        <dl className="campaign-catalog-card__facts">
+          <div><dt>{t("common.city")}</dt><dd>{cityLabel(profile.city, language)}</dd></div>
+          <div className="campaign-catalog-card__fact--budget"><dt>{t("common.price")}</dt><dd>{profile.collaborationPrice == null ? t("search.priceNotSpecified") : formatCurrency(profile.collaborationPrice)}</dd></div>
+          {spoken && <div><dt>{t("brandFace.languages")}</dt><dd>{spoken}</dd></div>}
+        </dl>
+      </a>
+      <FavoriteButton brandFaceId={profile.id} className="catalog-tile__save" onChanged={onFavoriteChanged} />
+    </article>;
+  }
+
 
   return <article className={`catalog-brand-face-card${variant === "home" ? " catalog-card--rail" : ""}`}>
     <a aria-label={t("search.openBrandFaceAria", { name: profile.name })} className="catalog-brand-face-card__link" href={`#/brand-face-detail/${profile.id}`}>

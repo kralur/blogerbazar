@@ -2226,6 +2226,22 @@ html[data-desktop="true"] .catalog-search__results > .catalog-brand-face-card > 
 html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__price { margin-top: auto; }
 html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__chips { margin-bottom: 1rem; }
 
+/* Bloggers and brand faces as campaign tags on a computer (catalog, favorites): same tile, the bookmark in its corner. */
+.catalog-tile { position: relative; min-width: 0; }
+.catalog-tile > .campaign-catalog-card { display: flex; height: 100%; flex-direction: column; }
+.catalog-tile .campaign-catalog-card__heading { padding-right: 2.5rem; }
+.catalog-tile .campaign-catalog-card__facts { margin-top: auto; }
+.catalog-tile .campaign-catalog-card__requirements { margin-bottom: 1rem; }
+.catalog-tile .campaign-catalog-card__categories:last-of-type { margin-bottom: 1rem; }
+.catalog-tile__save { position: absolute; top: 1.25rem; right: .75rem; z-index: 1; }
+.catalog-tile__save .catalog-favorite-button { width: 2.25rem; height: 2.25rem; }
+html[data-desktop="true"] .catalog-search__results:has(> .catalog-tile) { gap: 1rem; }
+/* Sorting takes the width of its words, next to the filters, not the whole row. */
+html[data-desktop="true"] .catalog-search__controls { display: flex; flex-wrap: wrap; align-items: stretch; gap: .75rem; }
+html[data-desktop="true"] .catalog-search__controls > * { flex: 0 0 auto; }
+html[data-desktop="true"] .catalog-search__controls > .catalog-search__sort { width: 17rem; }
+html[data-desktop="true"] .list-hero .my-campaigns__controls > * { flex: 0 0 17rem; min-width: 0; }
+
 /* The catalog on a computer: each blogger is a tile, not a phone row. The facts get two full lines instead of one cut
    line, the price sits under a rule at the bottom, tiles in a row share one height. */
 html[data-desktop="true"] .catalog-search__results:has(> .catalog-blogger-card) { gap: 1rem; align-items: stretch; }
