@@ -1,5 +1,6 @@
 import { useI18n } from "../i18n";
 import { useTelegram } from "../telegram/TelegramProvider";
+import { browserSessionUsername } from "../lib/browserSession";
 
 // The @username comes from Telegram's signed launch data; the server ignores what the form sends.
 export function telegramHandle(username?: string | null) {
@@ -8,7 +9,8 @@ export function telegramHandle(username?: string | null) {
 }
 
 export function useTelegramHandle() {
-  return telegramHandle(useTelegram().user?.username);
+  // On the website the account's username comes from the server (the browser has no Telegram launch data).
+  return telegramHandle(useTelegram().user?.username ?? browserSessionUsername());
 }
 
 // Read-only on purpose: a typed username would let anyone pose as someone else.

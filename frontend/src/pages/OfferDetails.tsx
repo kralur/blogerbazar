@@ -98,7 +98,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
     <FactGrid className="hero-tags fact-grid--three" facts={[
       { label: t("offers.budget"), value: offer.offeredBudget != null ? compactMoney(offer.offeredBudget, t("currency.uzs")) : t("offers.budgetNegotiable") },
       { label: t("offers.deadline"), value: offer.deadline ? formatDate(offer.deadline) : null },
-      { label: t("offers.expiresAt"), value: offer.state === "pending" && offer.expiresAtUtc ? formatDate(offer.expiresAtUtc, true) : null }
+      { label: t(offer.canRespond ? "offers.expiresAt" : "offers.expiresAtSender"), value: offer.state === "pending" && offer.expiresAtUtc ? formatDate(offer.expiresAtUtc, true) : null }
     ]} />
     </ListHero>
     <DetailLayout footer={<><ReportButton targetId={offer.id} targetType="offer" /></>} side={<>

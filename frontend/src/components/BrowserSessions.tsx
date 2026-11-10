@@ -72,7 +72,8 @@ export function BrowserSessions({ onSignedOut }: { onSignedOut?: () => void }) {
             <span>{t("browser.sessions.signedIn", { time: formatShortDate(session.createdAtUtc, language, { time: true }) })}</span>
             <span>{t("browser.sessions.lastSeen", { time: formatShortDate(session.lastSeenAtUtc, language, { time: true }) })}</span>
           </span>
-          <Button className="browser-sessions__end" disabled={busy} onClick={() => void endOne(session)} type="button" variant="secondary">{t("browser.sessions.end")}</Button>
+          {/* On the website "Sign out of this browser" below the list does this already: one button, not two. */}
+          {!(session.isCurrent && isBrowserSession()) && <Button className="browser-sessions__end" disabled={busy} onClick={() => void endOne(session)} type="button" variant="secondary">{t("browser.sessions.end")}</Button>}
         </li>)}
       </ul>}
       {sessions && sessions.length > 0 && <Button className="w-full" disabled={busy} onClick={() => { haptic.warning(); setConfirmAll(true); }} type="button" variant="danger">{t("browser.sessions.endAll")}</Button>}

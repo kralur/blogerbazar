@@ -109,6 +109,8 @@ export function Campaigns() {
   const hasFilterOrQuery = activeChips.length > 0 || Boolean(debouncedQuery.trim());
   const canCreate = createCapability === "ready";
 
+  // Created from My campaigns: the new campaign opens, so the user lands back among their own campaigns.
+  const openedFromMyCampaigns = useRef(false);
   // "Create campaign" in My campaigns links here with ?create=1: open the form once, then drop the flag from the URL.
   useEffect(() => {
     if (!active || !canCreate || !window.location.hash.startsWith("#/campaigns")) return;
@@ -117,6 +119,7 @@ export function Campaigns() {
     params.delete("create");
     const rest = params.toString();
     replaceHistoryRoute(`#/campaigns${rest ? `?${rest}` : ""}`);
+    openedFromMyCampaigns.current = true;
     setCreateOpen(true);
   }, [active, canCreate]);
   const needsBusinessProfile = createCapability === "profileMissing";
@@ -236,13 +239,15 @@ export function Campaigns() {
     if (saving || !form.title.trim() || !form.description.trim() || !form.categories.length) return;
     try {
       setSaving(true);
-      await createCampaign({ title: form.title.trim(), description: form.description.trim(), city: form.city || undefined, categories: form.categories, requirements: form.requirements.split(",").map((item) => item.trim()).filter(Boolean), deadline: form.deadline ? new Date(`${form.deadline}T23:59:59`).toISOString() : undefined, budgetFrom: normalizeNumericInput(form.budgetFrom) || undefined, budgetTo: normalizeNumericInput(form.budgetTo) || undefined, publishImmediately: true });
+      const created = await createCampaign({ title: form.title.trim(), description: form.description.trim(), city: form.city || undefined, categories: form.categories, requirements: form.requirements.split(",").map((item) => item.trim()).filter(Boolean), deadline: form.deadline ? new Date(`${form.deadline}T23:59:59`).toISOString() : undefined, budgetFrom: normalizeNumericInput(form.budgetFrom) || undefined, budgetTo: normalizeNumericInput(form.budgetTo) || undefined, publishImmediately: true });
       haptic.success();
       setCreateOpen(false);
       setForm(initialForm);
       setToastTone("success");
       setToast(t("campaigns.created"));
       refreshCatalog();
+      if (openedFromMyCampaigns.current && created?.id) window.location.hash = `/my-campaign/${created.id}`;
+      openedFromMyCampaigns.current = false;
     } catch (error) {
       haptic.error();
       setToastTone("error");
@@ -275,7 +280,7 @@ export function Campaigns() {
       </>}
     </section>
     <CampaignFiltersSheet categories={categories} error={filterError} filters={draftFilters} onApply={applyFilters} onClose={closeFilters} onReset={resetCatalog} onSetFilter={setDraft} open={filtersOpen} />
-    <Modal id="campaign-create-sheet" onClose={() => setCreateOpen(false)} open={createOpen} title={t("campaigns.newTitle")}><div className="campaign-create-form grid gap-3"><Input className="campaign-create-form__input" label={t("campaigns.name")} maxLength={150} onChange={updateForm("title")} placeholder={t("campaigns.namePlaceholder")} required value={form.title} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.description")} maxLength={1000} onChange={updateForm("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /><CategoryMultiSelect onChange={(categories) => setForm((current) => ({ ...current, categories }))} required value={form.categories} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.requirements")} maxLength={1000} onChange={updateForm("requirements")} placeholder={t("campaigns.requirementsPlaceholder")} value={form.requirements} /><RegionSelect onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} value={form.city} /><Input className="campaign-create-form__input" label={t("campaigns.deadline")} min={localDay()} onChange={updateForm("deadline")} type="date" value={form.deadline} /><div className="campaign-create-form__budget-grid"><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setForm((current) => ({ ...current, budgetFrom: formatNumericInput(event.target.value) }))} placeholder="200 000" value={form.budgetFrom} /><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setForm((current) => ({ ...current, budgetTo: formatNumericInput(event.target.value) }))} placeholder="1 000 000" value={form.budgetTo} /></div><Button aria-busy={saving} className="campaign-create-form__submit" disabled={saving || !form.title.trim() || !form.description.trim() || !form.categories.length} onClick={create} type="button">{saving ? t("campaigns.publishing") : t("campaigns.publish")}</Button></div></Modal>
+    <Modal id="campaign-create-sheet" onClose={() => { openedFromMyCampaigns.current = false; setCreateOpen(false); }} open={createOpen} title={t("campaigns.newTitle")}><div className="campaign-create-form grid gap-3"><Input className="campaign-create-form__input" label={t("campaigns.name")} maxLength={150} onChange={updateForm("title")} placeholder={t("campaigns.namePlaceholder")} required value={form.title} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.description")} maxLength={1000} onChange={updateForm("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /><CategoryMultiSelect onChange={(categories) => setForm((current) => ({ ...current, categories }))} required value={form.categories} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.requirements")} maxLength={1000} onChange={updateForm("requirements")} placeholder={t("campaigns.requirementsPlaceholder")} value={form.requirements} /><RegionSelect onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} value={form.city} /><Input className="campaign-create-form__input" label={t("campaigns.deadline")} min={localDay()} onChange={updateForm("deadline")} type="date" value={form.deadline} /><div className="campaign-create-form__budget-grid"><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setForm((current) => ({ ...current, budgetFrom: formatNumericInput(event.target.value) }))} placeholder="200 000" value={form.budgetFrom} /><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setForm((current) => ({ ...current, budgetTo: formatNumericInput(event.target.value) }))} placeholder="1 000 000" value={form.budgetTo} /></div><Button aria-busy={saving} className="campaign-create-form__submit" disabled={saving || !form.title.trim() || !form.description.trim() || !form.categories.length} onClick={create} type="button">{saving ? t("campaigns.publishing") : t("campaigns.publish")}</Button></div></Modal>
     <Toast message={toast} tone={toastTone} />
     <BottomNav />
   </div>;

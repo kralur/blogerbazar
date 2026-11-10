@@ -167,8 +167,12 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     const applyEnvironment = () => {
       // A theme chosen in Settings overrides Telegram; Telegram's own palette only applies when we follow it.
       const preference = getThemePreference();
-      const colorScheme = resolveColorScheme(preference, app?.colorScheme);
-      const theme = preference === "telegram" ? app?.themeParams : undefined;
+      // Outside a Telegram launch (the website; the Telegram script also loads there) "follow" means the computer's own
+      // light or dark setting, not Telegram's default light palette.
+      const launchedInTelegram = Boolean(app?.initData);
+      const systemScheme = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+      const colorScheme = resolveColorScheme(preference, launchedInTelegram ? app?.colorScheme : systemScheme);
+      const theme = preference === "telegram" && launchedInTelegram ? app?.themeParams : undefined;
       const contentInsets = app?.contentSafeAreaInset;
       const safeInsets = app?.safeAreaInset;
       const root = document.documentElement;
@@ -234,6 +238,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     app?.SettingsButton?.hide?.();
     window.addEventListener("resize", onBrowserViewportChange, { passive: true });
     window.addEventListener(themePreferenceChangedEvent, applyEnvironment);
+    const systemDark = window.matchMedia?.("(prefers-color-scheme: dark)");
+    systemDark?.addEventListener?.("change", applyEnvironment);
     window.addEventListener("orientationchange", onBrowserViewportChange, { passive: true });
     document.addEventListener("visibilitychange", onBrowserViewportChange);
     setBooting(false);
@@ -243,6 +249,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       app?.offEvent?.("fullscreenFailed", onFullscreenFailed);
       window.removeEventListener("resize", onBrowserViewportChange);
       window.removeEventListener(themePreferenceChangedEvent, applyEnvironment);
+      systemDark?.removeEventListener?.("change", applyEnvironment);
       window.removeEventListener("orientationchange", onBrowserViewportChange);
       document.removeEventListener("visibilitychange", onBrowserViewportChange);
     };

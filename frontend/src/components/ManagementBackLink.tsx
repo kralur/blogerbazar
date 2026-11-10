@@ -1,5 +1,6 @@
 import { useTelegram } from "../telegram/TelegramProvider";
 import { Icon } from "./ui";
+import { canGoBackInApp } from "../navigation/appHistory";
 
 export function ManagementBackLink({ ariaLabel, href }: { ariaLabel: string; href: string }) {
   // Inside Telegram its own Back button does this. The Telegram script also loads in an ordinary browser (the website,
@@ -9,6 +10,8 @@ export function ManagementBackLink({ ariaLabel, href }: { ariaLabel: string; hre
 
   return <a aria-label={ariaLabel} className="management-back-link" href={href} onClick={(event) => {
     event.preventDefault();
-    if (window.location.hash !== href) window.location.hash = href.slice(1);
+    // Back to where the user came from inside the app; the page's fixed parent after a reload or a direct link.
+    if (canGoBackInApp()) window.history.back();
+    else if (window.location.hash !== href) window.location.hash = href.slice(1);
   }}><Icon name="back" /></a>;
 }

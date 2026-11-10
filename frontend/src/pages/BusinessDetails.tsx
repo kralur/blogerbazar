@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ReportButton } from "../components/ReportButton";
-import { getPublicBusiness, type PublicBusinessProfile } from "../api/marketplace";
+import { getMyBusinessProfile, getPublicBusiness, type PublicBusinessProfile } from "../api/marketplace";
+import { isBrowserSession } from "../lib/browserSession";
 import { Avatar, BottomNav, Card, ErrorState, Icon, LoadingState, Rating } from "../components/ui";
 import { compactBudgetRange, DetailSection, FactGrid, ReviewsSection } from "../components/details/DetailBlocks";
 import { useIsDesktop } from "../lib/desktopLayout";
@@ -44,6 +45,14 @@ export function BusinessDetails({ id }: { id: string }) {
     return () => { requestIdRef.current += 1; };
   }, [load]);
   useScreenRefresh(load);
+  // On the website the visitor is a company: their own page ("how others see my profile") has nothing to report.
+  const [ownCompanyId, setOwnCompanyId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isBrowserSession()) return;
+    let active = true;
+    getMyBusinessProfile().then((own) => { if (active) setOwnCompanyId(own.id); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
   if (!profile) return <div className="screen screen--with-nav"><ErrorState onRetry={() => void load()} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
@@ -62,7 +71,7 @@ export function BusinessDetails({ id }: { id: string }) {
       { label: t("company.onPlatformSince"), value: formatShortDate(profile.createdAtUtc, language, { year: true }) }
     ]} />
     </ListHero>
-    <DetailLayout footer={<><ReportButton targetId={profile.id} targetType="business" /></>} side={<>
+    <DetailLayout footer={ownCompanyId === profile.id ? null : <ReportButton targetId={profile.id} targetType="business" />} side={<>
     {website.length > 0 && <DetailSection title={t("company.website")}><ContactList items={website} /></DetailSection>}
     </>}>
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}

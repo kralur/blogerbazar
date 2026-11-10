@@ -156,7 +156,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     { label: t("offers.deadline"), value: deal.offer.deadline ? formatDate(deal.offer.deadline) : null },
     { label: t("deals.startedAt"), value: formatDate(deal.createdAtUtc) }
   ] : terms ? [
-    { label: t("common.city"), value: terms.city ? cityLabel(terms.city, language) : t("common.notSpecified") },
+    { label: t("common.city"), value: terms.city ? cityLabel(terms.city, language) : null },
     { label: t("deals.deadline"), value: terms.deadline ? formatDate(terms.deadline) : null },
     { label: t("deals.campaignBudget"), value: budget }
   ] : [];

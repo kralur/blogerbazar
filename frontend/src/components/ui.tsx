@@ -20,6 +20,7 @@ export function Icon({ name, className, filled = false }: { name: string; classN
     ),
     bell: <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8.3 13a2.5 2.5 0 0 0 4.6 0" />,
     users: <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m14-10a4 4 0 1 0 0-8m6 18v-2a4 4 0 0 0-3-3.87M10 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />,
+    settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></>,
     building: <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1" />,
     star: <path d="m12 2 3.1 6.3 6.9 1-5 4.87L18.18 21 12 17.75 5.82 21 7 14.17l-5-4.87 6.9-1L12 2Z" />,
     lock: <path d="M7 11V7a5 5 0 0 1 10 0v4M6 11h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z" />,
@@ -238,8 +239,8 @@ export function Skeleton({ className }: { className?: string }) {
   return <div className={cn("shimmer rounded-[var(--bb-radius-card)]", className)} />;
 }
 
-export function EmptyState({ title, subtitle, icon = "search" }: { title: string; subtitle: string; icon?: string }) {
-  // D63: an empty state is a price tag on a cord, like the examples on the first screen.
+export function EmptyState({ title, subtitle, icon = "search", action }: { title: string; subtitle: string; icon?: string; action?: { label: string; href: string } }) {
+  // D63: an empty state is a price tag on a cord, like the examples on the first screen; an action shows the next step.
   return (
     <div className="ds-state tag-state" role="status">
       <div className="tag-state__card">
@@ -247,6 +248,7 @@ export function EmptyState({ title, subtitle, icon = "search" }: { title: string
         <h3 className="ds-state__title">{title}</h3>
         <p className="ds-state__subtitle">{subtitle}</p>
       </div>
+      {action && <a className="catalog-search__primary-button" href={action.href}>{action.label}</a>}
     </div>
   );
 }
@@ -425,11 +427,11 @@ export function FixedActionBar({ children }: { children: ReactNode }) {
 // Which main section a hash belongs to; the phone's bottom bar and the computer's side menu (D64 stage B2) agree.
 export function isNavItemActive(href: string, hash: string) {
   if (href === "#/") return hash === "#/" || hash === "" || hash === "#";
-  if (href === "#/search") return hash.startsWith("#/search") || hash.startsWith("#/blogger/") || hash.startsWith("#/brand-face-detail/");
-  if (href === "#/campaigns") return hash.startsWith("#/campaigns") || hash.startsWith("#/campaign/") || hash.startsWith("#/company/") || hash.startsWith("#/my-campaigns") || hash.startsWith("#/my-campaign/") || hash.startsWith("#/my-campaign-applications/");
+  if (href === "#/search") return hash.startsWith("#/search") || hash.startsWith("#/blogger/") || hash.startsWith("#/blogger-reviews/") || hash.startsWith("#/brand-face-detail/") || hash.startsWith("#/brand-face-reviews/");
+  if (href === "#/campaigns") return hash.startsWith("#/campaigns") || hash.startsWith("#/campaign/") || hash.startsWith("#/company/") || hash.startsWith("#/company-reviews/") || hash.startsWith("#/my-campaigns") || hash.startsWith("#/my-campaign/") || hash.startsWith("#/my-campaign-edit/") || hash.startsWith("#/my-campaign-applications/");
   if (href === "#/requests") return hash.startsWith("#/requests") || hash.startsWith("#/my-application/") || hash.startsWith("#/deal/") || hash.startsWith("#/offer/");
   return ["#/profile", "#/settings", "#/favorites", "#/blogger-form", "#/business", "#/team"].some((route) => hash.startsWith(route))
-    || (hash.startsWith("#/brand-face") && !hash.startsWith("#/brand-face-detail/"));
+    || (hash.startsWith("#/brand-face") && !hash.startsWith("#/brand-face-detail/") && !hash.startsWith("#/brand-face-reviews/"));
 }
 
 export function BottomNav() {

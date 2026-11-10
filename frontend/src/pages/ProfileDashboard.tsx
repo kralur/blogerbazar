@@ -3,6 +3,8 @@ import { deleteProfileImage, setProfileVisibility, getCurrentPlatformUser, getMy
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { Badge, BottomNav, Button, Card, EmptyState, ErrorState, Icon, Modal, Skeleton, Toast } from "../components/ui";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
+import { useTelegramHandle } from "../components/TelegramHandleField";
+import { profileCompleteness } from "../lib/profileCompleteness";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { useFavorites } from "../features/favorites/FavoritesProvider";
 import { useScrollRestoration } from "../hooks/useScrollRestoration";
@@ -27,6 +29,7 @@ function bloggerStatus(status: number | undefined, t: (key: string) => string) {
 
 export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceRoleSelected?: (role: MarketplaceRole) => void }) {
   const { haptic, user: telegramUser } = useTelegram();
+  const telegramHandleValue = useTelegramHandle();
   useScrollRestoration("profile");
   const [blogger, setBlogger] = useState<MyBloggerProfile | null>(null);
   const [brandFace, setBrandFace] = useState<MyBrandFaceProfile | null>(null);
@@ -106,7 +109,7 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
       setSwitchingRole(false);
     }
   };
-  const username = telegramUser?.username ? `@${telegramUser.username}` : t("profile.usernameMissing");
+  const username = telegramHandleValue ?? t("profile.usernameMissing");
   const activeProfile = role === "blogger" ? blogger : role === "brandFace" ? brandFace : business;
   // A brand face without what a business filters and looks at is hard to find (QA Q20).
   const brandFaceIncomplete = role === "brandFace" && Boolean(brandFace) && (!brandFace?.instagram || !brandFace?.gender || !brandFace?.age || !(brandFace?.formats?.length) || (!brandFace?.avatarUrl && !(brandFace?.photoUrls?.length)));
@@ -122,7 +125,8 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
   // Only an approved profile is public, so only then is there a page to preview.
   const publicHref = moderation.tone !== "green" || !activeProfile ? null
     : role === "blogger" ? `#/blogger/${activeProfile.id}` : role === "brandFace" ? `#/brand-face-detail/${activeProfile.id}` : `#/company/${activeProfile.id}`;
-  const completion = activeProfile ? role === "blogger" ? Math.round(([blogger?.bio, blogger?.phone, blogger?.email, blogger?.storiesPrice || blogger?.reelsPrice || blogger?.postPrice || blogger?.integrationPrice].filter(Boolean).length / 4) * 100) : role === "brandFace" ? Math.round(([brandFace?.avatarUrl || brandFace?.photoUrls?.length, brandFace?.instagram, brandFace?.gender && brandFace?.age, brandFace?.formats?.length, brandFace?.description, brandFace?.collaborationPrice].filter(Boolean).length / 6) * 100) : Math.round(([business?.description, business?.phone, business?.email, business?.logoUrl].filter(Boolean).length / 4) * 100) : 0;
+  // The same measure as Home's progress card, so both say the same percent.
+  const completion = activeProfile ? profileCompleteness(role === "blogger" ? "Blogger" : role === "brandFace" ? "BrandFace" : "Business", activeProfile).percent : 0;
 
   const updateHidden = (target: ProfileMediaTarget, isHidden: boolean) => {
     if (target === "blogger") setBlogger((current) => current ? { ...current, isHidden } : current);

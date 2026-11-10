@@ -116,7 +116,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
     {reviews && <ReviewsSection allHref={`#/brand-face-reviews/${profile.id}`} count={reviews.reviewsCount} emptyText={t("details.noReviews")} rating={reviews.reviewsCount > 0 ? reviews.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews.items} title={t("details.reviews")} />}
     </DetailLayout>
     {role === "Business" && !profile.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
-    <OfferForm brandFaceId={profile.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
+    <OfferForm brandFaceId={profile.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sentBrandFace")); }} open={offerOpen} />
     <Toast message={toast} />
     <BottomNav />
   </div>;

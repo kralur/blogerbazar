@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
-import { closeMyCampaign, getMyCampaign, type MyCampaignDetails as MyCampaignDetailsData } from "../api/marketplace";
+import { closeMyCampaign, getMyCampaign, reopenMyCampaign, type MyCampaignDetails as MyCampaignDetailsData } from "../api/marketplace";
 import { BottomNav, Badge, Button, Card, ErrorState, Icon, LoadingState, Modal, Toast } from "../components/ui";
 import { notifyCampaignDataChanged, useCampaignDataRefresh } from "../hooks/useCampaignDataRefresh";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
@@ -25,6 +25,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   const [failure, setFailure] = useState<DetailState>(null);
   const [closeOpen, setCloseOpen] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [toast, setToast] = useState("");
   const requestVersionRef = useRef(0);
   const activeRequestRef = useRef<AbortController>();
@@ -105,6 +106,19 @@ export function MyCampaignDetails({ id }: { id: string }) {
   if (loading && !campaign) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
   if (!campaign) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
 
+  // A closed campaign is published again from the side panel too, not only from the "⋯" menu.
+  const reopen = async () => {
+    setReopening(true);
+    try {
+      await reopenMyCampaign(campaign.id);
+      onMenuResult({ kind: "status", status: 1, message: t("campaignMenu.reopened") });
+    } catch {
+      onMenuResult({ kind: "failed", message: t("campaignMenu.reopenFailed"), reload: true });
+    } finally {
+      setReopening(false);
+    }
+  };
+  const reopenBlocked = isPastDay(campaign.deadline);
   const budget = compactBudgetRange(campaign.minBudget, campaign.maxBudget, t("currency.uzs"));
   const canManage = campaign.status !== 2;
   // D63, package G: the lapis head holds the state, the budget large, the title and the facts as tags; the inbox and the text below.
@@ -117,7 +131,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
       <h1 className="detail-hero__title">{campaign.title}</h1>
       <p className="detail-hero__meta">{t("myCampaignDetails.updated", { date: formatDate(campaign.updatedAtUtc) })}</p>
       <FactGrid className="hero-tags fact-grid--three" facts={[
-        { label: t("common.city"), value: campaign.city ? cityLabel(campaign.city, language) : t("common.notSpecified") },
+        { label: t("common.city"), value: campaign.city ? cityLabel(campaign.city, language) : null },
         { label: t("campaigns.deadline"), value: campaign.deadline ? formatDate(campaign.deadline) : t("myCampaigns.deadlineNotSpecified") },
         { label: t("myCampaignDetails.created"), value: formatDate(campaign.createdAtUtc) },
         { label: t("myCampaigns.applications"), value: canManage ? null : campaignApplicationsLabel(campaign.applicationsCount, language, t) }
@@ -126,7 +140,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
     <DetailLayout top={<>
     {campaign.status === 1 && isPastDay(campaign.deadline) && <p className="campaign-details__expired" role="status">{t("myCampaignDetails.expiredNote")}</p>}
     {canManage && campaign.applicationsCount === 0 && <div className="my-campaign-details__inbox my-campaign-details__inbox--empty" role="status"><span><strong>{t("applications.emptyTitle")}</strong><span>{t("myCampaignDetails.noApplicationsHint")}</span></span></div>}
-    {canManage && campaign.applicationsCount > 0 && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}
+    {campaign.applicationsCount > 0 && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}
     </>} side={<>
     {canManage && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}>
       <a aria-label={t("myCampaignDetails.editAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-edit/${id}`} onClick={(event) => {
@@ -136,7 +150,8 @@ export function MyCampaignDetails({ id }: { id: string }) {
       }}>{t("myCampaignDetails.edit")}</a>
       <Button aria-label={t("myCampaignDetails.closeAria", { title: campaign.title })} onClick={() => setCloseOpen(true)} type="button" variant="danger">{t("myCampaignDetails.close")}</Button>
     </section>}
-    {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t("myCampaignDetails.closedHint")}</p>}
+    {campaign.status === 2 && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}><Button aria-busy={reopening} disabled={reopening || reopenBlocked} onClick={() => void reopen()} type="button">{t("campaignMenu.reopen")}</Button></section>}
+    {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t(reopenBlocked ? "campaignMenu.reopenExpired" : "myCampaignDetails.closedHintSide")}</p>}
     </>}>
     <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
     <DetailSection title={t("common.categories")}>{campaign.categories.length ? <ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</DetailSection>

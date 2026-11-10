@@ -1,3 +1,4 @@
+import { noteHistoryReplace } from "./appHistory";
 const historyOriginKey = "bloggerbazarNavigationOrigin";
 
 type HistoryOriginState = Record<string, unknown> & {
@@ -22,6 +23,7 @@ export function getHistoryOrigin(state: unknown, destination: string) {
 }
 
 export function replaceHistoryRoute(to: string) {
+  noteHistoryReplace();
   const state = stateWithoutHistoryOrigin(window.history.state);
   window.history.replaceState(state, "", to);
   window.dispatchEvent(new HashChangeEvent("hashchange"));

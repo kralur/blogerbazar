@@ -9,8 +9,10 @@ import { normalizeLaunchHash } from "./lib/launchHash";
 import { installCspReporter } from "./security/cspReporter";
 import "./styles.css";
 import { installSeason } from "./lib/season";
+import { startAppHistory } from "./navigation/appHistory";
 
 normalizeLaunchHash(window.location, window.history);
+startAppHistory();
 installCspReporter();
 
 // An Uzbek start waits for its dictionary (one small file); a failed download starts in Russian rather than not at all.

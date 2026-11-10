@@ -101,7 +101,7 @@ export function OfferForm({ bloggerId, brandFaceId, open, onClose, onSent, initi
       <Input label={t("offers.deadline")} min={localDay(0)} onChange={(event) => setDeadline(event.target.value)} type="date" value={deadline} />
       <Textarea error={messageError} label={t("offers.message")} maxLength={MessageLimit} onChange={(event) => { setMessage(event.target.value); if (messageError) setMessageError(""); }} placeholder={t("offers.messagePlaceholder")} required value={message} />
       {error && <p className="text-sm font-semibold text-red-600" role="alert">{error}</p>}
-      <p className="text-xs text-brand-muted">{t("offers.formHint")}</p>
+      <p className="text-xs text-brand-muted">{t(brandFaceId ? "offers.formHintBrandFace" : "offers.formHint")}</p>
       <Button disabled={sending} type="submit">{sending ? t("offers.sending") : t("offers.send")}</Button>
     </form>
   </Modal>;

@@ -1008,5 +1008,5 @@ export async function createCampaign(input: {
   deadline?: string;
   publishImmediately: boolean;
 }) {
-  return api("/api/campaigns", { method: "POST", body: JSON.stringify(input) });
+  return api<{ id?: string } | null>("/api/campaigns", { method: "POST", body: JSON.stringify(input) });
 }

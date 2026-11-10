@@ -17,8 +17,9 @@ import { isBrowserSession } from "../lib/browserSession";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../lib/themePreference";
 import { useTelegram } from "../telegram/TelegramProvider";
 
-const themeOptions: Array<{ value: ThemePreference; labelKey: string }> = [
-  { value: "telegram", labelKey: "settings.themeTelegram" },
+// On the website "follow" means the computer's light or dark setting.
+const themeOptions = (): Array<{ value: ThemePreference; labelKey: string }> => [
+  { value: "telegram", labelKey: isBrowserSession() ? "settings.themeSystem" : "settings.themeTelegram" },
   { value: "light", labelKey: "settings.themeLight" },
   { value: "dark", labelKey: "settings.themeDark" }
 ];
@@ -99,7 +100,7 @@ export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionRese
   };
 
   // D63, package G: the lapis head with the current state in one line, the rows below.
-  const state = [language.toUpperCase(), t(themeOptions.find((option) => option.value === theme)?.labelKey ?? "settings.themeTelegram"), shownSeason === "off" ? t("settings.seasonDefault") : t(`settings.season.${shownSeason}`)].join(" · ");
+  const state = [language.toUpperCase(), t(themeOptions().find((option) => option.value === theme)?.labelKey ?? "settings.themeTelegram"), shownSeason === "off" ? t("settings.seasonDefault") : t(`settings.season.${shownSeason}`)].join(" · ");
   return <div className="screen screen--with-nav space-y-5 px-4 pt-5">
     <ListHero className="detail-hero settings-hero">
       <PageHeader back={{ href: "#/profile", label: t("nav.profile") }} eyebrow={t("profile.eyebrow")} title={t("profile.settings")} />
@@ -117,7 +118,7 @@ export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionRese
       <div className="settings-row settings-row--stacked">
         <span className="settings-row__text"><strong>{t("settings.theme")}</strong></span>
         <div aria-label={t("settings.theme")} className="language-switcher language-switcher--three" role="group">
-          {themeOptions.map((option) => <button aria-pressed={theme === option.value} className="language-switcher__option" key={option.value} onClick={() => chooseTheme(option.value)} type="button">{t(option.labelKey)}</button>)}
+          {themeOptions().map((option) => <button aria-pressed={theme === option.value} className="language-switcher__option" key={option.value} onClick={() => chooseTheme(option.value)} type="button">{t(option.labelKey)}</button>)}
         </div>
       </div>
       <div className="settings-row settings-row--stacked">

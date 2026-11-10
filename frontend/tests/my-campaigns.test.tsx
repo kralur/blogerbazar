@@ -96,7 +96,7 @@ describe("My Campaigns management", () => {
     expect(screen.queryByRole("link", { name: translate("myCampaigns.backAria", undefined, "ru") })).not.toBeInTheDocument();
     expect(api.getMyCampaigns).toHaveBeenCalledWith({ page: 1, pageSize: 20, query: undefined, sort: "newest", status: undefined }, expect.any(AbortSignal));
     expect(screen.getByRole("link", { name: translate("myCampaigns.openAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign/campaign-a");
-    expect(screen.getByText("0 заявок")).toBeInTheDocument();
+    expect(screen.getByText("0 откликов")).toBeInTheDocument();
     expect(screen.getByText(/500.000/)).toBeInTheDocument();
   });
 
@@ -187,12 +187,14 @@ describe("My Campaigns management", () => {
   });
 
   it("does not offer lifecycle actions for a closed campaign", async () => {
-    api.getMyCampaign.mockResolvedValueOnce({ ...campaign, status: 2, description: "Launch coffee", requirements: [] });
+    api.getMyCampaign.mockResolvedValueOnce({ ...campaign, status: 2, deadline: "2099-08-31T00:00:00Z", description: "Launch coffee", requirements: [] });
     render(<I18nProvider><MyCampaignDetails id="campaign-a" /></I18nProvider>);
 
     await screen.findByText("Coffee launch");
     expect(screen.queryByRole("link", { name: /Редактировать кампанию/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Закрыть кампанию/i })).not.toBeInTheDocument();
-    expect(screen.getByText(translate("myCampaignDetails.closedHint", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText(translate("myCampaignDetails.closedHintSide", undefined, "ru"))).toBeInTheDocument();
+    // Publishing again sits in plain sight, not only in the "⋯" menu.
+    expect(screen.getByRole("button", { name: translate("campaignMenu.reopen", undefined, "ru") })).toBeInTheDocument();
   });
 });

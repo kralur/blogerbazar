@@ -221,7 +221,7 @@ export function App() {
         if (!quiet) setOnboardingStep("checking");
         const user = await getCurrentPlatformUser();
         if (normalizeMarketplaceRole(user.selectedMarketplaceRole) !== "Business") throw new ApiError(401);
-        setBrowserSession(true);
+        setBrowserSession(true, user.username);
         setSelectedRole("Business");
         setOnboardingStep("complete");
         window.location.hash = initialDeepLink ?? (window.location.hash.replace("#", "") || "/");
