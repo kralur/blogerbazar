@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IPublicBusinessReadModel, PublicBusinessReadModel>();
         services.AddScoped<IPublicStatsReadModel, PublicStatsReadModel>();
         services.AddScoped<IDealReadModel, DealReadModel>();
+        services.AddScoped<IBusinessTeamRepository, BusinessTeamRepository>();
         services.Configure<ProfileMediaOptions>(configuration.GetSection(ProfileMediaOptions.SectionName));
         services.AddSingleton<IProfileMediaStorage, S3ProfileMediaStorage>();
         services.AddSingleton<ICatalogCache, DistributedCatalogCache>();

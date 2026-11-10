@@ -229,7 +229,7 @@ public sealed class CreateReviewHandlerTests
             return Task.CompletedTask;
         }
 
-        public Task<bool> ExistsAsync(Guid dealId, long reviewerTelegramUserId, CancellationToken cancellationToken) => Task.FromResult(AlreadyReviewed);
+        public Task<bool> ExistsAsync(Guid dealId, ReviewTargetType targetType, CancellationToken cancellationToken) => Task.FromResult(AlreadyReviewed);
 
         // Simulates the partner review: when present, publishing reveals both reviews.
         public bool PartnerReviewed { get; init; }

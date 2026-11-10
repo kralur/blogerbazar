@@ -1,6 +1,8 @@
 using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Abstractions.Persistence;
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Features.Bloggers;
+using BloggerBazar.Application.Features.Team;
 using BloggerBazar.Application.Features.Users;
 using BloggerBazar.Domain.Entities;
 using BloggerBazar.Domain.Enums;
@@ -50,6 +52,40 @@ public sealed class DeleteCurrentAccountHandlerTests
         Assert.Single(audits.Entries);
         Assert.Equal(1, cache.Rotations);
         Assert.Equal(1, cache.CampaignRotations);
+    }
+
+    [Fact]
+    public async Task An_owner_with_a_team_removes_the_team_before_deleting_the_account()
+    {
+        var user = PlatformUser.Create(42, "User", "user");
+        var business = BusinessProfile.Create(42, "Business", "tashkent");
+        var audits = new InMemoryAuditLogs();
+        var handler = new DeleteCurrentAccountHandler(new InMemoryUsers(user), new InMemoryBloggers(null), new InMemoryBrandFaces(null), new InMemoryBusinesses(business),
+            new InMemoryFavorites(), new InMemoryBrandFaceFavorites(), audits, new UnitOfWork(), new InMemoryCache(), NullLogger<DeleteCurrentAccountHandler>.Instance, new TeamOf(3));
+
+        var error = await Assert.ThrowsAsync<BusinessRuleConflictException>(() => handler.Handle(new DeleteCurrentAccountCommand(42, "trace-team"), CancellationToken.None));
+
+        Assert.Equal(TeamCodes.TeamNotEmpty, error.Code);
+        Assert.False(user.IsDeleted);
+        Assert.False(business.IsDeleted);
+        Assert.Empty(audits.Entries);
+    }
+
+    // Only the head count matters here.
+    private sealed class TeamOf(int members) : IBusinessTeamRepository
+    {
+        public Task<int> CountActiveMembersAsync(Guid businessId, CancellationToken cancellationToken) => Task.FromResult(members);
+        public Task<IReadOnlyList<TeamMemberRow>> GetMembersAsync(Guid businessId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<IReadOnlyList<TeamInvitationRow>> GetPendingInvitationsAsync(Guid businessId, DateTime nowUtc, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<BusinessMember?> GetActiveMemberAsync(Guid businessId, Guid memberId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<BusinessMember?> GetActiveMembershipAsync(long telegramUserId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<IReadOnlyList<long>> GetDecidersAsync(Guid businessId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task AddMemberAsync(BusinessMember member, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task AddInvitationAsync(BusinessInvitation invitation, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<bool> TryRequestAsync(Guid invitationId, long telegramUserId, DateTime nowUtc, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<BusinessInvitation?> GetInvitationByCodeHashAsync(string codeHash, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<BusinessInvitation?> GetInvitationAsync(Guid businessId, Guid invitationId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task CloseInvitationsAsync(Guid businessId, long closedByTelegramUserId, DateTime nowUtc, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private static DeleteCurrentAccountHandler CreateHandler(PlatformUser user, BloggerProfile? blogger, BrandFaceProfile? brandFace, BusinessProfile? business, InMemoryAuditLogs audits, InMemoryCache cache) =>

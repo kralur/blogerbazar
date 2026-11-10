@@ -191,6 +191,57 @@ internal static class BotMessages
             $"Brauzerda BloggerBazar’ga kirildi: {BrowserName(device.Browser, uzbek: true)}{SystemSuffix(device.Os)}, {time}. Agar bu siz bo‘lmasangiz, «Brauzerlarim»ni ochib, «Hamma joydan chiqish»ni bosing.") with { Button = BrowsersButton };
     }
 
+    internal static readonly BotText TeamButton = new("Открыть команду", "Jamoani ochish");
+    internal static readonly BotText StartWorkButton = new("Начать работу", "Ishni boshlash");
+
+    // D64 stage C: to the owner and admins, when someone asks to join through an invitation link.
+    public static BotText TeamAccessRequested(string firstName, string? username, string phone, string companyName, BusinessMemberRole role)
+    {
+        var who = string.IsNullOrWhiteSpace(username) ? $"{firstName} ({phone})" : $"{firstName} (@{username}, {phone})";
+        return Bilingual(
+            $"{who} просит доступ к команде «{companyName}» с ролью «{RoleName(role, uzbek: false)}». Откройте «Команда», чтобы принять или отклонить.",
+            $"{who} «{companyName}» jamoasiga «{RoleName(role, uzbek: true)}» roli bilan qo‘shilishni so‘ramoqda. Qabul qilish yoki rad etish uchun «Jamoa»ni oching.") with { Button = TeamButton };
+    }
+
+    // To the newcomer once accepted, with the site address when one is known.
+    public static BotText TeamJoined(string companyName, BusinessMemberRole role, string? siteUrl)
+    {
+        var russian = $"Вас приняли в команду «{companyName}» с ролью «{RoleName(role, uzbek: false)}». Работать можно здесь, в Telegram.";
+        var uzbek = $"Siz «{companyName}» jamoasiga «{RoleName(role, uzbek: true)}» roli bilan qabul qilindingiz. Shu yerda, Telegram’da ishlashingiz mumkin.";
+        if (!string.IsNullOrWhiteSpace(siteUrl))
+        {
+            russian += $" На компьютере откройте {siteUrl} и нажмите «Войти через Telegram».";
+            uzbek += $" Kompyuterda {siteUrl} manzilini oching va «Telegram orqali kirish»ni bosing.";
+        }
+        return Bilingual(russian, uzbek) with { Button = StartWorkButton };
+    }
+
+    // To the owner when an admin, not the owner, lets someone in.
+    public static BotText TeamMemberAdded(string firstName, string companyName, BusinessMemberRole role) => Bilingual(
+        $"Админ принял {firstName} в команду «{companyName}» с ролью «{RoleName(role, uzbek: false)}».",
+        $"Admin {firstName}ni «{companyName}» jamoasiga «{RoleName(role, uzbek: true)}» roli bilan qabul qildi.") with { Button = TeamButton };
+
+    public static BotText TeamRequestDeclined(string companyName) => Bilingual(
+        $"Запрос в команду «{companyName}» отклонён.",
+        $"«{companyName}» jamoasiga so‘rov rad etildi.");
+
+    public static BotText TeamMemberRemoved(string companyName) => Bilingual(
+        $"Вас убрали из команды «{companyName}». Входы в браузере закрыты.",
+        $"Siz «{companyName}» jamoasidan chiqarildingiz. Brauzerdagi kirishlar yopildi.");
+
+    // «Работать на компьютере»: the same address the Mini App just opened, kept in the chat for later.
+    public static BotText WorkOnComputer(string companyName, string siteUrl) => Bilingual(
+        $"Работа с «{companyName}» на компьютере: откройте {siteUrl} в браузере и нажмите «Войти через Telegram». Затем выберите в Telegram число, которое покажет сайт.",
+        $"«{companyName}» bilan kompyuterda ishlash: brauzerda {siteUrl} manzilini oching va «Telegram orqali kirish»ni bosing. So‘ng Telegram’da sayt ko‘rsatgan raqamni tanlang.");
+
+    private static string RoleName(BusinessMemberRole role, bool uzbek) => role switch
+    {
+        BusinessMemberRole.Owner => uzbek ? "Egasi" : "Владелец",
+        BusinessMemberRole.Admin => uzbek ? "Admin" : "Админ",
+        BusinessMemberRole.Manager => uzbek ? "Menejer" : "Менеджер",
+        _ => uzbek ? "Kuzatuvchi" : "Наблюдатель"
+    };
+
     // Tashkent has no daylight saving time.
     private static readonly TimeSpan TashkentOffset = TimeSpan.FromHours(5);
 

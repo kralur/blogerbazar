@@ -32,6 +32,10 @@ public sealed class BusinessProfile
     // Paused by the owner (D50): out of listings and new offers/applications; deals, reviews and the page by link stay.
     public bool IsHidden { get; private set; }
     public void SetHidden(bool hidden) { IsHidden = hidden; UpdatedAtUtc = DateTime.UtcNow; }
+    // D64 stage C: "with a team" (corporate mode) shows the team, invitations and work on a computer; "alone" is the
+    // company as it always was. Chosen when the company is created and switched in its profile.
+    public bool TeamMode { get; private set; }
+    public void SetTeamMode(bool teamMode) { TeamMode = teamMode; UpdatedAtUtc = DateTime.UtcNow; }
     public DateTime? DeletedAtUtc { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }

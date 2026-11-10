@@ -30,7 +30,7 @@ export function DesktopNav() {
     { href: "#/requests", label: t("nav.requests"), icon: "briefcase" },
     { href: "#/profile", label: t("nav.profile"), icon: "user" }
   ];
-  const isActive = (href: string) => href === "#/profile" ? isNavItemActive(href, hash) && !hash.startsWith("#/settings") && !hash.startsWith("#/favorites") : isNavItemActive(href, hash);
+  const isActive = (href: string) => href === "#/profile" ? isNavItemActive(href, hash) && !hash.startsWith("#/settings") && !hash.startsWith("#/favorites") && !hash.startsWith("#/team") : isNavItemActive(href, hash);
 
   return <nav aria-label={t("nav.aria")} className="desktop-nav">
     <a className="desktop-nav__brand" href="#/">{t("common.appName")}</a>
@@ -45,6 +45,7 @@ export function DesktopNav() {
       </li>)}
     </ul>
     <ul className="desktop-nav__items desktop-nav__items--secondary">
+      <li><a aria-current={hash.startsWith("#/team") ? "page" : undefined} className="desktop-nav__item" href="#/team"><Icon className="h-5 w-5" name="users" /><span>{t("team.title")}</span></a></li>
       <li><a aria-current={hash.startsWith("#/favorites") ? "page" : undefined} className="desktop-nav__item" href="#/favorites"><Icon className="h-5 w-5" name="heart" /><span>{t("favorites.profileTitle")}</span></a></li>
       <li><a aria-current={hash.startsWith("#/settings") ? "page" : undefined} className="desktop-nav__item" href="#/settings"><Icon className="h-5 w-5" name="filter" /><span>{t("profile.settings")}</span></a></li>
     </ul>

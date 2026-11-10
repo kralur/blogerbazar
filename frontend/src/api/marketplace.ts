@@ -340,6 +340,9 @@ export type MyBusinessProfile = {
   email?: string | null;
   isVerified: boolean;
   moderationStatus: number;
+  // D64 stage C1: the company works with a team, and the caller's role in it.
+  teamMode?: boolean;
+  teamRole?: "owner" | "admin" | "manager" | "viewer" | null;
 };
 export type MyBloggerProfile = {
   isHidden?: boolean;
@@ -375,6 +378,8 @@ export type BusinessProfileInput = {
   description?: string;
   phone?: string;
   email?: string;
+  // D64 stage C1: on creation only; the company works "with a team".
+  teamMode?: boolean;
 };
 
 export type BloggerProfileInput = {
@@ -817,8 +822,8 @@ const launchSource = (() => {
   if (typeof window === "undefined") return null;
   // Read straight from Telegram's object: tests mock the provider module, and this runs at module load.
   const value = (new URLSearchParams(window.location.search).get("bb_src") ?? window.Telegram?.WebApp?.initDataUnsafe?.start_param ?? "").toLowerCase();
-  // A browser sign-in link (web_<code>, D64 stage B) is not an ad label.
-  if (value.startsWith("web_")) return null;
+  // A browser sign-in link (web_<code>, D64 stage B) or a team invitation (join_<code>, stage C1) is not an ad label.
+  if (value.startsWith("web_") || value.startsWith("join_")) return null;
   return /^[a-z0-9_-]{1,32}$/.test(value) ? value : null;
 })();
 

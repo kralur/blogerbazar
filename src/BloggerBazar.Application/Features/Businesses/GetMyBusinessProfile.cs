@@ -18,7 +18,10 @@ public sealed record MyBusinessProfileDto(
     string? Phone,
     string? Email,
     bool IsVerified,
-    int ModerationStatus)
+    int ModerationStatus,
+    // D64 stage C (additive): the company works with a team, and the caller's role in it (D26 string).
+    bool TeamMode = false,
+    string? TeamRole = null)
 {
     public static MyBusinessProfileDto From(BusinessProfile profile) => new(
         profile.Id,
@@ -39,7 +42,11 @@ public sealed class GetMyBusinessProfileHandler(IBusinessProfileRepository busin
 {
     public async Task<MyBusinessProfileDto?> Handle(GetMyBusinessProfileQuery query, CancellationToken cancellationToken)
     {
-        var profile = await BusinessTeamAccess.FindAsync(businesses, query.TelegramUserId, BusinessPermission.View, cancellationToken);
-        return profile is null ? null : MyBusinessProfileDto.From(profile);
+        var membership = await businesses.GetMembershipAsync(query.TelegramUserId, cancellationToken);
+        return membership is null ? null : MyBusinessProfileDto.From(membership.Business) with
+        {
+            TeamMode = membership.Business.TeamMode,
+            TeamRole = Team.TeamRoles.ToApi(membership.Role)
+        };
     }
 }

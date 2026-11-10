@@ -1,3 +1,4 @@
+using BloggerBazar.Domain.Enums;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Features.Reviews;
 using BloggerBazar.Domain.Entities;
@@ -7,8 +8,8 @@ namespace BloggerBazar.Infrastructure.Persistence;
 
 internal sealed class ReviewRepository(BloggerBazarDbContext dbContext) : IReviewRepository
 {
-    public Task<bool> ExistsAsync(Guid dealId, long reviewerTelegramUserId, CancellationToken cancellationToken) =>
-        dbContext.Reviews.IgnoreQueryFilters().AnyAsync(review => review.DealId == dealId && review.ReviewerTelegramUserId == reviewerTelegramUserId, cancellationToken);
+    public Task<bool> ExistsAsync(Guid dealId, ReviewTargetType targetType, CancellationToken cancellationToken) =>
+        dbContext.Reviews.IgnoreQueryFilters().AnyAsync(review => review.DealId == dealId && review.TargetType == targetType, cancellationToken);
 
     public async Task AddAsync(Review review, CancellationToken cancellationToken) => await dbContext.Reviews.AddAsync(review, cancellationToken);
 

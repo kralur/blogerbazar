@@ -9,7 +9,8 @@ using MediatR;
 
 namespace BloggerBazar.Application.Features.Businesses;
 
-public sealed record CreateBusinessProfileCommand(long TelegramUserId, string Name, string? Username, string? City, string? LogoUrl, string? WebsiteUrl, string? Description, string? Phone, string? Email) : IRequest<BusinessProfileDto>;
+// TeamMode (D64 stage C): the company works with a team; null keeps it as it is (alone for a new company).
+public sealed record CreateBusinessProfileCommand(long TelegramUserId, string Name, string? Username, string? City, string? LogoUrl, string? WebsiteUrl, string? Description, string? Phone, string? Email, bool? TeamMode = null) : IRequest<BusinessProfileDto>;
 
 public sealed class CreateBusinessProfileValidator : AbstractValidator<CreateBusinessProfileCommand>
 {
@@ -58,6 +59,7 @@ public sealed class CreateBusinessProfileHandler(IBusinessProfileRepository busi
         // point a profile at an arbitrary external picture.
         profile.Update(command.Name.Trim(), command.Username?.Trim(), command.City?.Trim(), profile.LogoUrl, command.WebsiteUrl?.Trim(), command.Description?.Trim(), command.Phone?.Trim(), command.Email?.Trim());
         if (existing is null) profile.Approve(verified: false); else profile.PublishAfterOwnerEdit();
+        if (command.TeamMode is { } teamMode) profile.SetTeamMode(teamMode);
         if (existing is null)
         {
             await businesses.AddAsync(profile, cancellationToken);

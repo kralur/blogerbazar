@@ -1,3 +1,4 @@
+using BloggerBazar.Application.Exceptions;
 using BloggerBazar.Application.Abstractions.Persistence;
 using BloggerBazar.Application.Abstractions.Caching;
 using BloggerBazar.Application.Features.Campaigns;
@@ -20,7 +21,8 @@ public sealed class DeleteCurrentAccountHandler(
     IAuditLogRepository auditLogs,
     IUnitOfWork unitOfWork,
     ICatalogCache cache,
-    ILogger<DeleteCurrentAccountHandler> logger) : IRequestHandler<DeleteCurrentAccountCommand, AccountDeletionResultDto>
+    ILogger<DeleteCurrentAccountHandler> logger,
+    IBusinessTeamRepository? team = null) : IRequestHandler<DeleteCurrentAccountCommand, AccountDeletionResultDto>
 {
     public async Task<AccountDeletionResultDto> Handle(DeleteCurrentAccountCommand command, CancellationToken cancellationToken)
     {
@@ -32,6 +34,15 @@ public sealed class DeleteCurrentAccountHandler(
             if (user.IsBlocked)
             {
                 throw new UnauthorizedAccessException("This Telegram account is not allowed to access the marketplace.");
+            }
+
+            // D64 stage C: an owner with a team first removes the team (or later hands the company over); deleting the
+            // account must not silently take away everybody else's work.
+            if (!user.IsDeleted && team is not null
+                && await businesses.GetByTelegramUserIdAsync(command.TelegramUserId, transactionCancellationToken) is { } ownCompany
+                && await team.CountActiveMembersAsync(ownCompany.Id, transactionCancellationToken) > 1)
+            {
+                throw new BusinessRuleConflictException(Team.TeamCodes.TeamNotEmpty, "Remove the company's team before deleting the account.");
             }
 
             if (user.IsDeleted || !await users.SoftDeleteIfActiveAsync(command.TelegramUserId, command.TelegramUserId, transactionCancellationToken))

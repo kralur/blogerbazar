@@ -11,6 +11,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
     public DbSet<BloggerProfile> BloggerProfiles => Set<BloggerProfile>();
     public DbSet<BusinessProfile> BusinessProfiles => Set<BusinessProfile>();
     public DbSet<BusinessMember> BusinessMembers => Set<BusinessMember>();
+    public DbSet<BusinessInvitation> BusinessInvitations => Set<BusinessInvitation>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignApplication> CampaignApplications => Set<CampaignApplication>();
     public DbSet<Deal> Deals => Set<Deal>();
@@ -205,6 +206,17 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         member.HasIndex(entity => entity.TelegramUserId, "IX_business_members_active_person").IsUnique().HasFilter("\"RemovedAtUtc\" IS NULL");
         member.HasIndex(entity => entity.BusinessId, "IX_business_members_active_owner").IsUnique().HasFilter("\"RemovedAtUtc\" IS NULL AND \"Role\" = 0");
 
+        // D64 stage C: invitation links into a company's team; only the hash of the code is stored.
+        var invitation = modelBuilder.Entity<BusinessInvitation>();
+        invitation.ToTable("business_invitations");
+        invitation.HasKey(entity => entity.Id);
+        invitation.Property(entity => entity.CodeHash).HasMaxLength(64).IsRequired();
+        invitation.Property(entity => entity.Role).HasConversion<int>();
+        invitation.Property(entity => entity.Status).HasConversion<int>();
+        invitation.HasOne(entity => entity.Business).WithMany().HasForeignKey(entity => entity.BusinessId).OnDelete(DeleteBehavior.Cascade);
+        invitation.HasIndex(entity => entity.CodeHash).IsUnique();
+        invitation.HasIndex(entity => new { entity.BusinessId, entity.Status });
+
         var business = modelBuilder.Entity<BusinessProfile>();
         business.ToTable("business_profiles");
         business.HasKey(entity => entity.Id);
@@ -300,7 +312,9 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         review.HasOne(entity => entity.Deal).WithMany(entity => entity.Reviews).HasForeignKey(entity => entity.DealId).OnDelete(DeleteBehavior.Cascade);
         review.HasOne(entity => entity.Blogger).WithMany(entity => entity.Reviews).HasForeignKey(entity => entity.BloggerId).OnDelete(DeleteBehavior.Restrict);
         review.HasOne(entity => entity.Business).WithMany(entity => entity.Reviews).HasForeignKey(entity => entity.BusinessId).OnDelete(DeleteBehavior.Restrict);
-        review.HasIndex(entity => new { entity.DealId, entity.ReviewerTelegramUserId }).IsUnique();
+        // D64 stage C: one review from each side of a deal (the company's, whoever in its team wrote it, and the
+        // creator's), no longer one per person.
+        review.HasIndex(entity => new { entity.DealId, entity.TargetType }).IsUnique();
         review.HasIndex(entity => entity.BloggerId);
         review.HasIndex(entity => entity.BusinessId);
         review.HasOne(entity => entity.BrandFace).WithMany().HasForeignKey(entity => entity.BrandFaceId).OnDelete(DeleteBehavior.Restrict);

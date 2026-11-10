@@ -2097,6 +2097,27 @@ a.detail-hero__eyebrow:active { color: #FFFFFF; }
 .browser-sessions__current { margin-left: .5rem; padding: .125rem .5rem; border-radius: 999px; background: var(--bb-accent); color: var(--bb-accent-text) !important; font-size: .75rem !important; font-weight: 700; vertical-align: .1em; }
 .browser-sessions__end { flex: none; min-height: 2.5rem; padding-inline: 1rem; }
 
+/* D64 stage C1: the team screen, the invitation, the join screen and the welcome window. */
+.team-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.team-list__item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 0; }
+.team-list__item + .team-list__item { border-top: 1px solid var(--bb-border); }
+.team-list__item .settings-row__text { min-width: 0; flex: 1 1 12rem; }
+.team-list__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem; }
+.team-list__actions .ds-button { min-height: 2.5rem; padding-inline: 1rem; }
+.team-list__item--request .team-list__actions { flex: 1 1 100%; justify-content: stretch; }
+.team-list__item--request .team-list__actions .ds-button { flex: 1 1 0; }
+.team-list__handle { color: var(--bb-text-secondary); font-weight: 500; }
+.team-list__phone { color: var(--bb-action); font-weight: 600; text-decoration: none; }
+.team-roles { display: grid; gap: .625rem; }
+.team-roles .ftue-role-card { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+.team-invite__qr { display: block; width: min(14rem, 70%); height: auto; margin: 0 auto; border-radius: .75rem; }
+.team-invite__link { display: block; padding: .75rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface-secondary); font-size: .8125rem; line-height: 1.4; word-break: break-all; user-select: all; }
+.team-welcome__points { display: grid; gap: .75rem; margin: 1.25rem 0 0; padding: 0; list-style: none; }
+.team-welcome__points li { display: flex; gap: .75rem; align-items: flex-start; padding: .875rem 1rem; border: 1px solid rgba(255, 255, 255, .18); border-radius: .875rem; background: rgba(255, 255, 255, .12); color: var(--bb-lapis-text); font-size: .9375rem; line-height: 1.45; }
+.team-welcome__points svg { flex: none; width: 1.25rem; height: 1.25rem; margin-top: .125rem; color: #FFFFFF; }
+.team-welcome .ftue-success__indicator { margin-bottom: 1rem; }
+.team-join .browser-confirm__device { align-items: center; }
+
 /* D64 stage B2: the website on a computer (outside Telegram, 1024 px and wider). A lapis side menu takes the place
    of the bottom bar; the content gets the width of a desktop page; lists become grids; sheets open as dialogs in
    the middle. Telegram keeps the phone layout untouched (html[data-desktop] is never set there). */

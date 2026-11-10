@@ -252,7 +252,7 @@ public sealed class DealReminderTests
     private sealed class SpyReviews : IReviewRepository
     {
         public List<Guid?> PublishedDeals { get; } = [];
-        public Task<bool> ExistsAsync(Guid dealId, long reviewerTelegramUserId, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> ExistsAsync(Guid dealId, ReviewTargetType targetType, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task AddAsync(Review review, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<int> PublishRevealedAsync(Guid? dealId, DateTime nowUtc, CancellationToken cancellationToken)

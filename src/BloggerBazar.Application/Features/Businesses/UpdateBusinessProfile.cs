@@ -43,8 +43,13 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
         // D64: the owner or an admin of the company edits its profile.
         var profile = await BusinessTeamAccess.FindAsync(businesses, command.TelegramUserId, BusinessPermission.ManageProfile, cancellationToken)
             ?? throw new InvalidOperationException("Create a business profile before updating it.");
+        // D64 stage C: the company's Telegram and phone are its owner's (D40, D41); an admin editing the profile does not
+        // put their own on it.
+        var editorIsOwner = profile.TelegramUserId == command.TelegramUserId;
+        var username = editorIsOwner ? command.Username?.Trim() : profile.Username;
+        var phone = editorIsOwner ? command.Phone?.Trim() : profile.Phone;
 
-        var usernameOwner = command.Username is null ? null : await businesses.GetByUsernameAsync(command.Username.Trim(), cancellationToken);
+        var usernameOwner = username is null ? null : await businesses.GetByUsernameAsync(username, cancellationToken);
         if (usernameOwner is not null && usernameOwner.Id != profile.Id)
         {
             throw new InvalidOperationException("This Telegram username is already used by another business profile.");
@@ -52,12 +57,12 @@ public sealed class UpdateBusinessProfileHandler(IBusinessProfileRepository busi
 
         profile.Update(
             command.Name.Trim(),
-            command.Username?.Trim(),
+            username,
             command.City?.Trim(),
             profile.LogoUrl, // only our upload changes the logo
             command.WebsiteUrl?.Trim(),
             command.Description?.Trim(),
-            command.Phone?.Trim(),
+            phone,
             command.Email?.Trim());
         profile.PublishAfterOwnerEdit();
         await unitOfWork.SaveChangesAsync(cancellationToken);

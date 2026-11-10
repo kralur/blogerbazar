@@ -1,5 +1,6 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { browserSignInCodeFrom } from "./api/browserSessions";
+import { teamJoinCodeFrom } from "./api/team";
 import { ApiError, sessionExpiredEvent } from "./api/client";
 import { getCurrentPlatformUser, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, normalizeMarketplaceRole, updateInterfaceLanguage, type MarketplaceRole } from "./api/marketplace";
 import { useI18n } from "./i18n";
@@ -34,7 +35,9 @@ function rememberedRole(): MarketplaceRole | undefined {
 }
 const onboardingCompletedKey = "bloggerbazar.onboarding.completed";
 // browser: D64 stage B, the page outside Telegram asks a company member to sign this browser in.
-type OnboardingStep = "welcome" | "telegram" | "browser" | "checking" | "phone" | "role" | "profile" | "success" | "complete";
+// mode and teamWelcome: D64 stage C1, "alone or with a team" after the Business role, and the window after a company
+// with a team is created.
+type OnboardingStep = "welcome" | "telegram" | "browser" | "checking" | "phone" | "role" | "mode" | "profile" | "success" | "teamWelcome" | "complete";
 
 const Admin = lazy(async () => ({ default: (await import("./pages/Admin")).Admin }));
 const AdminUserCard = lazy(async () => ({ default: (await import("./pages/AdminUserCard")).AdminUserCard }));
@@ -63,6 +66,10 @@ const ProfileDashboard = lazy(async () => ({ default: (await import("./pages/Pro
 const Settings = lazy(async () => ({ default: (await import("./pages/Settings")).Settings }));
 const BrowserSignIn = lazy(async () => ({ default: (await import("./pages/BrowserSignIn")).BrowserSignIn }));
 const BrowserSignInConfirm = lazy(async () => ({ default: (await import("./pages/BrowserSignInConfirm")).BrowserSignInConfirm }));
+const BusinessModeChoice = lazy(async () => ({ default: (await import("./pages/BusinessModeChoice")).BusinessModeChoice }));
+const Team = lazy(async () => ({ default: (await import("./pages/Team")).Team }));
+const TeamJoin = lazy(async () => ({ default: (await import("./pages/TeamJoin")).TeamJoin }));
+const TeamWelcome = lazy(async () => ({ default: (await import("./pages/TeamWelcome")).TeamWelcome }));
 const TelegramAuthorization = lazy(async () => ({ default: (await import("./pages/TelegramAuthorization")).TelegramAuthorization }));
 const PhoneVerification = lazy(async () => ({ default: (await import("./pages/PhoneVerification")).PhoneVerification }));
 const Welcome = lazy(async () => ({ default: (await import("./pages/Welcome")).Welcome }));
@@ -108,6 +115,18 @@ function readBrowserSignInCode() {
   }
 }
 
+// D64 stage C1: the Mini App opened from a team invitation (startapp=join_<code>), once per code.
+const teamJoinSeenKey = "bloggerbazar.teamJoin.seen";
+function readTeamJoinCode() {
+  if (typeof window === "undefined") return null;
+  const code = teamJoinCodeFrom(window.Telegram?.WebApp?.initDataUnsafe?.start_param);
+  try {
+    return code && sessionStorage.getItem(teamJoinSeenKey) !== code ? code : null;
+  } catch {
+    return code;
+  }
+}
+
 function initialOnboardingStep(): OnboardingStep {
   if (localStorage.getItem(onboardingCompletedKey) === "true") return "complete";
   return localStorage.getItem(onboardingWelcomeKey) === "true" ? "telegram" : "welcome";
@@ -144,6 +163,9 @@ export function App() {
   const [sessionEpoch, setSessionEpoch] = useState(0);
   const [browserSignInCode, setBrowserSignInCode] = useState(() => isTelegram ? readBrowserSignInCode() : null);
   const browserSignInRoleChanged = useRef(false);
+  const [teamJoinCode, setTeamJoinCode] = useState(() => isTelegram ? readTeamJoinCode() : null);
+  // The company form creates a company "with a team" when that was chosen right before it.
+  const [newCompanyTeamMode, setNewCompanyTeamMode] = useState(false);
   // D64 stage B2: a wide browser window gets the website layout; Telegram keeps the phone layout.
   const desktop = useDesktopLayout(!isTelegram);
 
@@ -278,14 +300,23 @@ export function App() {
   };
   const handleRoleSelected = (role: MarketplaceRole) => {
     setSelectedRole(role);
+    if (role === "Business") {
+      setOnboardingStep("mode");
+      return;
+    }
     setOnboardingStep("profile");
     window.location.hash = profileRoute(role);
   };
-  const handleProfileCompleted = () => setOnboardingStep("success");
-  const finishOnboarding = () => {
+  const handleModeChosen = (teamMode: boolean) => {
+    setNewCompanyTeamMode(teamMode);
+    setOnboardingStep("profile");
+    window.location.hash = profileRoute("Business");
+  };
+  const handleProfileCompleted = () => setOnboardingStep(selectedRole === "Business" && newCompanyTeamMode ? "teamWelcome" : "success");
+  const finishOnboarding = (destination = "/") => {
     localStorage.setItem(onboardingCompletedKey, "true");
     setOnboardingStep("complete");
-    window.location.hash = "/";
+    window.location.hash = destination;
   };
   const resetToWelcome = useCallback(() => {
     setBackButtonHandler();
@@ -324,6 +355,16 @@ export function App() {
     }
   }, [browserSignInCode, resolveDestination]);
 
+  const closeTeamJoin = useCallback((opened: boolean) => {
+    try { if (teamJoinCode) sessionStorage.setItem(teamJoinSeenKey, teamJoinCode); } catch { /* shown again next time */ }
+    setTeamJoinCode(null);
+    // Already in the team: the app opens as the company, past the welcome screen.
+    if (opened) {
+      localStorage.setItem(onboardingWelcomeKey, "true");
+      void resolveDestination();
+    }
+  }, [resolveDestination, teamJoinCode]);
+
   const handleMarketplaceRoleSelected = useCallback((role: MarketplaceRole) => {
     clearMyCampaignCache();
     clearCampaignApplicationCache();
@@ -343,26 +384,32 @@ export function App() {
   useTelegramBackHandler(goBackFromNestedRoute, onboardingStep === "complete" && !rootRoutes.includes(route.path));
 
   useEffect(() => {
-    if (["/blogger", "/blogger-reviews", "/brand-face-detail", "/brand-face-reviews", "/company", "/company-reviews", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications", "/deal", "/offer"].includes(route.path)) {
+    if (["/blogger", "/blogger-reviews", "/brand-face-detail", "/brand-face-reviews", "/company", "/company-reviews", "/campaign", "/my-campaign", "/my-campaign-edit", "/my-application", "/my-campaign-applications", "/deal", "/offer", "/team"].includes(route.path)) {
       window.scrollTo(0, 0);
     }
   }, [route.id, route.path]);
 
-  const knownRoutes = ["/", "/profile", "/settings", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/brand-face-reviews", "/company", "/company-reviews", "/search", "/blogger", "/blogger-reviews", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin"];
+  const knownRoutes = ["/", "/profile", "/settings", "/favorites", "/blogger-form", "/business", "/brand-face", "/brand-face-detail", "/brand-face-reviews", "/company", "/company-reviews", "/search", "/blogger", "/blogger-reviews", "/campaigns", "/campaign", "/my-campaigns", "/my-campaign", "/my-campaign-edit", "/my-campaign-applications", "/my-application", "/deal", "/offer", "/requests", "/admin", "/team"];
   const onboardingContent = onboardingStep === "welcome" ? <Welcome onContinue={beginAuthorization} />
     : onboardingStep === "browser" ? <BrowserSignIn onSignedIn={() => void resolveDestination()} />
     : onboardingStep === "telegram" ? <TelegramAuthorization failed={authorizationFailed} isTelegram={isTelegram} loading={false} onContinue={authorize} />
       : onboardingStep === "checking" ? <TelegramAuthorization failed={false} isTelegram={isTelegram} loading onContinue={authorize} />
       : onboardingStep === "phone" ? <PhoneVerification onVerified={() => void resolveDestination()} />
         : onboardingStep === "role" ? <Onboarding onRoleSelected={handleRoleSelected} />
+          : onboardingStep === "mode" ? <BusinessModeChoice onBack={() => { setSelectedRole(undefined); setOnboardingStep("role"); }} onChosen={handleModeChosen} />
           : onboardingStep === "profile" && selectedRole === "Blogger" ? <BloggerProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
             : onboardingStep === "profile" && selectedRole === "BrandFace" ? <BrandFaceProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
-              : onboardingStep === "profile" && selectedRole === "Business" ? <BusinessProfileForm onBackToRole={() => { setSelectedRole(undefined); setOnboardingStep("role"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} />
-                : onboardingStep === "success" ? <OnboardingSuccess onContinue={finishOnboarding} />
+              : onboardingStep === "profile" && selectedRole === "Business" ? <BusinessProfileForm onBackToRole={() => { setOnboardingStep("mode"); window.location.hash = "/"; }} onCompleted={handleProfileCompleted} teamMode={newCompanyTeamMode} />
+                : onboardingStep === "success" ? <OnboardingSuccess onContinue={() => finishOnboarding()} />
+                  : onboardingStep === "teamWelcome" ? <TeamWelcome onDone={finishOnboarding} />
                   : <div className="screen"><LoadingState /></div>;
 
   if (browserSignInCode) {
     return <Suspense fallback={<LaunchScreen />}><BrowserSignInConfirm code={browserSignInCode} onClose={closeBrowserSignInConfirm} onRoleChanged={() => { browserSignInRoleChanged.current = true; }} /></Suspense>;
+  }
+
+  if (teamJoinCode) {
+    return <Suspense fallback={<LaunchScreen />}><TeamJoin code={teamJoinCode} onClose={closeTeamJoin} /></Suspense>;
   }
 
   if (!initialDestinationResolved) return <LaunchScreen />;
@@ -375,6 +422,7 @@ export function App() {
       {(visitedFavorites || route.path === "/favorites") && <RootScreenVisibility active={route.path === "/favorites"}><CachedFavorites /></RootScreenVisibility>}
       {route.path === "/blogger-form" && <BloggerProfileForm />}
       {route.path === "/business" && <BusinessProfileForm />}
+      {route.path === "/team" && <Team />}
       {route.path === "/brand-face" && <BrandFaceProfileForm />}
       {route.path === "/brand-face-detail" && route.id && <BrandFaceDetails id={route.id} />}
       {route.path === "/company" && route.id && <BusinessDetails id={route.id} />}

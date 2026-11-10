@@ -83,12 +83,14 @@ public sealed class CreateReviewHandler(
             throw new InvalidOperationException("The review window for this deal has closed.");
         }
 
-        if (await reviews.ExistsAsync(deal.Id, command.TelegramUserId, cancellationToken))
+        var reviewerIsCreator = participant.IsCreator;
+        // D64 stage C: one review from the company, whoever in its team writes it.
+        var targetType = reviewerIsCreator ? ReviewTargetType.Business : deal.CreatorRole == MarketplaceRole.BrandFace ? ReviewTargetType.BrandFace : ReviewTargetType.Blogger;
+        if (await reviews.ExistsAsync(deal.Id, targetType, cancellationToken))
         {
             throw AlreadyReviewed();
         }
 
-        var reviewerIsCreator = participant.IsCreator;
         var comment = command.Comment?.Trim();
         var review = reviewerIsCreator
             ? Review.ForBusiness(deal.Id, command.TelegramUserId, deal.BusinessId, command.Rating, comment)

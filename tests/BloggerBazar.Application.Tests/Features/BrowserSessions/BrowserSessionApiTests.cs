@@ -95,7 +95,10 @@ public sealed class BrowserSessionApiTests
             (HttpMethod.Delete, "/api/users/me", null),
             (HttpMethod.Put, "/api/users/me/selected-role", new { role = "Blogger" }),
             (HttpMethod.Post, "/api/web/sign-in/preview", new { code = "x" }),
-            (HttpMethod.Post, $"/api/campaigns/{Guid.NewGuid()}/applications", new { message = "Hi" })
+            (HttpMethod.Post, $"/api/campaigns/{Guid.NewGuid()}/applications", new { message = "Hi" }),
+            // D64 stage C: asking to join a team and "work on a computer" belong to Telegram.
+            (HttpMethod.Post, "/api/team/invitations/request", new { code = "x" }),
+            (HttpMethod.Post, "/api/team/web-link", null)
         })
         {
             var refused = await SendAsync(browser, method, path, cookie, MiniApp, body);

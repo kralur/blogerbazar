@@ -39,6 +39,17 @@ public sealed class BusinessMember
 
     public void Remove(DateTime removedAtUtc) => RemovedAtUtc ??= removedAtUtc;
 
+    // The owner stays the owner: ownership changes only by a transfer.
+    public void ChangeRole(BusinessMemberRole role)
+    {
+        if (Role == BusinessMemberRole.Owner || role == BusinessMemberRole.Owner)
+        {
+            throw new InvalidOperationException("Ownership changes only by a transfer.");
+        }
+
+        Role = role;
+    }
+
     // The table of rights in docs/business-teams.md: Viewer sees, Manager works, Admin also runs the profile and the
     // team, the Owner also owns (plan, transfer, deletion).
     public static bool Allows(BusinessMemberRole role, BusinessPermission permission) => permission switch

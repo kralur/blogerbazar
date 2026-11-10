@@ -64,7 +64,8 @@ function stepForField(field: Field): Step {
   return stepFields[0].includes(field) ? 0 : 1;
 }
 
-export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted?: () => void; onBackToRole?: () => void }) {
+// teamMode (D64 stage C1): the new company works "with a team", as chosen on the screen before the form.
+export function BusinessProfileForm({ onCompleted, onBackToRole, teamMode }: { onCompleted?: () => void; onBackToRole?: () => void; teamMode?: boolean }) {
   const { language, t } = useI18n();
   const { haptic, isTelegram, user } = useTelegram();
   const [form, setForm] = useState(() => initialBusinessForm(user?.username));
@@ -187,7 +188,7 @@ export function BusinessProfileForm({ onCompleted, onBackToRole }: { onCompleted
       setServerErrors({});
       setServerSummary("");
       const input = { name: form.name.trim(), username: telegramUsername ?? undefined, city: form.city.trim(), logoUrl: logoUrl ?? undefined, description: form.description.trim(), phone: verifiedPhone ?? undefined, email: form.email.trim() || undefined, websiteUrl: form.website.trim() || undefined };
-      if (existing) await updateBusinessProfile(input); else { await createBusinessProfile(input); setExisting(true); }
+      if (existing) await updateBusinessProfile(input); else { await createBusinessProfile({ ...input, teamMode: teamMode || undefined }); setExisting(true); }
       let mediaWarning = "";
       try {
         if (pendingImage instanceof File) {

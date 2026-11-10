@@ -51,7 +51,7 @@ public sealed class BusinessesController(ISender sender, ITelegramWebAppValidato
     {
         var actor = GetTelegramUser();
         var phone = await RequireVerifiedPhoneAsync(sender, actor.Id, cancellationToken);
-        var profile = await sender.Send(new CreateBusinessProfileCommand(actor.Id, request.Name, ContactValidation.TelegramHandle(actor.Username), request.City, request.LogoUrl, request.WebsiteUrl, request.Description, phone, request.Email), cancellationToken);
+        var profile = await sender.Send(new CreateBusinessProfileCommand(actor.Id, request.Name, ContactValidation.TelegramHandle(actor.Username), request.City, request.LogoUrl, request.WebsiteUrl, request.Description, phone, request.Email, request.TeamMode), cancellationToken);
         return StatusCode(StatusCodes.Status201Created, profile);
     }
 

@@ -291,7 +291,7 @@ public sealed class BrandFaceParticipationTests
     {
         public List<Review> Values { get; } = [];
         public Task AddAsync(Review review, CancellationToken cancellationToken) { Values.Add(review); return Task.CompletedTask; }
-        public Task<bool> ExistsAsync(Guid dealId, long reviewerTelegramUserId, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> ExistsAsync(Guid dealId, ReviewTargetType targetType, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<int> PublishRevealedAsync(Guid? dealId, DateTime nowUtc, CancellationToken cancellationToken) => Task.FromResult(0);
     }
 }
