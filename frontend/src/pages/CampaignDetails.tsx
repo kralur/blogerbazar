@@ -15,6 +15,7 @@ import { PageHeader } from "../components/PageHeader";
 import { ListHero } from "../components/ListHero";
 import { isBrowserSession } from "../lib/browserSession";
 import { DetailLayout } from "../components/DetailLayout";
+import { CounterpartyRow } from "../components/CounterpartyRow";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { profileRoute } from "../lib/profileRoutes";
 
@@ -222,7 +223,7 @@ export function CampaignDetails({ id }: { id: string }) {
         <h1 className="detail-hero__title">{campaign.title}</h1>
         {meta && <p className="detail-hero__meta">{meta}</p>}
       </ListHero>
-      <DetailLayout footer={blockedReason !== "own" ? <ReportButton targetId={campaign.id} targetType="campaign" /> : null} side={<>
+      <DetailLayout footer={blockedReason !== "own" ? <ReportButton targetId={campaign.id} targetType="campaign" /> : null} top={<CounterpartyRow href={campaign.businessHidden ? null : `#/company/${campaign.businessId}`} label={t("campaign.byCompany")} name={campaign.company} />} side={<>
       {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
       {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary tap-target inline-flex w-full items-center justify-center gap-2 px-5" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason && !(blockedReason === "role" && isBrowserSession()) ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}

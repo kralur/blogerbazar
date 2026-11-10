@@ -2222,7 +2222,7 @@ html[data-desktop="true"] .detail-layout__side > .report-button { order: 99; }
 /* The side panel starts level with the first card on the left, not with its heading. */
 @media (min-width: 75rem) {
   html[data-desktop="true"] .detail-layout:has(> .detail-layout__main > .detail-section:first-child) > .detail-layout__side { padding-top: 4rem; }
-  html[data-desktop="true"] .detail-layout:has(> .detail-layout__main > .detail-section:first-child):has(> .detail-layout__side > .detail-section:first-child) > .detail-layout__side { padding-top: 1.5rem; }
+  html[data-desktop="true"] .detail-layout:has(> .detail-layout__main > .detail-section:first-child):has(> .detail-layout__side > .detail-section:first-child, > .detail-layout__side > .detail-layout__top:first-child > .detail-section:first-child) > .detail-layout__side { padding-top: 1.5rem; }
 }
 /* "Report" closes the left column, at its start, instead of floating in the middle under both columns. */
 html[data-desktop="true"] .detail-layout__main > .report-button { margin: 1.5rem 0 0; padding-left: 0; }
@@ -2292,16 +2292,22 @@ html[data-desktop="true"] .detail-layout:has(> .detail-layout__side:empty) { gri
 html[data-desktop="true"] .detail-layout__side:empty { display: none; }
 html[data-desktop="true"] .detail-layout__main > :first-child { margin-top: 1.5rem; }
 html[data-desktop="true"] .detail-layout__side { display: flex; min-width: 0; flex-direction: column; gap: 1rem; padding-top: 1.5rem; }
-html[data-desktop="true"] .detail-layout__side > * { margin-top: 0 !important; }
+html[data-desktop="true"] .detail-layout__top { display: contents; }
+html[data-desktop="true"] .detail-layout__side > *, html[data-desktop="true"] .detail-layout__top > * { margin-top: 0 !important; }
 html[data-desktop="true"] .detail-layout__side .detail-section__heading { margin-top: 0; }
 html[data-desktop="true"] .detail-layout__actions { display: grid; gap: .625rem; }
 html[data-desktop="true"] .detail-layout__actions > .ds-button { width: 100%; min-height: 3.25rem; }
 @media (max-width: 74.99rem) {
   html[data-desktop="true"] .detail-layout__side { display: contents; }
-  html[data-desktop="true"] .detail-layout__actions { order: -1; display: flex; flex-wrap: wrap; justify-self: start; margin-top: 1.5rem; }
+  html[data-desktop="true"] .detail-layout__actions { display: flex; flex-wrap: wrap; justify-self: start; }
   html[data-desktop="true"] .detail-layout__actions > .ds-button { width: auto; }
   html[data-desktop="true"] .detail-layout__main { order: 0; }
   html[data-desktop="true"] .detail-layout__side > :not(.detail-layout__actions) { order: 1; }
+  /* One column keeps the phone's order: actions, then top (who it is, the deal's state), then the content. */
+  html[data-desktop="true"] .detail-layout { padding-top: 1.5rem; }
+  html[data-desktop="true"] .detail-layout__actions { order: -2; }
+  html[data-desktop="true"] .detail-layout__top > * { order: -1; }
+  html[data-desktop="true"] .detail-layout__main > :first-child { margin-top: 0; }
   html[data-desktop="true"] .detail-layout__side .my-campaign-details__actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
 }
 @media (min-width: 75rem) {
@@ -2341,8 +2347,7 @@ html[data-desktop="true"] .home-progress__head { flex-wrap: wrap; gap: .25rem .7
 @media (max-width: 74.99rem) {
   html[data-desktop="true"] .detail-layout__footer--column { display: none; }
   html[data-desktop="true"] .detail-layout__footer--end { display: block; order: 2; }
-  html[data-desktop="true"] .detail-layout__actions { margin-top: 1.5rem !important; }
-  html[data-desktop="true"] .detail-layout:has(.detail-layout__actions) > .detail-layout__main > :first-child { margin-top: 0; }
+  html[data-desktop="true"] .detail-layout__actions { margin-top: 0 !important; }
 }
 html[data-desktop="true"] .detail-layout__footer > .report-button { margin: 1.5rem 0 0; padding-left: 0; }
 html[data-desktop="true"] .campaign-catalog-card__requirements { margin-bottom: 1rem; }
