@@ -32,7 +32,9 @@ public sealed record DealDetailsDto(
     bool CanSetPrice = false,
     IReadOnlyList<DealPublicationDto>? Publications = null,
     bool CanAddPublication = false,
-    bool CanConfirmPublications = false)
+    bool CanConfirmPublications = false,
+    // The campaign the deal came from (an application to it); null for a deal from an offer. Additive.
+    Guid? CampaignId = null)
 {
     internal static DealDetailsDto From(DealReadRow row, MarketplaceRole viewerRole, IReadOnlyList<DealPublicationDto>? publications = null)
     {
@@ -65,7 +67,8 @@ public sealed record DealDetailsDto(
             resultsOpen && viewerIsBusiness && row.OfferedBudget is null,
             publications ?? [],
             resultsOpen && !viewerIsBusiness,
-            resultsOpen && viewerIsBusiness);
+            resultsOpen && viewerIsBusiness,
+            row.CampaignId);
     }
 }
 

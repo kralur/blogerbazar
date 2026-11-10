@@ -86,6 +86,14 @@ describe("Deal details", () => {
     expect(screen.queryByRole("button", { name: ru("requests.complete") })).not.toBeInTheDocument();
   });
 
+  it("links a company to the campaign the deal came from", async () => {
+    api.getMyDeal.mockResolvedValue({ ...activeDeal, campaignId: "campaign-a" });
+    render(<I18nProvider><DealDetails id="deal-a" viewerRole="Business" /></I18nProvider>);
+
+    const link = await screen.findByRole("link", { name: new RegExp(ru("deals.openCampaign")) });
+    expect(link).toHaveAttribute("href", "#/my-campaign/campaign-a");
+  });
+
   it("marks live campaign fallback terms as not historical", async () => {
     api.getMyDeal.mockResolvedValue({ ...activeDeal, termsSource: "liveCampaignFallback" });
     renderDeal();

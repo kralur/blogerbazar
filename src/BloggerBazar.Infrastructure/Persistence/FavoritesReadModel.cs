@@ -27,7 +27,15 @@ internal sealed class FavoritesReadModel(BloggerBazarDbContext dbContext) : IFav
                 item.Blogger.Categories,
                 item.Blogger.AvatarUrl,
                 item.Blogger.TotalFollowers,
-                item.Favorite.CreatedAtUtc))
+                item.Favorite.CreatedAtUtc,
+                item.Blogger.AverageReach,
+                item.Blogger.EngagementRate,
+                item.Blogger.StoriesPrice,
+                item.Blogger.ReelsPrice,
+                item.Blogger.PostPrice,
+                item.Blogger.IntegrationPrice,
+                item.Blogger.IsPromoted,
+                dbContext.SocialPlatforms.Where(platform => platform.BloggerId == item.Blogger.Id).OrderBy(platform => platform.CreatedAtUtc).Select(platform => platform.Type).FirstOrDefault()))
             .ToArrayAsync(cancellationToken);
 
         return new FavoritesPageDto(items, total, page, pageSize);

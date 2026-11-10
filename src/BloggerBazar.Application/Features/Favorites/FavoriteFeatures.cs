@@ -14,7 +14,16 @@ public sealed record FavoriteBloggerDto(
     IReadOnlyCollection<string> Categories,
     string? AvatarUrl,
     int TotalFollowers,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    // Additive: what the catalog card shows besides the name, so a saved blogger looks the same as in Search.
+    int? AverageReach = null,
+    decimal? EngagementRate = null,
+    int? StoriesPrice = null,
+    int? ReelsPrice = null,
+    int? PostPrice = null,
+    int? IntegrationPrice = null,
+    bool IsPromoted = false,
+    string? Platform = null);
 
 public sealed record FavoritesPageDto(IReadOnlyList<FavoriteBloggerDto> Items, int Total, int Page, int PageSize);
 

@@ -59,13 +59,13 @@ function BloggerFavorites({ active }: { active: boolean }) {
   const catalog = usePaginatedCatalog<FavoriteBlogger>({ active, fetchPage, getItemId: (item) => item.bloggerId });
   const refresh = useCallback(() => { void catalog.load(1, false, true); }, [catalog.load]);
 
-  useInitialFavoriteLoad(active, startedRef, catalog.load, catalog.cancel);
+  useInitialFavoriteLoad(active, startedRef, catalog.load, catalog.cancel, catalog.loadedInitialResult);
   useProfileDataRefresh(useCallback(() => { if (active) refresh(); }, [active, refresh]));
   useScreenRefresh(refresh, active);
   useInfiniteFavoritesScroll({ active, failure: catalog.failure, hasMore: catalog.hasMore, load: catalog.load, loadMoreFailed: catalog.loadMoreFailed, loading: catalog.loading, loadingMore: catalog.loadingMore, page: catalog.page, sentinelRef });
 
   return <section aria-busy={catalog.loading || catalog.loadingMore} aria-live="polite" className="catalog-search__results">
-    {catalog.loading && !catalog.loadedInitialResult ? <SearchSkeleton count={3} /> : catalog.failure && !catalog.loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} /> : !catalog.failure && catalog.items.length === 0 ? <CatalogState actionLabel={t("favorites.findBloggers")} icon="bookmark" onRetry={() => { window.location.hash = "/search"; }} subtitle={t("favorites.emptySubtitle")} title={t("favorites.emptyTitle")} /> : catalog.items.map((blogger) => <BloggerCard blogger={{ id: blogger.bloggerId, name: blogger.name, city: blogger.city, categories: blogger.categories, avatarUrl: blogger.avatarUrl, totalFollowers: blogger.totalFollowers, reviewsCount: 0, completedDealsCount: 0 }} key={blogger.bloggerId} />)}
+    {catalog.loading && !catalog.loadedInitialResult ? <SearchSkeleton count={3} /> : catalog.failure && !catalog.loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} /> : !catalog.failure && catalog.items.length === 0 ? <CatalogState actionLabel={t("favorites.findBloggers")} icon="bookmark" onRetry={() => { window.location.hash = "/search"; }} subtitle={t("favorites.emptySubtitle")} title={t("favorites.emptyTitle")} /> : catalog.items.map((blogger) => <BloggerCard blogger={{ id: blogger.bloggerId, name: blogger.name, city: blogger.city, categories: blogger.categories, avatarUrl: blogger.avatarUrl, totalFollowers: blogger.totalFollowers, reviewsCount: 0, completedDealsCount: 0, averageReach: blogger.averageReach, engagementRate: blogger.engagementRate, storiesPrice: blogger.storiesPrice, reelsPrice: blogger.reelsPrice, priceFrom: blogger.storiesPrice ?? blogger.reelsPrice ?? blogger.postPrice ?? blogger.integrationPrice, isPromoted: blogger.isPromoted, platform: blogger.platform }} key={blogger.bloggerId} />)}
     {catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} />}
     <FavoriteListFooter catalog={catalog} onRetry={() => void catalog.load(catalog.page + 1, true)} sentinelRef={sentinelRef} />
   </section>;
@@ -80,7 +80,7 @@ function BrandFaceFavorites({ active }: { active: boolean }) {
   const catalog = usePaginatedCatalog<FavoriteBrandFace>({ active, fetchPage, getItemId: (item) => item.id });
   const refresh = useCallback(() => { void catalog.load(1, false, true); }, [catalog.load]);
 
-  useInitialFavoriteLoad(active, startedRef, catalog.load, catalog.cancel);
+  useInitialFavoriteLoad(active, startedRef, catalog.load, catalog.cancel, catalog.loadedInitialResult);
   useProfileDataRefresh(useCallback(() => { if (active) refresh(); }, [active, refresh]));
   useScreenRefresh(refresh, active);
   useInfiniteFavoritesScroll({ active, failure: catalog.failure, hasMore: catalog.hasMore, load: catalog.load, loadMoreFailed: catalog.loadMoreFailed, loading: catalog.loading, loadingMore: catalog.loadingMore, page: catalog.page, sentinelRef });
@@ -92,12 +92,15 @@ function BrandFaceFavorites({ active }: { active: boolean }) {
   </section>;
 }
 
-function useInitialFavoriteLoad(active: boolean, startedRef: MutableRef<boolean>, load: (page: number, append: boolean) => Promise<void>, cancel: () => void) {
+// A first load that was cancelled before it finished (the screen hid, or React ran the effect again) starts again;
+// otherwise the list stayed empty and said "nothing saved yet".
+function useInitialFavoriteLoad(active: boolean, startedRef: MutableRef<boolean>, load: (page: number, append: boolean) => Promise<void>, cancel: () => void, loaded: boolean) {
   useEffect(() => {
     if (!active) { cancel(); return; }
-    if (!startedRef.current) { startedRef.current = true; void load(1, false); }
-    return () => cancel();
-  }, [active, cancel, load, startedRef]);
+    if (!startedRef.current || !loaded) { startedRef.current = true; void load(1, false); }
+    return () => { if (!loaded) cancel(); };
+  }, [active, cancel, load, loaded, startedRef]);
+  useEffect(() => () => cancel(), [cancel]);
 }
 
 function FavoriteListFooter({ catalog, onRetry, sentinelRef }: { catalog: Omit<ReturnType<typeof usePaginatedCatalog>, "updateItem">; onRetry: () => void; sentinelRef: MutableRef<HTMLDivElement | null> }) {

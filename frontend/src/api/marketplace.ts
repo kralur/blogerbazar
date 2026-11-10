@@ -222,6 +222,15 @@ export type FavoriteBlogger = {
   avatarUrl?: string | null;
   totalFollowers: number;
   createdAtUtc: string;
+  // Absent from an older API.
+  averageReach?: number | null;
+  engagementRate?: number | null;
+  storiesPrice?: number | null;
+  reelsPrice?: number | null;
+  postPrice?: number | null;
+  integrationPrice?: number | null;
+  isPromoted?: boolean;
+  platform?: string | null;
 };
 
 export type FavoritesPage = { items: FavoriteBlogger[]; total: number; page: number; pageSize: number };
@@ -701,6 +710,8 @@ export type DealDetails = {
   partnerHasReviewed?: boolean;
   // The partner deleted the account: the deal stays, the name and every action are gone.
   counterpartyDeleted?: boolean;
+  // The campaign the deal came from; absent for a deal from an offer and from an older API.
+  campaignId?: string | null;
   // D51: the agreed price (an offer's budget, or what the business entered) and links to the published ads.
   agreedPrice?: number | null;
   canSetPrice?: boolean;

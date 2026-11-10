@@ -234,6 +234,24 @@ public sealed class DealResultsTests
         Assert.Empty(blogger.Publications!);
     }
 
+    [Fact]
+    public async Task Details_name_the_campaign_the_deal_came_from()
+    {
+        var bloggerProfile = Blogger(BloggerTelegramId);
+        var businessProfile = Business(BusinessTelegramId);
+        var campaignId = Guid.NewGuid();
+        var row = new DealReadRow(
+            Guid.NewGuid(), Guid.NewGuid(), null, DealStatus.Active, DateTime.UtcNow, null, "Blogger", null, "Business", null,
+            null, null, null, null, null, null, null, null, null, "Launch", null, null, null, null, null, null, null, false, false,
+            BloggerId: bloggerProfile.Id, BusinessId: businessProfile.Id, CampaignId: campaignId);
+        var users = new FakeUsers(User(BloggerTelegramId, MarketplaceRole.Blogger), User(BusinessTelegramId, MarketplaceRole.Business));
+        var handler = new GetMyDealHandler(users, new FakeBloggers(bloggerProfile), new FakeBusinesses(businessProfile), new FakeDealReadModel(row), publications: new FakeDealPublications());
+
+        var business = await handler.Handle(new GetMyDealQuery(row.Id, BusinessTelegramId), CancellationToken.None);
+
+        Assert.Equal(campaignId, business.CampaignId);
+    }
+
     private static TestWorld World()
     {
         var blogger = Blogger(BloggerTelegramId);

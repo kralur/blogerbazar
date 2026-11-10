@@ -64,7 +64,8 @@ public sealed record DealReadRow(
     bool BloggerDeleted = false,
     bool BusinessDeleted = false,
     Guid? BrandFaceId = null,
-    int? AgreedPrice = null)
+    int? AgreedPrice = null,
+    Guid? CampaignId = null)
 {
     // The "Blogger*" fields carry the creator side, a blogger or a brand face (D46).
     public MarketplaceRole CreatorRole => BrandFaceId.HasValue ? MarketplaceRole.BrandFace : MarketplaceRole.Blogger;

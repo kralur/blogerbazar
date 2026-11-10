@@ -62,5 +62,6 @@ internal sealed class DealReadModel(BloggerBazarDbContext dbContext) : IDealRead
             deal.BloggerId != null ? deal.Blogger!.IsDeleted : deal.BrandFace!.IsDeleted,
             deal.Business.IsDeleted,
             deal.BrandFaceId,
-            deal.AgreedPrice));
+            deal.AgreedPrice,
+            deal.CampaignApplication == null ? null : deal.CampaignApplication.CampaignId));
 }
