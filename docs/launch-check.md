@@ -19,6 +19,7 @@
 
 ## Перед прогоном (владелец, 20 минут)
 
+- [ ] **Демо-карточки убраны (D66):** Railway → API → Variables: `DemoData__Enabled` = `false`, перезапуск API, в каталоге нет демо.
 - [ ] 2FA: Telegram, GitHub, Railway, Cloudflare.
 - [ ] Railway → Postgres → Backups: ежедневное расписание включено.
 - [ ] Railway → API → Variables: `Database__ApplyMigrationsOnStartup` = `true`.

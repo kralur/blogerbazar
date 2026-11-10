@@ -226,6 +226,13 @@ try
         await DevelopmentDataSeeder.SeedAsync(dbContext, app.Logger);
         app.Logger.LogInformation("Development data seed completed");
     }
+    // Demo cards before the launch: DemoData:Enabled=true adds them once, false removes them; absent does nothing.
+    if (builder.Configuration.GetValue<bool?>("DemoData:Enabled") is { } demoData)
+    {
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+        await DemoDataSeeder.ApplyAsync(dbContext, demoData, app.Logger);
+    }
     app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseMiddleware<CorrelationIdMiddleware>();
     app.UseSerilogRequestLogging(options => options.EnrichDiagnosticContext = (diagnosticContext, context) =>
