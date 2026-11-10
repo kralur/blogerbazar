@@ -37,7 +37,11 @@ export function BloggerCard({ blogger, variant = "default" }: { blogger: Blogger
   // On a computer (the website) the catalog shows the blogger the way it shows a campaign: a hanging tag with the name,
   // categories, the reach in a line, and the price, city and ER at the bottom.
   if (desktop && variant !== "home") {
-    const reach = [`${t("common.followers")} ${formatCompactNumber(blogger.totalFollowers)}`, blogger.averageReach ? `${t("details.reach")} ${formatCompactNumber(blogger.averageReach)}` : null].filter(Boolean).join(" · ");
+    // Each value on a line of its own: they never break in the middle, whatever the width.
+    const reach = <>
+      <span className="catalog-tile__fact">{t("common.followers")} {formatCompactNumber(blogger.totalFollowers)}</span>
+      {blogger.averageReach ? <span className="catalog-tile__fact">{t("details.reach")} {formatCompactNumber(blogger.averageReach)}</span> : null}
+    </>;
     return <article className="catalog-tile card-enter">
       <a aria-label={t("home.openBlogger", { name: blogger.name })} className="campaign-catalog-card" href={`#/blogger/${blogger.id}`}>
         <div className="campaign-catalog-card__identity">

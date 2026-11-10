@@ -2324,7 +2324,8 @@ html[data-desktop="true"] .browser-sign-in .ftue-screen__description { max-width
 
 
 /* Audit 2026-11-10 (desktop): even rows, nothing cut, the same thing the same everywhere. */
-html[data-desktop="true"] :is(.catalog-search__results, .home-list) > .campaign-catalog-card h2 { min-height: 2.6em; -webkit-line-clamp: 3; }
+html[data-desktop="true"] :is(.catalog-search__results, .home-list) > .campaign-catalog-card h2 { min-height: 3.9em; -webkit-line-clamp: 3; }
+.catalog-tile__fact { display: block; }
 /* The reach line of a tile always takes two lines, so rows stay even whether it wraps or not. */
 html[data-desktop="true"] .catalog-tile .campaign-catalog-card__requirements { min-height: 2.9em; }
 html[data-desktop="true"] .portfolio-row { grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); }
