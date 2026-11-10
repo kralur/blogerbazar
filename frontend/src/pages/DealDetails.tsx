@@ -21,6 +21,7 @@ import { SwitchRoleHint } from "../components/SwitchRoleHint";
 import { PageHeader } from "../components/PageHeader";
 import { ChipList, DetailSection, FactGrid, compactBudgetRange, compactMoney } from "../components/details/DetailBlocks";
 import { ListHero } from "../components/ListHero";
+import { DetailLayout } from "../components/DetailLayout";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { CounterpartyRow } from "../components/CounterpartyRow";
 
@@ -168,19 +169,9 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       <CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
       <FactGrid className="hero-tags fact-grid--three" facts={heroFacts} />
     </ListHero>
+    <DetailLayout top={<>
     {deal.status === DealStatus.Active && !deal.counterpartyDeleted && <BlessingButton />}
-    {deal.counterpartyDeleted && <p className="mt-3 text-sm leading-6 text-brand-muted" role="status">{t("deals.partnerDeletedNote")}</p>}
-    {deal.termsSource === "liveCampaignFallback" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.termsFallbackNote")}</p>}
-    {deal.termsSource === "collaboration" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.collaborationNote")}</p>}
-    {terms && (terms.description || terms.categories.length > 0) && <DetailSection title={t("deals.terms")}>
-      {terms.description && <Card><p className="text-sm leading-6 text-brand-muted">{terms.description}</p></Card>}
-      {terms.categories.length > 0 && <div className="mt-3"><ChipList items={terms.categories.map((category) => categoryLabel(category, language))} /></div>}
-    </DetailSection>}
-    {terms && terms.requirements.length > 0 && <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-2 text-sm text-brand-muted">{terms.requirements.map((value) => <li key={value}>{value}</li>)}</ul></Card></DetailSection>}
-    {deal.offer && <DetailSection title={t("offers.message")}>
-      <Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p></Card>
-    </DetailSection>}
-    {contactItems.length > 0 && hasContacts(contactItems) && <DetailSection title={t("deals.contacts")}><ContactList items={contactItems} onSendToChat={async () => { try { await shareDealContact(deal.id); return t("contacts.sentToChat"); } catch (error) { throw new Error(getApiErrorMessage(error, t("contacts.sendToChatFailed"))); } }} /></DetailSection>}
+    </>} side={<>
     <FactGrid className="mt-4" facts={[
       { label: t("deals.startedAt"), value: deal.offer ? null : formatDate(deal.createdAtUtc) },
       { label: t("deals.completedAt"), value: deal.completedAtUtc ? formatDate(deal.completedAtUtc) : null }
@@ -197,6 +188,20 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     </Card>}
     {deal.hasReviewed && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewSent")}</p>}
     {deal.status === DealStatus.Completed && !deal.canReview && !deal.hasReviewed && deal.reviewDeadlineUtc && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewClosed")}</p>}
+    </>}>
+    {deal.counterpartyDeleted && <p className="mt-3 text-sm leading-6 text-brand-muted" role="status">{t("deals.partnerDeletedNote")}</p>}
+    {deal.termsSource === "liveCampaignFallback" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.termsFallbackNote")}</p>}
+    {deal.termsSource === "collaboration" && <p className="mt-4 text-sm leading-6 text-brand-muted">{t("deals.collaborationNote")}</p>}
+    {terms && (terms.description || terms.categories.length > 0) && <DetailSection title={t("deals.terms")}>
+      {terms.description && <Card><p className="text-sm leading-6 text-brand-muted">{terms.description}</p></Card>}
+      {terms.categories.length > 0 && <div className="mt-3"><ChipList items={terms.categories.map((category) => categoryLabel(category, language))} /></div>}
+    </DetailSection>}
+    {terms && terms.requirements.length > 0 && <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-2 text-sm text-brand-muted">{terms.requirements.map((value) => <li key={value}>{value}</li>)}</ul></Card></DetailSection>}
+    {deal.offer && <DetailSection title={t("offers.message")}>
+      <Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{deal.offer.message}</p></Card>
+    </DetailSection>}
+    {contactItems.length > 0 && hasContacts(contactItems) && <DetailSection title={t("deals.contacts")}><ContactList items={contactItems} onSendToChat={async () => { try { await shareDealContact(deal.id); return t("contacts.sentToChat"); } catch (error) { throw new Error(getApiErrorMessage(error, t("contacts.sendToChatFailed"))); } }} /></DetailSection>}
+    </DetailLayout>
     {!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}
     <Modal onClose={() => !busy && setCompleteOpen(false)} open={completeOpen} title={t("deals.completeTitle")}><p className="text-sm leading-6 text-brand-muted">{t("deals.completeDescription")}</p>
       {(askLink || askPrice) && <div className="mt-4 grid gap-3">

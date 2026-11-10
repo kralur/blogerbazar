@@ -13,6 +13,7 @@ import { PageHeader } from "../components/PageHeader";
 import { CampaignActionsMenu, myCampaignsFeedbackKey, type CampaignMenuResult } from "../components/CampaignActionsMenu";
 import { ChipList, DetailSection, FactGrid, compactBudgetRange } from "../components/details/DetailBlocks";
 import { ListHero } from "../components/ListHero";
+import { DetailLayout } from "../components/DetailLayout";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
@@ -122,12 +123,11 @@ export function MyCampaignDetails({ id }: { id: string }) {
         { label: t("myCampaigns.applications"), value: canManage ? null : campaignApplicationsLabel(campaign.applicationsCount, language, t) }
       ]} />
     </ListHero>
+    <DetailLayout top={<>
     {campaign.status === 1 && isPastDay(campaign.deadline) && <p className="campaign-details__expired" role="status">{t("myCampaignDetails.expiredNote")}</p>}
     {canManage && campaign.applicationsCount === 0 && <div className="my-campaign-details__inbox my-campaign-details__inbox--empty" role="status"><span><strong>{t("applications.emptyTitle")}</strong><span>{t("myCampaignDetails.noApplicationsHint")}</span></span></div>}
     {canManage && campaign.applicationsCount > 0 && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}
-    <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
-    <DetailSection title={t("common.categories")}>{campaign.categories.length ? <ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</DetailSection>
-    <DetailSection title={t("common.requirements")}><Card>{campaign.requirements.length ? <ul className="grid gap-2">{campaign.requirements.map((requirement) => <li className="flex gap-2 text-sm text-brand-muted" key={requirement}><Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-success" name="check" />{requirement}</li>)}</ul> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</Card></DetailSection>
+    </>} side={<>
     {canManage && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}>
       <a aria-label={t("myCampaignDetails.editAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-edit/${id}`} onClick={(event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -137,6 +137,11 @@ export function MyCampaignDetails({ id }: { id: string }) {
       <Button aria-label={t("myCampaignDetails.closeAria", { title: campaign.title })} onClick={() => setCloseOpen(true)} type="button" variant="danger">{t("myCampaignDetails.close")}</Button>
     </section>}
     {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t("myCampaignDetails.closedHint")}</p>}
+    </>}>
+    <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
+    <DetailSection title={t("common.categories")}>{campaign.categories.length ? <ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</DetailSection>
+    <DetailSection title={t("common.requirements")}><Card>{campaign.requirements.length ? <ul className="grid gap-2">{campaign.requirements.map((requirement) => <li className="flex gap-2 text-sm text-brand-muted" key={requirement}><Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-success" name="check" />{requirement}</li>)}</ul> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</Card></DetailSection>
+    </DetailLayout>
     <Modal onClose={() => { if (!closing) setCloseOpen(false); }} open={closeOpen} title={t("myCampaignDetails.closeTitle")} variant="neutral">
       <p className="text-sm leading-6 text-brand-muted">{t("myCampaignDetails.closeDescription")}</p>
       <div className="mt-5 modal-actions"><Button disabled={closing} onClick={() => setCloseOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={closing} disabled={closing} onClick={closeCampaign} type="button" variant="danger">{closing ? t("myCampaignDetails.closing") : t("myCampaignDetails.close")}</Button></div>

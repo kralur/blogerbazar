@@ -20,6 +20,7 @@ import {
   type TeamMember
 } from "../api/team";
 import { ListHero } from "../components/ListHero";
+import { DetailLayout } from "../components/DetailLayout";
 import { PageHeader } from "../components/PageHeader";
 import { QrCode } from "../components/QrCode";
 import { Badge, BottomNav, BottomSheet, Button, EmptyState, ErrorState, Modal, Skeleton, Toast } from "../components/ui";
@@ -159,6 +160,7 @@ export function Team() {
   return <div className="screen screen--with-nav space-y-5 px-4 pt-5 team-screen">
     {header}
 
+    <DetailLayout top={<>
     {!team.teamMode && <section className="settings-list">
       <div className="settings-row settings-row--stacked">
         <span className="settings-row__text"><strong>{t("team.mode.aloneTitle")}</strong><span>{t("team.mode.aloneHint")}</span></span>
@@ -166,8 +168,7 @@ export function Team() {
       </div>
     </section>}
 
-    {team.teamMode && <>
-      <section className="settings-list">
+    {team.teamMode && <section className="settings-list">
         <div className="settings-row settings-row--stacked">
           <span className="settings-row__text">
             <strong>{t("team.seats", { used: team.seatsUsed, total: team.seats })}</strong>
@@ -176,9 +177,36 @@ export function Team() {
           {team.canManage && <Button className="w-full" disabled={busy || full} onClick={() => { haptic.selection(); setInviteRole(rolesYouMayGive(team.myRole)[0]); setLink(null); setInviteOpen(true); }} type="button">{t("team.invite.button")}</Button>}
           {team.canManage && full && <p className="text-sm text-brand-muted">{t("team.fullHint")}</p>}
         </div>
-      </section>
+      </section>}
+    </>} side={<>
+    {team.teamMode && team.canManage && team.invitations.length > 0 && <section aria-labelledby="team-links" className="settings-list">
+      <div className="settings-row settings-row--stacked">
+        <strong id="team-links">{t("team.links.title")}</strong>
+        <ul className="team-list">
+          {team.invitations.map((invitation) => <li className="team-list__item" key={invitation.id}>
+            <span className="settings-row__text">
+              <strong>{roleName(invitation.role)}</strong>
+              <span>{t("team.links.until", { time: formatShortDate(invitation.expiresAtUtc, language, { time: true }) })}</span>
+            </span>
+            {mayHandle(team.myRole, invitation.role) && <Button disabled={busy} onClick={() => void act(async () => { await revokeTeamInvitation(invitation.id); }, t("team.links.revoked"))} type="button" variant="secondary">{t("team.links.revoke")}</Button>}
+          </li>)}
+        </ul>
+      </div>
+    </section>}
+    {isTelegram && !inBrowser && <section className="settings-list">
+      <div className="settings-row settings-row--stacked">
+        <span className="settings-row__text"><strong>{t("team.computer.title")}</strong><span>{t("team.computer.hint", { address: siteAddress().replace(/^https?:\/\//, "") })}</span></span>
+        <Button className="w-full" onClick={workOnComputer} type="button" variant="secondary">{t("team.computer.button")}</Button>
+      </div>
+    </section>}
 
-      {team.canManage && team.requests.length > 0 && <section aria-labelledby="team-requests" className="settings-list">
+    {isOwner && team.teamMode && <div className="grid gap-2">
+      <Button className="w-full" disabled={busy || team.seatsUsed > 1} onClick={() => { haptic.warning(); setConfirm({ kind: "alone" }); }} type="button" variant="secondary">{t("team.mode.switchToAlone")}</Button>
+      {team.seatsUsed > 1 && <p className="text-center text-xs text-brand-muted">{t("team.mode.aloneBlocked")}</p>}
+    </div>}
+    {!isOwner && <Button className="w-full" disabled={busy} onClick={() => { haptic.warning(); setConfirm({ kind: "leave" }); }} type="button" variant="danger">{t("team.leave")}</Button>}
+    </>}>
+      {team.teamMode && team.canManage && team.requests.length > 0 && <section aria-labelledby="team-requests" className="settings-list">
         <div className="settings-row settings-row--stacked">
           <strong id="team-requests">{t("team.requests.title")}</strong>
           <ul className="team-list">
@@ -197,7 +225,6 @@ export function Team() {
           {full && <p className="text-sm text-brand-muted">{t("team.fullHint")}</p>}
         </div>
       </section>}
-    </>}
 
     <section aria-labelledby="team-members" className="settings-list">
       <div className="settings-row settings-row--stacked">
@@ -222,33 +249,8 @@ export function Team() {
       </div>
     </section>
 
-    {team.teamMode && team.canManage && team.invitations.length > 0 && <section aria-labelledby="team-links" className="settings-list">
-      <div className="settings-row settings-row--stacked">
-        <strong id="team-links">{t("team.links.title")}</strong>
-        <ul className="team-list">
-          {team.invitations.map((invitation) => <li className="team-list__item" key={invitation.id}>
-            <span className="settings-row__text">
-              <strong>{roleName(invitation.role)}</strong>
-              <span>{t("team.links.until", { time: formatShortDate(invitation.expiresAtUtc, language, { time: true }) })}</span>
-            </span>
-            {mayHandle(team.myRole, invitation.role) && <Button disabled={busy} onClick={() => void act(async () => { await revokeTeamInvitation(invitation.id); }, t("team.links.revoked"))} type="button" variant="secondary">{t("team.links.revoke")}</Button>}
-          </li>)}
-        </ul>
-      </div>
-    </section>}
 
-    {isTelegram && !inBrowser && <section className="settings-list">
-      <div className="settings-row settings-row--stacked">
-        <span className="settings-row__text"><strong>{t("team.computer.title")}</strong><span>{t("team.computer.hint", { address: siteAddress().replace(/^https?:\/\//, "") })}</span></span>
-        <Button className="w-full" onClick={workOnComputer} type="button" variant="secondary">{t("team.computer.button")}</Button>
-      </div>
-    </section>}
-
-    {isOwner && team.teamMode && <div className="grid gap-2">
-      <Button className="w-full" disabled={busy || team.seatsUsed > 1} onClick={() => { haptic.warning(); setConfirm({ kind: "alone" }); }} type="button" variant="secondary">{t("team.mode.switchToAlone")}</Button>
-      {team.seatsUsed > 1 && <p className="text-center text-xs text-brand-muted">{t("team.mode.aloneBlocked")}</p>}
-    </div>}
-    {!isOwner && <Button className="w-full" disabled={busy} onClick={() => { haptic.warning(); setConfirm({ kind: "leave" }); }} type="button" variant="danger">{t("team.leave")}</Button>}
+    </DetailLayout>
 
     <BottomSheet onClose={closeInvite} open={inviteOpen} title={t("team.invite.title")}>
       {!link ? <div className="grid gap-4">

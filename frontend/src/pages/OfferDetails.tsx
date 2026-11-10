@@ -12,6 +12,7 @@ import { profileRoute } from "../lib/profileRoutes";
 import { SwitchRoleHint } from "../components/SwitchRoleHint";
 import { PageHeader } from "../components/PageHeader";
 import { ListHero } from "../components/ListHero";
+import { DetailLayout } from "../components/DetailLayout";
 import { DetailSection, FactGrid, compactMoney } from "../components/details/DetailBlocks";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { CounterpartyRow } from "../components/CounterpartyRow";
@@ -100,13 +101,16 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
       { label: t("offers.expiresAt"), value: offer.state === "pending" && offer.expiresAtUtc ? formatDate(offer.expiresAtUtc, true) : null }
     ]} />
     </ListHero>
-    <DetailSection title={t("offers.message")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{offer.message}</p></Card></DetailSection>
+    <DetailLayout side={<>
     {offer.canRespond && <div className="offer-respond mt-5">
       {offer.expiresAtUtc && <OfferTimeLeft expiresAtUtc={offer.expiresAtUtc} />}
       <p className="offer-respond__hint">{t("offers.acceptHint")}</p>
       <div className="modal-actions"><Button disabled={busy} onClick={() => decide(false)} type="button" variant="secondary">{t("offers.decline")}</Button><Button disabled={busy} onClick={() => decide(true)} type="button">{t("offers.accept")}</Button></div>
     </div>}
     {offer.dealId && <Button className="mt-5 w-full" onClick={() => { window.location.hash = dealRoute(offer.dealId!); }} type="button">{t("deals.open")}</Button>}
+    </>}>
+    <DetailSection title={t("offers.message")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{offer.message}</p></Card></DetailSection>
+    </DetailLayout>
     <ReportButton targetId={offer.id} targetType="offer" />
     <SuccessMoment key={moment?.id} message={moment?.message ?? ""} onDone={() => { if (moment?.next) window.location.hash = moment.next; }} /><Toast message={toast} tone={tone} />
     <BottomNav />

@@ -15,9 +15,12 @@ import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
 import { ListHero } from "../components/ListHero";
+import { DetailLayout } from "../components/DetailLayout";
+import { useIsDesktop } from "../lib/desktopLayout";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 export function BloggerDetails({ id }: { id: string }) {
+  const desktop = useIsDesktop();
   const { language, t } = useI18n();
   const { openLink } = useTelegram();
   const [blogger, setBlogger] = useState<BloggerDetails | null>(() => getCachedPublicDetail<BloggerDetails>("blogger", id));
@@ -107,6 +110,7 @@ export function BloggerDetails({ id }: { id: string }) {
   const platformStats = blogger.platforms.filter((platform) => platform.followers > 0);
   const tags = [blogger.barterEnabled ? t("card.barter") : null].filter((tag): tag is string => tag !== null);
   // D63, package G: the lapis head carries the person and three tags on cords; the platform rows stay below.
+  const offerAction = role === "Business" && !blogger.isHidden ? <Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button> : null;
   return <div className="screen screen--with-nav">
     <ListHero className="detail-hero">
       <PageHeader actions={<><FavoriteButton bloggerId={blogger.id} /></>} back={{ href: "#/search", label: t("common.back") }} />
@@ -118,17 +122,21 @@ export function BloggerDetails({ id }: { id: string }) {
         { label: t("details.reach"), value: blogger.averageReach ? formatCompactNumber(blogger.averageReach) : null }
       ]} />
     </ListHero>
+    <DetailLayout actions={offerAction} top={<>
     {platformStats.length > 0 && <PlatformStats platforms={platformStats} total={blogger.totalFollowers} />}
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     <DetailSection title={t("details.adPrices")}>{hasPrices ? <FactGrid facts={prices} /> : <Card><p className="text-sm text-brand-muted">{t("details.pricesOnRequest")}</p></Card>}</DetailSection>
+    </>} side={<>
+    {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
+    {blogger.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
+    </>}>
     <DetailSection title={t("details.about")}><Card><p className="text-sm leading-6 text-brand-muted">{blogger.bio ?? t("details.filling")}</p>{tags.length > 0 && <div className="mt-3"><ChipList items={tags} /></div>}</Card></DetailSection>
     {platformStats.length === 0 && blogger.platforms.length > 0 && <DetailSection title={t("details.platforms")}><FactGrid facts={blogger.platforms.map((platform) => ({ label: platformLabel(platform.type, t), value: platform.followers ? formatCompactNumber(platform.followers) : t("card.onRequest") }))} /></DetailSection>}
     {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <PortfolioLink item={item} key={item.id} onOpen={openLink} />)}</div></DetailSection>}
     <ReviewsSection allHref={`#/blogger-reviews/${blogger.id}`} count={blogger.reviewsCount} emptyText={t("details.noReviews")} rating={blogger.reviewsCount > 0 ? blogger.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews} title={t("details.reviews")} />
-    {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
-    {blogger.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
+    </DetailLayout>
     <ReportButton targetId={blogger.id} targetType="blogger" />
-    {role === "Business" && !blogger.isHidden && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
+    {role === "Business" && !blogger.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm bloggerId={blogger.id} initialBudget={offerPreset?.budget} initialFormat={offerPreset?.format} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} /><BottomNav />
   </div>;

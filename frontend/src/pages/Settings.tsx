@@ -7,6 +7,7 @@ import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { AtlasStrip } from "../components/AtlasStrip";
 import { PageHeader } from "../components/PageHeader";
 import { ListHero } from "../components/ListHero";
+import { DetailLayout } from "../components/DetailLayout";
 import { SeasonArt } from "../components/SeasonArt";
 import { BottomNav, Button, Toast } from "../components/ui";
 import { useI18n } from "../i18n";
@@ -104,6 +105,13 @@ export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionRese
       <PageHeader back={{ href: "#/profile", label: t("nav.profile") }} eyebrow={t("profile.eyebrow")} title={t("profile.settings")} />
       <p className="settings-hero__state">{state}</p>
     </ListHero>
+    <DetailLayout side={<>
+    {(isBusiness || inBrowser) && <BrowserSessions onSignedOut={onBrowserSignedOut} />}
+    {inBrowser
+      ? <div className="grid gap-2"><Button aria-busy={signingOut} className="w-full" disabled={signingOut} onClick={() => void signOut()} type="button" variant="secondary">{t("browser.signOut")}</Button><p className="text-center text-xs text-brand-muted">{t("browser.telegramOnly")}</p></div>
+      : <AccountActions onSessionReset={onSessionReset} />}
+    <p className="text-center text-xs text-brand-muted">BloggerBazar · {t("common.version", { version: "1.0.0" })}</p>
+    </>}>
     <div className="settings-list">
       <div className="settings-row"><span className="settings-row__text"><strong>{t("language.interface")}</strong></span><LanguageSwitcher /></div>
       <div className="settings-row settings-row--stacked">
@@ -142,11 +150,7 @@ export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionRese
       </div>}
       {isAdmin && !inBrowser && <a className="settings-row" href="#/admin"><span className="settings-row__text"><strong>{t("settings.adminPanel")}</strong><span className="text-sm text-brand-muted">{t("settings.adminPanelHint")}</span></span><span aria-hidden="true">›</span></a>}
     </div>
-    {(isBusiness || inBrowser) && <BrowserSessions onSignedOut={onBrowserSignedOut} />}
-    {inBrowser
-      ? <div className="grid gap-2"><Button aria-busy={signingOut} className="w-full" disabled={signingOut} onClick={() => void signOut()} type="button" variant="secondary">{t("browser.signOut")}</Button><p className="text-center text-xs text-brand-muted">{t("browser.telegramOnly")}</p></div>
-      : <AccountActions onSessionReset={onSessionReset} />}
-    <p className="text-center text-xs text-brand-muted">BloggerBazar · {t("common.version", { version: "1.0.0" })}</p>
+    </DetailLayout>
     <Toast key={toast?.id} message={toast?.message ?? ""} tone={toast?.tone ?? "success"} />
     <BottomNav />
   </div>;

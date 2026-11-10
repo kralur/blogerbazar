@@ -22,7 +22,7 @@ import { clearCampaignApplicationCache } from "./data/campaignApplicationCache";
 import { clearDealCache } from "./data/dealCache";
 import { isDeepLinkRoute } from "./lib/deepLink";
 import { setBrowserSession } from "./lib/browserSession";
-import { useDesktopLayout } from "./lib/desktopLayout";
+import { DesktopLayoutContext, useDesktopLayout } from "./lib/desktopLayout";
 import { DesktopNav } from "./components/DesktopNav";
 
 const onboardingWelcomeKey = "bloggerbazar.onboarding.welcomeViewed";
@@ -414,7 +414,7 @@ export function App() {
 
   if (!initialDestinationResolved) return <LaunchScreen />;
 
-  return <FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" />{desktop && onboardingStep === "complete" && <DesktopNav />}<PullToRefresh enabled={onboardingStep === "complete"} /><SessionExpiredNotice enabled={isTelegram} /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
+  return <DesktopLayoutContext.Provider value={desktop}><FavoritesProvider enabled={onboardingStep === "complete"} key={sessionEpoch}><ActionCountsProvider enabled={onboardingStep === "complete"} role={selectedRole}><main className={`app-shell ${onboardingStep !== "complete" ? "app-shell--first-run" : ""}`}><div aria-hidden="true" className="app-top-scrim" />{desktop && onboardingStep === "complete" && <DesktopNav />}<PullToRefresh enabled={onboardingStep === "complete"} /><SessionExpiredNotice enabled={isTelegram} /><Suspense fallback={onboardingStep === "complete" ? <div className="screen"><LoadingState /></div> : <LaunchScreen />}>
     {onboardingStep !== "complete" ? onboardingContent : <>
       {(visitedRootRoutes.has("/") || route.path === "/") && <RootScreenVisibility active={route.path === "/"}><CachedHome key={selectedRole ?? "none"} role={selectedRole} /></RootScreenVisibility>}
       {(visitedRootRoutes.has("/profile") || route.path === "/profile") && <RootScreenVisibility active={route.path === "/profile"}><CachedProfile onMarketplaceRoleSelected={handleMarketplaceRoleSelected} /></RootScreenVisibility>}
@@ -444,5 +444,5 @@ export function App() {
       {route.path === "/admin" && (route.id === "user" ? <AdminUserCard key={window.location.hash} /> : <Admin section={route.id} />)}
       {!knownRoutes.includes(route.path) && <Home role={selectedRole} />}
     </>}
-  </Suspense></main></ActionCountsProvider></FavoritesProvider>;
+  </Suspense></main></ActionCountsProvider></FavoritesProvider></DesktopLayoutContext.Provider>;
 }

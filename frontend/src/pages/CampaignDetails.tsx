@@ -13,6 +13,7 @@ import { getCachedCampaignApplication, setCachedCampaignApplication } from "../d
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
 import { PageHeader } from "../components/PageHeader";
 import { ListHero } from "../components/ListHero";
+import { DetailLayout } from "../components/DetailLayout";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { profileRoute } from "../lib/profileRoutes";
 
@@ -220,12 +221,15 @@ export function CampaignDetails({ id }: { id: string }) {
         <h1 className="detail-hero__title">{campaign.title}</h1>
         {meta && <p className="detail-hero__meta">{meta}</p>}
       </ListHero>
+      <DetailLayout side={<>
+      {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}
+      </>}>
       <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
       {campaign.categories.length > 0 && <DetailSection title={t("campaign.suitable")}><ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
       <DetailSection title={t("common.requirements")}><Card><ul className="grid gap-3">{campaign.requirements.length ? campaign.requirements.map((item) => <li className="flex gap-2 text-sm text-brand-muted" key={item}><Icon className="h-4 w-4 shrink-0 text-brand-success" name="check" />{item}</li>) : <li className="text-sm text-brand-muted">{t("common.noData")}</li>}</ul></Card></DetailSection>
       {businessReviews && campaign.businessId && <ReviewsSection allHref={`#/company-reviews/${campaign.businessId}`} count={businessReviews.reviewsCount} emptyText={t("campaign.noBusinessReviews")} rating={businessReviews.rating} reviewerRoute={(profileId, role) => profileRoute(role ?? "blogger", profileId)} reviews={businessReviews.items} title={t("campaign.businessReviews")} />}
-      {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}
+      </DetailLayout>
       {blockedReason !== "own" && <ReportButton targetId={campaign.id} targetType="campaign" />}
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
       {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary tap-target inline-flex w-full items-center justify-center gap-2 px-5" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}

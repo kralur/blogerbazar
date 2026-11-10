@@ -2177,6 +2177,42 @@ html[data-desktop="true"] .catalog-search__end,
 html[data-desktop="true"] .catalog-search__results > [role="status"],
 html[data-desktop="true"] .catalog-search__results > .ds-empty { grid-column: 1 / -1; }
 
+/* Two-column pages (DetailLayout): the content on the left, the page's actions and key facts in a panel on the right
+   that stays in view while the page scrolls. Below 1200 px the panel comes first, above the content. */
+html[data-desktop="true"] .screen:has(.detail-layout) { max-width: var(--desktop-content-width); }
+html[data-desktop="true"] .screen > .detail-layout { max-width: none !important; }
+html[data-desktop="true"] .detail-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+html[data-desktop="true"] .detail-layout__main { min-width: 0; }
+html[data-desktop="true"] .detail-layout__main > :first-child { margin-top: 1.5rem; }
+html[data-desktop="true"] .detail-layout__side { display: flex; min-width: 0; flex-direction: column; gap: 1rem; padding-top: 1.5rem; }
+html[data-desktop="true"] .detail-layout__side > * { margin-top: 0 !important; }
+html[data-desktop="true"] .detail-layout__side .detail-section__heading { margin-top: 0; }
+html[data-desktop="true"] .detail-layout__actions { display: grid; gap: .625rem; padding: 1rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
+@media (max-width: 74.99rem) {
+  html[data-desktop="true"] .detail-layout__side { order: -1; }
+  html[data-desktop="true"] .detail-layout__side .my-campaign-details__actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+}
+@media (min-width: 75rem) {
+  html[data-desktop="true"] .detail-layout { grid-template-columns: minmax(0, 1fr) 22rem; gap: 2rem; }
+  html[data-desktop="true"] .detail-layout__side { position: sticky; top: 0; max-height: 100vh; padding-bottom: 1.5rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+}
+/* "Edit" and "Close campaign" one under the other in the narrow panel, each on one line. */
+html[data-desktop="true"] .detail-layout__side .my-campaign-details__actions { grid-template-columns: minmax(0, 1fr); gap: .625rem; }
+
+/* Buttons keep the width of their words instead of stretching across the page. */
+html[data-desktop="true"] .profile-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 1.25rem; }
+html[data-desktop="true"] .profile-card__actions > * { width: auto !important; min-height: 3rem; margin-top: 0 !important; padding-inline: 1.5rem; }
+html[data-desktop="true"] .screen > .ds-button.w-full,
+html[data-desktop="true"] .screen > .space-y-3 > .ds-button.w-full { display: flex; width: fit-content !important; min-width: 14rem; margin-inline: auto; }
+html[data-desktop="true"] .fixed-action-bar { display: flex; justify-content: flex-end; }
+html[data-desktop="true"] .fixed-action-bar > .ds-button { width: auto; min-width: 16rem; }
+/* The answers to a campaign: cards across the page, like "Requests". */
+html[data-desktop="true"] .screen.application-inbox { max-width: var(--desktop-content-width); }
+html[data-desktop="true"] .application-inbox .catalog-search__results { display: block; }
+html[data-desktop="true"] .application-inbox .request-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); gap: .75rem; align-items: start; }
+html[data-desktop="true"] .application-inbox .my-campaigns__controls { max-width: 28rem; }
+html[data-desktop="true"] .browser-sign-in .ftue-screen__description { max-width: none; }
+
 /* Sheets and dialogs open in the middle of the window, not from its bottom edge. */
 html[data-desktop="true"] .bottom-sheet-backdrop { place-items: center; padding: 2rem; }
 html[data-desktop="true"] .bottom-sheet { max-width: 34rem; max-height: min(85vh, 48rem); border-radius: var(--bb-radius-overlay); }

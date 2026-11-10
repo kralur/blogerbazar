@@ -12,12 +12,15 @@ import { FavoriteButton } from "../components/FavoriteButton";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
 import { PageHeader } from "../components/PageHeader";
 import { ListHero } from "../components/ListHero";
+import { DetailLayout } from "../components/DetailLayout";
+import { useIsDesktop } from "../lib/desktopLayout";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { safeExternalUrl, socialUrl } from "../lib/contacts";
 import { useTelegram } from "../telegram/TelegramProvider";
 import { spokenLanguageLabelKey } from "../lib/languages";
 
 export function BrandFaceDetails({ id }: { id: string }) {
+  const desktop = useIsDesktop();
   const { language, t } = useI18n();
   const { openLink } = useTelegram();
   const [profile, setProfile] = useState<BrandFaceDetailsModel | null>(() => getCachedPublicDetail<BrandFaceDetailsModel>("brand-face", id));
@@ -89,6 +92,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
     cityLabel(profile.city, language)
   ].filter(Boolean).join(" · ");
   const open = (href: string) => { if (openLink) openLink(href); else window.open(href, "_blank", "noopener,noreferrer"); };
+  const offerAction = role === "Business" && !profile.isHidden ? <Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button> : null;
   return <div className="screen screen--with-nav">
     <ListHero className="detail-hero">
     <PageHeader actions={<><FavoriteButton brandFaceId={profile.id} /></>} back={{ href: "#/", label: t("common.back") }} />
@@ -98,6 +102,10 @@ export function BrandFaceDetails({ id }: { id: string }) {
       { label: t("brandFace.languages"), value: profile.languages.map((code) => spokenLanguageLabelKey(code) ? t(spokenLanguageLabelKey(code)!) : code).join(" · ") || null }
     ]} />
     </ListHero>
+    <DetailLayout actions={offerAction} side={<>
+    {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
+    {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
+    </>}>
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     {photos.length > 0 && <ul aria-label={t("brandFace.galleryTitle")} className="brand-face-photos no-scrollbar">{photos.map((url) => <li className="brand-face-photos__item" key={url}><img alt={profile.name} loading="lazy" src={url} /></li>)}</ul>}
     {instagramHref && <Button className="brand-face-instagram" onClick={() => open(instagramHref)} type="button"><Icon name="instagram" />{t("brandFace.openInstagram")}</Button>}
@@ -106,10 +114,9 @@ export function BrandFaceDetails({ id }: { id: string }) {
     {profile.categories.length > 0 && <DetailSection title={t("common.categories")}><ChipList items={profile.categories.map((category) => categoryLabel(category, language))} /></DetailSection>}
     {(profile.description || profile.experience) && <DetailSection title={t("brandFace.aboutTitle")}><Card>{profile.description && <p className="text-sm leading-6 text-brand-muted">{profile.description}</p>}{profile.experience && <><h3 className={`${profile.description ? "mt-4 " : ""}text-sm font-extrabold`}>{t("brandFace.experienceTitle")}</h3><p className="mt-1 text-sm leading-6 text-brand-muted">{profile.experience}</p></>}</Card></DetailSection>}
     {reviews && <ReviewsSection allHref={`#/brand-face-reviews/${profile.id}`} count={reviews.reviewsCount} emptyText={t("details.noReviews")} rating={reviews.reviewsCount > 0 ? reviews.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews.items} title={t("details.reviews")} />}
-    {hasContacts(contacts) && <DetailSection title={t("details.contacts")}><ContactList items={contacts} /></DetailSection>}
-    {profile.isHidden && <p className="brand-face-soon" role="note">{t("public.hiddenNote")}</p>}
+    </DetailLayout>
     <ReportButton targetId={profile.id} targetType="brandFace" />
-    {role === "Business" && !profile.isHidden && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
+    {role === "Business" && !profile.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm brandFaceId={profile.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} />
     <BottomNav />

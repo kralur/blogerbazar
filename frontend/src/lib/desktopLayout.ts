@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 // D64 stage B2: outside Telegram on a wide screen the app is laid out as a website (side menu, wide content).
 // Inside Telegram nothing changes. The page reads html[data-desktop="true"].
@@ -29,3 +29,8 @@ export function useDesktopLayout(enabled: boolean) {
   }, [desktop]);
   return desktop;
 }
+
+// Pages ask whether they are laid out as the website (two columns, actions in a side panel). False in Telegram and in
+// tests that render a page on its own.
+export const DesktopLayoutContext = createContext(false);
+export const useIsDesktop = () => useContext(DesktopLayoutContext);
