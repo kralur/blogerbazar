@@ -33,6 +33,9 @@ public interface IBusinessTeamRepository
     Task AddMemberAsync(BusinessMember member, CancellationToken cancellationToken);
     Task AddInvitationAsync(BusinessInvitation invitation, CancellationToken cancellationToken);
     // With the company, for the person who opened the link.
+    // Inside a transaction: holds the company row until it ends, so two people deciding at once count seats one after
+    // the other (the free plan's limit).
+    Task LockCompanyAsync(Guid businessId, CancellationToken cancellationToken) => Task.CompletedTask;
     // Takes an open link for this person in one conditional update: of two people asking at once, one gets it.
     Task<bool> TryRequestAsync(Guid invitationId, long telegramUserId, DateTime nowUtc, CancellationToken cancellationToken);
     Task<BusinessInvitation?> GetInvitationByCodeHashAsync(string codeHash, CancellationToken cancellationToken);

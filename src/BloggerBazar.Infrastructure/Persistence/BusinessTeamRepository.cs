@@ -55,6 +55,9 @@ internal sealed class BusinessTeamRepository(BloggerBazarDbContext dbContext) : 
     public async Task AddInvitationAsync(BusinessInvitation invitation, CancellationToken cancellationToken) =>
         await dbContext.BusinessInvitations.AddAsync(invitation, cancellationToken);
 
+    public async Task LockCompanyAsync(Guid businessId, CancellationToken cancellationToken) =>
+        await dbContext.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM business_profiles WHERE \"Id\" = {businessId} FOR UPDATE", cancellationToken);
+
     public async Task<bool> TryRequestAsync(Guid invitationId, long telegramUserId, DateTime nowUtc, CancellationToken cancellationToken) =>
         await dbContext.BusinessInvitations
             .Where(invitation => invitation.Id == invitationId && invitation.Status == BusinessInvitationStatus.Open && invitation.ExpiresAtUtc > nowUtc)

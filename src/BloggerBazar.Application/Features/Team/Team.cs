@@ -366,11 +366,6 @@ public sealed class AcceptTeamRequestHandler(
             throw new InvalidOperationException("Request was not found.");
         }
 
-        if (await team.CountActiveMembersAsync(company.Id, cancellationToken) >= TeamLimits.FreeSeats)
-        {
-            throw new BusinessRuleConflictException(TeamCodes.TeamFull, "The team has no free places.");
-        }
-
         var nowUtc = DateTime.UtcNow;
         var newcomer = await users.GetByTelegramUserIdAsync(newcomerId, cancellationToken);
         if (newcomer is null || newcomer.IsBlocked || newcomer.IsDeleted || await businesses.GetMembershipAsync(newcomerId, cancellationToken) is not null)
@@ -381,15 +376,25 @@ public sealed class AcceptTeamRequestHandler(
             throw new BusinessRuleConflictException(BusinessTeamCodes.MemberOfAnotherCompany, "The person can no longer join this company.");
         }
 
-        invitation.Accept(command.TelegramUserId, nowUtc);
-        await team.AddMemberAsync(BusinessMember.Join(company.Id, newcomerId, invitation.Role, command.TelegramUserId, nowUtc), cancellationToken);
-        // They asked to work for the company: their app opens as the company next time (rule 1, selected role).
-        newcomer.SelectMarketplaceRole(MarketplaceRole.Business);
-        if (!await unitOfWork.TrySaveChangesAsync(cancellationToken))
+        // The seat count and the new member in one transaction holding the company row: two people accepting at once
+        // cannot both take the last free place.
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
         {
-            // The unique index on active memberships: they joined another company in the same instant.
-            throw new BusinessRuleConflictException(BusinessTeamCodes.MemberOfAnotherCompany, "The person can no longer join this company.");
-        }
+            await team.LockCompanyAsync(company.Id, token);
+            if (await team.CountActiveMembersAsync(company.Id, token) >= TeamLimits.FreeSeats)
+            {
+                throw new BusinessRuleConflictException(TeamCodes.TeamFull, "The team has no free places.");
+            }
+
+            invitation.Accept(command.TelegramUserId, nowUtc);
+            await team.AddMemberAsync(BusinessMember.Join(company.Id, newcomerId, invitation.Role, command.TelegramUserId, nowUtc), token);
+            // They asked to work for the company: their app opens as the company next time (rule 1, selected role).
+            newcomer.SelectMarketplaceRole(MarketplaceRole.Business);
+            // The unique index on active memberships (they joined another company in the same instant) rolls it all back.
+            return await unitOfWork.TrySaveChangesAsync(token)
+                ? true
+                : throw new BusinessRuleConflictException(BusinessTeamCodes.MemberOfAnotherCompany, "The person can no longer join this company.");
+        }, cancellationToken);
 
         await BestEffortTelegramNotification.SendAsync(botClient, logger, newcomerId, BotMessages.TeamJoined(company.Name, invitation.Role, command.SiteUrl), "/", cancellationToken);
         // The owner hears about every new person an admin lets in: access to the company is theirs to watch.
