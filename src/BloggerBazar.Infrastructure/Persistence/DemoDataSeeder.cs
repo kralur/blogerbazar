@@ -19,7 +19,18 @@ public static class DemoDataSeeder
     private const long BrandFaceIdStart = TelegramIdStart + 200_000;
 
     private static readonly string[] Cities = ["tashkent-city", "samarkand", "bukhara", "fergana", "namangan", "andijan", "navoi", "khorezm"];
-    private static readonly string[] Categories = ["lifestyle", "beauty", "fashion", "food", "travel", "technology", "finance", "sport", "gaming", "other:kids", "other:education", "other:auto"];
+    // Only the nine catalog categories: they are shown in the reader's language (custom ones are shown as typed).
+    private static readonly string[] Categories = ["lifestyle", "beauty", "fashion", "food", "travel", "technology", "finance", "sport", "gaming"];
+
+    // Brand faces have names of their own, so nobody looks like the same person in two sections.
+    private static readonly (string Name, string Gender)[] BrandFacePeople =
+    [
+        ("Gulshan", "Female"), ("Mohira", "Female"), ("Zarnigor", "Female"), ("Nilufar", "Female"), ("Yulduz", "Female"),
+        ("Rustam", "Male"), ("Davron", "Male"), ("Shohjahon", "Male"), ("Bahodir", "Male"), ("Anvar", "Male")
+    ];
+
+    // The first brand face of the current set: demo cards without it are an older set and are made again.
+    private const string CurrentSetMarker = "Gulshan";
     private static readonly string[] Platforms = ["Instagram", "Telegram", "TikTok", "YouTube"];
 
     private static readonly (string Name, string LastName, string Gender)[] People =
@@ -66,8 +77,14 @@ public static class DemoDataSeeder
     {
         if (await dbContext.BloggerProfiles.IgnoreQueryFilters().AnyAsync(profile => profile.TelegramUserId >= TelegramIdStart && profile.TelegramUserId < TelegramIdEnd, cancellationToken))
         {
-            logger.LogInformation("Demo cards are already there.");
-            return;
+            if (await dbContext.BrandFaceProfiles.IgnoreQueryFilters().AnyAsync(profile => profile.TelegramUserId == BrandFaceIdStart && profile.Name == CurrentSetMarker, cancellationToken))
+            {
+                logger.LogInformation("Demo cards are already there.");
+                return;
+            }
+
+            await RemoveAsync(dbContext, logger, cancellationToken);
+            dbContext.ChangeTracker.Clear();
         }
 
         var bloggers = People.Select((person, index) => CreateBlogger(person, index)).ToList();
@@ -180,7 +197,7 @@ public static class DemoDataSeeder
 
     private static BrandFaceProfile CreateBrandFace(int index)
     {
-        var person = People[(index * 3 + 1) % People.Length];
+        var person = BrandFacePeople[index];
         var city = Cities[(index + 2) % Cities.Length];
         var categories = CategoriesFor(index + 3);
         var profile = BrandFaceProfile.Create(BrandFaceIdStart + index, person.Name, city, categories);

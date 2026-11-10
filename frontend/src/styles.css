@@ -2094,7 +2094,7 @@ a.detail-hero__eyebrow:active { color: #FFFFFF; }
 .browser-sessions__list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
 .browser-sessions__item { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 0; }
 .browser-sessions__item + .browser-sessions__item { border-top: 1px solid var(--bb-border); }
-.browser-sessions__current { margin-left: .5rem; padding: .125rem .5rem; border-radius: 999px; background: var(--bb-accent); color: var(--bb-accent-text) !important; font-size: .75rem !important; font-weight: 700; vertical-align: .1em; }
+.browser-sessions__current { display: inline-block; white-space: nowrap; margin-left: .5rem; padding: .125rem .5rem; border-radius: 999px; background: var(--bb-accent); color: var(--bb-accent-text) !important; font-size: .75rem !important; font-weight: 700; vertical-align: .1em; }
 .browser-sessions__end { flex: none; min-height: 2.5rem; padding-inline: 1rem; }
 
 /* D64 stage C1: the team screen, the invitation, the join screen and the welcome window. */
@@ -2202,6 +2202,46 @@ html[data-desktop="true"] .home-list { grid-template-columns: repeat(auto-fit, m
   html[data-desktop="true"] .home-list > :nth-child(n+3):nth-child(2n+1):last-child { display: none; }
 }
 
+/* The hanging price tags in a page head stand on one line on a computer; the zigzag stays a phone detail. */
+html[data-desktop="true"] :is(.company-hero__facts, .hero-tags) .fact-grid__item:nth-child(2) { margin-top: 0; }
+
+/* A page head's badge or bookmark stands next to the back button, at the start of the column, not in the far corner. */
+html[data-desktop="true"] .detail-hero .page-header__actions { margin-left: 0; }
+/* What a visitor can do on a campaign (or why not) sits in the side panel. */
+html[data-desktop="true"] .detail-layout__side .campaign-details__expired { margin: 0; }
+html[data-desktop="true"] .detail-layout__side > .report-button { order: 99; }
+
+/* Cards in a row share one height and keep their facts (budget, city, deadline, price) on one line at the bottom, so
+   rows read straight across. */
+html[data-desktop="true"] .catalog-search__results { align-items: stretch; }
+html[data-desktop="true"] .catalog-search__results > .campaign-catalog-card,
+html[data-desktop="true"] .catalog-search__results > .my-campaign-card { display: flex; height: 100%; flex-direction: column; }
+html[data-desktop="true"] .catalog-search__results > .my-campaign-card > .my-campaign-card__link { display: flex; flex: 1; flex-direction: column; }
+html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__facts,
+html[data-desktop="true"] .catalog-search__results .my-campaign-card__facts { margin-top: auto !important; }
+html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__requirements,
+html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__categories:last-of-type { margin-bottom: 1rem; }
+html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__fact--budget dd { font-size: 1.125rem; }
+html[data-desktop="true"] .catalog-search__results > .catalog-brand-face-card > .catalog-brand-face-card__link { display: flex; height: 100%; flex-direction: column; }
+html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__price { margin-top: auto; }
+html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__chips { margin-bottom: 1rem; }
+
+/* The catalog on a computer: each blogger is a tile, not a phone row. The facts get two full lines instead of one cut
+   line, the price sits under a rule at the bottom, tiles in a row share one height. */
+html[data-desktop="true"] .catalog-search__results:has(> .catalog-blogger-card) { gap: 1rem; align-items: stretch; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card { display: flex; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card:last-of-type { border-bottom: 1px solid var(--bb-border); }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__link { display: grid; flex: 1; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 1fr auto; align-items: start; column-gap: .875rem; padding: 1rem 1rem 1rem 1rem; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__body { padding-right: 2.25rem; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__name-row strong { font-size: 1.0625rem; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__meta { display: -webkit-box; margin-top: .3rem; overflow: hidden; font-size: .875rem; line-height: 1.45; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__categories { margin-top: .625rem; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__price { display: flex; grid-column: 1 / -1; grid-row: 3; max-width: none; align-items: baseline; gap: .375rem; margin-top: .875rem; padding-top: .75rem; border-top: 1px solid var(--bb-border); text-align: left; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__price strong { font-size: 1.25rem; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__price span { font-size: .8125rem; }
+html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__save { top: .75rem; right: .75rem; transform: none; }
+html[data-desktop="true"] .catalog-search__results > .catalog-brand-face-card { height: 100%; }
+
 /* Two-column pages (DetailLayout): the content on the left, the page's actions and key facts in a panel on the right
    that stays in view while the page scrolls. Below 1200 px the panel comes first, above the content. */
 html[data-desktop="true"] .screen:has(.detail-layout) { max-width: var(--desktop-content-width); }
@@ -2212,7 +2252,8 @@ html[data-desktop="true"] .detail-layout__main > :first-child { margin-top: 1.5r
 html[data-desktop="true"] .detail-layout__side { display: flex; min-width: 0; flex-direction: column; gap: 1rem; padding-top: 1.5rem; }
 html[data-desktop="true"] .detail-layout__side > * { margin-top: 0 !important; }
 html[data-desktop="true"] .detail-layout__side .detail-section__heading { margin-top: 0; }
-html[data-desktop="true"] .detail-layout__actions { display: grid; gap: .625rem; padding: 1rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
+html[data-desktop="true"] .detail-layout__actions { display: grid; gap: .625rem; }
+html[data-desktop="true"] .detail-layout__actions > .ds-button { width: 100%; min-height: 3.25rem; }
 @media (max-width: 74.99rem) {
   html[data-desktop="true"] .detail-layout__side { order: -1; }
   html[data-desktop="true"] .detail-layout__side .my-campaign-details__actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
