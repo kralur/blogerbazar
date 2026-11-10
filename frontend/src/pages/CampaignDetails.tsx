@@ -13,6 +13,7 @@ import { getCachedCampaignApplication, setCachedCampaignApplication } from "../d
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
 import { PageHeader } from "../components/PageHeader";
 import { ListHero } from "../components/ListHero";
+import { isBrowserSession } from "../lib/browserSession";
 import { DetailLayout } from "../components/DetailLayout";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { profileRoute } from "../lib/profileRoutes";
@@ -224,7 +225,7 @@ export function CampaignDetails({ id }: { id: string }) {
       <DetailLayout footer={blockedReason !== "own" ? <ReportButton targetId={campaign.id} targetType="campaign" /> : null} side={<>
       {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}
       {applicationLookupFailed && canApply && <p className="mt-4 text-sm text-brand-muted" role="status">{t("applications.applyLookupFailed")}</p>}
-      {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary tap-target inline-flex w-full items-center justify-center gap-2 px-5" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}
+      {application ? <FixedActionBar><a aria-label={t("applications.applyState")} className="ds-button ds-button--secondary tap-target inline-flex w-full items-center justify-center gap-2 px-5" href={`#/my-application/${application.id}`}><Badge tone={campaignApplicationStatusTone(application.status)}>{t(campaignApplicationStatusLabelKey(application.status))}</Badge>{t("applications.applyState")}</a></FixedActionBar> : expired ? <p className="campaign-details__expired" role="status">{t("error.campaign_expired")}</p> : canApply && !applicationLookupFailed ? <FixedActionBar><Button className="w-full" onClick={() => setApplicationOpen(true)}><Icon name="send" />{t("campaign.apply")}</Button></FixedActionBar> : blockedReason && !(blockedReason === "role" && isBrowserSession()) ? <ApplyBlockedNote campaignId={campaign.id} reason={blockedReason} /> : null}
       </>}>
       <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
       {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}

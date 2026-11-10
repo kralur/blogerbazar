@@ -2287,6 +2287,9 @@ html[data-desktop="true"] .screen:has(.detail-layout) { max-width: var(--desktop
 html[data-desktop="true"] .screen > .detail-layout { max-width: none !important; }
 html[data-desktop="true"] .detail-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; align-items: start; }
 html[data-desktop="true"] .detail-layout__main { min-width: 0; }
+/* Nothing for the side panel (e.g. another company's campaign seen by a company): the content takes the width. */
+html[data-desktop="true"] .detail-layout:has(> .detail-layout__side:empty) { grid-template-columns: minmax(0, 1fr) !important; }
+html[data-desktop="true"] .detail-layout__side:empty { display: none; }
 html[data-desktop="true"] .detail-layout__main > :first-child { margin-top: 1.5rem; }
 html[data-desktop="true"] .detail-layout__side { display: flex; min-width: 0; flex-direction: column; gap: 1rem; padding-top: 1.5rem; }
 html[data-desktop="true"] .detail-layout__side > * { margin-top: 0 !important; }
