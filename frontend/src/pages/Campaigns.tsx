@@ -1,3 +1,4 @@
+import { Pager, listPageSize } from "../components/catalog/Pager";
 import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { myCampaignsFeedbackKey } from "../components/CampaignActionsMenu";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
@@ -23,7 +24,8 @@ import { PageHeader } from "../components/PageHeader";
 import { replaceHistoryRoute } from "../navigation/hashNavigation";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
-const pageSize = 20;
+// Page by page (owner, 2026-11-20): 12 cards on a computer, 10 on a phone.
+const pageSize = listPageSize();
 const filterSheetId = "campaign-catalog-filters";
 // Empty on purpose: a prefilled budget, city or category was published as if the company had chosen it.
 const initialForm = { title: "", description: "", city: "", categories: [] as string[], requirements: "", deadline: "", budgetFrom: "", budgetTo: "" };
@@ -295,10 +297,9 @@ export function Campaigns() {
       {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={refreshCatalog} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "campaigns.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "campaigns.loadFailedTitle")} />}
       {items.map((campaign) => <CampaignCard campaign={campaign} key={campaign.id} />)}
       {items.length > 0 && <>
-        <div aria-hidden="true" ref={sentinelRef} />
         {loadingMore && <SearchSkeleton compact count={2} />}
         {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void load(page + 1, true)} subtitle={t("campaigns.loadFailedSubtitle")} title={t("campaigns.loadFailedTitle")} />}
-        {loadedInitialResult && !hasMore && !loadingMore && !loadMoreFailed && <p className="catalog-search__end">{t("campaigns.endOfList")}</p>}
+        <Pager disabled={loading} onChange={(next) => void load(next, false, true)} page={page} pageSize={pageSize} total={total} />
       </>}
     </section>
     <CampaignFiltersSheet categories={categories} error={filterError} filters={draftFilters} onApply={applyFilters} onClose={closeFilters} onReset={resetCatalog} onSetFilter={setDraft} open={filtersOpen} />

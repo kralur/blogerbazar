@@ -1,3 +1,4 @@
+import { Pager, listPageSize } from "../components/catalog/Pager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatShortDate } from "../lib/currency";
 import { getMyCampaignApplicationsPage, type MarketplaceRole, type MyCampaignApplicationItem } from "../api/marketplace";
@@ -11,7 +12,8 @@ import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { RequestRow } from "../components/RequestRow";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
-const pageSize = 20;
+// Page by page (owner, 2026-11-20): 12 cards on a computer, 10 on a phone.
+const pageSize = listPageSize();
 
 export function BloggerApplications({ activeMarketplaceRole }: { activeMarketplaceRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
@@ -59,10 +61,9 @@ export function BloggerApplications({ activeMarketplaceRole }: { activeMarketpla
     {catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={retry} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}
     {!catalog.loading && !catalog.failure && catalog.items.length === 0 && <CatalogState icon={status == null ? "briefcase" : "filter"} onRetry={status == null ? undefined : () => setStatus(undefined)} subtitle={t(status == null ? "applications.emptySubtitle" : "applications.filteredEmptySubtitle")} title={t(status == null ? "applications.emptyTitle" : "applications.filteredEmptyTitle")} />}
     <div className="request-list">{catalog.items.map((item) => <RequestRow ariaLabel={t("applications.openAria", { title: item.campaignTitle })} href={`#/my-application/${item.id}`} imageUrl={item.businessAvatarUrl} key={item.id} meta={t("applications.sentAt", { date: formatShortDate(item.createdAtUtc, language) })} name={item.businessName} status={<Badge tone={campaignApplicationStatusTone(item.status)}>{t(campaignApplicationStatusLabelKey(item.status))}</Badge>} title={item.campaignTitle} />)}</div>
-    {catalog.hasMore && <div aria-hidden="true" ref={sentinelRef} />}
     {catalog.loadingMore && <SearchSkeleton compact count={2} />}
     {catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void catalog.load(catalog.page + 1, true)} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}
-    {catalog.loadedInitialResult && !catalog.hasMore && catalog.items.length > 0 && <p className="catalog-search__end">{t("applications.end")}</p>}
+    <Pager disabled={catalog.loading} onChange={(next) => void catalog.load(next, false, true)} page={catalog.page} pageSize={pageSize} total={catalog.total} />
   </section>;
 }
 

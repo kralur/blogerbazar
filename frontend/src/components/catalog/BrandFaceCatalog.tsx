@@ -1,3 +1,4 @@
+import { Pager, listPageSize } from "./Pager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { spokenLanguageLabelKey, spokenLanguages } from "../../lib/languages";
 import { getBrandFaceCatalog, getCategories, type BrandFaceCatalogFilters, type BrandFaceCatalogSort, type BrandFaceCatalogItem } from "../../api/marketplace";
@@ -17,7 +18,8 @@ import { ListHero } from "../ListHero";
 import { PageHeader } from "../PageHeader";
 import { useScreenRefresh } from "../../hooks/useScreenRefresh";
 
-const pageSize = 20;
+// Page by page (owner, 2026-11-20): 12 cards on a computer, 10 on a phone.
+const pageSize = listPageSize();
 const filterSheetId = "brand-face-search-filters";
 const defaultFilters: BrandFaceCatalogFilters = { sort: "promoted", pageSize };
 
@@ -195,10 +197,9 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
       {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "search.brandFaceLoadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "search.brandFaceLoadFailedTitle")} />}
       {items.map((profile) => <BrandFaceCard key={profile.id} profile={profile} />)}
       {items.length > 0 && <>
-        <div aria-hidden="true" ref={sentinelRef} />
         {loadingMore && <SearchSkeleton compact count={2} />}
         {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void load(page + 1, true)} subtitle={t("search.brandFaceLoadFailedSubtitle")} title={t("search.brandFaceLoadFailedTitle")} />}
-        {loadedInitialResult && !hasMore && !loadingMore && !loadMoreFailed && <p className="catalog-search__end">{t("search.brandFaceEndOfList")}</p>}
+        <Pager disabled={loading} onChange={(next) => void load(next, false, true)} page={page} pageSize={pageSize} total={total} />
       </>}
     </section>
   </div>;

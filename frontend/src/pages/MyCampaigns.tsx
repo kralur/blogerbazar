@@ -1,3 +1,4 @@
+import { Pager, listPageSize } from "../components/catalog/Pager";
 import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentPlatformUser, getMyCampaigns, normalizeMarketplaceRole, type MyCampaign, type MyCampaignQuery, type MyCampaignSort, type MyCampaignStatus } from "../api/marketplace";
@@ -16,7 +17,8 @@ import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
-const pageSize = 20;
+// Page by page (owner, 2026-11-20): 12 cards on a computer, 10 on a phone.
+const pageSize = listPageSize();
 const defaultQuery: MyCampaignQuery = { sort: "newest", pageSize };
 
 export function MyCampaigns() {
@@ -135,10 +137,9 @@ export function MyCampaigns() {
       {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={retry} subtitle={t(failure === "offline" ? "myCampaigns.offlineSubtitle" : "myCampaigns.errorSubtitle")} title={t(failure === "offline" ? "myCampaigns.offlineTitle" : "myCampaigns.errorTitle")} />}
       {!loading && !failure && items.length === 0 && <CatalogState actionLabel={hasFilters ? t("myCampaigns.clearFilters") : t("myCampaigns.create")} icon={hasFilters ? "filter" : "briefcase"} onRetry={hasFilters ? reset : canOperate ? () => { window.location.hash = "/campaigns?create=1"; } : undefined} subtitle={t(hasFilters ? "myCampaigns.filteredEmptySubtitle" : "myCampaigns.emptySubtitle")} title={t(hasFilters ? "myCampaigns.filteredEmptyTitle" : "myCampaigns.emptyTitle")} />}
       {loadedInitialResult && items.map((campaign) => <MyCampaignCard campaign={campaign} key={campaign.id} onMenuResult={canOperate ? onMenuResult : undefined} />)}
-      {hasMore && <div aria-hidden="true" ref={sentinelRef} />}
       {loadingMore && <SearchSkeleton compact count={2} />}
       {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={retryMore} subtitle={t("myCampaigns.loadMoreSubtitle")} title={t("myCampaigns.loadMoreTitle")} />}
-      {loadedInitialResult && !hasMore && !loadingMore && !loadMoreFailed && items.length > 0 && <p className="catalog-search__end">{t("myCampaigns.endOfList")}</p>}
+      <Pager disabled={loading} onChange={(next) => void load(next, false, true)} page={page} pageSize={pageSize} total={total} />
     </section>
     </>}
     <Toast key={toast?.id} message={toast?.message ?? ""} tone={toast?.tone ?? "success"} />

@@ -1,3 +1,4 @@
+import { Pager, listPageSize } from "../components/catalog/Pager";
 import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { notifyActionCountsChanged } from "../features/actionCounts/ActionCountsProvider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -17,7 +18,8 @@ import { PageHeader } from "../components/PageHeader";
 import { RequestRow } from "../components/RequestRow";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
-const pageSize = 20;
+// Page by page (owner, 2026-11-20): 12 cards on a computer, 10 on a phone.
+const pageSize = listPageSize();
 
 export function MyCampaignApplications({ campaignId }: { campaignId: string }) {
   const { language, t } = useI18n();
@@ -119,7 +121,7 @@ export function MyCampaignApplications({ campaignId }: { campaignId: string }) {
   <p className="request-card__message">{item.message ?? t("applications.noMessage")}</p>
   {canOperate && canAcceptCampaignApplication(item.status) && <div className="mt-3 grid grid-cols-2 gap-2"><Button disabled={deciding} onClick={() => setDecision({ item, value: "reject" })} type="button" variant="secondary">{t("applications.reject")}</Button><Button disabled={deciding} onClick={() => setDecision({ item, value: "accept" })} type="button">{t("applications.accept")}</Button></div>}
   {item.dealId && <Button className="mt-3 w-full" onClick={() => { window.location.hash = dealRoute(item.dealId!); }} type="button" variant="secondary">{t("deals.open")}</Button>}
-</article>)}</div>}{catalog.hasMore && <div aria-hidden="true" ref={sentinelRef} />}{catalog.loadingMore && <SearchSkeleton compact count={2} />}{catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void catalog.load(catalog.page + 1, true)} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}{catalog.loadedInitialResult && !catalog.hasMore && catalog.items.length > 0 && <p className="catalog-search__end">{t("applications.end")}</p>}</section><Modal onClose={() => !deciding && setDecision(null)} open={Boolean(decision)} title={t(decision?.value === "accept" ? "applications.acceptTitle" : "applications.rejectTitle")}>{decision && <><p className="text-sm leading-6 text-brand-muted">{t(decision.value === "accept" ? "applications.acceptDescription" : "applications.rejectDescription")}</p><div className="mt-5 modal-actions"><Button disabled={deciding} onClick={() => setDecision(null)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={deciding} onClick={decide} type="button" variant={decision.value === "reject" ? "danger" : "primary"}>{deciding ? t("applications.deciding") : t(decision.value === "accept" ? "applications.accept" : "applications.reject")}</Button></div></>}</Modal><Toast message={toast} tone={toastTone} /><BottomNav /></div>;
+</article>)}</div>}{catalog.loadingMore && <SearchSkeleton compact count={2} />}{catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void catalog.load(catalog.page + 1, true)} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}<Pager disabled={catalog.loading} onChange={(next) => void catalog.load(next, false, true)} page={catalog.page} pageSize={pageSize} total={catalog.total} /></section><Modal onClose={() => !deciding && setDecision(null)} open={Boolean(decision)} title={t(decision?.value === "accept" ? "applications.acceptTitle" : "applications.rejectTitle")}>{decision && <><p className="text-sm leading-6 text-brand-muted">{t(decision.value === "accept" ? "applications.acceptDescription" : "applications.rejectDescription")}</p><div className="mt-5 modal-actions"><Button disabled={deciding} onClick={() => setDecision(null)} type="button" variant="secondary">{t("common.cancel")}</Button><Button disabled={deciding} onClick={decide} type="button" variant={decision.value === "reject" ? "danger" : "primary"}>{deciding ? t("applications.deciding") : t(decision.value === "accept" ? "applications.accept" : "applications.reject")}</Button></div></>}</Modal><Toast message={toast} tone={toastTone} /><BottomNav /></div>;
 }
 
 function statusOptions(t: (key: string) => string): string[][] { return [["", t("applications.status.all")], ...([0, 1, 2, 3, 4] as CampaignApplicationStatus[]).map((status) => [String(status), t(campaignApplicationStatusLabelKey(status, true))])]; }

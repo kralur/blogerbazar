@@ -1,3 +1,4 @@
+import { Pager, listPageSize } from "../components/catalog/Pager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getBloggers, getCategories, type BloggerSearchFilters } from "../api/marketplace";
 import { BloggerCard, type BloggerCardData } from "../components/BloggerCard";
@@ -17,7 +18,8 @@ import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
-const pageSize = 20;
+// Page by page (owner, 2026-11-20): 12 cards on a computer, 10 on a phone.
+const pageSize = listPageSize();
 const defaultFilters: BloggerSearchFilters = { sort: "popular", pageSize };
 const filterSheetId = "blogger-search-filters";
 
@@ -221,10 +223,9 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
       {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t(failure === "offline" ? "ui.offlineSubtitle" : "search.loadFailedSubtitle")} title={t(failure === "offline" ? "ui.offlineTitle" : "search.loadFailedTitle")} />}
       {bloggers.map((blogger) => <BloggerCard blogger={blogger} key={blogger.id} />)}
       {bloggers.length > 0 && <>
-        <div aria-hidden="true" ref={sentinelRef} />
         {loadingMore && <SearchSkeleton compact count={2} />}
         {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={() => void load(page + 1, true)} subtitle={t("search.loadFailedSubtitle")} title={t("search.loadFailedTitle")} />}
-        {loadedInitialResult && !hasMore && !loadingMore && !loadMoreFailed && <p className="catalog-search__end">{t("search.endOfList")}</p>}
+        <Pager disabled={loading} onChange={(next) => void load(next, false, true)} page={page} pageSize={pageSize} total={total} />
       </>}
     </section>
   </div>;
