@@ -288,7 +288,8 @@ describe("Complaints", () => {
     });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Разбор жалобы" })).toBeInTheDocument();
-    const accused = screen.getByRole("heading", { name: "На кого жалоба" }).closest("section")!;
+    // The page heading comes with the shell; the case itself arrives with its own request, so wait for it.
+    const accused = (await screen.findByRole("heading", { name: "На кого жалоба" })).closest("section")!;
     expect(within(accused).getByRole("link", { name: "Aziz" })).toHaveAttribute("href", "/users/77");
     expect(within(accused).getByText("2,7")).toBeInTheDocument();
     expect(within(accused).getByText("1 из 5 · Cafe · 05.10.2026")).toBeInTheDocument();
