@@ -1,3 +1,4 @@
+import { pluralKey } from "../lib/plural";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ReportButton } from "../components/ReportButton";
 import { ApiError, getApiErrorMessage } from "../api/client";
@@ -124,10 +125,11 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
 
 // Time to answer, rounded down: days while a day or more remains, then hours; urgent under 12 hours.
 function OfferTimeLeft({ expiresAtUtc }: { expiresAtUtc: string }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const msLeft = new Date(expiresAtUtc).getTime() - Date.now();
   if (!(msLeft > 0)) return null;
   const hours = Math.floor(msLeft / 3_600_000);
-  const text = hours < 1 ? t("offers.timeLeftUnderHour") : hours < 24 ? t("offers.timeLeftHours", { count: hours }) : t("offers.timeLeftDays", { count: Math.floor(hours / 24) });
+  // An offer lives 48 hours: counted in hours up to that (rounding down to "1 day" read as half the time gone).
+  const text = hours < 1 ? t("offers.timeLeftUnderHour") : hours <= 48 ? t(pluralKey(hours, language, "offers.timeLeftHours"), { count: hours }) : t("offers.timeLeftDays", { count: Math.floor(hours / 24) });
   return <p className={`offer-respond__left${hours < 12 ? " offer-respond__left--urgent" : ""}`} role="status">{text}</p>;
 }

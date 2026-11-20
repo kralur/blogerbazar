@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useProfileDataRefresh } from "../hooks/useProfileDataRefresh";
 import { getMyBusinessProfile } from "../api/marketplace";
+import { getTeam } from "../api/team";
 import { ActionBadge, useActionCounts } from "../features/actionCounts/ActionCountsProvider";
 import { useI18n } from "../i18n";
 import { Icon, isNavItemActive } from "./ui";
@@ -28,6 +29,17 @@ export function DesktopNav() {
     // Until it is known, try again on the next page change (a request that failed at sign-in left the line blank).
   }, [profileVersion, company === null ? hash : ""]);
 
+  // A pending request to join the team shows as a count on the Team item (only for those who may let people in).
+  const [teamRequests, setTeamRequests] = useState(0);
+  const teamCheckedAt = useRef(0);
+  useEffect(() => {
+    if (Date.now() - teamCheckedAt.current < 15_000 && !hash.startsWith("#/team")) return;
+    teamCheckedAt.current = Date.now();
+    let active = true;
+    getTeam().then((team) => { if (active) setTeamRequests(team.canManage ? team.requests.length : 0); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [hash, profileVersion]);
+
   const main = [
     { href: "#/", label: t("nav.home"), icon: "home" },
     { href: "#/search", label: t("nav.search"), icon: "search" },
@@ -50,7 +62,7 @@ export function DesktopNav() {
       </li>)}
     </ul>
     <ul className="desktop-nav__items desktop-nav__items--secondary">
-      <li><a aria-current={hash.startsWith("#/team") ? "page" : undefined} className="desktop-nav__item" href="#/team"><Icon className="h-5 w-5" name="users" /><span>{t("team.title")}</span></a></li>
+      <li><a aria-current={hash.startsWith("#/team") ? "page" : undefined} className="desktop-nav__item" href="#/team"><Icon className="h-5 w-5" name="users" /><span>{t("team.title")}</span><ActionBadge count={teamRequests} label={t("team.requestsBadge", { count: teamRequests })} /></a></li>
       <li><a aria-current={hash.startsWith("#/favorites") ? "page" : undefined} className="desktop-nav__item" href="#/favorites"><Icon className="h-5 w-5" name="heart" /><span>{t("favorites.profileTitle")}</span></a></li>
       <li><a aria-current={hash.startsWith("#/settings") ? "page" : undefined} className="desktop-nav__item" href="#/settings"><Icon className="h-5 w-5" name="settings" /><span>{t("profile.settings")}</span></a></li>
     </ul>
