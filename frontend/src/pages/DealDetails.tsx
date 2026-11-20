@@ -136,7 +136,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
   if (!deal || state !== "ready") {
     const title = state === "denied" ? t("deals.deniedTitle") : state === "not-found" ? t("deals.notFoundTitle") : t("deals.errorTitle");
     const subtitle = state === "denied" ? t("deals.deniedSubtitle") : state === "not-found" ? t("deals.notFoundSubtitle") : t("deals.errorSubtitle");
-    return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/requests", label: t("nav.requests") }} /><ErrorState onRetry={state === "error" ? load : undefined} subtitle={subtitle} title={title} />{(state === "not-found" || state === "denied") && <SwitchRoleHint />}<BottomNav /></div>;
+    return <div className="screen screen--with-nav detail-error-screen"><PageHeader back={{ href: "#/requests", label: t("nav.requests") }} /><ErrorState onRetry={state === "error" ? load : undefined} subtitle={subtitle} title={title} />{(state === "not-found" || state === "denied") && <SwitchRoleHint />}<BottomNav /></div>;
   }
 
   const formatDate = (value: string) => formatShortDate(value, language, { year: true });

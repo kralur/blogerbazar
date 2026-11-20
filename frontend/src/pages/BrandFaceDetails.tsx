@@ -1,3 +1,4 @@
+import { ApiError } from "../api/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBrandFace, getBrandFaceReviews, getCurrentPlatformUser, getPublicContact, normalizeMarketplaceRole, type ContactDetails, type MarketplaceRole, type BrandFaceDetails as BrandFaceDetailsModel, type BusinessReviews } from "../api/marketplace";
 import { Avatar, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, LoadingState, Rating, Toast } from "../components/ui";
@@ -26,6 +27,8 @@ export function BrandFaceDetails({ id }: { id: string }) {
   const [profile, setProfile] = useState<BrandFaceDetailsModel | null>(() => getCachedPublicDetail<BrandFaceDetailsModel>("brand-face", id));
   const [loading, setLoading] = useState(() => !getCachedPublicDetail<BrandFaceDetailsModel>("brand-face", id));
   const [failed, setFailed] = useState(false);
+  // 404: the page is gone (deleted or hidden), not a connection problem; no "Retry".
+  const [notFound, setNotFound] = useState(false);
   const [reviews, setReviews] = useState<BusinessReviews | null>(null);
   const [role, setRole] = useState<MarketplaceRole>();
   // D31: Telegram and phone come only for the business in a deal with this brand face; everyone else gets 404.
@@ -51,6 +54,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
     else setProfile(null);
     setLoading(!cached);
     setFailed(false);
+    setNotFound(false);
     // D46: a brand face is reviewed after a completed deal, like a blogger.
     getBrandFaceReviews(id, undefined, { take: reviewCarouselLimit }).then((response) => {
       if (requestId === requestIdRef.current) setReviews(response);
@@ -59,9 +63,10 @@ export function BrandFaceDetails({ id }: { id: string }) {
       if (requestId !== requestIdRef.current) return;
       setCachedPublicDetail("brand-face", id, response);
       setProfile(response);
-    }).catch(() => {
+    }).catch((error) => {
       if (requestId !== requestIdRef.current) return;
       setFailed(true);
+      setNotFound(error instanceof ApiError && error.status === 404);
       if (!cached) setProfile(null);
     }).finally(() => {
       if (requestId === requestIdRef.current) setLoading(false);
@@ -75,7 +80,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
   useScreenRefresh(load);
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
-  if (!profile) return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/", label: t("common.back") }} /><ErrorState onRetry={load} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!profile) return <div className="screen screen--with-nav detail-error-screen"><PageHeader back={{ href: "#/", label: t("common.back") }} /><ErrorState onRetry={notFound ? undefined : load} subtitle={t(notFound ? "common.pageNotFoundSubtitle" : "common.connectionRetry")} title={t(notFound ? "common.pageNotFoundTitle" : "common.openFailed")} /><BottomNav /></div>;
   const contacts = [
     contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
     contact?.telegram ? { kind: "telegram" as const, value: contact.telegram } : null,
