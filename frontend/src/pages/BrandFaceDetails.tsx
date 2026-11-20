@@ -1,3 +1,4 @@
+import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { ApiError } from "../api/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBrandFace, getBrandFaceReviews, getCurrentPlatformUser, getPublicContact, normalizeMarketplaceRole, type ContactDetails, type MarketplaceRole, type BrandFaceDetails as BrandFaceDetailsModel, type BusinessReviews } from "../api/marketplace";
@@ -31,6 +32,9 @@ export function BrandFaceDetails({ id }: { id: string }) {
   const [notFound, setNotFound] = useState(false);
   const [reviews, setReviews] = useState<BusinessReviews | null>(null);
   const [role, setRole] = useState<MarketplaceRole>();
+  // A team viewer (D64) does not send offers.
+  const canOperate = useBusinessCanOperate(role === "Business");
+  const offersAllowed = role === "Business" && canOperate;
   // D31: Telegram and phone come only for the business in a deal with this brand face; everyone else gets 404.
   const [contact, setContact] = useState<ContactDetails | null>(null);
   useEffect(() => {
@@ -97,7 +101,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
     cityLabel(profile.city, language)
   ].filter(Boolean).join(" · ");
   const open = (href: string) => { if (openLink) openLink(href); else window.open(href, "_blank", "noopener,noreferrer"); };
-  const offerAction = role === "Business" && !profile.isHidden ? <Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button> : null;
+  const offerAction = offersAllowed && !profile.isHidden ? <Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button> : null;
   return <div className="screen screen--with-nav">
     <ListHero className="detail-hero">
     <PageHeader actions={<><FavoriteButton brandFaceId={profile.id} /></>} back={{ href: "#/", label: t("common.back") }} />
@@ -120,7 +124,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
     {(profile.description || profile.experience) && <DetailSection title={t("brandFace.aboutTitle")}><Card>{profile.description && <p className="text-sm leading-6 text-brand-muted">{profile.description}</p>}{profile.experience && <><h3 className={`${profile.description ? "mt-4 " : ""}text-sm font-extrabold`}>{t("brandFace.experienceTitle")}</h3><p className="mt-1 text-sm leading-6 text-brand-muted">{profile.experience}</p></>}</Card></DetailSection>}
     {reviews && <ReviewsSection allHref={`#/brand-face-reviews/${profile.id}`} count={reviews.reviewsCount} emptyText={t("details.noReviews")} rating={reviews.reviewsCount > 0 ? reviews.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews.items} title={t("details.reviews")} />}
     </DetailLayout>
-    {role === "Business" && !profile.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
+    {offersAllowed && !profile.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => setOfferOpen(true)} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm brandFaceId={profile.id} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sentBrandFace")); }} open={offerOpen} />
     <Toast message={toast} />
     <BottomNav />

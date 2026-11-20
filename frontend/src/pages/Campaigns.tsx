@@ -1,3 +1,4 @@
+import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { myCampaignsFeedbackKey } from "../components/CampaignActionsMenu";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
@@ -109,7 +110,9 @@ export function Campaigns() {
   const activeChips = useMemo(() => buildActiveChips(appliedFilters, language, t), [appliedFilters, language, t]);
   const filterError = getFilterError(draftFilters, t);
   const hasFilterOrQuery = activeChips.length > 0 || Boolean(debouncedQuery.trim());
-  const canCreate = createCapability === "ready";
+  // A team viewer (D64) does not create campaigns.
+  const canOperate = useBusinessCanOperate(createCapability === "ready");
+  const canCreate = createCapability === "ready" && canOperate;
 
   // Created from My campaigns: the new campaign opens, so the user lands back among their own campaigns.
   const openedFromMyCampaigns = useRef(false);

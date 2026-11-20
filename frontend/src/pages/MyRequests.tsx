@@ -1,3 +1,4 @@
+import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { useCallback, useEffect, useState } from "react";
 import {
   acceptCampaignApplication,
@@ -44,6 +45,8 @@ function awaitsAnswer(request: MyCampaignApplication) {
 
 export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
+  // A team viewer (D64) sees the company's applications without Accept / Reject.
+  const canOperate = useBusinessCanOperate(activeMarketplaceRole === "Business");
   useScrollRestoration("requests");
   const applicationStatusLabels: Record<CampaignApplicationStatus, string> = {
     // The company received it: "new", not "sent".
@@ -212,7 +215,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       )}
 
       <Modal onClose={() => setSelectedRequest(null)} open={Boolean(selectedRequest)} title={selectedRequest?.campaignTitle ?? t("requests.title")}>
-        {selectedRequest && <><CounterpartyRow href={selectedRequest.counterpartyProfileId ? profileRoute(selectedRequest.counterpartyRole ?? "blogger", selectedRequest.counterpartyProfileId) : null} imageUrl={selectedRequest.counterpartyImageUrl} label={t(selectedRequest.counterpartyRole === "brandFace" ? "offers.counterpartyBrandFace" : "offers.counterpartyBlogger")} name={selectedRequest.counterpartyName} /><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status)
+        {selectedRequest && <><CounterpartyRow href={selectedRequest.counterpartyProfileId ? profileRoute(selectedRequest.counterpartyRole ?? "blogger", selectedRequest.counterpartyProfileId) : null} imageUrl={selectedRequest.counterpartyImageUrl} label={t(selectedRequest.counterpartyRole === "brandFace" ? "offers.counterpartyBrandFace" : "offers.counterpartyBlogger")} name={selectedRequest.counterpartyName} /><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{canOperate && selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status)
           // Accepting creates a deal, so it asks first, as on the campaign's applications page; rejecting is here too.
           ? pendingDecision ? <div className="mt-4 grid gap-2"><p className="text-sm font-semibold">{t(pendingDecision === "accept" ? "applications.acceptDescription" : "applications.rejectDescription")}</p><div className="modal-actions"><Button disabled={deciding} onClick={() => setPendingDecision(null)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={deciding} disabled={deciding} onClick={() => void decide(selectedRequest, pendingDecision)} type="button" variant={pendingDecision === "reject" ? "danger" : undefined}>{t(pendingDecision === "accept" ? "applications.accept" : "applications.reject")}</Button></div></div>
             : <div className="mt-4 modal-actions"><Button onClick={() => setPendingDecision("reject")} type="button" variant="secondary">{t("applications.reject")}</Button><Button onClick={() => setPendingDecision("accept")} type="button">{t("applications.accept")}</Button></div>
