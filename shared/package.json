@@ -13,6 +13,7 @@
     "./funnel/ru.json": "./funnel/ru.json",
     "./funnel/uz.json": "./funnel/uz.json",
     "./admin/ru.json": "./admin/ru.json",
-    "./admin/uz.json": "./admin/uz.json"
+    "./admin/uz.json": "./admin/uz.json",
+    "./uzbekScript": "./uzbekScript.ts"
   }
 }

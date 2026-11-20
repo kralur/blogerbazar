@@ -25,9 +25,12 @@ const themeOptions = (): Array<{ value: ThemePreference; labelKey: string }> => 
   { value: "dark", labelKey: "settings.themeDark" }
 ];
 
+const newScriptSample = "\u00d6, \u015e";
+const oldScriptSample = "O\u02bb, Sh";
+
 // onBrowserSignedOut: in a browser session (D64 stage B), this browser has just been signed out.
 export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionReset?: () => void; onBrowserSignedOut?: () => void }) {
-  const { language, t } = useI18n();
+  const { language, t, uzbekScript, setUzbekScript } = useI18n();
   // On the website Settings and Saved have their own side-menu items; "Profile" above them would contradict it.
   const desktop = useIsDesktop();
   const { haptic } = useTelegram();
@@ -118,6 +121,15 @@ export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionRese
     </>}>
     <div className="settings-list">
       <div className="settings-row"><span className="settings-row__text"><strong>{t("language.interface")}</strong></span><LanguageSwitcher /></div>
+      {/* Uzbek alphabet (law of 21 October 2026): the new letters by default, the old ones for those used to them.
+          The sample letters are passed as values so the new-alphabet conversion does not touch them. */}
+      {language === "uz" && <div className="settings-row settings-row--stacked">
+        <span className="settings-row__text"><strong>{t("settings.uzScript")}</strong><span className="text-sm text-brand-muted">{t("settings.uzScriptHint")}</span></span>
+        <div aria-label={t("settings.uzScript")} className="language-switcher language-switcher--three language-switcher--two" role="group">
+          <button aria-pressed={uzbekScript === "new"} className="language-switcher__option" onClick={() => setUzbekScript("new")} type="button">{t("settings.uzScriptNew", { sample: newScriptSample })}</button>
+          <button aria-pressed={uzbekScript === "old"} className="language-switcher__option" onClick={() => setUzbekScript("old")} type="button">{t("settings.uzScriptOld", { sample: oldScriptSample })}</button>
+        </div>
+      </div>}
       <div className="settings-row settings-row--stacked">
         <span className="settings-row__text"><strong>{t("settings.theme")}</strong></span>
         <div aria-label={t("settings.theme")} className="language-switcher language-switcher--three" role="group">

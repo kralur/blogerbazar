@@ -7,8 +7,9 @@ import funnelUz from "@bloggerbazar/shared/funnel/uz.json";
 import adminRu from "@bloggerbazar/shared/admin/ru.json";
 import adminUz from "@bloggerbazar/shared/admin/uz.json";
 import ru from "./ru.json";
+import { toNewUzbekDictionary, type UzbekScript } from "@bloggerbazar/shared/uzbekScript";
 
-export type { Language };
+export type { Language, UzbekScript };
 export { russianPluralForm };
 // City and category names, the funnel texts and the admin labels (roles, journal, complaints) are shared with the web
 // admin (shared/taxonomy, shared/funnel, shared/admin).
@@ -27,6 +28,7 @@ export function loadLanguage(language: Language): Promise<void> {
   uzLoading ??= import("./uz.json").then((module) => {
     Object.assign(dictionaries.uz, module.default);
     loadedLanguages.uz = true;
+    newLatinUz = undefined;
   }).catch((error: unknown) => {
     uzLoading = undefined;
     throw error;
@@ -57,9 +59,27 @@ export function currentLanguage(): Language {
   return storedLanguage() ?? telegramLanguage() ?? "ru";
 }
 
+// Uzbek alphabet (law of 21 October 2026): the new one by default, the old one if the user chooses it (Settings).
+// The texts are written in the old alphabet; the new-alphabet dictionary is derived once and rebuilt after loading.
+const scriptKey = "bloggerbazar.uzScript";
+let uzScript: UzbekScript = (() => {
+  try { return localStorage.getItem(scriptKey) === "old" ? "old" : "new"; } catch { return "new"; }
+})();
+let newLatinUz: Dictionary | undefined;
+function dictionariesForScript() {
+  if (uzScript === "old") return dictionaries;
+  newLatinUz ??= toNewUzbekDictionary(dictionaries.uz);
+  return { ru: dictionaries.ru, uz: newLatinUz };
+}
+export const currentUzbekScript = () => uzScript;
+export function setUzbekScript(script: UzbekScript) {
+  uzScript = script;
+  try { localStorage.setItem(scriptKey, script); } catch {}
+}
+
 // Plural forms and {param} placeholders: the shared i18n core (shared/i18n.ts).
 export function translate(key: string, values?: Values, language = currentLanguage()) {
-  return formatMessage(dictionaries, language, key, values);
+  return formatMessage(language === "uz" ? dictionariesForScript() : dictionaries, language, key, values);
 }
 
 const categoryAliases: Record<string, string> = {
@@ -86,11 +106,12 @@ export const cityLabel = (value: string, language = currentLanguage()) => {
   return label === key ? translate("common.notSpecified", undefined, language) : label;
 };
 
-type I18nContextValue = { language: Language; setLanguage: (language: Language) => void; t: (key: string, values?: Values) => string };
+type I18nContextValue = { language: Language; setLanguage: (language: Language) => void; uzbekScript: UzbekScript; setUzbekScript: (script: UzbekScript) => void; t: (key: string, values?: Values) => string };
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(currentLanguage);
+  const [script, setScriptState] = useState<UzbekScript>(currentUzbekScript);
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -102,8 +123,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       // The screens switch once the dictionary is here; a failed download keeps the current language.
       void loadLanguage(nextLanguage).then(() => setLanguageState(nextLanguage)).catch(() => undefined);
     },
+    uzbekScript: script,
+    setUzbekScript: (nextScript) => { setUzbekScript(nextScript); setScriptState(nextScript); },
     t: (key, values) => translate(key, values, language)
-  }), [language]);
+  }), [language, script]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
