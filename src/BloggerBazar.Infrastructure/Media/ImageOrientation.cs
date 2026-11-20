@@ -31,7 +31,7 @@ internal static class ImageOrientation
         using (var canvas = new SKCanvas(oriented))
         {
             canvas.SetMatrix(matrix);
-            canvas.DrawBitmap(source, 0, 0);
+            canvas.DrawBitmap(source, 0, 0, SKSamplingOptions.Default);
         }
 
         source.Dispose();

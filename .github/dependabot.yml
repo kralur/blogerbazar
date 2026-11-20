@@ -43,6 +43,13 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    groups:
+      # The managed SkiaSharp library and its native binaries must be the same version: SkiaSharp alone does not
+      # restore, and the Linux binary alone builds and then throws on every picture (checked 2026-11-20).
+      skiasharp:
+        patterns:
+          - "SkiaSharp"
+          - "SkiaSharp.*"
     ignore:
       # MediatR 13 and later are no longer Apache-2.0: RPL-1.5 (publish your own source) or a paid licence key.
       # The project stays on 12.x; moving on is a product decision, not a version bump.
@@ -59,6 +66,9 @@ updates:
       - dependency-name: "Microsoft.Extensions.*"
         update-types: ["version-update:semver-major"]
       - dependency-name: "Npgsql.EntityFrameworkCore.PostgreSQL"
+        update-types: ["version-update:semver-major"]
+      # Serilog.AspNetCore follows the runtime line too: 11 brings Microsoft.Extensions 11 into a .NET 10 process.
+      - dependency-name: "Serilog.AspNetCore"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
