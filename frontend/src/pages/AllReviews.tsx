@@ -1,3 +1,4 @@
+import { reviewsLabel } from "../lib/plural";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBloggerReviews, getBrandFaceReviews, getBusinessReviews, type BloggerDetails, type BloggerReview, type BrandFaceDetails, type PublicBusinessProfile } from "../api/marketplace";
 import { ReviewList } from "../components/details/DetailBlocks";
@@ -12,7 +13,7 @@ const pageSize = 20;
 
 // Every published review of a blogger, a brand face or a business, newest first, loaded page by page.
 export function AllReviews({ target, id }: { target: "blogger" | "brandFace" | "business"; id: string }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const cached = target === "blogger" ? getCachedPublicDetail<BloggerDetails>("blogger", id) : target === "business" ? getCachedPublicDetail<PublicBusinessProfile>("business", id) : null;
   const cachedName = cached?.name ?? (target === "brandFace" ? getCachedPublicDetail<BrandFaceDetails>("brand-face", id)?.name : undefined);
   const [reviews, setReviews] = useState<BloggerReview[]>([]);
@@ -58,7 +59,7 @@ export function AllReviews({ target, id }: { target: "blogger" | "brandFace" | "
   if (failed && reviews.length === 0) return <div className="screen screen--with-nav"><PageHeader back={back} title={title} /><ErrorState onRetry={() => load(0)} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   return <div className="screen screen--with-nav">
     <PageHeader back={back} eyebrow={cachedName} title={title} />
-    {summary && summary.count > 0 && <p className="all-reviews__summary">{summary.rating != null && <><span aria-hidden="true" className="text-brand-warning">★</span> {formatRating(summary.rating)} · </>}{t("common.reviews", { count: summary.count })}</p>}
+    {summary && summary.count > 0 && <p className="all-reviews__summary">{summary.rating != null && <><span aria-hidden="true" className="text-brand-warning">★</span> {formatRating(summary.rating)} · </>}{reviewsLabel(summary.count, language, t)}</p>}
     <div className="mt-4"><ReviewList emptyText={target === "business" ? t("campaign.noBusinessReviews") : t("details.noReviews")} reviewerRoute={(profileId, role) => target === "business" ? profileRoute(role ?? "blogger", profileId) : `#/company/${profileId}`} reviews={reviews} /></div>
     {failed && <p className="mt-3 text-sm text-brand-muted" role="status">{t("common.connectionRetry")}</p>}
     {hasMore && <Button aria-busy={loadingMore} className="mt-4 w-full" disabled={loadingMore} onClick={() => load(reviews.length)} type="button" variant="secondary">{t("applications.loadMore")}</Button>}

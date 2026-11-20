@@ -96,7 +96,7 @@ describe("Campaign safety foundation", () => {
 
   it("has localized labels for every backend application status", () => {
     for (const language of ["ru", "uz"] as const) {
-      expect(translate("requests.applicationSent", undefined, language)).not.toBe("requests.applicationSent");
+      expect(translate("applications.status.new", undefined, language)).not.toBe("applications.status.new");
       expect(translate("requests.applicationViewed", undefined, language)).not.toBe("requests.applicationViewed");
       expect(translate("requests.applicationAccepted", undefined, language)).not.toBe("requests.applicationAccepted");
       expect(translate("requests.applicationRejected", undefined, language)).not.toBe("requests.applicationRejected");
@@ -217,7 +217,7 @@ describe("Campaign safety foundation", () => {
     renderDetails();
 
     expect(await screen.findByText(translate("campaign.businessReviews", undefined, "ru"))).toBeInTheDocument();
-    expect(document.querySelector(".reviews-heading__summary")?.textContent).toBe("★ 4,5 · 2");
+    expect(document.querySelector(".reviews-heading__summary")?.textContent).toBe("★ 4,5 · 2 отзыва");
     expect(screen.getByRole("link", { name: translate("reviews.showAll", undefined, "ru") })).toHaveAttribute("href", "#/company-reviews/business-a");
     expect(screen.getByText("Clear brief, fast payment")).toBeInTheDocument();
     expect(api.getBusinessReviews).toHaveBeenCalledWith("business-a", expect.any(AbortSignal));

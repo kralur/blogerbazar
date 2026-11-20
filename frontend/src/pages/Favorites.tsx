@@ -1,3 +1,4 @@
+import { useIsDesktop } from "../lib/desktopLayout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBrandFaceFavorites, getFavorites, type FavoriteBlogger, type FavoriteBrandFace } from "../api/marketplace";
 import { BloggerCard } from "../components/BloggerCard";
@@ -20,6 +21,8 @@ const pageSize = 20;
 
 export function Favorites() {
   const { t } = useI18n();
+  // On the website Settings and Saved have their own side-menu items; "Profile" above them would contradict it.
+  const desktop = useIsDesktop();
   const { canManageFavorite, ready } = useFavorites();
   const rootScreenVisible = useRootScreenVisibility();
   const canManageBrandFaceFavorites = canManageFavorite("brandFace");
@@ -31,7 +34,7 @@ export function Favorites() {
 
   return <div className="screen screen--with-nav">
     <ListHero>
-    <PageHeader back={{ href: "#/profile", label: t("favorites.backAria") }} eyebrow={t("profile.eyebrow")} title={activeTab === "brandFace" ? t("favorites.brandFacesTitle") : t("favorites.title")} />
+    <PageHeader back={{ href: "#/profile", label: t("favorites.backAria") }} eyebrow={desktop ? undefined : t("profile.eyebrow")} title={activeTab === "brandFace" ? t("favorites.brandFacesTitle") : t("favorites.title")} />
     {canManageBrandFaceFavorites && <div aria-label={t("favorites.creatorType")} className="catalog-search__segments mt-5" role="group">
       <FavoriteTabButton label={t("favorites.typeBloggers")} onClick={() => setActiveTab("blogger")} selected={activeTab === "blogger"} />
       <FavoriteTabButton label={t("favorites.typeBrandFaces")} onClick={() => setActiveTab("brandFace")} selected={activeTab === "brandFace"} />

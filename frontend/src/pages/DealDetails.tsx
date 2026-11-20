@@ -166,8 +166,8 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       <PageHeader actions={<><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge></>} back={{ href: "#/requests", label: t("nav.requests") }} />
       <p className="detail-hero__eyebrow">{t(dealSourceLabelKey(deal.sourceType))}</p>
       <h1 className="detail-hero__title">{terms?.title ?? (deal.offer ? t(offerFormatLabelKey(deal.offer.format)) : t("deals.source.collaborationRequest"))}</h1>
-      <CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
-      {viewerRole === "Business" && deal.campaignId && <CounterpartyRow href={`#/my-campaign/${deal.campaignId}`} icon="send" label={t("deals.campaign")} name={t("deals.openCampaign")} />}
+      <div className="detail-hero__rows"><CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
+      {viewerRole === "Business" && deal.campaignId && <CounterpartyRow href={`#/my-campaign/${deal.campaignId}`} icon="send" label={t("deals.campaign")} name={t("deals.openCampaign")} />}</div>
       <FactGrid className="hero-tags fact-grid--three" facts={heroFacts} />
     </ListHero>
     <DetailLayout footer={<>{!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}</>} top={<>

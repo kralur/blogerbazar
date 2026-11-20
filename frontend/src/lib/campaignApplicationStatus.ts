@@ -14,8 +14,9 @@ export function canAcceptCampaignApplication(status: CampaignApplicationStatus) 
 
 export const canWithdrawCampaignApplication = canAcceptCampaignApplication;
 
-export function campaignApplicationStatusLabelKey(status: CampaignApplicationStatus) {
-  if (status === CampaignApplicationStatus.Sent) return "applications.status.sent";
+// receiver: the company that got the application; "sent" from its side reads as "new".
+export function campaignApplicationStatusLabelKey(status: CampaignApplicationStatus, receiver = false) {
+  if (status === CampaignApplicationStatus.Sent) return receiver ? "applications.status.new" : "applications.status.sent";
   if (status === CampaignApplicationStatus.Viewed) return "applications.status.viewed";
   if (status === CampaignApplicationStatus.Accepted) return "applications.status.accepted";
   if (status === CampaignApplicationStatus.Rejected) return "applications.status.rejected";

@@ -1,3 +1,4 @@
+import { useIsDesktop } from "../lib/desktopLayout";
 import { useEffect, useState } from "react";
 import { signOutBrowser } from "../api/browserSessions";
 import { getCurrentPlatformUser, normalizeMarketplaceRole, peekCurrentPlatformUser, setBotTips } from "../api/marketplace";
@@ -27,6 +28,8 @@ const themeOptions = (): Array<{ value: ThemePreference; labelKey: string }> => 
 // onBrowserSignedOut: in a browser session (D64 stage B), this browser has just been signed out.
 export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionReset?: () => void; onBrowserSignedOut?: () => void }) {
   const { language, t } = useI18n();
+  // On the website Settings and Saved have their own side-menu items; "Profile" above them would contradict it.
+  const desktop = useIsDesktop();
   const { haptic } = useTelegram();
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
   // D63: five tiles, the standard design and the four seasons; "auto" follows the calendar and shows as its season.
@@ -103,7 +106,7 @@ export function Settings({ onSessionReset, onBrowserSignedOut }: { onSessionRese
   const state = [language.toUpperCase(), t(themeOptions().find((option) => option.value === theme)?.labelKey ?? "settings.themeTelegram"), shownSeason === "off" ? t("settings.seasonDefault") : t(`settings.season.${shownSeason}`)].join(" · ");
   return <div className="screen screen--with-nav space-y-5 px-4 pt-5">
     <ListHero className="detail-hero settings-hero">
-      <PageHeader back={{ href: "#/profile", label: t("nav.profile") }} eyebrow={t("profile.eyebrow")} title={t("profile.settings")} />
+      <PageHeader back={{ href: "#/profile", label: t("nav.profile") }} eyebrow={desktop ? undefined : t("profile.eyebrow")} title={t("profile.settings")} />
       <p className="settings-hero__state">{state}</p>
     </ListHero>
     <DetailLayout side={<>
