@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ReportButton } from "../components/ReportButton";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { acceptOffer, declineOffer, getMyOffer, type MarketplaceRole, type Offer } from "../api/marketplace";
-import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Toast } from "../components/ui";
+import { Avatar, Badge, BottomNav, Button, Card, ErrorState, LoadingState, Modal, Toast } from "../components/ui";
 import { SuccessMoment } from "../components/SuccessMoment";
 import { useI18n } from "../i18n";
 import { formatShortDate, formatCurrency } from "../lib/currency";
@@ -24,6 +24,8 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
   const [offer, setOffer] = useState<Offer | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [busy, setBusy] = useState(false);
+  // Declining cannot be undone, so it asks first (accepting opens the deal and is the main action).
+  const [declineOpen, setDeclineOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [tone, setTone] = useState<"success" | "error">("success");
   const [moment, setMoment] = useState<{ id: number; message: string; next?: string } | null>(null);
@@ -105,12 +107,16 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
     {offer.canRespond && <div className="offer-respond mt-5">
       {offer.expiresAtUtc && <OfferTimeLeft expiresAtUtc={offer.expiresAtUtc} />}
       <p className="offer-respond__hint">{t("offers.acceptHint")}</p>
-      <div className="modal-actions"><Button disabled={busy} onClick={() => decide(false)} type="button" variant="secondary">{t("offers.decline")}</Button><Button disabled={busy} onClick={() => decide(true)} type="button">{t("offers.accept")}</Button></div>
+      <div className="modal-actions"><Button disabled={busy} onClick={() => setDeclineOpen(true)} type="button" variant="secondary">{t("offers.decline")}</Button><Button disabled={busy} onClick={() => decide(true)} type="button">{t("offers.accept")}</Button></div>
     </div>}
     {offer.dealId && <Button className="mt-5 w-full" onClick={() => { window.location.hash = dealRoute(offer.dealId!); }} type="button">{t("deals.open")}</Button>}
     </>}>
     <DetailSection title={t("offers.message")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{offer.message}</p></Card></DetailSection>
     </DetailLayout>
+    <Modal onClose={() => { if (!busy) setDeclineOpen(false); }} open={declineOpen} title={t("offers.declineTitle")} variant="neutral">
+      <p className="text-sm leading-6 text-brand-muted">{t("offers.declineDescription")}</p>
+      <div className="mt-5 modal-actions"><Button disabled={busy} onClick={() => setDeclineOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={busy} disabled={busy} onClick={() => { setDeclineOpen(false); void decide(false); }} type="button" variant="danger">{t("offers.decline")}</Button></div>
+    </Modal>
     <SuccessMoment key={moment?.id} message={moment?.message ?? ""} onDone={() => { if (moment?.next) window.location.hash = moment.next; }} /><Toast message={toast} tone={tone} />
     <BottomNav />
   </div>;

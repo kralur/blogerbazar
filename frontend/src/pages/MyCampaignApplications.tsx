@@ -1,3 +1,4 @@
+import { notifyActionCountsChanged } from "../features/actionCounts/ActionCountsProvider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatShortDate } from "../lib/currency";
 import { ApiError, getApiErrorMessage } from "../api/client";
@@ -80,7 +81,8 @@ export function MyCampaignApplications({ campaignId }: { campaignId: string }) {
       const result = decision.value === "accept" ? await acceptMyCampaignApplication(decisionCampaignId, applicationId) : await rejectMyCampaignApplication(decisionCampaignId, applicationId);
       if (decisionId !== decisionRef.current || campaignIdRef.current !== decisionCampaignId) return;
       catalog.updateItem(result.id, (item) => ({ ...item, status: result.status, dealId: result.dealId ?? item.dealId }));
-      setDecision(null); setToastTone("success"); setToast(t(result.status === 2 ? "applications.status.accepted" : "applications.status.rejected"));
+      setDecision(null); setToastTone("success"); setToast(t(result.status === 2 ? "requests.accepted" : "applications.rejectedToast"));
+      notifyActionCountsChanged();
     } catch (error) {
       if (decisionId !== decisionRef.current || campaignIdRef.current !== decisionCampaignId) return;
       if (error instanceof ApiError && error.status === 409) {
@@ -88,7 +90,10 @@ export function MyCampaignApplications({ campaignId }: { campaignId: string }) {
         await catalog.load(1, false, true);
       } else if (error instanceof ApiError && error.status === 404) {
         setDecision(null); setResourceFailure("not-found");
-      } else if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+      } else if (error instanceof ApiError && error.status === 403) {
+        // A team role without this right (D64): say so and keep the list, not "no access" over the whole page.
+        setDecision(null); setToastTone("error"); setToast(t("common.noPermission"));
+      } else if (error instanceof ApiError && error.status === 401) {
         setDecision(null); setResourceFailure("denied");
       } else {
         setToastTone("error"); setToast(getApiErrorMessage(error, t("applications.decisionFailed")));
@@ -104,7 +109,8 @@ export function MyCampaignApplications({ campaignId }: { campaignId: string }) {
   if (access === "checking") return <div className="screen screen--with-nav"><SearchSkeleton count={3} compact /><BottomNav /></div>;
   if (access === "denied") return <div className="screen screen--with-nav"><CatalogState icon="lock" subtitle={t("applications.deniedSubtitle")} title={t("applications.deniedTitle")} /><BottomNav /></div>;
   if (access === "failed") return <div className="screen screen--with-nav"><CatalogState icon="refresh" onRetry={() => setReload((value) => value + 1)} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} /><BottomNav /></div>;
-  if (resourceFailure) return <div className="screen screen--with-nav"><CatalogState icon={resourceFailure === "denied" ? "lock" : "filter"} subtitle={t(resourceFailure === "denied" ? "applications.deniedSubtitle" : "applications.notFoundSubtitle")} title={t(resourceFailure === "denied" ? "applications.deniedTitle" : "applications.notFoundTitle")} /><BottomNav /></div>;
+  // The page is about a campaign: a missing one says "campaign not found", with Back to My campaigns.
+  if (resourceFailure) return <div className="screen screen--with-nav detail-error-screen"><PageHeader back={{ href: "#/my-campaigns", label: t("myCampaigns.title") }} /><CatalogState icon={resourceFailure === "denied" ? "lock" : "filter"} subtitle={t(resourceFailure === "denied" ? "applications.deniedSubtitle" : "myCampaignDetails.notFoundSubtitle")} title={t(resourceFailure === "denied" ? "applications.deniedTitle" : "myCampaignDetails.notFoundTitle")} /><BottomNav /></div>;
   return <div className="screen screen--with-nav catalog-search application-inbox"><ListHero><PageHeader back={{ href: `#/my-campaign/${campaignId}`, label: t("nav.campaigns") }} eyebrow={campaignTitle} title={t("applications.inboxTitle")} /><div className="my-campaigns__controls"><FilterSelect label={t("applications.status")} onChange={(value) => setStatus(value === "" ? undefined : Number(value) as CampaignApplicationStatus)} options={statusOptions(t)} value={status == null ? "" : String(status)} />{status != null && <button className="catalog-search__reset-all" onClick={() => setStatus(undefined)} type="button">{t("common.reset")}</button>}</div></ListHero><section aria-busy={catalog.loading || catalog.loadingMore} className="catalog-search__results">{catalog.loading && !catalog.loadedInitialResult && <SearchSkeleton count={3} compact />}{catalog.failure && !catalog.loadedInitialResult && <CatalogState icon="refresh" onRetry={retry} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}{catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={retry} subtitle={t("applications.errorSubtitle")} title={t("applications.errorTitle")} />}{!catalog.loading && !catalog.failure && catalog.items.length === 0 && <CatalogState icon={status == null ? "briefcase" : "filter"} onRetry={status == null ? undefined : () => setStatus(undefined)} subtitle={t(status == null ? "applications.inboxEmptySubtitle" : "applications.filteredEmptySubtitle")} title={t(status == null ? "applications.inboxEmptyTitle" : "applications.filteredEmptyTitle")} />}{catalog.items.length > 0 && <div className="request-list">{catalog.items.map((item) => <article className="request-card application-inbox-card" key={item.id}>
   <RequestRow href={profileRoute(item.creatorRole ?? "blogger", item.brandFaceId ?? item.bloggerId ?? "")} imageUrl={item.bloggerAvatarUrl} meta={formatShortDate(item.createdAtUtc, language)} name={item.bloggerName} status={<Badge tone={campaignApplicationStatusTone(item.status)}>{t(campaignApplicationStatusLabelKey(item.status, true))}</Badge>} title={[cityLabel(item.city, language), ...item.categories.slice(0, 2).map((category) => categoryLabel(category, language))].join(" · ")} />
   <p className="request-card__message">{item.message ?? t("applications.noMessage")}</p>

@@ -241,7 +241,7 @@ function buildActiveChips(filters: BloggerSearchFilters, t: Translate) {
   if (filters.category) chips.push({ key: "category", label: categoryLabel(filters.category) });
   if (filters.city) chips.push({ key: "city", label: cityLabel(filters.city) });
   if (filters.platform) chips.push({ key: "platform", label: platformOptions(t).find(([value]) => value === filters.platform)?.[1] ?? t("common.notSpecified") });
-  if (filters.minFollowers) chips.push({ key: "minFollowers", label: t("search.followersAtLeast", { count: formatNumber(filters.minFollowers) }) });
+  if (filters.minFollowers) chips.push({ key: "minFollowers", label: t("search.followersChip", { count: formatNumber(filters.minFollowers) }) });
   if (filters.minEr) chips.push({ key: "minEr", label: t("search.erAtLeast", { value: formatPercentage(filters.minEr) }) });
   if (filters.maxPrice) chips.push({ key: "maxPrice", label: t("search.priceUpTo", { amount: formatCurrency(filters.maxPrice) }) });
   if (filters.sort && filters.sort !== defaultFilters.sort) chips.push({ key: "sort", label: sortOptions(t).find(([value]) => value === filters.sort)?.[1] ?? t("search.sortPopular") });

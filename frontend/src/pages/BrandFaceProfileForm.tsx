@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { addBrandFacePhoto, brandFaceFormats, deleteProfileImage, getMyBrandFaceProfile, removeBrandFacePhoto, upsertBrandFaceProfile, uploadProfileImage, type BrandFaceFormat } from "../api/marketplace";
 import { BrandFaceGallery } from "../components/BrandFaceGallery";
@@ -54,7 +54,9 @@ const stepFields: Record<Exclude<Step, 3>, Field[]> = {
   2: ["instagram", "showreelUrl", "portfolioUrl", "collaborationPrice", "description"]
 };
 
-const instagramPattern = /^@[A-Za-z0-9._]{1,30}$/;
+// "@" is optional when typing, as in the blogger form; it is added before saving.
+const instagramPattern = /^@?[A-Za-z0-9._]{1,30}$/;
+const withAt = (handle: string) => handle && !handle.startsWith("@") ? `@${handle}` : handle;
 
 function initialBrandFaceForm(firstName?: string, username?: string) {
   const normalizedUsername = username?.trim().replace(/^@+/, "");
@@ -307,6 +309,16 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
   }, [haptic, leaveForm, saving, step, unsavedChanges]);
 
   useTelegramBackHandler(goBack, Boolean(onCompleted));
+  // Editing a profile: Telegram Back steps back through the form like the in-app Back (stacked over the app's route
+  // handler, which takes over again on the first step and leaves the form).
+  const { registerBackButtonHandler } = useTelegram();
+  const goBackRef = useRef(goBack);
+  goBackRef.current = goBack;
+  const editingPastFirstStep = !onCompleted && step > 0;
+  useEffect(() => {
+    if (!editingPastFirstStep) return;
+    return registerBackButtonHandler(() => goBackRef.current());
+  }, [editingPastFirstStep, registerBackButtonHandler]);
 
   const focusField = useCallback((field: Field) => {
     window.requestAnimationFrame(() => {
@@ -343,7 +355,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
         languages,
         categories,
         experience: null,
-        instagram: form.instagram.trim() || null,
+        instagram: withAt(form.instagram.trim()) || null,
         telegram: telegramUsername ?? undefined,
         portfolioUrl: form.portfolioUrl.trim() || null,
         collaborationPrice: form.collaborationPrice ? normalizeNumericInput(form.collaborationPrice) : null,
@@ -472,7 +484,7 @@ export function BrandFaceProfileForm({ onCompleted, onBackToRole }: { onComplete
           </ReviewSection>
           <ReviewSection editAriaLabel={t("wizard.changeSection", { section: stepTitles[2] })} editLabel={t("wizard.change")} emptyLabel={t("common.notSpecified")} isEmpty={!hasPortfolioDetails} onEdit={() => setStep(2)} title={stepTitles[2]}>
             <ReviewItem label={t("brandFace.galleryTitle")} value={photoCount ? t("brandFace.galleryCount", { count: photoCount }) : undefined} />
-            <ReviewItem label={t("brandFace.instagram")} value={form.instagram.trim()} />
+            <ReviewItem label={t("brandFace.instagram")} value={withAt(form.instagram.trim())} />
             <ReviewItem label={t("brandFace.showreel")} value={form.showreelUrl.trim()} />
             <ReviewItem label={t("brandFace.portfolio")} value={form.portfolioUrl.trim()} />
             <ReviewItem label={t("brandFace.price")} value={form.collaborationPrice ? formatCurrency(normalizeNumericInput(form.collaborationPrice)) : undefined} />

@@ -4,6 +4,7 @@ import {
   getMyCampaignApplications,
   getMyDeals,
   getMyOffers,
+  rejectMyCampaignApplication,
   type MarketplaceRole,
   type MyCampaignApplication,
   type MyDeal,
@@ -26,7 +27,8 @@ import { RequestRow } from "../components/RequestRow";
 import { CounterpartyRow } from "../components/CounterpartyRow";
 import { formatShortDate, formatCurrency } from "../lib/currency";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
-import { ActionBadge, useActionCounts } from "../features/actionCounts/ActionCountsProvider";
+import { ActionBadge, notifyActionCountsChanged, useActionCounts } from "../features/actionCounts/ActionCountsProvider";
+import { ApiError, getApiErrorMessage } from "../api/client";
 
 const formatDate = (value: string, language: Language) => formatShortDate(value, language);
 
@@ -149,17 +151,26 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
   const visibleDeals = deals.filter((deal) => withinRange(deal.createdAtUtc));
   const newDealIds = seenTick >= 0 ? unseenActiveDealIds(deals) : new Set<string>();
 
-  const accept = async (id: string) => {
+  const [pendingDecision, setPendingDecision] = useState<"accept" | "reject" | null>(null);
+  const [deciding, setDeciding] = useState(false);
+  useEffect(() => { setPendingDecision(null); }, [selectedRequest?.id]);
+  const decide = async (request: MyCampaignApplication, value: "accept" | "reject") => {
+    setDeciding(true);
     try {
-      await acceptCampaignApplication(id);
-      setRequests((current) => current.map((request) => request.id === id ? { ...request, status: CampaignApplicationStatus.Accepted, canAccept: false } : request));
+      if (value === "accept") await acceptCampaignApplication(request.id);
+      else await rejectMyCampaignApplication(request.campaignId, request.id);
+      const status = value === "accept" ? CampaignApplicationStatus.Accepted : CampaignApplicationStatus.Rejected;
+      setRequests((current) => current.map((item) => item.id === request.id ? { ...item, status, canAccept: false } : item));
       setSelectedRequest(null);
       setToastTone("success");
-      setToast(t("requests.accepted"));
+      setToast(t(value === "accept" ? "requests.accepted" : "applications.rejectedToast"));
+      notifyActionCountsChanged();
       load();
     } catch (error) {
       setToastTone("error");
-      setToast(error instanceof Error ? error.message : t("requests.acceptFailed"));
+      setToast(error instanceof ApiError && error.status === 403 ? t("common.noPermission") : getApiErrorMessage(error, t(value === "accept" ? "requests.acceptFailed" : "applications.decisionFailed")));
+    } finally {
+      setDeciding(false);
     }
   };
 
@@ -169,7 +180,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       <PageHeader actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
 
       <div aria-label={t("requests.title")} className="catalog-search__segments catalog-search__segments--three" role="group">
-        {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews + actionCounts.newDeals]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button"><span>{label}</span>{view === value && <span aria-hidden="true" className="catalog-search__segment-indicator">✓</span>}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}
+        {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews + actionCounts.newDeals]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button"><span>{label}</span>{view === value && count === 0 && <span aria-hidden="true" className="catalog-search__segment-indicator">✓</span>}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}
       </div>
       </ListHero>
 
@@ -201,7 +212,11 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       )}
 
       <Modal onClose={() => setSelectedRequest(null)} open={Boolean(selectedRequest)} title={selectedRequest?.campaignTitle ?? t("requests.title")}>
-        {selectedRequest && <><CounterpartyRow href={selectedRequest.counterpartyProfileId ? profileRoute(selectedRequest.counterpartyRole ?? "blogger", selectedRequest.counterpartyProfileId) : null} imageUrl={selectedRequest.counterpartyImageUrl} label={t(selectedRequest.counterpartyRole === "brandFace" ? "offers.counterpartyBrandFace" : "offers.counterpartyBlogger")} name={selectedRequest.counterpartyName} /><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status) ? <Button className="mt-4 w-full" onClick={() => accept(selectedRequest.id)}>{t("requests.acceptAction")}</Button> : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}<a className="ds-button ds-button--secondary tap-target mt-3 inline-flex w-full items-center justify-center px-5" href={`#/my-campaign-applications/${selectedRequest.campaignId}`} onClick={() => setSelectedRequest(null)}>{t("requests.openCampaignApplications")}</a></>}
+        {selectedRequest && <><CounterpartyRow href={selectedRequest.counterpartyProfileId ? profileRoute(selectedRequest.counterpartyRole ?? "blogger", selectedRequest.counterpartyProfileId) : null} imageUrl={selectedRequest.counterpartyImageUrl} label={t(selectedRequest.counterpartyRole === "brandFace" ? "offers.counterpartyBrandFace" : "offers.counterpartyBlogger")} name={selectedRequest.counterpartyName} /><p className="mt-2 text-sm leading-6 text-brand-muted">{selectedRequest.message ?? t("requests.noMessage")}</p>{selectedRequest.canAccept && canAcceptCampaignApplication(selectedRequest.status)
+          // Accepting creates a deal, so it asks first, as on the campaign's applications page; rejecting is here too.
+          ? pendingDecision ? <div className="mt-4 grid gap-2"><p className="text-sm font-semibold">{t(pendingDecision === "accept" ? "applications.acceptDescription" : "applications.rejectDescription")}</p><div className="modal-actions"><Button disabled={deciding} onClick={() => setPendingDecision(null)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={deciding} disabled={deciding} onClick={() => void decide(selectedRequest, pendingDecision)} type="button" variant={pendingDecision === "reject" ? "danger" : undefined}>{t(pendingDecision === "accept" ? "applications.accept" : "applications.reject")}</Button></div></div>
+            : <div className="mt-4 modal-actions"><Button onClick={() => setPendingDecision("reject")} type="button" variant="secondary">{t("applications.reject")}</Button><Button onClick={() => setPendingDecision("accept")} type="button">{t("applications.accept")}</Button></div>
+          : <p className="mt-4 text-sm text-brand-muted">{t("requests.status")}: {applicationStatusLabels[selectedRequest.status]}</p>}<a className="ds-button ds-button--secondary tap-target mt-3 inline-flex w-full items-center justify-center px-5" href={`#/my-campaign-applications/${selectedRequest.campaignId}`} onClick={() => setSelectedRequest(null)}>{t("requests.openCampaignApplications")}</a></>}
       </Modal>
 
       <BottomSheet onClose={() => setDateFilterOpen(false)} open={dateFilterOpen} title={t("requests.dateFilter")}><div className="grid gap-3"><div className="grid grid-cols-2 gap-2">{(["today", "week", "month", "custom"] as const).map((range) => <button className={`rounded-2xl border px-3 py-3 text-sm font-bold ${dateRange === range ? "choice-selected" : "border-brand-line bg-brand-surface"}`} key={range} onClick={() => setDateRange(range)} type="button">{t(`requests.range.${range}`)}</button>)}</div>{dateRange === "custom" && <div className="grid grid-cols-2 gap-3"><Input label={t("requests.fromDate")} onChange={(event) => setFromDate(event.target.value)} type="date" value={fromDate} /><Input label={t("requests.toDate")} onChange={(event) => setToDate(event.target.value)} type="date" value={toDate} /></div>}<Button className="w-full" onClick={() => setDateFilterOpen(false)} type="button">{t("common.apply")}</Button><Button className="w-full" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setDateFilterOpen(false); }} type="button" variant="secondary">{t("common.reset")}</Button></div></BottomSheet>

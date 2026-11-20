@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { createBusinessProfile, deleteProfileImage, getMyBusinessProfile, updateBusinessProfile, uploadProfileImage } from "../api/marketplace";
 import { ProfileMediaPicker, type PendingProfileImage } from "../components/ProfileMediaPicker";
@@ -178,6 +178,16 @@ export function BusinessProfileForm({ onCompleted, onBackToRole, teamMode }: { o
   }, [haptic, leaveForm, saving, step, unsavedChanges]);
 
   useTelegramBackHandler(goBack, Boolean(onCompleted));
+  // Editing a profile: Telegram Back steps back through the form like the in-app Back (stacked over the app's route
+  // handler, which takes over again on the first step and leaves the form).
+  const { registerBackButtonHandler } = useTelegram();
+  const goBackRef = useRef(goBack);
+  goBackRef.current = goBack;
+  const editingPastFirstStep = !onCompleted && step > 0;
+  useEffect(() => {
+    if (!editingPastFirstStep) return;
+    return registerBackButtonHandler(() => goBackRef.current());
+  }, [editingPastFirstStep, registerBackButtonHandler]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
