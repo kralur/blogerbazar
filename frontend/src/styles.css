@@ -2401,3 +2401,24 @@ html[data-desktop="true"] .settings-row--stacked > .language-switcher { width: 1
 .my-campaign-tile .my-campaign-card__applications svg { width: 1rem; height: 1rem; flex: none; }
 /* An error or "not found" screen of a detail page keeps the page width, so its back button sits where it always does. */
 html[data-desktop="true"] .screen.detail-error-screen { max-width: var(--desktop-content-width); }
+/* The campaign "…" menu is a visible round button: on a tile like the bookmark, in a head like the back button. */
+.campaign-menu__trigger { color: var(--bb-text); }
+.catalog-tile__save .campaign-menu__trigger { width: 2.25rem; height: 2.25rem; border: 1px solid var(--bb-border); background: var(--bb-surface); }
+.detail-hero .campaign-menu__trigger { width: 2.75rem; height: 2.75rem; border-radius: .75rem; }
+/* Tab switches in a list head are as wide as their words need (Search, Requests, Favorites), not the whole page. */
+html[data-desktop="true"] .list-hero .catalog-search__segments { max-width: 32rem; }
+html[data-desktop="true"] .list-hero .catalog-search__segments--three { max-width: 36rem; }
+/* Profile card: the three buttons fit on one row. */
+html[data-desktop="true"] .profile-card__actions > * { padding-inline: 1.25rem; }
+/* Campaign applications: the end line has the same room under the cards as on other lists. */
+html[data-desktop="true"] .application-inbox .catalog-search__end { margin-top: 1.5rem; }
+/* Deal head: the partner and the campaign rows side by side on a computer instead of two wide bars. */
+html[data-desktop="true"] .deal-details .detail-hero__rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0 1rem; }
+/* One column (a narrow computer screen): side-panel buttons keep the width of their words, like the main action. */
+@media (max-width: 74.99rem) {
+  html[data-desktop="true"] .detail-layout__side > .ds-button { justify-self: start; }
+  html[data-desktop="true"] .detail-layout__side .ds-button.w-full:not(.my-campaign-details__actions > *) { width: fit-content !important; min-width: 14rem; padding-inline: 1.5rem; }
+}
+/* My campaign actions: one height, one gap; "Как видят блогеры" takes its own row. */
+.my-campaign-details__actions > * { min-height: 3.25rem; }
+.my-campaign-details__public { grid-column: 1 / -1; }

@@ -1,6 +1,6 @@
 import type { MyCampaign } from "../api/marketplace";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
-import { formatBudgetRange, formatCompactNumber, formatDate, formatNumber } from "../lib/currency";
+import { formatBudgetRange, formatCompactNumber, formatDate, formatNumber, formatShortDate } from "../lib/currency";
 import { campaignApplicationsLabel, campaignStatusLabel, campaignStatusTone } from "../lib/campaignStatus";
 import { CampaignActionsMenu, type CampaignMenuResult } from "./CampaignActionsMenu";
 import { Badge, Icon } from "./ui";
@@ -32,12 +32,12 @@ export function MyCampaignCard({ campaign, onMenuResult }: { campaign: MyCampaig
         {(campaign.isPromoted || campaign.categories.length > 0) && <div className="campaign-catalog-card__categories">{campaign.isPromoted && <span className="catalog-card__promoted">{t("card.promoted")}</span>}{campaign.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div>}
         <p className="campaign-catalog-card__requirements">
           <span className="catalog-tile__fact my-campaign-card__applications"><Icon aria-hidden="true" name="briefcase" />{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span>
-          <span className="catalog-tile__fact">{t("myCampaigns.updated", { date: formatDate(campaign.updatedAtUtc) })}</span>
+          <span className="catalog-tile__fact">{t("myCampaigns.updated", { date: formatShortDate(campaign.updatedAtUtc, language) })}</span>
         </p>
         <dl className="campaign-catalog-card__facts">
           {campaign.city && <div><dt>{t("common.city")}</dt><dd>{cityLabel(campaign.city, language)}</dd></div>}
           <div className="campaign-catalog-card__fact--budget"><dt>{t("common.budget")}</dt><dd>{shortBudget ?? t("myCampaigns.budgetNotSpecified")}</dd></div>
-          {campaign.deadline && <div><dt>{t("campaigns.deadline")}</dt><dd>{formatDate(campaign.deadline)}</dd></div>}
+          {campaign.deadline && <div><dt>{t("campaigns.deadline")}</dt><dd>{formatShortDate(campaign.deadline, language)}</dd></div>}
         </dl>
       </a>
       {onMenuResult && <div className="catalog-tile__save"><CampaignActionsMenu campaign={campaign} onResult={onMenuResult} /></div>}

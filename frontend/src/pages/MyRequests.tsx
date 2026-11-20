@@ -44,7 +44,8 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
   const { language, t } = useI18n();
   useScrollRestoration("requests");
   const applicationStatusLabels: Record<CampaignApplicationStatus, string> = {
-    [CampaignApplicationStatus.Sent]: t("requests.applicationSent"),
+    // The company received it: "new", not "sent".
+    [CampaignApplicationStatus.Sent]: t("applications.status.new"),
     [CampaignApplicationStatus.Viewed]: t("requests.applicationViewed"),
     [CampaignApplicationStatus.Accepted]: t("requests.applicationAccepted"),
     [CampaignApplicationStatus.Rejected]: t("requests.applicationRejected"),

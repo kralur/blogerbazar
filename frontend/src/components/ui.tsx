@@ -1,3 +1,4 @@
+import { reviewsLabel } from "../lib/plural";
 import { useCallback, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ComponentPropsWithoutRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
@@ -40,7 +41,8 @@ export function Icon({ name, className, filled = false }: { name: string; classN
     briefcase: <path d="M10 6V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1m7 4v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9m18 0H3m18 0-2-4H5l-2 4" />,
     plus: <path d="M12 5v14m-7-7h14" />,
     back: <path d="m15 18-6-6 6-6" />,
-    dots: <path d="M12 12h.01M19 12h.01M5 12h.01" />,
+    // Three real dots: a stroke of length 0.01 drew them as specks barely bigger than the line width.
+    dots: <><circle cx="5" cy="12" fill="currentColor" r="1.75" stroke="none" /><circle cx="12" cy="12" fill="currentColor" r="1.75" stroke="none" /><circle cx="19" cy="12" fill="currentColor" r="1.75" stroke="none" /></>,
     close: <path d="m6 6 12 12M18 6 6 18" />,
     calendar: <path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />,
     // Simple line marks for the social platforms, drawn in the text color like every other icon.
@@ -215,12 +217,12 @@ export function Avatar({ src, name, size = "md", verified = false, variant = "de
 }
 
 export function Rating({ value, count }: { value?: number | null; count?: number }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   return (
     <div className="inline-flex items-center gap-1 text-[13px] font-semibold">
       <span aria-hidden="true" className="text-brand-warning">★</span>
       <span>{value == null ? "-" : formatRating(value)}</span>
-      {count !== undefined && <span className="font-normal text-brand-muted">({t("common.reviews", { count })})</span>}
+      {count !== undefined && <span className="font-normal text-brand-muted">({reviewsLabel(count, language, t)})</span>}
     </div>
   );
 }

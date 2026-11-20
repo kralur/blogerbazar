@@ -124,8 +124,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   // D63, package G: the lapis head holds the state, the budget large, the title and the facts as tags; the inbox and the text below.
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
     <ListHero className="detail-hero">
-      <PageHeader actions={<CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} />} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
-      <div className="detail-hero__status"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}</div>
+      <PageHeader actions={<><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}<CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} /></>} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
       <p className="detail-hero__price">{budget ?? t("myCampaigns.budgetNotSpecified")}</p>
       {budget && <p className="detail-hero__price-unit">{t("common.budget")}</p>}
       <h1 className="detail-hero__title">{campaign.title}</h1>
@@ -149,14 +148,14 @@ export function MyCampaignDetails({ id }: { id: string }) {
         navigateWithHistoryOrigin(window.location.hash, `#/my-campaign-edit/${id}`);
       }}>{t("myCampaignDetails.edit")}</a>
       <Button aria-label={t("myCampaignDetails.closeAria", { title: campaign.title })} onClick={() => setCloseOpen(true)} type="button" variant="danger">{t("myCampaignDetails.close")}</Button>
+      {/* The owner sees the campaign the way bloggers see it in the catalog. */}
+      {campaign.status === 1 && <a className="my-campaign-details__edit my-campaign-details__public" href={`#/campaign/${id}`}>{t("myCampaignDetails.viewPublic")}</a>}
     </section>}
-    {/* The owner sees the campaign the way bloggers see it in the catalog. */}
-    {campaign.status === 1 && <a className="my-campaign-details__edit mt-3 w-full" href={`#/campaign/${id}`}>{t("myCampaignDetails.viewPublic")}</a>}
     {campaign.status === 2 && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}><Button aria-busy={reopening} disabled={reopening || reopenBlocked} onClick={() => void reopen()} type="button">{t("campaignMenu.reopen")}</Button></section>}
     {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t(reopenBlocked ? "campaignMenu.reopenExpired" : "myCampaignDetails.closedHintSide")}</p>}
     </>}>
     <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
-    <DetailSection title={t("common.categories")}>{campaign.categories.length ? <ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</DetailSection>
+    <DetailSection title={t("campaign.suitable")}>{campaign.categories.length ? <ChipList items={campaign.categories.map((category) => categoryLabel(category, language))} /> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</DetailSection>
     <DetailSection title={t("common.requirements")}><Card>{campaign.requirements.length ? <ul className="grid gap-2">{campaign.requirements.map((requirement) => <li className="flex gap-2 text-sm text-brand-muted" key={requirement}><Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-success" name="check" />{requirement}</li>)}</ul> : <p className="text-sm text-brand-muted">{t("common.notSpecified")}</p>}</Card></DetailSection>
     </DetailLayout>
     <Modal onClose={() => { if (!closing) setCloseOpen(false); }} open={closeOpen} title={t("myCampaignDetails.closeTitle")} variant="neutral">
