@@ -192,6 +192,10 @@ try
     {
         builder.Services.AddHostedService<BotTipWorker>();
     }
+    if (builder.Configuration.GetValue("PlatformVerification:Enabled", true))
+    {
+        builder.Services.AddHostedService<PlatformVerificationWorker>();
+    }
     builder.Services.AddCors(options => options.AddPolicy("mini-app", policy =>
     {
         var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];

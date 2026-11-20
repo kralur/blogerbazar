@@ -179,7 +179,7 @@ function PlatformStats({ platforms, total }: { platforms: PlatformDetails[]; tot
       const profile = platform.url ? platformProfileLink(platform.type, platform.url) : null;
       return <div className="platform-stats__row" key={platform.id}>
         <div className="min-w-0"><p className="platform-stats__name"><Icon className="platform-stats__icon" name={platform.type.toLowerCase()} />{platformLabel(platform.type, t)}{profile && <a aria-label={t("details.openPlatformProfile", { platform: platformLabel(platform.type, t), handle: profile.handle })} className="platform-stats__handle" href={profile.href} onClick={(event) => { event.preventDefault(); openLink(profile.href); }}>{profile.handle}</a>}</p>{details && <p className="platform-stats__details">{details}</p>}</div>
-        <strong>{formatCompactNumber(platform.followers)}</strong>
+        <strong>{formatCompactNumber(platform.followers)}{platform.verificationSource && <span className="platform-stats__verified" title={t("verify.badge")}><Icon className="h-3.5 w-3.5" name="check" />{t("verify.badge")}</span>}</strong>
       </div>;
     })}
   </section>;

@@ -173,6 +173,6 @@ internal sealed class MarketplaceHomeReadModel(BloggerBazarDbContext dbContext) 
             profile.Reviews.Count,
             profile.Deals.Count(deal => deal.Status == DealStatus.Completed),
             profile.PortfolioItems.Select(item => new PortfolioItemDto(item.Id, item.Title, (int)item.Type, item.Url)).ToArray(),
-            profile.Platforms.Select(platform => new SocialPlatformDto(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate)).ToArray(),
+            profile.Platforms.Select(platform => new SocialPlatformDto(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate, platform.VerificationSource, platform.VerifiedAtUtc)).ToArray(),
             profile.IsHidden));
 }

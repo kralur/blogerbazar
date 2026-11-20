@@ -118,7 +118,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             .OrderByDescending(item => item.CreatedAtUtc)
             .Select(item => new PortfolioItemDto(item.Id, item.Title, (int)item.Type, item.Url)).ToArrayAsync(cancellationToken);
         var platforms = await dbContext.SocialPlatforms.AsNoTracking().Where(item => item.BloggerId == profile.Id)
-            .Select(item => new SocialPlatformDto(item.Id, item.Type, item.Url, item.Followers, item.ScreenshotUrl, item.AverageReach, item.EngagementRate)).ToArrayAsync(cancellationToken);
+            .Select(item => new SocialPlatformDto(item.Id, item.Type, item.Url, item.Followers, item.ScreenshotUrl, item.AverageReach, item.EngagementRate, item.VerificationSource, item.VerifiedAtUtc)).ToArrayAsync(cancellationToken);
         return new MyBloggerProfileDto(profile.Id, profile.Name, profile.LastName, profile.Username, profile.City, profile.Categories,
             profile.Bio, profile.AvatarUrl, profile.Phone, profile.Email, profile.TotalFollowers, profile.AverageReach, profile.EngagementRate,
             profile.StoriesPrice, profile.ReelsPrice, profile.PostPrice, profile.IntegrationPrice, profile.BarterEnabled, profile.Status, portfolioItems, platforms, profile.IsHidden);
@@ -201,7 +201,7 @@ internal sealed class MarketplaceCatalogReadModel(BloggerBazarDbContext dbContex
             .Select(item => new PortfolioItemRow(item.BloggerId, new PortfolioItemDto(item.Id, item.Title, (int)item.Type, item.Url)))
             .ToArrayAsync(cancellationToken);
         var platforms = await dbContext.SocialPlatforms.AsNoTracking().Where(platform => ids.Contains(platform.BloggerId))
-            .Select(platform => new SocialPlatformRow(platform.BloggerId, new SocialPlatformDto(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate)))
+            .Select(platform => new SocialPlatformRow(platform.BloggerId, new SocialPlatformDto(platform.Id, platform.Type, platform.Url, platform.Followers, platform.ScreenshotUrl, platform.AverageReach, platform.EngagementRate, platform.VerificationSource, platform.VerifiedAtUtc)))
             .ToArrayAsync(cancellationToken);
 
         var portfoliosByBlogger = portfolioItems.GroupBy(item => item.BloggerId).ToDictionary(group => group.Key, group => (IReadOnlyCollection<PortfolioItemDto>)group.Select(item => item.Item).ToArray());
