@@ -2,9 +2,11 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { formatMessage, type Dictionary, type Language, type MessageValues } from "@bloggerbazar/shared/i18n";
 import ru from "./ru.json";
 import uz from "./uz.json";
+import { toNewUzbekDictionary } from "@bloggerbazar/shared/uzbekScript";
 
 export type { Language };
-export const dictionaries: Record<Language, Dictionary> = { ru, uz };
+// Uzbek in the new Latin alphabet (law of 21 October 2026), derived from the texts written in the old one.
+export const dictionaries: Record<Language, Dictionary> = { ru, uz: toNewUzbekDictionary(uz) };
 const storageKey = "bloggerbazar.landing.language";
 
 // The saved choice, then the browser language; Russian otherwise.
