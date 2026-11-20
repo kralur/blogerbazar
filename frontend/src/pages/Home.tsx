@@ -1,3 +1,4 @@
+import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
 import { actionCountsChangedEvent } from "../features/actionCounts/ActionCountsProvider";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -176,6 +177,7 @@ type ActivityItem = { key: string; title: string; detail: string; href: string }
 // "Waiting for your decision": only real, actionable items from existing endpoints; hidden when there is nothing to do.
 function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
   const { language, t } = useI18n();
+  const canOperate = useBusinessCanOperate(enabled && role === "Business");
   const [items, setItems] = useState<ActivityItem[] | null>(null);
   useEffect(() => {
     // A brand face has deals and reviews like a blogger (D46).
@@ -192,7 +194,7 @@ function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
           const waiting = (campaign: { applicationsCount: number; pendingApplicationsCount?: number }) => campaign.pendingApplicationsCount ?? campaign.applicationsCount;
           const myCampaigns = (roleResult.value as Awaited<ReturnType<typeof getMyCampaigns>>).items;
           // A new company has nothing waiting yet: its first step is a campaign.
-          if (myCampaigns.length === 0) next.push({ key: "first-campaign", title: t("home.firstCampaignTitle"), detail: t("home.firstCampaignDetail"), href: "#/campaigns?create=1" });
+          if (myCampaigns.length === 0 && canOperate) next.push({ key: "first-campaign", title: t("home.firstCampaignTitle"), detail: t("home.firstCampaignDetail"), href: "#/campaigns?create=1" });
           const campaigns = myCampaigns
             .filter((campaign) => waiting(campaign) > 0)
             .sort((left, right) => waiting(right) - waiting(left))
@@ -212,7 +214,7 @@ function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
       setItems(next);
     });
     return () => { cancelled = true; };
-  }, [enabled, language, reloadKey, role, t]);
+  }, [canOperate, enabled, language, reloadKey, role, t]);
   return items;
 }
 

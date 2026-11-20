@@ -1,3 +1,4 @@
+import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { ApiError } from "../api/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBlogger, getBloggerReviews, getCurrentPlatformUser, getPublicContact, normalizeMarketplaceRole, type BloggerDetails, type BloggerReview, type ContactDetails, type MarketplaceRole, type OfferFormat, type PlatformDetails } from "../api/marketplace";
@@ -33,6 +34,9 @@ export function BloggerDetails({ id }: { id: string }) {
   const [reviews, setReviews] = useState<BloggerReview[]>([]);
   const [toast, setToast] = useState("");
   const [role, setRole] = useState<MarketplaceRole>();
+  // A team viewer (D64) does not send offers.
+  const canOperate = useBusinessCanOperate(role === "Business");
+  const offersAllowed = role === "Business" && canOperate;
   const [offerOpen, setOfferOpen] = useState(false);
   const [offerPreset, setOfferPreset] = useState<{ format: OfferFormat; budget: number } | null>(null);
 
@@ -102,7 +106,7 @@ export function BloggerDetails({ id }: { id: string }) {
   const priceFact = (label: string, format: OfferFormat, price?: number | null): Fact => ({
     label,
     value: positiveCurrency(price),
-    onSelect: role === "Business" && !blogger.isHidden && price && price > 0 ? () => { setOfferPreset({ format, budget: price }); setOfferOpen(true); } : undefined,
+    onSelect: offersAllowed && !blogger.isHidden && price && price > 0 ? () => { setOfferPreset({ format, budget: price }); setOfferOpen(true); } : undefined,
     selectLabel: t("offers.proposeFormat", { format: label })
   });
   const prices: Fact[] = [
@@ -115,7 +119,7 @@ export function BloggerDetails({ id }: { id: string }) {
   const platformStats = blogger.platforms.filter((platform) => platform.followers > 0);
   const tags = [blogger.barterEnabled ? t("card.barter") : null].filter((tag): tag is string => tag !== null);
   // D63, package G: the lapis head carries the person and three tags on cords; the platform rows stay below.
-  const offerAction = role === "Business" && !blogger.isHidden ? <Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button> : null;
+  const offerAction = offersAllowed && !blogger.isHidden ? <Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button> : null;
   return <div className="screen screen--with-nav">
     <ListHero className="detail-hero">
       <PageHeader actions={<><FavoriteButton bloggerId={blogger.id} /></>} back={{ href: "#/search", label: t("common.back") }} />
@@ -140,7 +144,7 @@ export function BloggerDetails({ id }: { id: string }) {
     {portfolio.length > 0 && <DetailSection title={t("details.portfolio")}><div className="portfolio-row no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">{portfolio.map((item) => <PortfolioLink item={item} key={item.id} onOpen={openLink} />)}</div></DetailSection>}
     <ReviewsSection allHref={`#/blogger-reviews/${blogger.id}`} count={blogger.reviewsCount} emptyText={t("details.noReviews")} rating={blogger.reviewsCount > 0 ? blogger.rating : null} reviewerRoute={(profileId) => `#/company/${profileId}`} reviews={reviews} title={t("details.reviews")} />
     </DetailLayout>
-    {role === "Business" && !blogger.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
+    {offersAllowed && !blogger.isHidden && !desktop && <FixedActionBar><Button className="w-full" onClick={() => { setOfferPreset(null); setOfferOpen(true); }} type="button"><Icon name="send" />{t("offers.propose")}</Button></FixedActionBar>}
     <OfferForm bloggerId={blogger.id} initialBudget={offerPreset?.budget} initialFormat={offerPreset?.format} onClose={() => setOfferOpen(false)} onSent={() => { setOfferOpen(false); setToast(t("offers.sent")); }} open={offerOpen} />
     <Toast message={toast} /><BottomNav />
   </div>;

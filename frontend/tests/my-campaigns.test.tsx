@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   getMyCampaigns: vi.fn(),
   getMyCampaign: vi.fn(),
   closeMyCampaign: vi.fn(),
+  getMyBusinessProfile: vi.fn(() => Promise.resolve({ id: "business-a", teamRole: "owner" })),
   normalizeMarketplaceRole: vi.fn((role: unknown) => role)
 }));
 
@@ -19,6 +20,7 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getMyCampaigns: api.getMyCampaigns,
   getMyCampaign: api.getMyCampaign,
   closeMyCampaign: api.closeMyCampaign,
+  getMyBusinessProfile: api.getMyBusinessProfile,
   normalizeMarketplaceRole: api.normalizeMarketplaceRole
 }));
 
@@ -43,6 +45,7 @@ vi.mock("../src/components/ui", () => ({
 import { MyCampaignDetails } from "../src/pages/MyCampaignDetails";
 import { MyCampaigns } from "../src/pages/MyCampaigns";
 import { DesktopLayoutContext } from "../src/lib/desktopLayout";
+import { resetBusinessCanOperate } from "../src/hooks/useBusinessCanOperate";
 
 const campaign = {
   id: "campaign-a",
@@ -206,6 +209,19 @@ describe("My Campaigns management", () => {
     expect(screen.queryByText(/views|reach/i)).not.toBeInTheDocument();
     // A published campaign can be seen the way bloggers see it.
     expect(screen.getByRole("link", { name: translate("myCampaignDetails.viewPublic", undefined, "ru") })).toHaveAttribute("href", "#/campaign/campaign-a");
+  });
+
+  it("hides creating and changing campaigns from a team viewer", async () => {
+    resetBusinessCanOperate();
+    api.getMyBusinessProfile.mockResolvedValueOnce({ id: "business-a", teamRole: "viewer" });
+    render(<I18nProvider><MyCampaignDetails id="campaign-a" /></I18nProvider>);
+
+    await screen.findByText("Launch coffee");
+    await waitFor(() => expect(screen.queryByRole("link", { name: translate("myCampaignDetails.editAria", { title: "Coffee launch" }, "ru") })).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: translate("myCampaignDetails.closeAria", { title: "Coffee launch" }, "ru") })).not.toBeInTheDocument();
+    // Seeing the campaign as bloggers do stays.
+    expect(screen.getByRole("link", { name: translate("myCampaignDetails.viewPublic", undefined, "ru") })).toBeInTheDocument();
+    resetBusinessCanOperate();
   });
 
   it("shows My campaigns as catalog tiles on a computer", async () => {
