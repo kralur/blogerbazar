@@ -28,6 +28,41 @@ public sealed class SocialPlatform
     public decimal? EngagementRate { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
+    // D67: followers read from the platform itself (Telegram channel, YouTube channel) after the owner proved the
+    // channel is theirs. While set, the blogger cannot type another number for it.
+    public int? VerifiedFollowers { get; private set; }
+    public string? VerificationSource { get; private set; }
+    public DateTime? VerifiedAtUtc { get; private set; }
+
+    public bool IsVerified => VerificationSource is not null;
+
+    public void MarkVerified(string source, int followers, DateTime nowUtc)
+    {
+        VerificationSource = source;
+        VerifiedFollowers = followers;
+        Followers = followers;
+        VerifiedAtUtc = nowUtc;
+    }
+
+    public void ClearVerification()
+    {
+        VerificationSource = null;
+        VerifiedFollowers = null;
+        VerifiedAtUtc = null;
+    }
+
+    // The profile form recreates the platforms; the same channel keeps its verification and verified followers.
+    public void CarryVerificationFrom(SocialPlatform previous)
+    {
+        if (!previous.IsVerified || previous.VerifiedFollowers is not { } followers || previous.VerifiedAtUtc is not { } verifiedAt) return;
+        MarkVerified(previous.VerificationSource!, followers, verifiedAt);
+    }
+
+    public bool IsSameChannelAs(SocialPlatform other) =>
+        string.Equals(Type, other.Type, StringComparison.OrdinalIgnoreCase) && string.Equals(NormalizedUrl(Url), NormalizedUrl(other.Url), StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizedUrl(string url) => url.Trim().TrimEnd('/').Replace("://www.", "://", StringComparison.OrdinalIgnoreCase);
+
     public static SocialPlatform Create(Guid bloggerId, string type, string url, int? followers, string? screenshotUrl, int? averageReach = null, decimal? engagementRate = null) =>
         new(bloggerId, type, url, followers, screenshotUrl, averageReach, engagementRate);
 }

@@ -10,6 +10,9 @@ export type PlatformDetails = {
   averageReach?: number | null;
   engagementRate?: number | null;
   url?: string | null;
+  // D67: followers confirmed by the platform itself ("telegram" | "youtube"); absent from an older API.
+  verificationSource?: string | null;
+  verifiedAtUtc?: string | null;
 };
 
 export type PortfolioDetails = { id: string; title: string; type: "IMAGE" | "VIDEO"; url: string };
@@ -153,7 +156,7 @@ type ApiBlogger = {
   reviewsCount: number;
   completedDealsCount: number;
   portfolioItems?: Array<{ id: string; title: string; type: number; url: string }>;
-  platforms?: Array<{ id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null; averageReach?: number | null; engagementRate?: number | null }>;
+  platforms?: Array<{ id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null; averageReach?: number | null; engagementRate?: number | null; verificationSource?: string | null; verifiedAtUtc?: string | null }>;
 };
 
 type ApiCampaign = {
@@ -353,6 +356,9 @@ export type MyBusinessProfile = {
   teamMode?: boolean;
   teamRole?: "owner" | "admin" | "manager" | "viewer" | null;
 };
+// D67: a platform of the blogger's own profile, with its verification state.
+export type MyPlatform = { id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null; averageReach?: number | null; engagementRate?: number | null; verificationSource?: string | null; verifiedAtUtc?: string | null };
+
 export type MyBloggerProfile = {
   isHidden?: boolean;
   id: string;
@@ -375,7 +381,7 @@ export type MyBloggerProfile = {
   barterEnabled: boolean;
   status: number;
   portfolioItems: Array<{ id: string; title: string; type: number; url: string }>;
-  platforms: Array<{ id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null; averageReach?: number | null; engagementRate?: number | null }>;
+  platforms: Array<MyPlatform>;
 };
 
 export type BusinessProfileInput = {
@@ -461,7 +467,7 @@ const asBloggerDetails = (blogger: ApiBlogger): BloggerDetails => ({
   rating: blogger.rating ?? null,
   platforms: (blogger.platforms ?? []).flatMap((platform) => {
     const type = platform.type.toLowerCase();
-    return isDisplayPlatformType(type) ? [{ id: platform.id, type, url: platform.url, followers: platform.followers ?? 0, averageReach: platform.averageReach ?? null, engagementRate: platform.engagementRate ?? null }] : [];
+    return isDisplayPlatformType(type) ? [{ id: platform.id, type, url: platform.url, followers: platform.followers ?? 0, averageReach: platform.averageReach ?? null, engagementRate: platform.engagementRate ?? null, verificationSource: platform.verificationSource ?? null, verifiedAtUtc: platform.verifiedAtUtc ?? null }] : [];
   }),
   portfolioItems: (blogger.portfolioItems ?? []).map((item) => ({ id: item.id, title: item.title, type: item.type === 1 ? "VIDEO" : "IMAGE", url: item.url })),
   isHidden: blogger.isHidden ?? false
@@ -990,6 +996,13 @@ export async function createBusinessProfile(input: BusinessProfileInput) {
 
 export async function getMyBusinessProfile() {
   return api<MyBusinessProfile>("/api/businesses/me");
+}
+
+// D67: proves a Telegram / YouTube channel and reads its followers; the same call refreshes them.
+export type PlatformVerificationOutcome = "verified" | "notFound" | "botNotAdmin" | "notOwner" | "codeMissing" | "notConfigured" | "unavailable" | "unsupported";
+export type PlatformVerificationResult = { outcome: PlatformVerificationOutcome; platform: MyPlatform; code?: string | null; botUsername?: string | null };
+export async function verifyMyPlatform(platformId: string) {
+  return api<PlatformVerificationResult>(`/api/bloggers/me/platforms/${encodeURIComponent(platformId)}/verify`, { method: "POST" });
 }
 
 export async function getMyBloggerProfile() {
