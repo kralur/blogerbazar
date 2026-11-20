@@ -24,6 +24,8 @@ export function CampaignDetails({ id }: { id: string }) {
   const [campaign, setCampaign] = useState<CampaignDetails | null>(() => getCachedPublicDetail<CampaignDetails>("campaign", id));
   const [loading, setLoading] = useState(() => !getCachedPublicDetail<CampaignDetails>("campaign", id));
   const [failed, setFailed] = useState(false);
+  // 404: the page is gone (deleted or hidden), not a connection problem; no "Retry".
+  const [notFound, setNotFound] = useState(false);
   const [contact, setContact] = useState<ContactDetails | null>(null);
   const [businessReviews, setBusinessReviews] = useState<BusinessReviews | null>(null);
   const [applicationOpen, setApplicationOpen] = useState(false);
@@ -50,13 +52,15 @@ export function CampaignDetails({ id }: { id: string }) {
     else setCampaign(null);
     setLoading(!cached);
     setFailed(false);
+    setNotFound(false);
     getCampaign(id).then((response) => {
       if (requestId !== requestIdRef.current) return;
       setCachedPublicDetail("campaign", id, response);
       setCampaign(response);
-    }).catch(() => {
+    }).catch((error) => {
       if (requestId !== requestIdRef.current) return;
       setFailed(true);
+      setNotFound(error instanceof ApiError && error.status === 404);
       if (!cached) setCampaign(null);
     }).finally(() => {
       if (requestId === requestIdRef.current) setLoading(false);
@@ -202,7 +206,7 @@ export function CampaignDetails({ id }: { id: string }) {
 
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("campaign.loading")} /><BottomNav /></div>;
-  if (!campaign) return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/campaigns", label: t("nav.campaigns") }} /><ErrorState onRetry={loadCampaign} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!campaign) return <div className="screen screen--with-nav detail-error-screen"><PageHeader back={{ href: "#/campaigns", label: t("nav.campaigns") }} /><ErrorState onRetry={notFound ? undefined : loadCampaign} subtitle={t(notFound ? "common.pageNotFoundSubtitle" : "common.connectionRetry")} title={t(notFound ? "common.pageNotFoundTitle" : "common.openFailed")} /><BottomNav /></div>;
 
   const contacts = [
     contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,

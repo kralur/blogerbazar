@@ -104,7 +104,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   };
 
   if (loading && !campaign) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
-  if (!campaign) return <div className="campaign-management-screen screen screen--with-nav"><PageHeader back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} /><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
+  if (!campaign) return <div className="campaign-management-screen screen screen--with-nav detail-error-screen"><PageHeader back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} /><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
 
   // A closed campaign is published again from the side panel too, not only from the "⋯" menu.
   const reopen = async () => {

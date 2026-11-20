@@ -1,3 +1,4 @@
+import { ApiError } from "../api/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ReportButton } from "../components/ReportButton";
 import { getMyBusinessProfile, getPublicBusiness, type PublicBusinessProfile } from "../api/marketplace";
@@ -22,6 +23,8 @@ export function BusinessDetails({ id }: { id: string }) {
   const [profile, setProfile] = useState<PublicBusinessProfile | null>(() => getCachedPublicDetail<PublicBusinessProfile>("business", id));
   const [loading, setLoading] = useState(() => !getCachedPublicDetail<PublicBusinessProfile>("business", id));
   const [failed, setFailed] = useState(false);
+  // 404: the page is gone (deleted or hidden), not a connection problem; no "Retry".
+  const [notFound, setNotFound] = useState(false);
   const requestIdRef = useRef(0);
   const load = useCallback(() => {
     const cached = getCachedPublicDetail<PublicBusinessProfile>("business", id);
@@ -29,13 +32,15 @@ export function BusinessDetails({ id }: { id: string }) {
     setProfile(cached);
     setLoading(!cached);
     setFailed(false);
+    setNotFound(false);
     return getPublicBusiness(id).then((response) => {
       if (requestId !== requestIdRef.current) return;
       setCachedPublicDetail("business", id, response);
       setProfile(response);
-    }).catch(() => {
+    }).catch((error) => {
       if (requestId !== requestIdRef.current) return;
       setFailed(true);
+      setNotFound(error instanceof ApiError && error.status === 404);
     }).finally(() => {
       if (requestId === requestIdRef.current) setLoading(false);
     });
@@ -55,7 +60,7 @@ export function BusinessDetails({ id }: { id: string }) {
   }, []);
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
-  if (!profile) return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/campaigns", label: t("common.back") }} /><ErrorState onRetry={() => void load()} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!profile) return <div className="screen screen--with-nav detail-error-screen"><PageHeader back={{ href: "#/campaigns", label: t("common.back") }} /><ErrorState onRetry={notFound ? undefined : () => void load()} subtitle={t(notFound ? "common.pageNotFoundSubtitle" : "common.connectionRetry")} title={t(notFound ? "common.pageNotFoundTitle" : "common.openFailed")} /><BottomNav /></div>;
   const website = profile.websiteUrl ? [{ kind: "website" as const, value: profile.websiteUrl }] : [];
   return <div className="screen screen--with-nav">
     <ListHero className="company-hero">
