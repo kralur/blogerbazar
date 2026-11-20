@@ -5,7 +5,7 @@ import { Badge, BottomNav, Button, Card, ErrorState, FixedActionBar, Icon, Loadi
 import { SuccessMoment } from "../components/SuccessMoment";
 import { categoryLabel, cityLabel, useI18n } from "../i18n";
 import { formatDate, isPastDay } from "../lib/currency";
-import { ChipList, DetailSection, ReviewsSection, compactBudgetRange } from "../components/details/DetailBlocks";
+import { ChipList, DetailSection, FactGrid, ReviewsSection, compactBudgetRange } from "../components/details/DetailBlocks";
 import { ContactList, hasContacts } from "../components/ContactList";
 import { ReportButton } from "../components/ReportButton";
 import { getCachedPublicDetail, setCachedPublicDetail } from "../data/publicDetailCache";
@@ -216,7 +216,6 @@ export function CampaignDetails({ id }: { id: string }) {
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   const budget = compactBudgetRange(campaign.budgetFrom, campaign.budgetTo, t("currency.uzs"));
   const expired = isPastDay(campaign.deadline);
-  const meta = [campaign.city ? cityLabel(campaign.city, language) : null, campaign.deadline ? t("campaign.until", { date: formatDate(campaign.deadline) }) : null].filter(Boolean).join(" · ");
   // D63, package G: the lapis head says whose campaign it is, its state, the budget large and the title; the text below.
   return (
     <div className="screen screen--with-nav">
@@ -225,7 +224,11 @@ export function CampaignDetails({ id }: { id: string }) {
         <a aria-label={t("company.openAria", { name: campaign.company })} className="detail-hero__eyebrow" href={`#/company/${campaign.businessId}`}>{t("campaign.eyebrow")} · {campaign.company}</a>
         {budget && <><p className="detail-hero__price">{budget}</p><p className="detail-hero__price-unit">{t("common.budget")}</p></>}
         <h1 className="detail-hero__title">{campaign.title}</h1>
-        {meta && <p className="detail-hero__meta">{meta}</p>}
+        {/* City and deadline as the head's hanging tags, like My campaign and Deal. */}
+        <FactGrid className="hero-tags" facts={[
+          { label: t("common.city"), value: campaign.city ? cityLabel(campaign.city, language) : null },
+          { label: t("campaigns.deadline"), value: campaign.deadline ? formatDate(campaign.deadline) : null }
+        ]} />
       </ListHero>
       <DetailLayout footer={blockedReason !== "own" ? <ReportButton targetId={campaign.id} targetType="campaign" /> : null} top={<CounterpartyRow href={campaign.businessHidden ? null : `#/company/${campaign.businessId}`} label={t("campaign.byCompany")} name={campaign.company} />} side={<>
       {hasContacts(contacts) && <DetailSection title={t("campaign.businessContact")}><ContactList items={contacts} /></DetailSection>}

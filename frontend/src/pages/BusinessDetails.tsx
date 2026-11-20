@@ -1,3 +1,4 @@
+import { CampaignCard } from "../components/CampaignCard";
 import { ApiError } from "../api/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ReportButton } from "../components/ReportButton";
@@ -84,6 +85,8 @@ export function BusinessDetails({ id }: { id: string }) {
     <DetailSection title={t("company.openCampaigns")}>
       {profile.openCampaigns.length === 0
         ? <Card><p className="text-sm text-brand-muted">{t("company.noOpenCampaigns")}</p></Card>
+        // On a computer the company's campaigns are the catalog's campaign tiles, as on Campaigns and My campaigns.
+        : desktop ? <div className="catalog-search__results">{profile.openCampaigns.map((campaign) => <CampaignCard campaign={{ id: campaign.id, title: campaign.title, city: campaign.city, categories: [], budgetFrom: campaign.budgetFrom, budgetTo: campaign.budgetTo, deadline: campaign.deadline, isPromoted: false, business: { name: profile.name, avatarUrl: profile.logoUrl } }} key={campaign.id} />)}</div>
         : <div className="grid gap-2">{profile.openCampaigns.map((campaign) => <a className="company-campaign" href={`#/campaign/${campaign.id}`} key={campaign.id}>
           <span className="min-w-0"><strong>{campaign.title}</strong><span>{[campaign.city ? cityLabel(campaign.city, language) : null, (desktop ? compactBudgetRange(campaign.budgetFrom, campaign.budgetTo, t("currency.uzs")) : formatBudgetRange(campaign.budgetFrom, campaign.budgetTo)), campaign.deadline ? formatShortDate(campaign.deadline, language) : null].filter(Boolean).join(" · ")}</span></span>
           <Icon className="company-campaign__chevron" name="back" />

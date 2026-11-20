@@ -1,3 +1,4 @@
+import { reviewsLabel } from "../../lib/plural";
 import type { BloggerReview } from "../../api/marketplace";
 import { formatBudgetRange, formatCompactNumber, formatNumber, formatRating, formatShortDate } from "../../lib/currency";
 import { useI18n } from "../../i18n";
@@ -61,12 +62,12 @@ export const reviewCarouselLimit = 10;
 // The latest reviews side by side, so a popular profile does not turn into an endless page;
 // "Show all" opens every review with the full text.
 export function ReviewsSection({ title, reviews, count, rating, allHref, emptyText, reviewerRoute }: { title: string; reviews: BloggerReview[]; count: number; rating?: number | null; allHref: string; emptyText: string; reviewerRoute?: (profileId: string, reviewerRole?: string | null) => string }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const shown = reviews.slice(0, reviewCarouselLimit);
   const total = Math.max(count, reviews.length);
   return <section className="detail-section">
     <div className="detail-section__heading">
-      <h2 className="reviews-heading"><span className="reviews-heading__title">{title}</span>{total > 0 && <span className="reviews-heading__summary">{rating != null && <><span aria-hidden="true" className="text-brand-warning">★</span> {formatRating(rating)} · </>}{total}</span>}</h2>
+      <h2 className="reviews-heading"><span className="reviews-heading__title">{title}</span>{total > 0 && <span className="reviews-heading__summary">{rating != null && <><span aria-hidden="true" className="text-brand-warning">★</span> {formatRating(rating)} · </>}{reviewsLabel(total, language, t)}</span>}</h2>
       {total > 0 && <a className="reviews-heading__all" href={allHref}>{t("reviews.showAll")}</a>}
     </div>
     {shown.length === 0

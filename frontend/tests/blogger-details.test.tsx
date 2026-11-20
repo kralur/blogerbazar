@@ -140,7 +140,7 @@ describe("Blogger details", () => {
 
     expect(await screen.findByText("Great reel")).toBeInTheDocument();
     expect(document.querySelector(".review-carousel")).toBeInTheDocument();
-    expect(document.querySelector(".reviews-heading__summary")?.textContent).toBe("★ 4,8 · 12");
+    expect(document.querySelector(".reviews-heading__summary")?.textContent).toBe("★ 4,8 · 12 отзывов");
     expect(screen.getByRole("link", { name: ru("reviews.showAll") })).toHaveAttribute("href", "#/blogger-reviews/blogger-a");
     expect(api.getBloggerReviews).toHaveBeenCalledWith("blogger-a", { take: 10 });
   });
