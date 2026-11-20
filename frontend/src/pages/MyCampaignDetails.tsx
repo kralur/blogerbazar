@@ -27,6 +27,13 @@ export function MyCampaignDetails({ id }: { id: string }) {
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [toast, setToast] = useState("");
+  // A campaign just created from My campaigns opens here with its "published" message.
+  useEffect(() => {
+    const feedback = sessionStorage.getItem(myCampaignsFeedbackKey);
+    if (!feedback) return;
+    sessionStorage.removeItem(myCampaignsFeedbackKey);
+    setToast(feedback);
+  }, [id]);
   const requestVersionRef = useRef(0);
   const activeRequestRef = useRef<AbortController | undefined>(undefined);
   const load = useCallback(() => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { createBloggerProfile, deleteProfileImage, getMyBloggerProfile, updateBloggerProfile, uploadProfileImage } from "../api/marketplace";
 import { CategoryMultiSelect } from "../components/CategoryMultiSelect";
@@ -6,7 +6,7 @@ import { ProfileMediaPicker, type PendingProfileImage } from "../components/Prof
 import { RegionSelect } from "../components/RegionSelect";
 import { TelegramHandleField, useTelegramHandle } from "../components/TelegramHandleField";
 import { useVerifiedPhone, VerifiedPhoneField } from "../components/VerifiedPhoneField";
-import { FixedActionBar, ReviewItem, ReviewSection, WizardErrorSummary, WizardHeader, WizardLayout, WizardStep } from "../components/Wizard";
+import { revealFirstWizardError, FixedActionBar, ReviewItem, ReviewSection, WizardErrorSummary, WizardHeader, WizardLayout, WizardStep } from "../components/Wizard";
 import { Button, Icon, Input, Modal, Textarea, Toast } from "../components/ui";
 import { UnsavedChangesDialog, useUnsavedChanges } from "../hooks/useUnsavedChanges";
 import { notifyProfileDataChanged } from "../hooks/useProfileDataRefresh";
@@ -251,11 +251,9 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
     setTouched((current) => ({ ...current, ...Object.fromEntries(stepFields[currentStep].map((field) => [field, true])) }));
   }, []);
 
+  // Scrolls the field to the middle of the screen first: focus alone left it under the fixed action bar.
   const focusField = useCallback((field: ErrorKey) => {
-    window.requestAnimationFrame(() => {
-      const container = document.querySelector<HTMLElement>(`[data-wizard-field="${field}"]`);
-      container?.querySelector<HTMLElement>("input, textarea, select, button")?.focus();
-    });
+    revealFirstWizardError(field);
   }, []);
 
   const continueStep = useCallback(() => {
@@ -291,6 +289,16 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   }, [haptic, leaveForm, saving, step, unsavedChanges]);
 
   useTelegramBackHandler(goBack, Boolean(onCompleted));
+  // Editing a profile: Telegram Back steps back through the form like the in-app Back (stacked over the app's route
+  // handler, which takes over again on the first step and leaves the form).
+  const { registerBackButtonHandler } = useTelegram();
+  const goBackRef = useRef(goBack);
+  goBackRef.current = goBack;
+  const editingPastFirstStep = !onCompleted && step > 0;
+  useEffect(() => {
+    if (!editingPastFirstStep) return;
+    return registerBackButtonHandler(() => goBackRef.current());
+  }, [editingPastFirstStep, registerBackButtonHandler]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

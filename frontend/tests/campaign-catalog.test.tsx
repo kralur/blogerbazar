@@ -166,7 +166,8 @@ describe("Campaign catalog", () => {
     expect(budgetGrid).toBeInTheDocument();
     expect(screen.getByLabelText(translate("campaigns.budgetFrom", undefined, "ru"))).toHaveClass("campaign-create-form__input");
     expect(screen.getByLabelText(translate("campaigns.budgetTo", undefined, "ru"))).toHaveClass("campaign-create-form__input");
-    expect(screen.getByLabelText(translate("campaigns.budgetTo", undefined, "ru"))).toHaveValue("1 500 000");
+    // Nothing is prefilled: an invented budget used to be published as the company's own.
+    expect(screen.getByLabelText(translate("campaigns.budgetTo", undefined, "ru"))).toHaveValue("");
     expect(modal.querySelector(".campaign-create-form__submit")).toBeInTheDocument();
   });
 

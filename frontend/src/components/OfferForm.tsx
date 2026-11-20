@@ -90,7 +90,7 @@ export function OfferForm({ bloggerId, brandFaceId, open, onClose, onSent, initi
     }
   };
 
-  return <Modal onClose={() => !sending && onClose()} open={open} title={t("offers.formTitle")}>
+  return <Modal onClose={() => !sending && onClose()} open={open} title={t(brandFaceId ? "offers.formTitleBrandFace" : "offers.formTitle")}>
     <form className="grid gap-3" noValidate onSubmit={submit}>
       {campaigns.length > 0 && <FilterSelect label={t("offers.fromCampaign")} onChange={(value) => void fillFromCampaign(value)} options={[["", t("offers.fromCampaignNone")], ...campaigns.map((campaign) => [campaign.id, campaign.title])]} value={campaignId} />}
       <div>

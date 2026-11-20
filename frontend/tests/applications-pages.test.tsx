@@ -34,7 +34,7 @@ vi.mock("../src/components/ui", () => ({
   ErrorState: ({ title, onRetry }: { title: string; onRetry?: () => void }) => <section><h1>{title}</h1>{onRetry && <button onClick={onRetry}>retry</button>}</section>,
   LoadingState: ({ title }: { title: string }) => <p>{title}</p>,
   Modal: ({ children, open, title }: { children: React.ReactNode; open: boolean; title: string }) => open ? <section aria-label={title}>{children}</section> : null,
-  Toast: () => null
+  Toast: ({ message }: { message?: string }) => message ? <p role="status">{message}</p> : null
 }));
 vi.mock("../src/components/catalog/CatalogShared", () => ({
   CatalogState: ({ title }: { title: string }) => <p>{title}</p>,
@@ -149,11 +149,12 @@ describe("application mutation screens", () => {
     expect(screen.queryByRole("button", { name: translate("applications.accept", undefined, "ru") })).not.toBeInTheDocument();
   });
 
+  // 403: a team role without the right gets a message and keeps the list; 404: the campaign is gone.
   it.each([
-    ["accept", 403, "applications.deniedTitle"],
-    ["accept", 404, "applications.notFoundTitle"],
-    ["reject", 403, "applications.deniedTitle"],
-    ["reject", 404, "applications.notFoundTitle"]
+    ["accept", 403, "common.noPermission"],
+    ["accept", 404, "myCampaignDetails.notFoundTitle"],
+    ["reject", 403, "common.noPermission"],
+    ["reject", 404, "myCampaignDetails.notFoundTitle"]
   ] as const)("maps %s inbox mutation %s to a safe screen state", async (action, status, key) => {
     const mutation = action === "accept" ? api.acceptMyCampaignApplication : api.rejectMyCampaignApplication;
     mutation.mockRejectedValueOnce(new ApiError(status));

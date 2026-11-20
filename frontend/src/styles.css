@@ -885,6 +885,7 @@
     place-items: center;
     align-content: center;
     gap: .25rem;
+    padding: 0; /* "Главная" is a button: its default padding put it 2-3px lower than the links next to it. */
     border: 0;
     background: transparent;
     color: var(--bb-text-secondary);
@@ -2422,3 +2423,12 @@ html[data-desktop="true"] .deal-details .detail-hero__rows { display: grid; grid
 /* My campaign actions: one height, one gap; "Как видят блогеры" takes its own row. */
 .my-campaign-details__actions > * { min-height: 3.25rem; }
 .my-campaign-details__public { grid-column: 1 / -1; }
+/* The create-campaign form is a centred window on a computer, like every other pop-up, not the full width. */
+html[data-desktop="true"] #campaign-create-sheet { max-width: 40rem; }
+/* The button under an empty state centres its label (it is a link, laid out like the other buttons). */
+.tag-state > .catalog-search__primary-button { display: inline-flex; align-items: center; justify-content: center; padding-inline: 1.25rem; text-decoration: none; }
+/* A long single word in a wizard title ("Позиционирование") breaks with a hyphen instead of running under RU/UZ. */
+.wizard-header__copy h1 { overflow-wrap: anywhere; hyphens: auto; }
+/* Home: small text actions get a thumb-sized tap area (44px) without changing how they look. */
+.home-progress__action, .season-note__action { display: inline-flex; min-height: 2.75rem; align-items: center; padding-inline: .25rem; }
+.season-note__hide { display: inline-grid; width: 2.75rem; height: 2.75rem; place-items: center; margin-left: .25rem; }

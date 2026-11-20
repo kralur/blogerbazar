@@ -38,7 +38,11 @@ export function ActionCountsProvider({ role, enabled, children }: { role?: Marke
   useEffect(() => {
     const onSeen = () => void load();
     window.addEventListener(seenDealsChangedEvent, onSeen);
-    return () => window.removeEventListener(seenDealsChangedEvent, onSeen);
+    window.addEventListener(actionCountsChangedEvent, onSeen);
+    return () => {
+      window.removeEventListener(seenDealsChangedEvent, onSeen);
+      window.removeEventListener(actionCountsChangedEvent, onSeen);
+    };
   }, [load]);
   useScreenRefresh(load, enabled);
   // Accepting, declining or reviewing ends with navigation, so moving between screens re-checks (at most every 3 s).
@@ -50,6 +54,12 @@ export function ActionCountsProvider({ role, enabled, children }: { role?: Marke
   }, [enabled, load]);
 
   return <ActionCountsContext.Provider value={counts}>{children}</ActionCountsContext.Provider>;
+}
+
+// An accept, a reject or a review done without leaving the page: the red counts update at once.
+export const actionCountsChangedEvent = "bloggerbazar:action-counts-changed";
+export function notifyActionCountsChanged() {
+  window.dispatchEvent(new Event(actionCountsChangedEvent));
 }
 
 export function useActionCounts() {

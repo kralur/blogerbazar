@@ -298,7 +298,14 @@ export function App() {
     localStorage.setItem(onboardingWelcomeKey, "true");
     setOnboardingStep("telegram");
   };
-  const handleRoleSelected = (role: MarketplaceRole) => {
+  const handleRoleSelected = async (role: MarketplaceRole) => {
+    // The role already has a profile (a role switched away and back, an interrupted creation): open the app, not an
+    // empty wizard that ends in "profile already exists".
+    if (await selectedProfileExists(role)) {
+      setSelectedRole(role);
+      finishOnboarding(initialDeepLink ?? "/");
+      return;
+    }
     setSelectedRole(role);
     if (role === "Business") {
       setOnboardingStep("mode");
@@ -439,8 +446,8 @@ export function App() {
       {route.path === "/my-campaign-applications" && route.id && <MyCampaignApplications campaignId={route.id} />}
       {(visitedRootRoutes.has("/requests") || route.path === "/requests") && <RootScreenVisibility active={route.path === "/requests"}><CachedRequests activeMarketplaceRole={selectedRole} key={`${selectedRole ?? "none"}-${sessionEpoch}`} /></RootScreenVisibility>}
       {route.path === "/my-application" && route.id && <MyApplicationDetails id={route.id} />}
-      {route.path === "/deal" && route.id && <DealDetails id={route.id} viewerRole={selectedRole} />}
-      {route.path === "/offer" && route.id && <OfferDetails id={route.id} viewerRole={selectedRole} />}
+      {route.path === "/deal" && route.id && <DealDetails id={route.id} key={route.id} viewerRole={selectedRole} />}
+      {route.path === "/offer" && route.id && <OfferDetails id={route.id} key={route.id} viewerRole={selectedRole} />}
       {route.path === "/admin" && (route.id === "user" ? <AdminUserCard key={window.location.hash} /> : <Admin section={route.id} />)}
       {!knownRoutes.includes(route.path) && <Home role={selectedRole} />}
     </>}
