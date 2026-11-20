@@ -61,7 +61,7 @@ const campaign = {
 };
 
 function catalogResponse(overrides: Partial<{ items: typeof campaign[]; total: number; page: number; pageSize: number; hasMore: boolean }> = {}) {
-  return { items: [campaign], total: 1, page: 1, pageSize: 20, hasMore: false, ...overrides };
+  return { items: [campaign], total: 1, page: 1, pageSize: 10, hasMore: false, ...overrides };
 }
 
 function renderCampaigns() {
@@ -84,8 +84,8 @@ describe("Campaign catalog", () => {
     renderCampaigns();
 
     await screen.findByText("Coffee launch");
-    expect(api.getCampaignCatalog).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 20, sort: "promoted", query: undefined }), expect.any(AbortSignal));
-    expect(api.getCampaignCatalog.mock.calls[0]?.[0]).toEqual({ page: 1, pageSize: 20, query: undefined, sort: "promoted" });
+    expect(api.getCampaignCatalog).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 10, sort: "promoted", query: undefined }), expect.any(AbortSignal));
+    expect(api.getCampaignCatalog.mock.calls[0]?.[0]).toEqual({ page: 1, pageSize: 10, query: undefined, sort: "promoted" });
   });
 
   it("opens pre-filtered from a Home link with query and category", async () => {
@@ -134,7 +134,7 @@ describe("Campaign catalog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: translate("search.resetAll", undefined, "ru") }));
     await waitFor(() => expect(api.getCampaignCatalog).toHaveBeenCalledTimes(initialCalls + 2));
-    expect(api.getCampaignCatalog.mock.calls.at(-1)?.[0]).toMatchObject({ sort: "promoted", page: 1, pageSize: 20, query: undefined });
+    expect(api.getCampaignCatalog.mock.calls.at(-1)?.[0]).toMatchObject({ sort: "promoted", page: 1, pageSize: 10, query: undefined });
     expect(api.getCampaignCatalog.mock.calls.at(-1)?.[0]).not.toHaveProperty("city");
     expect(api.getCampaignCatalog.mock.calls.at(-1)?.[0]).not.toHaveProperty("category");
   });

@@ -2248,7 +2248,7 @@ html[data-desktop="true"] .home-list:has(> .catalog-tile, > .campaign-catalog-ca
 html[data-desktop="true"] .home-list > .campaign-catalog-card { display: flex; height: 100%; flex-direction: column; }
 html[data-desktop="true"] .home-list .campaign-catalog-card__facts { margin-top: auto !important; }
 /* Two rows per pick on Home; the rest is one click away ("See all"). */
-html[data-desktop="true"] .home-list:has(> .catalog-tile, > .campaign-catalog-card) > :nth-child(n+7) { display: none; }
+html[data-desktop="true"] .home-list:has(> .catalog-tile, > .campaign-catalog-card) > :nth-child(n+4) { display: none; }
 
 /* Bloggers and brand faces as campaign tags on a computer (catalog, favorites): same tile, the bookmark in its corner. */
 .catalog-tile { position: relative; min-width: 0; }
@@ -2433,3 +2433,10 @@ html[data-desktop="true"] #campaign-create-sheet { max-width: 40rem; }
 .home-progress__action, .season-note__action { display: inline-flex; min-height: 2.75rem; align-items: center; padding-inline: .25rem; }
 .season-note__hide { display: inline-grid; width: 2.75rem; height: 2.75rem; place-items: center; margin-left: .25rem; }
 .browser-sessions__more { align-self: flex-start; min-height: 2.75rem; color: var(--bb-tile-text); font-size: .875rem; font-weight: 800; text-decoration: underline; text-underline-offset: .2em; }
+/* Page numbers under a list. */
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .375rem; margin: 1.5rem 0 1rem; grid-column: 1 / -1; }
+.pager__page, .pager__step { display: inline-grid; min-width: 2.75rem; height: 2.75rem; place-items: center; padding: 0 .5rem; border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); color: var(--bb-text); font-size: .9375rem; font-weight: 800; }
+.pager__page[aria-current="page"] { border-color: var(--bb-accent); background: var(--bb-accent); color: var(--bb-accent-text); }
+.pager__page:disabled, .pager__step:disabled { opacity: .45; }
+.pager__step--next svg { transform: rotate(180deg); }
+.pager__gap { min-width: 1.25rem; color: var(--bb-text-secondary); text-align: center; }

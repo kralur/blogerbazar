@@ -29,8 +29,8 @@ vi.mock("../src/components/ui", () => ({
 
 import { BloggerSearch } from "../src/pages/BloggerSearch";
 
-const bloggerPage = { bloggers: [{ id: "blogger-a", name: "Amina", city: "tashkent", categories: ["beauty"], totalFollowers: 1_000, reviewsCount: 0, completedDealsCount: 0 }], total: 1, page: 1, pageSize: 20 };
-const brandFacePage = { items: [{ id: "face-a", name: "Dilnoza", city: "tashkent-city", categories: ["beauty"], languages: ["Русский"], collaborationPrice: 250_000, avatarUrl: null, isPromoted: true, createdAtUtc: "2026-08-01T00:00:00Z" }], total: 1, page: 1, pageSize: 20, hasMore: false };
+const bloggerPage = { bloggers: [{ id: "blogger-a", name: "Amina", city: "tashkent", categories: ["beauty"], totalFollowers: 1_000, reviewsCount: 0, completedDealsCount: 0 }], total: 1, page: 1, pageSize: 10 };
+const brandFacePage = { items: [{ id: "face-a", name: "Dilnoza", city: "tashkent-city", categories: ["beauty"], languages: ["Русский"], collaborationPrice: 250_000, avatarUrl: null, isPromoted: true, createdAtUtc: "2026-08-01T00:00:00Z" }], total: 1, page: 1, pageSize: 10, hasMore: false };
 
 function renderSearch(hash = "#/search") {
   window.location.hash = hash;
@@ -65,7 +65,7 @@ describe("Brand Face catalog in Search", () => {
     renderSearch("#/search?type=brand-face");
     expect(await screen.findByText("Dilnoza")).toBeInTheDocument();
     expect(api.getBrandFaceCatalog).toHaveBeenCalledTimes(1);
-    expect(api.getBrandFaceCatalog).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 20, sort: "promoted" }), expect.any(AbortSignal));
+    expect(api.getBrandFaceCatalog).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 10, sort: "promoted" }), expect.any(AbortSignal));
     expect(screen.getByText(translate("search.promoted", undefined, "ru"))).toBeInTheDocument();
     expect(screen.getByText((_, element) => element?.textContent?.replace(/\u00a0/g, " ") === "250 000 сум")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /favorite/i })).not.toBeInTheDocument();
@@ -145,14 +145,15 @@ describe("Brand Face catalog in Search", () => {
     });
   });
 
-  it("applies an explicit Home category only to Brand Face and deduplicates appended pages", async () => {
+  it("applies an explicit Home category only to Brand Face and keeps it on the next page", async () => {
     api.getBrandFaceCatalog.mockResolvedValueOnce({ ...brandFacePage, total: 40, hasMore: true }).mockResolvedValueOnce({ ...brandFacePage, items: [...brandFacePage.items, { ...brandFacePage.items[0], id: "face-b", name: "Madina" }], total: 40, page: 2, hasMore: false });
     renderSearch("#/search?type=brand-face&category=beauty");
     await screen.findByText("Dilnoza");
     expect(api.getBrandFaceCatalog.mock.calls.some(([filters]) => filters.category === "beauty")).toBe(true);
-    await act(async () => observerCallback?.([{ isIntersecting: true }]));
+    fireEvent.click(screen.getByRole("button", { name: translate("pager.next", undefined, "ru") }));
     expect(await screen.findByText("Madina")).toBeInTheDocument();
     expect(screen.getAllByText("Dilnoza")).toHaveLength(1);
+    expect(api.getBrandFaceCatalog.mock.calls.at(-1)?.[0]).toMatchObject({ category: "beauty", page: 2 });
   });
 
   it("does not let a stale Blogger request overwrite the active Brand Face catalog", async () => {

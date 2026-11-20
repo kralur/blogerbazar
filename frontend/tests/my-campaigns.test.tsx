@@ -63,7 +63,7 @@ const campaign = {
 };
 
 function page(overrides: Partial<{ items: typeof campaign[]; total: number; page: number; pageSize: number; hasMore: boolean }> = {}) {
-  return { items: [campaign], total: 1, page: 1, pageSize: 20, hasMore: false, ...overrides };
+  return { items: [campaign], total: 1, page: 1, pageSize: 10, hasMore: false, ...overrides };
 }
 
 function renderList() {
@@ -98,7 +98,7 @@ describe("My Campaigns management", () => {
     expect(document.querySelector(".campaign-management-screen")).toBeInTheDocument();
     expect(document.querySelector(".page-header")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: translate("myCampaigns.backAria", undefined, "ru") })).not.toBeInTheDocument();
-    expect(api.getMyCampaigns).toHaveBeenCalledWith({ page: 1, pageSize: 20, query: undefined, sort: "newest", status: undefined }, expect.any(AbortSignal));
+    expect(api.getMyCampaigns).toHaveBeenCalledWith({ page: 1, pageSize: 10, query: undefined, sort: "newest", status: undefined }, expect.any(AbortSignal));
     expect(screen.getByRole("link", { name: translate("myCampaigns.openAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign/campaign-a");
     expect(screen.getByText("0 откликов")).toBeInTheDocument();
     expect(screen.getByText(/500.000/)).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe("My Campaigns management", () => {
     await screen.findByText("Coffee launch");
 
     fireEvent.change(screen.getByLabelText(translate("myCampaigns.statusFilter", undefined, "ru")), { target: { value: "1" } });
-    await waitFor(() => expect(api.getMyCampaigns).toHaveBeenLastCalledWith({ page: 1, pageSize: 20, query: undefined, sort: "newest", status: 1 }, expect.any(AbortSignal)));
+    await waitFor(() => expect(api.getMyCampaigns).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, query: undefined, sort: "newest", status: 1 }, expect.any(AbortSignal)));
     expect(api.getMyCampaigns.mock.calls.at(-1)?.[0]).not.toHaveProperty("businessId");
   });
 
@@ -129,21 +129,24 @@ describe("My Campaigns management", () => {
 
     fireEvent.change(screen.getByLabelText(translate("myCampaigns.searchPlaceholder", undefined, "ru")), { target: { value: " Coffee " } });
     expect(api.getMyCampaigns).toHaveBeenCalledTimes(initialCalls);
-    await waitFor(() => expect(api.getMyCampaigns).toHaveBeenLastCalledWith({ page: 1, pageSize: 20, query: "Coffee", sort: "newest", status: undefined }, expect.any(AbortSignal)), { timeout: 1_000 });
+    await waitFor(() => expect(api.getMyCampaigns).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, query: "Coffee", sort: "newest", status: undefined }, expect.any(AbortSignal)), { timeout: 1_000 });
   });
 
-  it("appends the next page once and removes duplicate campaign ids", async () => {
+  it("opens the next page with the page buttons", async () => {
     const nextCampaign = { ...campaign, id: "campaign-b", title: "Tea launch" };
     api.getMyCampaigns
-      .mockResolvedValueOnce(page({ hasMore: true }))
-      .mockResolvedValueOnce(page({ items: [campaign, nextCampaign], total: 2, page: 2, hasMore: false }));
+      .mockResolvedValueOnce(page({ total: 12, hasMore: true }))
+      .mockResolvedValueOnce(page({ items: [nextCampaign], total: 12, page: 2, hasMore: false }));
     renderList();
     await screen.findByText("Coffee launch");
-
+    // Scrolling to the end no longer loads more (owner, 2026-11-20: page by page).
     await act(async () => { intersectionCallback?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver); });
+    expect(api.getMyCampaigns).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: translate("pager.next", undefined, "ru") }));
     await screen.findByText("Tea launch");
-    expect(api.getMyCampaigns).toHaveBeenLastCalledWith({ page: 2, pageSize: 20, query: undefined, sort: "newest", status: undefined }, expect.any(AbortSignal));
-    expect(screen.getAllByRole("link", { name: translate("myCampaigns.openAria", { title: "Coffee launch" }, "ru") })).toHaveLength(1);
+    expect(api.getMyCampaigns).toHaveBeenLastCalledWith({ page: 2, pageSize: 10, query: undefined, sort: "newest", status: undefined }, expect.any(AbortSignal));
+    expect(screen.queryByText("Coffee launch")).not.toBeInTheDocument();
   });
 
   it("keeps a filtered empty result distinct from a first-campaign empty state", async () => {

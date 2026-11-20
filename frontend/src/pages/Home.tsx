@@ -278,6 +278,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   }, [isPreview, load]);
   useProfileDataRefresh(load);
   const [activityReloadKey, setActivityReloadKey] = useState(0);
+  const homeDesktop = useIsDesktop();
   useScreenRefresh(() => { setActivityReloadKey((key) => key + 1); load(); });
 
   // "Waiting for your decision" is re-read when Home is shown again and after an accept, reject or review elsewhere,
@@ -298,16 +299,21 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   const forYou = useRecommendations(!isPreview, activityReloadKey);
   const me = useOwnProfile(resolvedRole, !isPreview, activityReloadKey);
   const forYouCount = forYou ? forYou.campaigns.length + forYou.bloggers.length + forYou.brandFaces.length : 0;
+  // Home shows a taste of each list (owner, 2026-11-20): one row of three on a computer, six to swipe on a phone;
+  // "See all" opens the full list page by page.
+  const railLimit = homeDesktop ? 3 : 6;
   const forYouRail = forYou && forYouCount > 0 && <HomeSection actionHref={forYou.audience === "business" ? "#/search" : "#/campaigns"} title={t(forYou.audience === "business" ? "home.forYouBusiness" : "home.forYou")}>
-    {forYou.campaigns.map((campaign) => <CampaignRow campaign={campaign} key={campaign.id} />)}
-    {forYou.bloggers.map((blogger) => <BloggerRow blogger={blogger} key={blogger.id} />)}
-    {forYou.brandFaces.map((profile) => <BrandFaceRow key={profile.id} profile={profile} />)}
+    {[
+      ...forYou.campaigns.map((campaign) => <CampaignRow campaign={campaign} key={campaign.id} />),
+      ...forYou.bloggers.map((blogger) => <BloggerRow blogger={blogger} key={blogger.id} />),
+      ...forYou.brandFaces.map((profile) => <BrandFaceRow key={profile.id} profile={profile} />)
+    ].slice(0, railLimit)}
   </HomeSection>;
   const hasAnyBlogger = Boolean(data?.promotedBloggers.length || data?.topRatedBloggers.length || data?.newBloggers.length);
   const hasCampaigns = Boolean(data?.promotedCampaigns.length);
-  const bloggerRail = (title: string, bloggers: HomeData["topRatedBloggers"]) => bloggers.length > 0 && <HomeSection actionHref="#/search" title={title}>{bloggers.map((blogger) => <BloggerRow blogger={blogger} key={blogger.id} />)}</HomeSection>;
-  const brandFaceRail = data && data.newBrandFaces.length > 0 && <HomeSection actionHref="#/search?type=brand-face" title={t("home.newBrandFaces")}>{data.newBrandFaces.map((profile) => <BrandFaceRow key={profile.id} profile={profile} />)}</HomeSection>;
-  const campaignRail = data && data.promotedCampaigns.length > 0 && <HomeSection actionHref="#/campaigns" title={t("home.promotedCampaigns")}>{data.promotedCampaigns.map((campaign) => <CampaignRow campaign={campaign} key={campaign.id} />)}</HomeSection>;
+  const bloggerRail = (title: string, bloggers: HomeData["topRatedBloggers"]) => bloggers.length > 0 && <HomeSection actionHref="#/search" title={title}>{bloggers.slice(0, railLimit).map((blogger) => <BloggerRow blogger={blogger} key={blogger.id} />)}</HomeSection>;
+  const brandFaceRail = data && data.newBrandFaces.length > 0 && <HomeSection actionHref="#/search?type=brand-face" title={t("home.newBrandFaces")}>{data.newBrandFaces.slice(0, railLimit).map((profile) => <BrandFaceRow key={profile.id} profile={profile} />)}</HomeSection>;
+  const campaignRail = data && data.promotedCampaigns.length > 0 && <HomeSection actionHref="#/campaigns" title={t("home.promotedCampaigns")}>{data.promotedCampaigns.slice(0, railLimit).map((campaign) => <CampaignRow campaign={campaign} key={campaign.id} />)}</HomeSection>;
 
   return <div className="home screen screen--with-nav">
     <HomeHero categories={data?.categories ?? []} me={me} role={resolvedRole} />

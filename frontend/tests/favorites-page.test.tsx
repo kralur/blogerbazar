@@ -23,8 +23,8 @@ describe("Favorites page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     favorites.canManageFavorite.mockImplementation((target: string) => target === "blogger" || target === "brandFace");
-    api.getFavorites.mockResolvedValue({ items: [{ bloggerId: "blogger-a", name: "Amina", city: "tashkent", categories: ["beauty"], totalFollowers: 100, page: 1, pageSize: 20 }], total: 1, page: 1, pageSize: 20 });
-    api.getBrandFaceFavorites.mockResolvedValue({ items: [{ id: "face-a", name: "Dilnoza", city: "tashkent-city", categories: ["beauty"], languages: ["uz"], collaborationPrice: null, avatarUrl: null, isPromoted: false }], total: 1, page: 1, pageSize: 20, hasMore: false });
+    api.getFavorites.mockResolvedValue({ items: [{ bloggerId: "blogger-a", name: "Amina", city: "tashkent", categories: ["beauty"], totalFollowers: 100, page: 1, pageSize: 10 }], total: 1, page: 1, pageSize: 10 });
+    api.getBrandFaceFavorites.mockResolvedValue({ items: [{ id: "face-a", name: "Dilnoza", city: "tashkent-city", categories: ["beauty"], languages: ["uz"], collaborationPrice: null, avatarUrl: null, isPromoted: false }], total: 1, page: 1, pageSize: 10, hasMore: false });
     observerCallback = undefined;
     vi.stubGlobal("IntersectionObserver", class {
       constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) { observerCallback = callback; }
@@ -56,15 +56,14 @@ describe("Favorites page", () => {
 
   it("paginates Brand Face favorites without mixing the preserved Blogger state", async () => {
     api.getBrandFaceFavorites
-      .mockResolvedValueOnce({ items: [{ id: "face-a", name: "Dilnoza", city: "tashkent-city", categories: ["beauty"], languages: ["uz"], collaborationPrice: null, avatarUrl: null, isPromoted: false }], total: 40, page: 1, pageSize: 20, hasMore: true })
-      .mockResolvedValueOnce({ items: [{ id: "face-b", name: "Madina", city: "samarkand", categories: ["food"], languages: ["ru"], collaborationPrice: null, avatarUrl: null, isPromoted: false }], total: 40, page: 2, pageSize: 20, hasMore: false });
+      .mockResolvedValueOnce({ items: [{ id: "face-a", name: "Dilnoza", city: "tashkent-city", categories: ["beauty"], languages: ["uz"], collaborationPrice: null, avatarUrl: null, isPromoted: false }], total: 40, page: 1, pageSize: 10, hasMore: true })
+      .mockResolvedValueOnce({ items: [{ id: "face-b", name: "Madina", city: "samarkand", categories: ["food"], languages: ["ru"], collaborationPrice: null, avatarUrl: null, isPromoted: false }], total: 40, page: 2, pageSize: 10, hasMore: false });
     const user = userEvent.setup();
     render(<I18nProvider><Favorites /></I18nProvider>);
     expect((await screen.findAllByText("Amina")).length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: translate("favorites.typeBrandFaces", undefined, "ru") }));
     await screen.findByText("Dilnoza");
-    await waitFor(() => expect(observerCallback).toBeDefined());
-    await act(async () => observerCallback?.([{ isIntersecting: true }]));
+    await user.click(screen.getByRole("button", { name: translate("pager.next", undefined, "ru") }));
     expect(await screen.findByText("Madina")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: translate("favorites.typeBloggers", undefined, "ru") }));
     expect(screen.getAllByText("Amina").length).toBeGreaterThan(0);

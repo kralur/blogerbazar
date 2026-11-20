@@ -1,3 +1,4 @@
+import { Pager, listPageSize } from "../components/catalog/Pager";
 import { useIsDesktop } from "../lib/desktopLayout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBrandFaceFavorites, getFavorites, type FavoriteBlogger, type FavoriteBrandFace } from "../api/marketplace";
@@ -17,7 +18,8 @@ import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 type FavoriteTab = "blogger" | "brandFace";
 type MutableRef<T> = { current: T };
-const pageSize = 20;
+// Page by page (owner, 2026-11-20): 12 cards on a computer, 10 on a phone.
+const pageSize = listPageSize();
 
 export function Favorites() {
   const { t } = useI18n();
@@ -106,10 +108,11 @@ function useInitialFavoriteLoad(active: boolean, startedRef: MutableRef<boolean>
   useEffect(() => () => cancel(), [cancel]);
 }
 
-function FavoriteListFooter({ catalog, onRetry, sentinelRef, endKey = "search.endOfList" }: { endKey?: string; catalog: Omit<ReturnType<typeof usePaginatedCatalog>, "updateItem">; onRetry: () => void; sentinelRef: MutableRef<HTMLDivElement | null> }) {
+function FavoriteListFooter({ catalog, onRetry }: { endKey?: string; catalog: Omit<ReturnType<typeof usePaginatedCatalog>, "updateItem">; onRetry: () => void; sentinelRef: MutableRef<HTMLDivElement | null> }) {
   const { t } = useI18n();
-  if (catalog.loading || catalog.failure || catalog.items.length === 0) return null;
-  return <>{catalog.hasMore && <div aria-hidden="true" ref={sentinelRef} />}{catalog.loadingMore && <SearchSkeleton compact count={2} />}{catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={onRetry} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} />}{catalog.loadedInitialResult && !catalog.hasMore && !catalog.loadingMore && !catalog.loadMoreFailed && <p className="catalog-search__end">{t(endKey)}</p>}</>;
+  if (catalog.failure || catalog.items.length === 0) return null;
+  // Page by page (owner, 2026-11-20) instead of loading more at the end of the list.
+  return <>{catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={onRetry} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} />}<Pager disabled={catalog.loading} onChange={(next) => void catalog.load(next, false, true)} page={catalog.page} pageSize={pageSize} total={catalog.total} /></>;
 }
 
 function useInfiniteFavoritesScroll({ active, failure, hasMore, load, loadMoreFailed, loading, loadingMore, page, sentinelRef }: { active: boolean; failure: string | null; hasMore: boolean; load: (page: number, append: boolean) => Promise<void>; loadMoreFailed: boolean; loading: boolean; loadingMore: boolean; page: number; sentinelRef: MutableRef<HTMLDivElement | null> }) {

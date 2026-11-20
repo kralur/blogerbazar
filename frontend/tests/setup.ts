@@ -8,6 +8,8 @@ await loadLanguage("uz");
 // The Uzbek texts are written (and asserted) in the 1995 alphabet; tests/uzbek-script.test.ts checks the new one,
 // which is the app's default.
 beforeEach(() => setUzbekScript("old"));
+// jsdom has no scrolling; the page buttons scroll to the top.
+window.scrollTo = () => undefined;
 
 afterEach(() => {
   cleanup();

@@ -50,12 +50,12 @@ describe("BloggerSearch", () => {
 
   afterEach(() => cleanup());
 
-  it("shows initial skeletons then a truthful count and end-of-list state", async () => {
+  it("shows initial skeletons then a truthful count, and no page buttons for a single page", async () => {
     renderSearch();
     expect(screen.getAllByTestId("skeleton")).toHaveLength(3);
     expect(await screen.findByText("Amina")).toBeInTheDocument();
     expect(screen.getByText(translate("search.found", { count: 1 }, "ru"))).toBeInTheDocument();
-    expect(screen.getByText(translate("search.endOfList", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: translate("pager.aria", undefined, "ru") })).not.toBeInTheDocument();
   });
 
   it("keeps draft filters local until Apply and discards them on close", async () => {
@@ -129,14 +129,19 @@ describe("BloggerSearch", () => {
     window.location.hash = "#/search";
   });
 
-  it("deduplicates the next page and does not request it twice", async () => {
+  it("opens the next page with the page buttons instead of loading more at the end", async () => {
     api.getBloggers.mockResolvedValueOnce({ ...firstPage, total: 40 }).mockResolvedValueOnce(secondPage);
     renderSearch();
     await screen.findByText("Amina");
+    // Scrolling to the end no longer loads more.
     await act(async () => observerCallback?.([{ isIntersecting: true }]));
+    expect(api.getBloggers).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: translate("pager.next", undefined, "ru") }));
     await screen.findByText("Bek");
+    // The page replaces the list (it is not appended).
     expect(screen.getAllByText("Amina")).toHaveLength(1);
     expect(api.getBloggers).toHaveBeenCalledTimes(2);
+    expect(api.getBloggers.mock.calls[1][0]).toMatchObject({ page: 2 });
   });
 
   it("shows offline and retry states without treating taxonomy failure as catalog failure", async () => {
