@@ -13,7 +13,7 @@ import { getCachedCampaignApplication, setCachedCampaignApplication } from "../d
 import { campaignApplicationStatusLabelKey, campaignApplicationStatusTone } from "../lib/campaignApplicationStatus";
 import { PageHeader } from "../components/PageHeader";
 import { ListHero } from "../components/ListHero";
-import { isBrowserSession } from "../lib/browserSession";
+import { creatorProfileOutsideBrowser, isBrowserSession } from "../lib/browserSession";
 import { DetailLayout } from "../components/DetailLayout";
 import { CounterpartyRow } from "../components/CounterpartyRow";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
@@ -109,7 +109,7 @@ export function CampaignDetails({ id }: { id: string }) {
     const requestId = ++applicationRequestRef.current;
     const lookupController = new AbortController();
     let cancelled = false;
-    Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBusinessProfile(), getMyBrandFaceProfile()]).then(([userResult, bloggerResult, businessResult, brandFaceResult]) => {
+    Promise.allSettled([getCurrentPlatformUser(), creatorProfileOutsideBrowser(getMyBloggerProfile), getMyBusinessProfile(), creatorProfileOutsideBrowser(getMyBrandFaceProfile)]).then(([userResult, bloggerResult, businessResult, brandFaceResult]) => {
       if (cancelled || requestId !== applicationRequestRef.current || currentCampaignIdRef.current !== campaignId) return;
       const activeRole = userResult.status === "fulfilled" ? normalizeMarketplaceRole(userResult.value.selectedMarketplaceRole) : undefined;
       const bloggerIsApproved = bloggerResult.status === "fulfilled" && bloggerResult.value.status === 1;

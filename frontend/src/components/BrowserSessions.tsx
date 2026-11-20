@@ -8,11 +8,15 @@ import { Button, Modal } from "./ui";
 
 // D64 stage B, Settings: the browsers signed in to this person's company work, and the way out of each or all.
 // onSignedOut: this very browser's session has just ended.
+const shownSessions = 4;
+
 export function BrowserSessions({ onSignedOut }: { onSignedOut?: () => void }) {
   const { t, language } = useI18n();
   const { haptic } = useTelegram();
   const [sessions, setSessions] = useState<BrowserSession[] | null>(null);
   const [failed, setFailed] = useState(false);
+  // A long list (every sign-in) shows this browser and the latest few; the rest on request.
+  const [showAll, setShowAll] = useState(false);
   const [confirmAll, setConfirmAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const inBrowser = isBrowserSession();
@@ -66,7 +70,7 @@ export function BrowserSessions({ onSignedOut }: { onSignedOut?: () => void }) {
       {failed && <p className="text-sm text-brand-muted" role="status">{t("browser.sessions.failed")}</p>}
       {sessions && sessions.length === 0 && <p className="text-sm text-brand-muted">{t("browser.sessions.none")}</p>}
       {sessions && sessions.length > 0 && <ul className="browser-sessions__list">
-        {sessions.map((session) => <li className="browser-sessions__item" key={session.id}>
+        {(showAll ? sessions : [...sessions].sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent)).slice(0, shownSessions)).map((session) => <li className="browser-sessions__item" key={session.id}>
           <span className="settings-row__text">
             <strong>{deviceLabel(session, t)}{session.isCurrent && <span className="browser-sessions__current">{t("browser.sessions.current")}</span>}</strong>
             <span>{t("browser.sessions.signedIn", { time: formatShortDate(session.createdAtUtc, language, { time: true }) })}</span>
@@ -76,6 +80,7 @@ export function BrowserSessions({ onSignedOut }: { onSignedOut?: () => void }) {
           {!(session.isCurrent && isBrowserSession()) && <Button className="browser-sessions__end" disabled={busy} onClick={() => void endOne(session)} type="button" variant="secondary">{t("browser.sessions.end")}</Button>}
         </li>)}
       </ul>}
+      {sessions && sessions.length > shownSessions && <button className="browser-sessions__more" onClick={() => setShowAll((value) => !value)} type="button">{showAll ? t("browser.sessions.showLess") : t("browser.sessions.showAll", { count: sessions.length })}</button>}
       {sessions && sessions.length > 0 && <Button className="w-full" disabled={busy} onClick={() => { haptic.warning(); setConfirmAll(true); }} type="button" variant="danger">{t("browser.sessions.endAll")}</Button>}
     </div>
     <Modal onClose={() => { if (!busy) setConfirmAll(false); }} open={confirmAll} title={t("browser.sessions.endAllTitle")}>

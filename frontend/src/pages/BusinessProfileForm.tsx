@@ -258,8 +258,8 @@ export function BusinessProfileForm({ onCompleted, onBackToRole, teamMode }: { o
       {step === 1 && <WizardStep stepKey={stepTitles[1]}>
         <div className="wizard-fields">
           <ProfileMediaPicker className="wizard-media-picker" currentUrl={logoUrl} disabled={saving} name={form.name || t("profile.telegramUser")} onChange={(image) => { setDirty(true); setPendingImage(image); }} pending={pendingImage} />
-          <div><Input className="wizard-input" error={touched.website ? errors.website : undefined} label={t("form.websiteOptional")} onBlur={blur("website")} onChange={update("website")} placeholder="https://company.uz" type="url" value={form.website} /><p className="wizard-field-helper">{t("form.websiteHelper")}</p></div>
           <Textarea className="wizard-input" error={touched.description ? errors.description : undefined} label={t("form.aboutCompany")} maxLength={1000} onBlur={blur("description")} onChange={update("description")} placeholder={t("form.companyDescriptionPlaceholder")} required value={form.description} />
+          <div><Input className="wizard-input" error={touched.website ? errors.website : undefined} label={t("form.websiteOptional")} onBlur={blur("website")} onChange={update("website")} placeholder="https://company.uz" type="url" value={form.website} /><p className="wizard-field-helper">{t("form.websiteHelper")}</p></div>
           <VerifiedPhoneField phone={verifiedPhone} />
           <Input className="wizard-input" error={touched.email ? errors.email : undefined} label={t("form.emailOptional")} onBlur={blur("email")} onChange={update("email")} placeholder="brand@example.uz" type="email" value={form.email} />
         </div>
