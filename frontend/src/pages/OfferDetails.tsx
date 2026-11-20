@@ -83,7 +83,7 @@ export function OfferDetails({ id, viewerRole }: { id: string; viewerRole?: Mark
 
   if (state === "loading") return <div className="screen screen--with-nav"><LoadingState title={t("offers.loading")} /><BottomNav /></div>;
   if (!offer || state !== "ready") {
-    return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/requests", label: t("nav.requests") }} /><ErrorState onRetry={state === "error" ? load : undefined} subtitle={state === "not-found" ? t("offers.notFoundSubtitle") : t("offers.errorSubtitle")} title={state === "not-found" ? t("offers.notFoundTitle") : t("offers.errorTitle")} />{state === "not-found" && <SwitchRoleHint />}<BottomNav /></div>;
+    return <div className="screen screen--with-nav detail-error-screen"><PageHeader back={{ href: "#/requests", label: t("nav.requests") }} /><ErrorState onRetry={state === "error" ? load : undefined} subtitle={state === "not-found" ? t("offers.notFoundSubtitle") : t("offers.errorSubtitle")} title={state === "not-found" ? t("offers.notFoundTitle") : t("offers.errorTitle")} />{state === "not-found" && <SwitchRoleHint />}<BottomNav /></div>;
   }
 
   const formatDate = (value: string, withTime = false) => formatShortDate(value, language, withTime ? { time: true } : { year: true });

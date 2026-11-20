@@ -2396,3 +2396,8 @@ html[data-desktop="true"] .browser-sign-in .price-tag-number { font-size: 4rem; 
 
 /* Settings on a computer: the theme and atlas switches are as wide as their three short words, not the whole column. */
 html[data-desktop="true"] .settings-row--stacked > .language-switcher { width: 100%; max-width: 28rem; }
+/* My campaigns tile: the applications icon stays on the line of its count. */
+.my-campaign-tile .my-campaign-card__applications { display: flex; align-items: center; gap: .375rem; }
+.my-campaign-tile .my-campaign-card__applications svg { width: 1rem; height: 1rem; flex: none; }
+/* An error or "not found" screen of a detail page keeps the page width, so its back button sits where it always does. */
+html[data-desktop="true"] .screen.detail-error-screen { max-width: var(--desktop-content-width); }
