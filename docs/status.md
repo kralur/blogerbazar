@@ -112,6 +112,18 @@ _Последнее обновление: 2026-11-20. Опубликовано �
   **Владельцу после выкладки:** `Administration__TelegramUserIds` в Railway должен содержать его id; проверить недавние
   смены телефонов в журнале (дыра вебхука); 2FA, бэкапы Postgres, `Database__ApplyMigrationsOnStartup=true`; прогон
   `docs/launch-check.md`.
+- **Обновление зависимостей, пакет P (2026-11-20, review, backend + CI):** взято: AWSSDK.S3 4.1.2 (на .NET 10
+  его System.IO.Hashing 11 поддерживается), SkiaSharp 4.157.0 тремя пакетами сразу (управляемая библиотека и оба
+  нативных бинарника), Microsoft.NET.Test.Sdk 18.12.0 (только тесты). В `ImageOrientation` один вызов заменён на
+  не устаревший (`DrawBitmap` с `SKSamplingOptions.Default`, поворот по-прежнему пиксель в пиксель). Не взято:
+  Serilog.AspNetCore 11, он тянет Microsoft.Extensions 11 в процесс на .NET 10; мажор в игноре. В
+  `.github/dependabot.yml` SkiaSharp теперь одной группой: отдельный PR только с Linux-бинарником собирается, но
+  любая работа с фото падает (несовместимая версия нативной библиотеки, проверено локально). Новый тест
+  `ProfileMediaWireTests` смотрит на сам запрос загрузки фото: одно подписанное тело известной длины, без
+  checksum-заголовков и chunked (то, что R2 не принимает). Проверено на SDK 10.0.115: старый и новый AWS SDK
+  шлют одинаковый PUT и DELETE (сравнение заголовков), загрузка и удаление через локальный S3-сервер (adobe/s3mock)
+  проходят, сборка, 792 юнит-теста, 78 интеграционных в Testcontainers, нет уязвимых пакетов. Загрузка в
+  настоящий R2 NOT RUN (доступа нет): проверить на проде сменой фото профиля.
 - **Бэкенд на .NET 10, пакет O (2026-11-20, review, backend + CI + Docker, D67):** `net10.0` во всех пяти
   проектах, ASP.NET Core / EF Core / Microsoft.Extensions 10.0.15, Npgsql EF 10.0.3, `dotnet-ef` 10.0.15, образ API
   `dotnet/sdk:10.0` и `dotnet/aspnet:10.0`, CI на `10.0.x`. Попутно Serilog.AspNetCore 10, Swashbuckle 10.3.1 (один
