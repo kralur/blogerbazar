@@ -75,7 +75,7 @@ export function BrandFaceDetails({ id }: { id: string }) {
   useScreenRefresh(load);
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
-  if (!profile) return <div className="screen screen--with-nav"><ErrorState onRetry={load} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!profile) return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/", label: t("common.back") }} /><ErrorState onRetry={load} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   const contacts = [
     contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
     contact?.telegram ? { kind: "telegram" as const, value: contact.telegram } : null,

@@ -42,6 +42,7 @@ vi.mock("../src/components/ui", () => ({
 
 import { MyCampaignDetails } from "../src/pages/MyCampaignDetails";
 import { MyCampaigns } from "../src/pages/MyCampaigns";
+import { DesktopLayoutContext } from "../src/lib/desktopLayout";
 
 const campaign = {
   id: "campaign-a",
@@ -184,6 +185,18 @@ describe("My Campaigns management", () => {
     expect(screen.getByRole("link", { name: translate("myCampaignDetails.editAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign-edit/campaign-a");
     expect(screen.getByRole("button", { name: translate("myCampaignDetails.closeAria", { title: "Coffee launch" }, "ru") })).toBeInTheDocument();
     expect(screen.queryByText(/views|reach/i)).not.toBeInTheDocument();
+    // A published campaign can be seen the way bloggers see it.
+    expect(screen.getByRole("link", { name: translate("myCampaignDetails.viewPublic", undefined, "ru") })).toHaveAttribute("href", "#/campaign/campaign-a");
+  });
+
+  it("shows My campaigns as catalog tiles on a computer", async () => {
+    render(<DesktopLayoutContext.Provider value><I18nProvider><MyCampaigns /></I18nProvider></DesktopLayoutContext.Provider>);
+
+    await screen.findByText("Coffee launch");
+    expect(document.querySelector(".catalog-tile.my-campaign-tile")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: translate("myCampaigns.openAria", { title: "Coffee launch" }, "ru") })).toHaveAttribute("href", "#/my-campaign/campaign-a");
+    // The budget stays short, on one line.
+    expect(screen.getByText(/млн/)).toBeInTheDocument();
   });
 
   it("does not offer lifecycle actions for a closed campaign", async () => {

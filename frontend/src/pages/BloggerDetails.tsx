@@ -78,7 +78,7 @@ export function BloggerDetails({ id }: { id: string }) {
   }, [id]);
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
-  if (!blogger) return <div className="screen screen--with-nav"><ErrorState onRetry={loadBlogger} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!blogger) return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/search", label: t("common.back") }} /><ErrorState onRetry={loadBlogger} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
 
   const socialContact = (type: string, kind: "instagram" | "tiktok" | "youtube" | "telegram") => {
     const platform = blogger.platforms.find((item) => item.type.toLowerCase() === type);
