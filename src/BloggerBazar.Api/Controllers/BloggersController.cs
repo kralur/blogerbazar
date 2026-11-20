@@ -89,6 +89,16 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
         return CreatedAtAction(nameof(GetById), new { id = profile.Id }, profile);
     }
 
+    // D67: proves a Telegram or YouTube channel of the blogger and reads its followers; also the "refresh" button.
+    [HttpPost("me/platforms/{platformId:guid}/verify")]
+    [ProducesResponseType<PlatformVerificationResultDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PlatformVerificationResultDto>> VerifyPlatform(Guid platformId, [FromServices] BrowserRequestGuard guard, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new VerifyMyPlatformCommand(GetTelegramUser().Id, platformId), cancellationToken);
+        return Ok(result with { BotUsername = guard.BotUsername.Length > 0 ? guard.BotUsername : null });
+    }
+
     [HttpPut("me")]
     [ProducesResponseType<BloggerProfileDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<BloggerProfileDto>> Update(CreateBloggerProfileRequest request, CancellationToken cancellationToken)

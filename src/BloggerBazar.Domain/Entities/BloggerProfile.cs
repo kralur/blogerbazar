@@ -57,6 +57,8 @@ public sealed class BloggerProfile
     public bool IsDeleted { get; private set; }
     // Paused by the owner (D50): out of listings and new offers/applications; deals, reviews and the page by link stay.
     public bool IsHidden { get; private set; }
+    // D67: the total follows the platforms after a verified count changed.
+    public void SetTotalFollowers(int totalFollowers) { TotalFollowers = totalFollowers; UpdatedAtUtc = DateTime.UtcNow; }
     public void SetHidden(bool hidden) { IsHidden = hidden; UpdatedAtUtc = DateTime.UtcNow; }
     public DateTime? DeletedAtUtc { get; private set; }
     public BloggerStatus Status { get; private set; }

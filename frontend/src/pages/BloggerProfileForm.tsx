@@ -133,6 +133,8 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   const [edited, setEdited] = useState<Partial<Record<"name" | "username", boolean>>>({});
   const [step, setStep] = useState<Step>(0);
   const [existing, setExisting] = useState(false);
+  // D67: platforms whose followers Telegram / YouTube confirmed; the number is not typed by hand while confirmed.
+  const [verifiedKinds, setVerifiedKinds] = useState<Set<PlatformKind>>(() => new Set());
   const [hydrated, setHydrated] = useState(Boolean(onCompleted));
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -166,6 +168,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
         const item = profile.platforms.find((platform) => platform.type.toLowerCase() === kind);
         return item ? [{ kind, item }] : [];
       });
+      setVerifiedKinds(new Set(saved.filter(({ item }) => Boolean(item.verificationSource)).map(({ kind }) => kind)));
       for (const { kind, item } of saved) {
         handles[kind] = kind === "youtube" ? item.url : kind === "telegram" ? `@${socialHandle(item.url)}` : socialHandle(item.url);
         // Profiles saved before per-platform stats have only totals; with a single platform those totals are that platform's.
@@ -392,7 +395,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
             return <div className="wizard-platform" key={kind}>
               <div data-wizard-field={kind}><Input className="wizard-input" error={touched[kind] ? errors[kind] : undefined} id={`platform-${kind}`} label={t(`form.${kind}`)} onBlur={blur(kind)} onChange={updateHandle(kind)} placeholder={kind === "youtube" ? "https://youtube.com/@channel" : kind === "telegram" ? "@channel" : "@username"} type={kind === "youtube" ? "url" : "text"} value={form[kind]} /></div>
               {filled && <div className="wizard-platform__stats">
-                <div data-wizard-field={followersField(kind)}><Input className="wizard-input" error={touched[followersField(kind)] ? errors[followersField(kind)] : undefined} id={`platform-${kind}-followers`} inputMode="numeric" label={t("common.followers")} onBlur={blur(followersField(kind))} onChange={numeric(followersField(kind))} placeholder="10 000" required value={form[followersField(kind)]} /></div>
+                <div data-wizard-field={followersField(kind)}><Input className="wizard-input" disabled={verifiedKinds.has(kind)} error={touched[followersField(kind)] ? errors[followersField(kind)] : undefined} id={`platform-${kind}-followers`} inputMode="numeric" label={t("common.followers")} onBlur={blur(followersField(kind))} onChange={numeric(followersField(kind))} placeholder="10 000" required value={form[followersField(kind)]} />{verifiedKinds.has(kind) && <p className="wizard-field-helper">{t("verify.formLocked")}</p>}</div>
                 <div data-wizard-field={reachField(kind)}><Input className="wizard-input" error={touched[reachField(kind)] ? errors[reachField(kind)] : undefined} id={`platform-${kind}-reach`} inputMode="numeric" label={t("form.reachShort")} onBlur={blur(reachField(kind))} onChange={numeric(reachField(kind))} placeholder="5 000" required value={form[reachField(kind)]} /></div>
                 <div data-wizard-field={erField(kind)}><Input className="wizard-input" error={touched[erField(kind)] ? errors[erField(kind)] : undefined} id={`platform-${kind}-er`} inputMode="decimal" label={t("form.erShort")} maxLength={6} onBlur={blur(erField(kind))} onChange={decimal(erField(kind))} placeholder="5,5" required suffix="%" value={form[erField(kind)]} /></div>
               </div>}

@@ -1292,9 +1292,22 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
 
+                    b.Property<string>("VerificationSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("VerifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("VerifiedFollowers")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BloggerId");
+
+                    b.HasIndex("VerifiedAtUtc")
+                        .HasFilter("\"VerifiedAtUtc\" IS NOT NULL");
 
                     b.ToTable("social_platforms", (string)null);
                 });

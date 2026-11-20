@@ -192,6 +192,10 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         platform.Property(entity => entity.EngagementRate).HasPrecision(5, 2);
         platform.HasOne(entity => entity.Blogger).WithMany(entity => entity.Platforms).HasForeignKey(entity => entity.BloggerId).OnDelete(DeleteBehavior.Cascade);
         platform.HasIndex(entity => entity.BloggerId);
+        // D67: verified followers (Telegram / YouTube); the weekly refresh looks them up by the date.
+        platform.Property(entity => entity.VerificationSource).HasMaxLength(20);
+        platform.Ignore(entity => entity.IsVerified);
+        platform.HasIndex(entity => entity.VerifiedAtUtc).HasFilter("\"VerifiedAtUtc\" IS NOT NULL");
 
         // D64: a company's team. One active owner per company, one active company per person; removed members stay
         // for the journal and drop out of both rules.

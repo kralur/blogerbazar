@@ -93,8 +93,20 @@ public sealed class UpdateBloggerProfileHandler(IBloggerProfileRepository profil
         profile.PublishAfterOwnerEdit();
         await portfolioItems.DeleteForBloggerAsync(profile.Id, cancellationToken);
         await portfolioItems.AddRangeAsync((command.PortfolioItems ?? []).Select(item => PortfolioItem.Create(profile.Id, item.Title.Trim(), item.Type, item.Url.Trim())), cancellationToken);
+        // D67: the form recreates the platforms; a channel that stays (same type and link) keeps its verification, and
+        // its verified followers win over a typed number. The profile total then follows the platforms.
+        var previous = await platforms.ListForBloggerAsync(profile.Id, cancellationToken);
         await platforms.DeleteForBloggerAsync(profile.Id, cancellationToken);
-        await platforms.AddRangeAsync((command.Platforms ?? []).Select(platform => SocialPlatform.Create(profile.Id, platform.Type.Trim(), platform.Url.Trim(), platform.Followers, platform.ScreenshotUrl?.Trim(), platform.AverageReach, platform.EngagementRate)), cancellationToken);
+        var recreated = (command.Platforms ?? []).Select(platform => SocialPlatform.Create(profile.Id, platform.Type.Trim(), platform.Url.Trim(), platform.Followers, platform.ScreenshotUrl?.Trim(), platform.AverageReach, platform.EngagementRate)).ToList();
+        var carried = false;
+        foreach (var platform in recreated)
+        {
+            if (previous.FirstOrDefault(old => old.IsVerified && old.IsSameChannelAs(platform)) is not { } verified) continue;
+            platform.CarryVerificationFrom(verified);
+            carried = true;
+        }
+        if (carried) profile.SetTotalFollowers(recreated.Sum(platform => platform.Followers ?? 0));
+        await platforms.AddRangeAsync(recreated, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         if (cache is not null) await cache.RotateNamespaceVersionAsync(cancellationToken);
         return BloggerProfileDto.From(profile);
