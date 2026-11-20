@@ -65,7 +65,8 @@ internal sealed class PlatformStatsClient(HttpClient httpClient, IOptions<Telegr
             var description = item.TryGetProperty("snippet", out var snippet) && snippet.TryGetProperty("description", out var text) ? text.GetString() ?? "" : "";
             if (requiredCode is not null && !description.Contains(requiredCode, StringComparison.OrdinalIgnoreCase)) return new PlatformCheck(PlatformCheckOutcomes.CodeMissing);
             var statistics = item.GetProperty("statistics");
-            if (statistics.TryGetProperty("hiddenSubscriberCount", out var hidden) && hidden.GetBoolean()) return new PlatformCheck(PlatformCheckOutcomes.Unavailable);
+            // A hidden count cannot be confirmed: treated like a missing channel, so a mark does not stay on old numbers.
+            if (statistics.TryGetProperty("hiddenSubscriberCount", out var hidden) && hidden.GetBoolean()) return new PlatformCheck(PlatformCheckOutcomes.NotFound);
             var subscribers = long.Parse(statistics.GetProperty("subscriberCount").GetString() ?? "0", System.Globalization.CultureInfo.InvariantCulture);
             return new PlatformCheck(PlatformCheckOutcomes.Verified, (int)Math.Min(subscribers, int.MaxValue));
         }

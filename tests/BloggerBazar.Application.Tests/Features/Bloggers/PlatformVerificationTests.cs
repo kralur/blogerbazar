@@ -107,8 +107,24 @@ public sealed class PlatformVerificationTests
         await world.Handler().Handle(new VerifyMyPlatformCommand(Owner, telegram.Id), CancellationToken.None);
 
         Assert.False(telegram.IsVerified);
-        // A refresh only reads the numbers; ownership was proved before.
-        Assert.Null(world.Client.TelegramOwner);
+        // Ownership is checked on every read, a refresh too.
+        Assert.Equal(Owner, world.Client.TelegramOwner);
+    }
+
+    [Fact]
+    public async Task The_same_channel_sent_twice_keeps_one_verification()
+    {
+        var world = World();
+        var telegram = world.Add("telegram", "https://t.me/madina_blog", 1);
+        telegram.MarkVerified("telegram", 10_000, DateTime.UtcNow);
+        var handler = new UpdateBloggerProfileHandler(world.Bloggers, new NoPortfolio(), world.Platforms, new NoUnitOfWork());
+
+        await handler.Handle(new UpdateBloggerProfileCommand(
+            Owner, "Madina", null, null, "tashkent", ["beauty"], null, null, 1, null, null, 300_000, 500_000, null, null, false, "+998901234567", null, [],
+            Platforms: [new SocialPlatformInput("telegram", "https://t.me/madina_blog", 5, null), new SocialPlatformInput("telegram", "https://t.me/madina_blog", 5, null)]), CancellationToken.None);
+
+        Assert.Single(world.Platforms.Items, item => item.IsVerified);
+        Assert.Equal(10_005, world.Blogger.TotalFollowers);
     }
 
     [Fact]

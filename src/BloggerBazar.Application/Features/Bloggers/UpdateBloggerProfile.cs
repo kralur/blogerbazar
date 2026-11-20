@@ -99,9 +99,13 @@ public sealed class UpdateBloggerProfileHandler(IBloggerProfileRepository profil
         await platforms.DeleteForBloggerAsync(profile.Id, cancellationToken);
         var recreated = (command.Platforms ?? []).Select(platform => SocialPlatform.Create(profile.Id, platform.Type.Trim(), platform.Url.Trim(), platform.Followers, platform.ScreenshotUrl?.Trim(), platform.AverageReach, platform.EngagementRate)).ToList();
         var carried = false;
+        // Each verified channel carries over to one recreated entry at most: the same channel sent twice does not
+        // count its verified followers twice.
+        var verifiedLeft = previous.Where(old => old.IsVerified).ToList();
         foreach (var platform in recreated)
         {
-            if (previous.FirstOrDefault(old => old.IsVerified && old.IsSameChannelAs(platform)) is not { } verified) continue;
+            if (verifiedLeft.FirstOrDefault(old => old.IsSameChannelAs(platform)) is not { } verified) continue;
+            verifiedLeft.Remove(verified);
             platform.CarryVerificationFrom(verified);
             carried = true;
         }

@@ -24,8 +24,7 @@ public static class PlatformCheckOutcomes
 
 public interface IPlatformStatsClient
 {
-    // ownerTelegramUserId: the person must be the creator or an administrator of the channel; null on a refresh
-    // where only the count is read again (the ownership was proved before).
+    // ownerTelegramUserId: the person must be the creator or an administrator of the channel (checked on every read).
     Task<PlatformCheck> CheckTelegramChannelAsync(string channelUsername, long? ownerTelegramUserId, CancellationToken cancellationToken);
 
     // requiredCode: must appear in the channel description; null on a refresh (the code may be removed after proving).
