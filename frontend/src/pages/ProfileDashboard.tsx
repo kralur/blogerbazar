@@ -13,7 +13,7 @@ import { notifyProfileDataChanged, useProfileDataRefresh } from "../hooks/usePro
 import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
-import { isBrowserSession } from "../lib/browserSession";
+import { creatorProfileOutsideBrowser, isBrowserSession } from "../lib/browserSession";
 import { useIsDesktop } from "../lib/desktopLayout";
 import { DetailLayout } from "../components/DetailLayout";
 
@@ -63,7 +63,7 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
     let cancelled = false;
     setLoading(true);
     setLoadFailed(false);
-    Promise.allSettled([getCurrentPlatformUser(), getMyBloggerProfile(), getMyBrandFaceProfile(), getMyBusinessProfile(), getMyCampaignApplications(), getMyDeals()]).then(([userResult, bloggerResult, brandFaceResult, businessResult, applicationsResult, dealsResult]) => {
+    Promise.allSettled([getCurrentPlatformUser(), creatorProfileOutsideBrowser(getMyBloggerProfile), creatorProfileOutsideBrowser(getMyBrandFaceProfile), getMyBusinessProfile(), getMyCampaignApplications(), getMyDeals()]).then(([userResult, bloggerResult, brandFaceResult, businessResult, applicationsResult, dealsResult]) => {
       if (cancelled) return;
       const profileResults = [bloggerResult, brandFaceResult, businessResult];
       const hasUnexpectedProfileFailure = profileResults.some((result) => result.status === "rejected" && (!(result.reason instanceof ApiError) || result.reason.status !== 404));

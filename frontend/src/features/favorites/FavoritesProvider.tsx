@@ -1,3 +1,4 @@
+import { creatorProfileOutsideBrowser } from "../../lib/browserSession";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getBrandFaceFavorites, getCurrentPlatformUser, getFavorites, getMyBloggerProfile, getMyBrandFaceProfile, normalizeMarketplaceRole, removeBrandFaceFavorite, removeFavorite, saveBrandFaceFavorite, saveFavorite, type FavoriteTarget, type MarketplaceRole } from "../../api/marketplace";
 
@@ -49,7 +50,7 @@ export function FavoritesProvider({ children, enabled = true }: { children: Reac
     }
 
     // One Telegram user can own several marketplace profiles; their own cards get no save button.
-    void Promise.allSettled([Promise.resolve().then(getMyBloggerProfile), Promise.resolve().then(getMyBrandFaceProfile)]).then(([blogger, brandFace]) => {
+    void Promise.allSettled([creatorProfileOutsideBrowser(getMyBloggerProfile), creatorProfileOutsideBrowser(getMyBrandFaceProfile)]).then(([blogger, brandFace]) => {
       if (refreshVersion !== stateVersionRef.current) return;
       const keys = new Set<string>();
       if (blogger.status === "fulfilled" && blogger.value?.id) keys.add(favoriteKey("blogger", blogger.value.id));
