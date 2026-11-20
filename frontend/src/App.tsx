@@ -197,7 +197,7 @@ export function App() {
   }, [onboardingStep]);
 
   const { language } = useI18n();
-  const syncedLanguage = useRef<string>();
+  const syncedLanguage = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (onboardingStep !== "complete" || syncedLanguage.current === language) return;
     syncedLanguage.current = language;

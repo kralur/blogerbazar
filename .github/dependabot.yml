@@ -18,8 +18,8 @@ updates:
       dev-tools:
         dependency-type: development
     # Major versions that are a migration of their own, taken by hand as a planned package (status.md, 2026-11-20):
-    # React 19 breaks types and one catalog test in the Mini App; Tailwind 4, TypeScript 7, Vitest 5 and jsdom 31
-    # fail the build of all three web apps.
+    # Tailwind 4, TypeScript 7, Vitest 5 and jsdom 31 fail the build of all three web apps. React went to 19 that
+    # way (package L); its next major waits for the same treatment.
     ignore:
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]

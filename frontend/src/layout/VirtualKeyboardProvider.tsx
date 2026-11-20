@@ -69,7 +69,7 @@ function keepActiveFieldVisible() {
 
 export function VirtualKeyboardProvider({ children }: { children: ReactNode }) {
   const baselineHeightRef = useRef(0);
-  const frameRef = useRef<number>();
+  const frameRef = useRef<number | undefined>(undefined);
   const [state, setState] = useState<VirtualKeyboardState>(defaultState);
 
   useEffect(() => {

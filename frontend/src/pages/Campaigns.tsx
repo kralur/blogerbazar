@@ -103,7 +103,12 @@ export function Campaigns() {
   }, [appliedFilters, debouncedQuery]);
   const { items, total, loading, loadingMore, loadMoreFailed, failure, page, hasMore, loadedInitialResult, load, cancel } = usePaginatedCatalog<CampaignCardData>({ active, fetchPage });
 
-  const catalogKey = useMemo(() => JSON.stringify({ ...appliedFilters, query: debouncedQuery.trim() }), [appliedFilters, debouncedQuery]);
+  // A reset, a removed chip and a new sort reload the list even when the filters end up reading the same. The counter
+  // is state, so only the render that carries the new filters sees it. It used to be a ref cleared in the handler;
+  // a render still holding the old filters (a response that had just landed) read the cleared ref too and sent one
+  // more request with the old filters before the right one (seen on React 19, which commits that render first).
+  const [reloadCount, setReloadCount] = useState(0);
+  const catalogKey = useMemo(() => JSON.stringify({ ...appliedFilters, query: debouncedQuery.trim(), reload: reloadCount }), [appliedFilters, debouncedQuery, reloadCount]);
   const activeChips = useMemo(() => buildActiveChips(appliedFilters, language, t), [appliedFilters, language, t]);
   const filterError = getFilterError(draftFilters, t);
   const hasFilterOrQuery = activeChips.length > 0 || Boolean(debouncedQuery.trim());
@@ -206,7 +211,7 @@ export function Campaigns() {
     cancel();
     const reset = normalizeFilters({});
     draftFiltersRef.current = reset;
-    lastCatalogKeyRef.current = "";
+    setReloadCount((count) => count + 1);
     setDraftFilters(reset);
     setAppliedFilters(reset);
     setQuery("");
@@ -216,7 +221,7 @@ export function Campaigns() {
   const removeFilter = (key: CampaignActiveFilterKey) => {
     haptic.selection();
     cancel();
-    lastCatalogKeyRef.current = "";
+    setReloadCount((count) => count + 1);
     const values = key === "budget" ? { minBudget: undefined, maxBudget: undefined } : key === "deadline" ? { deadlineFrom: undefined, deadlineTo: undefined } : { [key]: undefined };
     setAppliedFilters((current) => normalizeFilters({ ...current, ...values }));
     const nextDraft = normalizeFilters({ ...draftFiltersRef.current, ...values });
@@ -227,7 +232,7 @@ export function Campaigns() {
   const changeSort = (sort: CampaignCatalogSort) => {
     haptic.selection();
     cancel();
-    lastCatalogKeyRef.current = "";
+    setReloadCount((count) => count + 1);
     setAppliedFilters((current) => normalizeFilters({ ...current, sort }));
     const nextDraft = normalizeFilters({ ...draftFiltersRef.current, sort });
     draftFiltersRef.current = nextDraft;

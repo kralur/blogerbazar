@@ -28,7 +28,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   const [reopening, setReopening] = useState(false);
   const [toast, setToast] = useState("");
   const requestVersionRef = useRef(0);
-  const activeRequestRef = useRef<AbortController>();
+  const activeRequestRef = useRef<AbortController | undefined>(undefined);
   const load = useCallback(() => {
     activeRequestRef.current?.abort();
     const controller = new AbortController();

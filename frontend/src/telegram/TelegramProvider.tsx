@@ -103,7 +103,7 @@ const TelegramContext = createContext<TelegramContextValue | null>(null);
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
   const [booting, setBooting] = useState(true);
-  const backHandlerRef = useRef<(() => void) | undefined>();
+  const backHandlerRef = useRef<(() => void) | undefined>(undefined);
   const [hasBackHandler, setHasBackHandler] = useState(false);
   const [overlayBackHandlers, setOverlayBackHandlers] = useState<Array<{ id: number; handler: () => void }>>([]);
   const overlayBackHandlersRef = useRef<Array<{ id: number; handler: () => void }>>([]);

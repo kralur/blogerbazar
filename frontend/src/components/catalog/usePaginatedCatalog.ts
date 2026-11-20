@@ -14,7 +14,7 @@ export function usePaginatedCatalog<TItem>({ active, fetchPage, getItemId = defa
   const [hasMore, setHasMore] = useState(false);
   const [loadedInitialResult, setLoadedInitialResult] = useState(false);
   const requestIdRef = useRef(0);
-  const abortControllerRef = useRef<AbortController>();
+  const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const loadingPagesRef = useRef(new Set<number>());
   const loadedInitialResultRef = useRef(false);
 

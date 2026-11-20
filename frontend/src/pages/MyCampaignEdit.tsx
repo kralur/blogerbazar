@@ -88,7 +88,7 @@ export function MyCampaignEdit({ id }: { id: string }) {
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
   const requestVersionRef = useRef(0);
-  const activeRequestRef = useRef<AbortController>();
+  const activeRequestRef = useRef<AbortController | undefined>(undefined);
   const detailsHash = `#/my-campaign/${id}`;
   const editHash = `#/my-campaign-edit/${id}`;
   const historyOrigin = useRef(getHistoryOrigin(window.history.state, editHash)).current;

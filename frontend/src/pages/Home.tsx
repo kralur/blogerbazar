@@ -239,7 +239,7 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   const [data, setData] = useState<HomeData | null>(() => initialData ?? (isPreview ? null : readHomeSnapshot(resolvedRole)));
   const [failed, setFailed] = useState(initialError);
   const [offline, setOffline] = useState(false);
-  const activeRequest = useRef<AbortController>();
+  const activeRequest = useRef<AbortController | undefined>(undefined);
   const requestVersion = useRef(0);
   useScrollRestoration("home");
 
