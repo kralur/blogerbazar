@@ -21,6 +21,8 @@ public static partial class PlatformVerification
     public static readonly TimeSpan RecheckAfter = TimeSpan.FromMinutes(10);
     // Verified numbers older than this are read again by the weekly refresh.
     public static readonly TimeSpan RefreshAfter = TimeSpan.FromDays(7);
+    // A platform that has not answered for this long loses the mark instead of showing old numbers forever.
+    public static readonly TimeSpan MaxAge = TimeSpan.FromDays(30);
 
     // "BB-" and six letters/digits derived from the platform id: the same code every time for the same channel entry.
     public static string CodeFor(Guid platformId)
@@ -49,13 +51,14 @@ public static partial class PlatformVerification
 
     public static bool CanVerify(string type) => type.Equals(Telegram, StringComparison.OrdinalIgnoreCase) || type.Equals(YouTube, StringComparison.OrdinalIgnoreCase);
 
-    // One platform: ownership is checked when proving (refresh=false); a refresh reads the numbers again.
+    // One platform. Telegram ownership is checked every time (an administrator who lost the rights loses the mark);
+    // the YouTube code only when proving (refresh=false): it may be removed afterwards.
     public static async Task<PlatformCheck> CheckAsync(IPlatformStatsClient client, SocialPlatform platform, long ownerTelegramUserId, bool refresh, CancellationToken cancellationToken)
     {
         if (platform.Type.Equals(Telegram, StringComparison.OrdinalIgnoreCase))
         {
             return TelegramChannel(platform.Url) is { } channel
-                ? await client.CheckTelegramChannelAsync(channel, refresh ? null : ownerTelegramUserId, cancellationToken)
+                ? await client.CheckTelegramChannelAsync(channel, ownerTelegramUserId, cancellationToken)
                 : new PlatformCheck(PlatformCheckOutcomes.NotFound);
         }
         if (platform.Type.Equals(YouTube, StringComparison.OrdinalIgnoreCase))
@@ -155,12 +158,14 @@ public sealed class RefreshVerifiedPlatformsHandler(
                 platform.Blogger.SetTotalFollowers(PlatformVerification.TotalFollowers(all, platform));
                 changed++;
             }
-            else if (check.Outcome is PlatformCheckOutcomes.NotFound or PlatformCheckOutcomes.BotNotAdmin)
+            else if (check.Outcome is PlatformCheckOutcomes.NotFound or PlatformCheckOutcomes.BotNotAdmin or PlatformCheckOutcomes.NotOwner
+                     || platform.VerifiedAtUtc < now - PlatformVerification.MaxAge)
             {
+                // Gone, no longer ours, or silent for a month: the mark goes, the last number stays as the blogger's own.
                 platform.ClearVerification();
                 changed++;
             }
-            // Unavailable or not configured: try again next time.
+            // Unavailable or not configured, and recent: try again next time.
         }
         if (changed > 0)
         {
