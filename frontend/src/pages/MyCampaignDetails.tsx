@@ -1,3 +1,4 @@
+import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { closeMyCampaign, getMyCampaign, reopenMyCampaign, type MyCampaignDetails as MyCampaignDetailsData } from "../api/marketplace";
@@ -20,6 +21,8 @@ type DetailState = "not-found" | "denied" | "failed" | null;
 
 export function MyCampaignDetails({ id }: { id: string }) {
   const { language, t } = useI18n();
+  // A team viewer (D64) sees the campaign and its applications, without edit, close or the "…" menu.
+  const canOperate = useBusinessCanOperate();
   const [campaign, setCampaign] = useState<MyCampaignDetailsData | null>(() => getCachedMyCampaign(id));
   const [loading, setLoading] = useState(() => !getCachedMyCampaign(id));
   const [failure, setFailure] = useState<DetailState>(null);
@@ -131,7 +134,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   // D63, package G: the lapis head holds the state, the budget large, the title and the facts as tags; the inbox and the text below.
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
     <ListHero className="detail-hero">
-      <PageHeader actions={<><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}<CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} /></>} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
+      <PageHeader actions={<><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}{canOperate && <CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} />}</>} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
       <p className="detail-hero__price">{budget ?? t("myCampaigns.budgetNotSpecified")}</p>
       {budget && <p className="detail-hero__price-unit">{t("common.budget")}</p>}
       <h1 className="detail-hero__title">{campaign.title}</h1>
@@ -149,16 +152,18 @@ export function MyCampaignDetails({ id }: { id: string }) {
     {campaign.applicationsCount > 0 && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}
     </>} side={<>
     {canManage && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}>
+      {canOperate && <>
       <a aria-label={t("myCampaignDetails.editAria", { title: campaign.title })} className="my-campaign-details__edit" href={`#/my-campaign-edit/${id}`} onClick={(event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
         navigateWithHistoryOrigin(window.location.hash, `#/my-campaign-edit/${id}`);
       }}>{t("myCampaignDetails.edit")}</a>
       <Button aria-label={t("myCampaignDetails.closeAria", { title: campaign.title })} onClick={() => setCloseOpen(true)} type="button" variant="danger">{t("myCampaignDetails.close")}</Button>
+      </>}
       {/* The owner sees the campaign the way bloggers see it in the catalog. */}
       {campaign.status === 1 && <a className="my-campaign-details__edit my-campaign-details__public" href={`#/campaign/${id}`}>{t("myCampaignDetails.viewPublic")}</a>}
     </section>}
-    {campaign.status === 2 && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}><Button aria-busy={reopening} disabled={reopening || reopenBlocked} onClick={() => void reopen()} type="button">{t("campaignMenu.reopen")}</Button></section>}
+    {campaign.status === 2 && canOperate && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}><Button aria-busy={reopening} disabled={reopening || reopenBlocked} onClick={() => void reopen()} type="button">{t("campaignMenu.reopen")}</Button></section>}
     {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t(reopenBlocked ? "campaignMenu.reopenExpired" : "myCampaignDetails.closedHintSide")}</p>}
     </>}>
     <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>

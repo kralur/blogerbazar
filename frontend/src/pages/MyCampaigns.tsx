@@ -1,3 +1,4 @@
+import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentPlatformUser, getMyCampaigns, normalizeMarketplaceRole, type MyCampaign, type MyCampaignQuery, type MyCampaignSort, type MyCampaignStatus } from "../api/marketplace";
 import { MyCampaignCard } from "../components/MyCampaignCard";
@@ -20,6 +21,8 @@ const defaultQuery: MyCampaignQuery = { sort: "newest", pageSize };
 
 export function MyCampaigns() {
   const { t } = useI18n();
+  // A team viewer (D64) sees the campaigns but does not create or change them.
+  const canOperate = useBusinessCanOperate();
   const active = useRootScreenVisibility();
   useScrollRestoration("my-campaigns");
   const [query, setQuery] = useState("");
@@ -112,7 +115,7 @@ export function MyCampaigns() {
 
   return <div aria-hidden={!active} className="campaign-management-screen my-campaigns catalog-search screen screen--with-nav" hidden={!active}>
     <ListHero>
-    <PageHeader actions={access === "allowed" ? <a className="my-campaigns__create" href="#/campaigns?create=1">{t("myCampaigns.create")}</a> : undefined} back={{ href: "#/profile", label: t("myCampaigns.backAria") }} eyebrow={t("myCampaigns.eyebrow")} title={t("myCampaigns.title")} />
+    <PageHeader actions={access === "allowed" && canOperate ? <a className="my-campaigns__create" href="#/campaigns?create=1">{t("myCampaigns.create")}</a> : undefined} back={{ href: "#/profile", label: t("myCampaigns.backAria") }} eyebrow={t("myCampaigns.eyebrow")} title={t("myCampaigns.title")} />
     {access === "allowed" && <>
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("myCampaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("myCampaigns.searchPlaceholder")} value={query} /></div>
     <div className="my-campaigns__controls">
@@ -128,8 +131,8 @@ export function MyCampaigns() {
       {loading && !loadedInitialResult && <SearchSkeleton count={3} />}
       {failure && !loadedInitialResult && <CatalogState icon={failure === "offline" ? "refresh" : "filter"} onRetry={retry} subtitle={t(failure === "offline" ? "myCampaigns.offlineSubtitle" : "myCampaigns.errorSubtitle")} title={t(failure === "offline" ? "myCampaigns.offlineTitle" : "myCampaigns.errorTitle")} />}
       {loadedInitialResult && failure && <CatalogState compact icon="refresh" onRetry={retry} subtitle={t(failure === "offline" ? "myCampaigns.offlineSubtitle" : "myCampaigns.errorSubtitle")} title={t(failure === "offline" ? "myCampaigns.offlineTitle" : "myCampaigns.errorTitle")} />}
-      {!loading && !failure && items.length === 0 && <CatalogState actionLabel={hasFilters ? t("myCampaigns.clearFilters") : t("myCampaigns.create")} icon={hasFilters ? "filter" : "briefcase"} onRetry={hasFilters ? reset : () => { window.location.hash = "/campaigns?create=1"; }} subtitle={t(hasFilters ? "myCampaigns.filteredEmptySubtitle" : "myCampaigns.emptySubtitle")} title={t(hasFilters ? "myCampaigns.filteredEmptyTitle" : "myCampaigns.emptyTitle")} />}
-      {loadedInitialResult && items.map((campaign) => <MyCampaignCard campaign={campaign} key={campaign.id} onMenuResult={onMenuResult} />)}
+      {!loading && !failure && items.length === 0 && <CatalogState actionLabel={hasFilters ? t("myCampaigns.clearFilters") : t("myCampaigns.create")} icon={hasFilters ? "filter" : "briefcase"} onRetry={hasFilters ? reset : canOperate ? () => { window.location.hash = "/campaigns?create=1"; } : undefined} subtitle={t(hasFilters ? "myCampaigns.filteredEmptySubtitle" : "myCampaigns.emptySubtitle")} title={t(hasFilters ? "myCampaigns.filteredEmptyTitle" : "myCampaigns.emptyTitle")} />}
+      {loadedInitialResult && items.map((campaign) => <MyCampaignCard campaign={campaign} key={campaign.id} onMenuResult={canOperate ? onMenuResult : undefined} />)}
       {hasMore && <div aria-hidden="true" ref={sentinelRef} />}
       {loadingMore && <SearchSkeleton compact count={2} />}
       {loadMoreFailed && <CatalogState compact icon="refresh" onRetry={retryMore} subtitle={t("myCampaigns.loadMoreSubtitle")} title={t("myCampaigns.loadMoreTitle")} />}

@@ -1,3 +1,4 @@
+import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { useIsDesktop } from "../lib/desktopLayout";
 import { notifyActionCountsChanged } from "../features/actionCounts/ActionCountsProvider";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -32,6 +33,9 @@ type LoadState = "loading" | "ready" | "denied" | "not-found" | "error";
 export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
   const desktop = useIsDesktop();
+  // A team viewer (D64) follows the deal; completing, the price, publications and the review are for the others.
+  const canOperate = useBusinessCanOperate(viewerRole === "Business");
+  const operate = viewerRole !== "Business" || canOperate;
   const [deal, setDeal] = useState<Deal | null>(() => getCachedDeal(id));
   const [state, setState] = useState<LoadState>(deal ? "ready" : "loading");
   // Opening the deal once clears its "new" dot in Requests.
@@ -169,8 +173,8 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
   // on a computer it stays in the side panel.
   const actionsOnTop = !desktop;
   const dealActions = <>
-    {deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={openComplete} type="button">{t("requests.complete")}</Button>}
-    {deal.canReview && <Card className="mt-5"><h2 className="font-extrabold">{t("requests.reviewTitle")}</h2>
+    {operate && deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={openComplete} type="button">{t("requests.complete")}</Button>}
+    {operate && deal.canReview && <Card className="mt-5"><h2 className="font-extrabold">{t("requests.reviewTitle")}</h2>
       {deal.partnerHasReviewed && <p className="deal-review__partner" role="status"><span aria-hidden="true" className="request-row__action-dot" />{t("deals.partnerReviewedHint", { partner: deal.counterpartyName })}</p>}
       <div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${t("requests.rating")} ${value}`} aria-pressed={value === rating} className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${value <= rating ? "bg-brand-soft text-brand-warning" : "bg-brand-soft text-brand-muted opacity-50"}`} key={value} onClick={() => setRating(value)} type="button">★</button>)}</div>
       <Textarea className="mt-3" maxLength={1000} onChange={(event) => setComment(event.target.value)} placeholder={t("requests.reviewPlaceholder")} value={comment} />
@@ -197,7 +201,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       { label: t("deals.startedAt"), value: deal.offer ? null : formatDate(deal.createdAtUtc) },
       { label: t("deals.completedAt"), value: deal.completedAtUtc ? formatDate(deal.completedAtUtc) : null }
     ]} />
-    <DealResults deal={deal} onChanged={load} onMessage={(message, nextTone) => { setTone(nextTone); setToast(message); }} />
+    <DealResults deal={operate ? deal : { ...deal, canSetPrice: false, canAddPublication: false, canConfirmPublications: false }} onChanged={load} onMessage={(message, nextTone) => { setTone(nextTone); setToast(message); }} />
     {!actionsOnTop && dealActions}
     {deal.status === DealStatus.Completed && !deal.canReview && !deal.hasReviewed && deal.reviewDeadlineUtc && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewClosed")}</p>}
     </>}>

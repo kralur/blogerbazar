@@ -15,6 +15,8 @@ vi.mock("../src/api/marketplace", async (importOriginal) => ({
   getRecommendations: api.getRecommendations
 }));
 vi.mock("../src/hooks/useScrollRestoration", () => ({ useScrollRestoration: vi.fn() }));
+// The team-role check has its own profile refresh; these tests drive Home's.
+vi.mock("../src/hooks/useBusinessCanOperate", () => ({ useBusinessCanOperate: () => true }));
 vi.mock("../src/hooks/useProfileDataRefresh", () => ({
   useProfileDataRefresh: (refresh: () => void) => { profileRefresh = refresh; }
 }));
