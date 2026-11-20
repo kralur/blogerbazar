@@ -104,7 +104,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   };
 
   if (loading && !campaign) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignDetails.loading")} /><BottomNav /></div>;
-  if (!campaign) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
+  if (!campaign) return <div className="campaign-management-screen screen screen--with-nav"><PageHeader back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} /><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignDetails.notFoundSubtitle" : failure === "denied" ? "myCampaignDetails.deniedSubtitle" : "myCampaignDetails.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignDetails.notFoundTitle" : failure === "denied" ? "myCampaignDetails.deniedTitle" : "myCampaignDetails.errorTitle")} /><BottomNav /></div>;
 
   // A closed campaign is published again from the side panel too, not only from the "⋯" menu.
   const reopen = async () => {
@@ -150,6 +150,8 @@ export function MyCampaignDetails({ id }: { id: string }) {
       }}>{t("myCampaignDetails.edit")}</a>
       <Button aria-label={t("myCampaignDetails.closeAria", { title: campaign.title })} onClick={() => setCloseOpen(true)} type="button" variant="danger">{t("myCampaignDetails.close")}</Button>
     </section>}
+    {/* The owner sees the campaign the way bloggers see it in the catalog. */}
+    {campaign.status === 1 && <a className="my-campaign-details__edit mt-3 w-full" href={`#/campaign/${id}`}>{t("myCampaignDetails.viewPublic")}</a>}
     {campaign.status === 2 && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}><Button aria-busy={reopening} disabled={reopening || reopenBlocked} onClick={() => void reopen()} type="button">{t("campaignMenu.reopen")}</Button></section>}
     {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t(reopenBlocked ? "campaignMenu.reopenExpired" : "myCampaignDetails.closedHintSide")}</p>}
     </>}>

@@ -202,7 +202,7 @@ export function CampaignDetails({ id }: { id: string }) {
 
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("campaign.loading")} /><BottomNav /></div>;
-  if (!campaign) return <div className="screen screen--with-nav"><ErrorState onRetry={loadCampaign} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!campaign) return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/campaigns", label: t("nav.campaigns") }} /><ErrorState onRetry={loadCampaign} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
 
   const contacts = [
     contact?.phone ? { kind: "phone" as const, value: contact.phone } : null,
@@ -212,7 +212,7 @@ export function CampaignDetails({ id }: { id: string }) {
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   const budget = compactBudgetRange(campaign.budgetFrom, campaign.budgetTo, t("currency.uzs"));
   const expired = isPastDay(campaign.deadline);
-  const meta = [campaign.city ? cityLabel(campaign.city, language) : null, campaign.deadline ? t("campaign.until", { date: formatDate(campaign.deadline) }) : null, campaign.categories.slice(0, 2).map((category) => categoryLabel(category, language)).join(", ") || null].filter(Boolean).join(" · ");
+  const meta = [campaign.city ? cityLabel(campaign.city, language) : null, campaign.deadline ? t("campaign.until", { date: formatDate(campaign.deadline) }) : null].filter(Boolean).join(" · ");
   // D63, package G: the lapis head says whose campaign it is, its state, the budget large and the title; the text below.
   return (
     <div className="screen screen--with-nav">

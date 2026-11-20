@@ -168,7 +168,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
       <PageHeader actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
 
       <div aria-label={t("requests.title")} className="catalog-search__segments catalog-search__segments--three" role="group">
-        {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews + actionCounts.newDeals]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button">{label}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}
+        {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews + actionCounts.newDeals]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button"><span>{label}</span>{view === value && <span aria-hidden="true" className="catalog-search__segment-indicator">✓</span>}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}
       </div>
       </ListHero>
 

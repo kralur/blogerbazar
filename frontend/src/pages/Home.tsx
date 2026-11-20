@@ -173,7 +173,7 @@ type ActivityItem = { key: string; title: string; detail: string; href: string }
 
 // "Waiting for your decision": only real, actionable items from existing endpoints; hidden when there is nothing to do.
 function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [items, setItems] = useState<ActivityItem[] | null>(null);
   useEffect(() => {
     // A brand face has deals and reviews like a blogger (D46).
@@ -192,7 +192,7 @@ function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
             .filter((campaign) => waiting(campaign) > 0)
             .sort((left, right) => waiting(right) - waiting(left))
             .slice(0, 2);
-          campaigns.forEach((campaign) => next.push({ key: `campaign-${campaign.id}`, title: campaign.title, detail: t("home.activityPendingApplications", { count: waiting(campaign) }), href: `#/my-campaign-applications/${campaign.id}` }));
+          campaigns.forEach((campaign) => next.push({ key: `campaign-${campaign.id}`, title: campaign.title, detail: [t("home.activityPendingApplications", { count: waiting(campaign) }), campaign.city ? cityLabel(campaign.city, language) : null, campaign.deadline ? t("home.row.until", { date: formatShortDate(campaign.deadline, language) }) : null].filter(Boolean).join(" · "), href: `#/my-campaign-applications/${campaign.id}` }));
         } else {
           (roleResult.value as Awaited<ReturnType<typeof getMyOffers>>).filter((offer) => offer.canRespond).slice(0, 2)
             .forEach((offer) => next.push({ key: `offer-${offer.id}`, title: t("home.activityOfferFrom", { name: offer.counterpartyName }), detail: t("home.activityOfferDetail"), href: `#/offer/${offer.id}` }));
@@ -207,7 +207,7 @@ function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
       setItems(next);
     });
     return () => { cancelled = true; };
-  }, [enabled, reloadKey, role, t]);
+  }, [enabled, language, reloadKey, role, t]);
   return items;
 }
 
