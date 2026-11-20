@@ -2,7 +2,7 @@
 
 ## Target topology
 
-The client is a React + TypeScript Telegram Mini App. The only production backend is ASP.NET Core 9 under `src/`.
+The client is a React + TypeScript Telegram Mini App. The only production backend is ASP.NET Core 10 under `src/`.
 
 ```
 React Mini App → ASP.NET Core API → Application (CQRS) → Domain

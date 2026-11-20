@@ -5,7 +5,7 @@ Telegram Mini App marketplace for businesses and bloggers in Uzbekistan.
 ## Production Architecture
 
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, Telegram Mini Apps SDK.
-- **Backend:** ASP.NET Core 9 with Clean Architecture, CQRS/MediatR and FluentValidation.
+- **Backend:** ASP.NET Core 10 with Clean Architecture, CQRS/MediatR and FluentValidation.
 - **Data:** PostgreSQL through Entity Framework Core; Redis for distributed caching.
 - **Runtime:** Docker Compose, Nginx and a single ASP.NET Core API.
 

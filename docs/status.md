@@ -112,6 +112,13 @@ _Последнее обновление: 2026-11-10, D64 этап C1 (режи�
   **Владельцу после выкладки:** `Administration__TelegramUserIds` в Railway должен содержать его id; проверить недавние
   смены телефонов в журнале (дыра вебхука); 2FA, бэкапы Postgres, `Database__ApplyMigrationsOnStartup=true`; прогон
   `docs/launch-check.md`.
+- **Бэкенд на .NET 10, пакет O (2026-11-20, review, backend + CI + Docker, D67):** `net10.0` во всех пяти
+  проектах, ASP.NET Core / EF Core / Microsoft.Extensions 10.0.15, Npgsql EF 10.0.3, `dotnet-ef` 10.0.15, образ API
+  `dotnet/sdk:10.0` и `dotnet/aspnet:10.0`, CI на `10.0.x`. Попутно Serilog.AspNetCore 10, Swashbuckle 10.3.1 (один
+  `using` в `DeprecatedOperationFilter`), Testcontainers 4.17 (новый конструктор в `BloggerBazarApiFactory`). Без
+  миграции: модель без изменений. Проверено на SDK 10.0.115: сборка, 775 юнит-тестов, 77 интеграционных в
+  Testcontainers, нет уязвимых пакетов (включая транзитивные), API поднят локально, проверка экранов 400 экранов
+  без проблем. Сборка Docker-образа локально NOT RUN (проверяет CI).
 - **Обновление зависимостей, пакет N (2026-11-20, review, backend + frontend + CI):** взято: MediatR 12.5.0
   (лицензия по-прежнему Apache-2.0), Microsoft.AspNetCore.Mvc.Testing 9.0.23 и coverlet.collector 10.1.1 (только
   тесты), dotnet-ef 9.0.23, vitest 4.1.12, `actions/upload-artifact` 7 (шаг срабатывает только при падении проверки

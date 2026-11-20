@@ -48,15 +48,18 @@ updates:
       # The project stays on 12.x; moving on is a product decision, not a version bump.
       - dependency-name: "MediatR"
         update-types: ["version-update:semver-major"]
-      # The project targets .NET 9 with EF Core 9; the tool and the runtime-tied packages stay on the 9 line.
+      # The project targets .NET 10 (LTS, supported until November 2028) with EF Core 10. The tool and the packages
+      # tied to the runtime stay on the 10 line; the next runtime is a planned package of its own, like this one was.
       - dependency-name: "dotnet-ef"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "Microsoft.Extensions.Logging.Abstractions"
+      - dependency-name: "Microsoft.AspNetCore.*"
         update-types: ["version-update:semver-major"]
-      # AWSSDK.S3 4.1 brings System.IO.Hashing 11, which says it does not support .NET 9 and is not tested on it;
-      # photo uploads go through this SDK. Patches of 4.0 still come; 4.1 waits for the move to .NET 10.
-      - dependency-name: "AWSSDK.S3"
-        versions: [">= 4.1.0"]
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Npgsql.EntityFrameworkCore.PostgreSQL"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

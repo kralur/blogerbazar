@@ -11,7 +11,7 @@ Marketplace рекламного сотрудничества: **Blogger**, **Bu
 
 ## Стек
 
-- Backend: C# / ASP.NET Core 9, Clean Architecture, CQRS (MediatR), EF Core + PostgreSQL (Npgsql),
+- Backend: C# / ASP.NET Core 10, Clean Architecture, CQRS (MediatR), EF Core + PostgreSQL (Npgsql),
   Redis, FluentValidation, xUnit (+ Testcontainers.PostgreSql для integration).
 - Frontend: React 19, TypeScript, Vite, Vitest, Tailwind; Telegram Mini App; RU/UZ; light/dark; DS v2.
 - Infra: Railway, PostgreSQL, Redis, Cloudflare R2, Telegram auth (`Authorization: tma <initData>`).

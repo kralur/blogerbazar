@@ -17,8 +17,7 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
     public const string AdminWebOrigin = "https://admin.integration.test";
     public const string MiniAppOrigin = "https://app.integration.test";
 
-    private readonly PostgreSqlContainer postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer postgres = new PostgreSqlBuilder("postgres:16-alpine")
         .WithDatabase("bloggerbazar_integration")
         .WithUsername("postgres")
         .WithPassword("postgres")
