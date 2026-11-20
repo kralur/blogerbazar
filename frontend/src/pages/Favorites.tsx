@@ -91,7 +91,7 @@ function BrandFaceFavorites({ active }: { active: boolean }) {
   return <section aria-busy={catalog.loading || catalog.loadingMore} aria-live="polite" className="catalog-search__results">
     {catalog.loading && !catalog.loadedInitialResult ? <SearchSkeleton count={3} /> : catalog.failure && !catalog.loadedInitialResult ? <CatalogState icon="refresh" onRetry={refresh} subtitle={t("favorites.brandFacesLoadFailedSubtitle")} title={t("favorites.brandFacesLoadFailedTitle")} /> : !catalog.failure && catalog.items.length === 0 ? <CatalogState actionLabel={t("favorites.findBrandFaces")} icon="bookmark" onRetry={() => { window.location.hash = "/search?type=brand-face"; }} subtitle={t("favorites.brandFacesEmptySubtitle")} title={t("favorites.brandFacesEmptyTitle")} /> : catalog.items.map((brandFace) => <BrandFaceCard key={brandFace.id} onFavoriteChanged={(isFavorite) => { if (!isFavorite) refresh(); }} profile={brandFace} />)}
     {catalog.loadedInitialResult && catalog.failure && <CatalogState compact icon="refresh" onRetry={refresh} subtitle={t("favorites.brandFacesLoadFailedSubtitle")} title={t("favorites.brandFacesLoadFailedTitle")} />}
-    <FavoriteListFooter catalog={catalog} onRetry={() => void catalog.load(catalog.page + 1, true)} sentinelRef={sentinelRef} />
+    <FavoriteListFooter endKey="favorites.endBrandFaces" catalog={catalog} onRetry={() => void catalog.load(catalog.page + 1, true)} sentinelRef={sentinelRef} />
   </section>;
 }
 
@@ -106,10 +106,10 @@ function useInitialFavoriteLoad(active: boolean, startedRef: MutableRef<boolean>
   useEffect(() => () => cancel(), [cancel]);
 }
 
-function FavoriteListFooter({ catalog, onRetry, sentinelRef }: { catalog: Omit<ReturnType<typeof usePaginatedCatalog>, "updateItem">; onRetry: () => void; sentinelRef: MutableRef<HTMLDivElement | null> }) {
+function FavoriteListFooter({ catalog, onRetry, sentinelRef, endKey = "search.endOfList" }: { endKey?: string; catalog: Omit<ReturnType<typeof usePaginatedCatalog>, "updateItem">; onRetry: () => void; sentinelRef: MutableRef<HTMLDivElement | null> }) {
   const { t } = useI18n();
   if (catalog.loading || catalog.failure || catalog.items.length === 0) return null;
-  return <>{catalog.hasMore && <div aria-hidden="true" ref={sentinelRef} />}{catalog.loadingMore && <SearchSkeleton compact count={2} />}{catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={onRetry} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} />}{catalog.loadedInitialResult && !catalog.hasMore && !catalog.loadingMore && !catalog.loadMoreFailed && <p className="catalog-search__end">{t("search.endOfList")}</p>}</>;
+  return <>{catalog.hasMore && <div aria-hidden="true" ref={sentinelRef} />}{catalog.loadingMore && <SearchSkeleton compact count={2} />}{catalog.loadMoreFailed && <CatalogState compact icon="refresh" onRetry={onRetry} subtitle={t("favorites.loadFailedSubtitle")} title={t("favorites.loadFailedTitle")} />}{catalog.loadedInitialResult && !catalog.hasMore && !catalog.loadingMore && !catalog.loadMoreFailed && <p className="catalog-search__end">{t(endKey)}</p>}</>;
 }
 
 function useInfiniteFavoritesScroll({ active, failure, hasMore, load, loadMoreFailed, loading, loadingMore, page, sentinelRef }: { active: boolean; failure: string | null; hasMore: boolean; load: (page: number, append: boolean) => Promise<void>; loadMoreFailed: boolean; loading: boolean; loadingMore: boolean; page: number; sentinelRef: MutableRef<HTMLDivElement | null> }) {

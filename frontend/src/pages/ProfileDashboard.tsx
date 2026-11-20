@@ -102,6 +102,9 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
       localStorage.setItem(selectedRoleKey, nextRole);
       onMarketplaceRoleSelected?.(apiRole[nextRole]);
       await refreshFavorites();
+      // A role without a profile yet ("create profile"): go straight to its creation form, not to an empty Home.
+      const missing = nextRole === "blogger" ? !blogger : nextRole === "brandFace" ? !brandFace : !business;
+      if (missing) window.location.hash = nextRole === "blogger" ? "/blogger-form" : nextRole === "brandFace" ? "/brand-face" : "/business";
     } catch (error) {
       setToastTone("error");
       setToast(getApiErrorMessage(error, t("error.default")));

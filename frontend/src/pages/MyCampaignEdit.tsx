@@ -206,7 +206,7 @@ export function MyCampaignEdit({ id }: { id: string }) {
   };
 
   if (loading) return <div className="campaign-management-screen screen screen--with-nav"><LoadingState title={t("myCampaignEdit.loading")} /><BottomNav /></div>;
-  if (failure) return <div className="campaign-management-screen screen screen--with-nav"><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignEdit.notFoundSubtitle" : failure === "denied" ? "myCampaignEdit.deniedSubtitle" : "myCampaignEdit.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignEdit.notFoundTitle" : failure === "denied" ? "myCampaignEdit.deniedTitle" : "myCampaignEdit.errorTitle")} /><BottomNav /></div>;
+  if (failure) return <div className="campaign-management-screen screen screen--with-nav detail-error-screen"><PageHeader back={{ href: "#/my-campaigns", label: t("myCampaigns.title") }} /><ErrorState onRetry={failure === "failed" ? load : undefined} subtitle={t(failure === "not-found" ? "myCampaignEdit.notFoundSubtitle" : failure === "denied" ? "myCampaignEdit.deniedSubtitle" : "myCampaignEdit.errorSubtitle")} title={t(failure === "not-found" ? "myCampaignEdit.notFoundTitle" : failure === "denied" ? "myCampaignEdit.deniedTitle" : "myCampaignEdit.errorTitle")} /><BottomNav /></div>;
 
   return <div className="campaign-management-screen my-campaign-edit screen screen--with-nav">
     <PageHeader back={{ href: `#/my-campaign/${id}`, label: t("myCampaignEdit.backAria") }} eyebrow={t("myCampaignEdit.eyebrow")} title={t("myCampaignEdit.title")} />

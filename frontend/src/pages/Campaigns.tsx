@@ -1,3 +1,4 @@
+import { myCampaignsFeedbackKey } from "../components/CampaignActionsMenu";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { createCampaign, getCampaignCatalog, getCategories, getCurrentPlatformUser, getMyBusinessProfile, normalizeMarketplaceRole, type CampaignCatalogItem, type CampaignCatalogQuery, type CampaignCatalogSort } from "../api/marketplace";
@@ -23,7 +24,8 @@ import { useScreenRefresh } from "../hooks/useScreenRefresh";
 
 const pageSize = 20;
 const filterSheetId = "campaign-catalog-filters";
-const initialForm = { title: "", description: "", city: "tashkent-city", categories: ["lifestyle"], requirements: "", deadline: "", budgetFrom: "500 000", budgetTo: "1 500 000" };
+// Empty on purpose: a prefilled budget, city or category was published as if the company had chosen it.
+const initialForm = { title: "", description: "", city: "", categories: [] as string[], requirements: "", deadline: "", budgetFrom: "", budgetTo: "" };
 const defaultFilters: CampaignCatalogQuery = { sort: "promoted", pageSize };
 
 type CampaignFilterKey = "category" | "city" | "minBudget" | "maxBudget" | "deadlineFrom" | "deadlineTo";
@@ -237,6 +239,14 @@ export function Campaigns() {
   const updateForm = (key: keyof typeof initialForm) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((previous) => ({ ...previous, [key]: event.target.value }));
   const create = async () => {
     if (saving || !form.title.trim() || !form.description.trim() || !form.categories.length) return;
+    // Checked before sending: a server error used to be the only sign, and it was hidden behind the form.
+    const from = normalizeNumericInput(form.budgetFrom);
+    const to = normalizeNumericInput(form.budgetTo);
+    if (from && to && Number(from) > Number(to)) {
+      setToastTone("error");
+      setToast(t("campaigns.budgetRangeInvalid"));
+      return;
+    }
     try {
       setSaving(true);
       const created = await createCampaign({ title: form.title.trim(), description: form.description.trim(), city: form.city || undefined, categories: form.categories, requirements: form.requirements.split(",").map((item) => item.trim()).filter(Boolean), deadline: form.deadline ? new Date(`${form.deadline}T23:59:59`).toISOString() : undefined, budgetFrom: normalizeNumericInput(form.budgetFrom) || undefined, budgetTo: normalizeNumericInput(form.budgetTo) || undefined, publishImmediately: true });
@@ -246,7 +256,11 @@ export function Campaigns() {
       setToastTone("success");
       setToast(t("campaigns.created"));
       refreshCatalog();
-      if (openedFromMyCampaigns.current && created?.id) window.location.hash = `/my-campaign/${created.id}`;
+      // From My campaigns: the new campaign replaces the catalog step, so Back returns to My campaigns; its page shows the toast.
+      if (openedFromMyCampaigns.current && created?.id) {
+        sessionStorage.setItem(myCampaignsFeedbackKey, t("campaigns.created"));
+        replaceHistoryRoute(`#/my-campaign/${created.id}`);
+      }
       openedFromMyCampaigns.current = false;
     } catch (error) {
       haptic.error();
@@ -280,7 +294,7 @@ export function Campaigns() {
       </>}
     </section>
     <CampaignFiltersSheet categories={categories} error={filterError} filters={draftFilters} onApply={applyFilters} onClose={closeFilters} onReset={resetCatalog} onSetFilter={setDraft} open={filtersOpen} />
-    <Modal id="campaign-create-sheet" onClose={() => { openedFromMyCampaigns.current = false; setCreateOpen(false); }} open={createOpen} title={t("campaigns.newTitle")}><div className="campaign-create-form grid gap-3"><Input className="campaign-create-form__input" label={t("campaigns.name")} maxLength={150} onChange={updateForm("title")} placeholder={t("campaigns.namePlaceholder")} required value={form.title} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.description")} maxLength={1000} onChange={updateForm("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /><CategoryMultiSelect onChange={(categories) => setForm((current) => ({ ...current, categories }))} required value={form.categories} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.requirements")} maxLength={1000} onChange={updateForm("requirements")} placeholder={t("campaigns.requirementsPlaceholder")} value={form.requirements} /><RegionSelect onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} value={form.city} /><Input className="campaign-create-form__input" label={t("campaigns.deadline")} min={localDay()} onChange={updateForm("deadline")} type="date" value={form.deadline} /><div className="campaign-create-form__budget-grid"><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setForm((current) => ({ ...current, budgetFrom: formatNumericInput(event.target.value) }))} placeholder="200 000" value={form.budgetFrom} /><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setForm((current) => ({ ...current, budgetTo: formatNumericInput(event.target.value) }))} placeholder="1 000 000" value={form.budgetTo} /></div><Button aria-busy={saving} className="campaign-create-form__submit" disabled={saving || !form.title.trim() || !form.description.trim() || !form.categories.length} onClick={create} type="button">{saving ? t("campaigns.publishing") : t("campaigns.publish")}</Button></div></Modal>
+    <Modal id="campaign-create-sheet" onClose={() => { const back = openedFromMyCampaigns.current; openedFromMyCampaigns.current = false; setCreateOpen(false); if (back) window.history.back(); }} open={createOpen} title={t("campaigns.newTitle")}><div className="campaign-create-form grid gap-3"><Input className="campaign-create-form__input" label={t("campaigns.name")} maxLength={150} onChange={updateForm("title")} placeholder={t("campaigns.namePlaceholder")} required value={form.title} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.description")} maxLength={3000} onChange={updateForm("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /><CategoryMultiSelect onChange={(categories) => setForm((current) => ({ ...current, categories }))} required value={form.categories} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.requirements")} maxLength={1000} onChange={updateForm("requirements")} placeholder={t("campaigns.requirementsPlaceholder")} value={form.requirements} /><RegionSelect onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} value={form.city} /><Input className="campaign-create-form__input" label={t("campaigns.deadline")} min={localDay()} onChange={updateForm("deadline")} type="date" value={form.deadline} /><div className="campaign-create-form__budget-grid"><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setForm((current) => ({ ...current, budgetFrom: formatNumericInput(event.target.value) }))} placeholder="200 000" value={form.budgetFrom} /><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setForm((current) => ({ ...current, budgetTo: formatNumericInput(event.target.value) }))} placeholder="1 000 000" value={form.budgetTo} /></div><Button aria-busy={saving} className="campaign-create-form__submit" disabled={saving || !form.title.trim() || !form.description.trim() || !form.categories.length} onClick={create} type="button">{saving ? t("campaigns.publishing") : t("campaigns.publish")}</Button></div></Modal>
     <Toast message={toast} tone={toastTone} />
     <BottomNav />
   </div>;

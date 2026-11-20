@@ -1,3 +1,5 @@
+import { useIsDesktop } from "../lib/desktopLayout";
+import { notifyActionCountsChanged } from "../features/actionCounts/ActionCountsProvider";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, getApiErrorMessage } from "../api/client";
 import { addDealPublication, completeDeal, createDealReview, setDealPrice, getDealContact, getMyDeal, shareDealContact, type ContactDetails, type DealDetails as Deal, type MarketplaceRole } from "../api/marketplace";
@@ -29,6 +31,7 @@ type LoadState = "loading" | "ready" | "denied" | "not-found" | "error";
 
 export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
+  const desktop = useIsDesktop();
   const [deal, setDeal] = useState<Deal | null>(() => getCachedDeal(id));
   const [state, setState] = useState<LoadState>(deal ? "ready" : "loading");
   // Opening the deal once clears its "new" dot in Requests.
@@ -99,6 +102,7 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       if (actionId !== actionRef.current || idRef.current !== id) return;
       setCompleteOpen(false);
       setComment("");
+      notifyActionCountsChanged();
       if (momentKeys.has(successKey)) setMoment({ id: Date.now(), message: t(successKey) });
       else { setTone("success"); setToast(t(successKey)); }
       await load();
@@ -161,23 +165,10 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
     { label: t("deals.campaignBudget"), value: budget }
   ] : [];
 
-  return <div className="screen screen--with-nav deal-details">
-    <ListHero className="detail-hero">
-      <PageHeader actions={<><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge></>} back={{ href: "#/requests", label: t("nav.requests") }} />
-      <p className="detail-hero__eyebrow">{t(dealSourceLabelKey(deal.sourceType))}</p>
-      <h1 className="detail-hero__title">{terms?.title ?? (deal.offer ? t(offerFormatLabelKey(deal.offer.format)) : t("deals.source.collaborationRequest"))}</h1>
-      <div className="detail-hero__rows"><CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
-      {viewerRole === "Business" && deal.campaignId && <CounterpartyRow href={`#/my-campaign/${deal.campaignId}`} icon="send" label={t("deals.campaign")} name={t("deals.openCampaign")} />}</div>
-      <FactGrid className="hero-tags fact-grid--three" facts={heroFacts} />
-    </ListHero>
-    <DetailLayout footer={<>{!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}</>} top={<>
-    {deal.status === DealStatus.Active && !deal.counterpartyDeleted && <BlessingButton />}
-    </>} side={<>
-    <FactGrid className="mt-4" facts={[
-      { label: t("deals.startedAt"), value: deal.offer ? null : formatDate(deal.createdAtUtc) },
-      { label: t("deals.completedAt"), value: deal.completedAtUtc ? formatDate(deal.completedAtUtc) : null }
-    ]} />
-    <DealResults deal={deal} onChanged={load} onMessage={(message, nextTone) => { setTone(nextTone); setToast(message); }} />
+  // What the user came to do (complete, review) right under the head on a phone, not after the terms and contacts;
+  // on a computer it stays in the side panel.
+  const actionsOnTop = !desktop;
+  const dealActions = <>
     {deal.canComplete && <Button className="mt-5 w-full" disabled={busy} onClick={openComplete} type="button">{t("requests.complete")}</Button>}
     {deal.canReview && <Card className="mt-5"><h2 className="font-extrabold">{t("requests.reviewTitle")}</h2>
       {deal.partnerHasReviewed && <p className="deal-review__partner" role="status"><span aria-hidden="true" className="request-row__action-dot" />{t("deals.partnerReviewedHint", { partner: deal.counterpartyName })}</p>}
@@ -188,6 +179,26 @@ export function DealDetails({ id, viewerRole }: { id: string; viewerRole?: Marke
       <Button className="mt-3 w-full" disabled={busy} onClick={review} type="button">{t("requests.publishReview")}</Button>
     </Card>}
     {deal.hasReviewed && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewSent")}</p>}
+  </>;
+  return <div className="screen screen--with-nav deal-details">
+    <ListHero className="detail-hero">
+      <PageHeader actions={<><Badge tone={dealStatusTone(deal.status)}>{t(dealStatusLabelKey(deal.status))}</Badge></>} back={{ href: "#/requests", label: t("nav.requests") }} />
+      <p className="detail-hero__eyebrow">{t(dealSourceLabelKey(deal.sourceType))}</p>
+      <h1 className="detail-hero__title">{terms?.title ?? (deal.offer ? t(offerFormatLabelKey(deal.offer.format)) : t("deals.source.collaborationRequest"))}</h1>
+      <div className="detail-hero__rows"><CounterpartyRow href={deal.counterpartyProfileId ? (deal.counterpartyRole ? profileRoute(deal.counterpartyRole, deal.counterpartyProfileId) : viewerRole === "Business" ? `#/blogger/${deal.counterpartyProfileId}` : viewerRole === "Blogger" || viewerRole === "BrandFace" ? `#/company/${deal.counterpartyProfileId}` : null) : null} imageUrl={deal.counterpartyImageUrl} label={t("deals.counterparty")} name={deal.counterpartyDeleted ? t("common.deletedAccount") : deal.counterpartyName} />
+      {viewerRole === "Business" && deal.campaignId && <CounterpartyRow href={`#/my-campaign/${deal.campaignId}`} icon="send" label={t("deals.campaign")} name={t("deals.openCampaign")} />}</div>
+      <FactGrid className="hero-tags fact-grid--three" facts={heroFacts} />
+    </ListHero>
+    <DetailLayout footer={<>{!deal.counterpartyDeleted && <ReportButton targetId={deal.id} targetType="deal" />}</>} top={<>
+    {actionsOnTop && dealActions}
+    {deal.status === DealStatus.Active && !deal.counterpartyDeleted && <BlessingButton />}
+    </>} side={<>
+    <FactGrid className="mt-4" facts={[
+      { label: t("deals.startedAt"), value: deal.offer ? null : formatDate(deal.createdAtUtc) },
+      { label: t("deals.completedAt"), value: deal.completedAtUtc ? formatDate(deal.completedAtUtc) : null }
+    ]} />
+    <DealResults deal={deal} onChanged={load} onMessage={(message, nextTone) => { setTone(nextTone); setToast(message); }} />
+    {!actionsOnTop && dealActions}
     {deal.status === DealStatus.Completed && !deal.canReview && !deal.hasReviewed && deal.reviewDeadlineUtc && <p className="mt-5 text-sm font-semibold text-brand-muted">{t("deals.reviewClosed")}</p>}
     </>}>
     {deal.counterpartyDeleted && <p className="mt-3 text-sm leading-6 text-brand-muted" role="status">{t("deals.partnerDeletedNote")}</p>}

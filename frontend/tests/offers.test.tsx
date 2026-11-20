@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { within, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../src/api/client";
 import { I18nProvider, translate } from "../src/i18n";
@@ -69,6 +69,9 @@ describe("Offer details", () => {
     api.getMyOffer.mockResolvedValueOnce(pending).mockResolvedValue({ ...pending, state: "declined", canRespond: false });
     renderOffer();
     fireEvent.click(await screen.findByRole("button", { name: ru("offers.decline") }));
+    // Declining asks first; nothing is sent until it is confirmed.
+    expect(api.declineOffer).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByLabelText(ru("offers.declineTitle"))).getByRole("button", { name: ru("offers.decline") }));
 
     expect(await screen.findByText(ru("offers.state.declined"))).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: ru("offers.accept") })).not.toBeInTheDocument();

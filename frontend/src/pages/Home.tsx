@@ -1,3 +1,5 @@
+import { useRootScreenVisibility } from "../navigation/RootScreenVisibility";
+import { actionCountsChangedEvent } from "../features/actionCounts/ActionCountsProvider";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { getMarketplaceHome, getMyBloggerProfile, getMyBrandFaceProfile, getMyBusinessProfile, getMyCampaigns, getMyDeals, getMyOffers, getRecommendations, type MarketplaceRole } from "../api/marketplace";
 import { profileCompleteness, type ProfileCompleteness } from "../lib/profileCompleteness";
@@ -188,7 +190,10 @@ function useHomeActivity(role: HomeRole, enabled: boolean, reloadKey: number) {
         if (role === "Business") {
           // Only applications still waiting for a decision are a task; an older API without the field falls back to all.
           const waiting = (campaign: { applicationsCount: number; pendingApplicationsCount?: number }) => campaign.pendingApplicationsCount ?? campaign.applicationsCount;
-          const campaigns = (roleResult.value as Awaited<ReturnType<typeof getMyCampaigns>>).items
+          const myCampaigns = (roleResult.value as Awaited<ReturnType<typeof getMyCampaigns>>).items;
+          // A new company has nothing waiting yet: its first step is a campaign.
+          if (myCampaigns.length === 0) next.push({ key: "first-campaign", title: t("home.firstCampaignTitle"), detail: t("home.firstCampaignDetail"), href: "#/campaigns?create=1" });
+          const campaigns = myCampaigns
             .filter((campaign) => waiting(campaign) > 0)
             .sort((left, right) => waiting(right) - waiting(left))
             .slice(0, 2);
@@ -273,7 +278,21 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   const [activityReloadKey, setActivityReloadKey] = useState(0);
   useScreenRefresh(() => { setActivityReloadKey((key) => key + 1); load(); });
 
-  const activity = useHomeActivity(resolvedRole, !isPreview, activityReloadKey);
+  // "Waiting for your decision" is re-read when Home is shown again and after an accept, reject or review elsewhere,
+  // so a card the user already handled does not linger.
+  const [taskKey, setTaskKey] = useState(0);
+  const homeVisible = useRootScreenVisibility();
+  const wasVisible = useRef(homeVisible);
+  useEffect(() => {
+    if (homeVisible && !wasVisible.current) setTaskKey((key) => key + 1);
+    wasVisible.current = homeVisible;
+  }, [homeVisible]);
+  useEffect(() => {
+    const onChanged = () => setTaskKey((key) => key + 1);
+    window.addEventListener(actionCountsChangedEvent, onChanged);
+    return () => window.removeEventListener(actionCountsChangedEvent, onChanged);
+  }, []);
+  const activity = useHomeActivity(resolvedRole, !isPreview, activityReloadKey + taskKey);
   const forYou = useRecommendations(!isPreview, activityReloadKey);
   const me = useOwnProfile(resolvedRole, !isPreview, activityReloadKey);
   const forYouCount = forYou ? forYou.campaigns.length + forYou.bloggers.length + forYou.brandFaces.length : 0;
