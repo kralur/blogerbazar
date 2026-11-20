@@ -15,7 +15,7 @@ public sealed class YouTubeOptions
     public string ApiKey { get; init; } = string.Empty;
 }
 
-// D67: reads a Telegram channel through our bot (it must be an administrator there) and a YouTube channel through the
+// D68: reads a Telegram channel through our bot (it must be an administrator there) and a YouTube channel through the
 // YouTube Data API. Any failure of the platform is "unavailable" and changes nothing.
 internal sealed class PlatformStatsClient(HttpClient httpClient, IOptions<TelegramOptions> telegram, IOptions<YouTubeOptions> youTube, ILogger<PlatformStatsClient>? logger = null) : IPlatformStatsClient
 {

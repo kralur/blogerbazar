@@ -1,6 +1,6 @@
 namespace BloggerBazar.Application.Abstractions.Social;
 
-// D67: what a platform says about a channel. Outcome is one of PlatformCheckOutcomes; Followers is set when verified.
+// D68: what a platform says about a channel. Outcome is one of PlatformCheckOutcomes; Followers is set when verified.
 public sealed record PlatformCheck(string Outcome, int? Followers = null);
 
 public static class PlatformCheckOutcomes

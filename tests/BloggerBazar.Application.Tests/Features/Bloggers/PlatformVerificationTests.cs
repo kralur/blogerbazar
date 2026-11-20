@@ -6,7 +6,7 @@ using BloggerBazar.Domain.Enums;
 
 namespace BloggerBazar.Application.Tests.Features.Bloggers;
 
-// D67: Telegram / YouTube followers confirmed by the platform.
+// D68: Telegram / YouTube followers confirmed by the platform.
 public sealed class PlatformVerificationTests
 {
     private const long Owner = 4_100_001;

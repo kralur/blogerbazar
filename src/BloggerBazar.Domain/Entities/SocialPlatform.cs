@@ -28,7 +28,7 @@ public sealed class SocialPlatform
     public decimal? EngagementRate { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
-    // D67: followers read from the platform itself (Telegram channel, YouTube channel) after the owner proved the
+    // D68: followers read from the platform itself (Telegram channel, YouTube channel) after the owner proved the
     // channel is theirs. While set, the blogger cannot type another number for it.
     public int? VerifiedFollowers { get; private set; }
     public string? VerificationSource { get; private set; }

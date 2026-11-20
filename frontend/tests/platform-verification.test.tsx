@@ -12,7 +12,7 @@ const ru = (key: string, values?: Record<string, string | number>) => translate(
 const telegram = { id: "p-tg", type: "telegram", url: "https://t.me/madina_blog", followers: 5000 };
 const youTube = { id: "p-yt", type: "youtube", url: "https://youtube.com/@madina", followers: 1000 };
 
-describe("Platform verification (D67)", () => {
+describe("Platform verification (D68)", () => {
   beforeEach(() => api.verifyMyPlatform.mockReset());
 
   it("shows only Telegram and YouTube channels and explains how to add the bot", async () => {

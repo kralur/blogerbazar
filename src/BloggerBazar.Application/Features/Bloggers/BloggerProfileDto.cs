@@ -62,7 +62,7 @@ public sealed record PortfolioItemDto(Guid Id, string Title, int Type, string Ur
     public static PortfolioItemDto From(PortfolioItem item) => new(item.Id, item.Title, (int)item.Type, item.Url);
 }
 
-// D67 (additive): VerificationSource "telegram" | "youtube" when the followers come from the platform itself.
+// D68 (additive): VerificationSource "telegram" | "youtube" when the followers come from the platform itself.
 public sealed record SocialPlatformDto(Guid Id, string Type, string Url, int? Followers, string? ScreenshotUrl, int? AverageReach = null, decimal? EngagementRate = null, string? VerificationSource = null, DateTime? VerifiedAtUtc = null)
 {
     public static SocialPlatformDto From(SocialPlatform platform) =>

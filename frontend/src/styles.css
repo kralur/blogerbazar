@@ -2440,7 +2440,7 @@ html[data-desktop="true"] #campaign-create-sheet { max-width: 40rem; }
 .pager__page:disabled, .pager__step:disabled { opacity: .45; }
 .pager__step--next svg { transform: rotate(180deg); }
 .pager__gap { min-width: 1.25rem; color: var(--bb-text-secondary); text-align: center; }
-/* D67: confirming followers through Telegram / YouTube. */
+/* D68: confirming followers through Telegram / YouTube. */
 .platform-verification__hint { margin: -.25rem 0 .75rem; color: var(--bb-text-secondary); font-size: .875rem; line-height: 1.45; }
 .platform-verification__row { display: grid; gap: .625rem; }
 .platform-verification__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem .75rem; }

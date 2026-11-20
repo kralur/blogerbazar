@@ -133,7 +133,7 @@ export function BloggerProfileForm({ onCompleted, onBackToRole }: { onCompleted?
   const [edited, setEdited] = useState<Partial<Record<"name" | "username", boolean>>>({});
   const [step, setStep] = useState<Step>(0);
   const [existing, setExisting] = useState(false);
-  // D67: platforms whose followers Telegram / YouTube confirmed; the number is not typed by hand while confirmed.
+  // D68: platforms whose followers Telegram / YouTube confirmed; the number is not typed by hand while confirmed.
   const [verifiedKinds, setVerifiedKinds] = useState<Set<PlatformKind>>(() => new Set());
   const [hydrated, setHydrated] = useState(Boolean(onCompleted));
   const [saving, setSaving] = useState(false);

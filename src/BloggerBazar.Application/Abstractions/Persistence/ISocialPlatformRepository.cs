@@ -7,7 +7,7 @@ public interface ISocialPlatformRepository
     Task DeleteForBloggerAsync(Guid bloggerId, CancellationToken cancellationToken);
     Task AddRangeAsync(IEnumerable<SocialPlatform> platforms, CancellationToken cancellationToken);
 
-    // D67: the platforms before the profile form recreates them (their verification carries over), one platform of
+    // D68: the platforms before the profile form recreates them (their verification carries over), one platform of
     // a blogger (foreign = missing), and verified platforms whose numbers are older than a date (weekly refresh).
     Task<IReadOnlyList<SocialPlatform>> ListForBloggerAsync(Guid bloggerId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<SocialPlatform>>([]);

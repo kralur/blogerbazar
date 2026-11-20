@@ -93,7 +93,7 @@ public sealed class UpdateBloggerProfileHandler(IBloggerProfileRepository profil
         profile.PublishAfterOwnerEdit();
         await portfolioItems.DeleteForBloggerAsync(profile.Id, cancellationToken);
         await portfolioItems.AddRangeAsync((command.PortfolioItems ?? []).Select(item => PortfolioItem.Create(profile.Id, item.Title.Trim(), item.Type, item.Url.Trim())), cancellationToken);
-        // D67: the form recreates the platforms; a channel that stays (same type and link) keeps its verification, and
+        // D68: the form recreates the platforms; a channel that stays (same type and link) keeps its verification, and
         // its verified followers win over a typed number. The profile total then follows the platforms.
         var previous = await platforms.ListForBloggerAsync(profile.Id, cancellationToken);
         await platforms.DeleteForBloggerAsync(profile.Id, cancellationToken);

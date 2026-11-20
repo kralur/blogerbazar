@@ -10,7 +10,7 @@ using MediatR;
 
 namespace BloggerBazar.Application.Features.Bloggers;
 
-// D67: followers confirmed by the platform itself. A Telegram channel is proved by our bot being its administrator
+// D68: followers confirmed by the platform itself. A Telegram channel is proved by our bot being its administrator
 // and the blogger being its creator or an administrator; a YouTube channel by a code in its description. The number
 // then comes from the platform and is refreshed by a button and weekly.
 public static partial class PlatformVerification

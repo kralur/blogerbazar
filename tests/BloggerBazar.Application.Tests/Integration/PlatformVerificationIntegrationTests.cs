@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BloggerBazar.Application.Tests.Integration;
 
-// D67: a verified channel is stored with its source and date and shown to companies on the blogger's page.
+// D68: a verified channel is stored with its source and date and shown to companies on the blogger's page.
 [Collection(ApiHostCollection.Name)]
 public sealed class PlatformVerificationIntegrationTests(BloggerBazarApiFactory factory) : IClassFixture<BloggerBazarApiFactory>
 {

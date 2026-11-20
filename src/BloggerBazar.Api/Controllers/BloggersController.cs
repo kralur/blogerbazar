@@ -89,7 +89,7 @@ public sealed class BloggersController(ISender sender, ITelegramWebAppValidator 
         return CreatedAtAction(nameof(GetById), new { id = profile.Id }, profile);
     }
 
-    // D67: proves a Telegram or YouTube channel of the blogger and reads its followers; also the "refresh" button.
+    // D68: proves a Telegram or YouTube channel of the blogger and reads its followers; also the "refresh" button.
     [HttpPost("me/platforms/{platformId:guid}/verify")]
     [ProducesResponseType<PlatformVerificationResultDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace BloggerBazar.Api.Background;
 
-// D67: every six hours reads again the verified Telegram / YouTube numbers older than a week (a batch at a time).
+// D68: every six hours reads again the verified Telegram / YouTube numbers older than a week (a batch at a time).
 // Safe on several instances: the same channel read twice gives the same number.
 internal sealed class PlatformVerificationWorker(IServiceScopeFactory scopeFactory, ILogger<PlatformVerificationWorker> logger) : BackgroundService
 {

@@ -81,7 +81,7 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.telegram.org/");
             client.Timeout = TimeSpan.FromSeconds(5);
         });
-        // D67: followers read from Telegram channels and YouTube channels.
+        // D68: followers read from Telegram channels and YouTube channels.
         services.Configure<YouTubeOptions>(configuration.GetSection(YouTubeOptions.SectionName));
         services.AddHttpClient<IPlatformStatsClient, PlatformStatsClient>(client => client.Timeout = TimeSpan.FromSeconds(8));
         services.AddScoped<IAdminAccessPolicy, ConfiguredAdminAccessPolicy>();

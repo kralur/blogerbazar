@@ -5,7 +5,7 @@ import { useI18n } from "../i18n";
 import { formatCompactNumber, formatShortDate } from "../lib/currency";
 import { Button, Card, Icon } from "./ui";
 
-// D67: a blogger proves a Telegram or YouTube channel; its followers then come from the platform and companies see
+// D68: a blogger proves a Telegram or YouTube channel; its followers then come from the platform and companies see
 // "Confirmed". Each answer says exactly what to do next, step by step.
 const verifiable = (platform: MyPlatform) => ["telegram", "youtube"].includes(platform.type.toLowerCase());
 

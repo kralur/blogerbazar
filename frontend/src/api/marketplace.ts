@@ -10,7 +10,7 @@ export type PlatformDetails = {
   averageReach?: number | null;
   engagementRate?: number | null;
   url?: string | null;
-  // D67: followers confirmed by the platform itself ("telegram" | "youtube"); absent from an older API.
+  // D68: followers confirmed by the platform itself ("telegram" | "youtube"); absent from an older API.
   verificationSource?: string | null;
   verifiedAtUtc?: string | null;
 };
@@ -356,7 +356,7 @@ export type MyBusinessProfile = {
   teamMode?: boolean;
   teamRole?: "owner" | "admin" | "manager" | "viewer" | null;
 };
-// D67: a platform of the blogger's own profile, with its verification state.
+// D68: a platform of the blogger's own profile, with its verification state.
 export type MyPlatform = { id: string; type: string; url: string; followers?: number | null; screenshotUrl?: string | null; averageReach?: number | null; engagementRate?: number | null; verificationSource?: string | null; verifiedAtUtc?: string | null };
 
 export type MyBloggerProfile = {
@@ -998,7 +998,7 @@ export async function getMyBusinessProfile() {
   return api<MyBusinessProfile>("/api/businesses/me");
 }
 
-// D67: proves a Telegram / YouTube channel and reads its followers; the same call refreshes them.
+// D68: proves a Telegram / YouTube channel and reads its followers; the same call refreshes them.
 export type PlatformVerificationOutcome = "verified" | "notFound" | "botNotAdmin" | "notOwner" | "codeMissing" | "notConfigured" | "unavailable" | "unsupported";
 export type PlatformVerificationResult = { outcome: PlatformVerificationOutcome; platform: MyPlatform; code?: string | null; botUsername?: string | null };
 export async function verifyMyPlatform(platformId: string) {
