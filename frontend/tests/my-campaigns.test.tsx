@@ -142,6 +142,25 @@ describe("My Campaigns management", () => {
     expect(screen.getAllByRole("link", { name: translate("myCampaigns.openAria", { title: "Coffee launch" }, "ru") })).toHaveLength(1);
   });
 
+  // Found 2026-11-20: one refresh asked for the list twice, and the second request blanked it for a moment.
+  it("answers one screen refresh with one request and keeps the list on screen meanwhile", async () => {
+    renderList();
+    await screen.findByText("Coffee launch");
+    const callsBefore = api.getMyCampaigns.mock.calls.length;
+    let finish: (value: ReturnType<typeof page>) => void = () => undefined;
+    api.getMyCampaigns.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+
+    // The event pull-to-refresh and returning to the app send.
+    act(() => { window.dispatchEvent(new CustomEvent("bloggerbazar:screen-refresh", { detail: { pending: [] } })); });
+    await waitFor(() => expect(api.getMyCampaigns).toHaveBeenCalledTimes(callsBefore + 1));
+    expect(screen.getByText("Coffee launch")).toBeInTheDocument();
+
+    await act(async () => { finish(page()); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 60)); });
+    expect(api.getMyCampaigns).toHaveBeenCalledTimes(callsBefore + 1);
+    expect(screen.getByText("Coffee launch")).toBeInTheDocument();
+  });
+
   it("keeps a filtered empty result distinct from a first-campaign empty state", async () => {
     api.getMyCampaigns.mockResolvedValue(page({ items: [], total: 0 }));
     renderList();

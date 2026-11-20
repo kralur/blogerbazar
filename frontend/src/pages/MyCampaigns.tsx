@@ -97,12 +97,14 @@ export function MyCampaigns() {
   };
   const retry = () => void load(1, false);
   const retryMore = () => void load(page + 1, true);
+  // The refresh loads the list itself, so the key stays the current one: cleared, it made the load effect ask for the
+  // same list again as soon as this request finished, and that second request blanked the list for a moment.
   const refreshCampaigns = useCallback(() => {
     if (active && access === "allowed") {
-      lastCatalogKeyRef.current = "";
+      lastCatalogKeyRef.current = catalogKey;
       void load(1, false, true);
     }
-  }, [access, active, load]);
+  }, [access, active, catalogKey, load]);
   useCampaignDataRefresh(refreshCampaigns, active && access === "allowed");
   useScreenRefresh(refreshCampaigns, active && access === "allowed");
   const onMenuResult = useCallback((result: CampaignMenuResult) => {
