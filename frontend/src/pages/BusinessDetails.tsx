@@ -55,7 +55,7 @@ export function BusinessDetails({ id }: { id: string }) {
   }, []);
 
   if (loading) return <div className="screen screen--with-nav"><LoadingState title={t("common.loadingProfile")} /><BottomNav /></div>;
-  if (!profile) return <div className="screen screen--with-nav"><ErrorState onRetry={() => void load()} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
+  if (!profile) return <div className="screen screen--with-nav"><PageHeader back={{ href: "#/campaigns", label: t("common.back") }} /><ErrorState onRetry={() => void load()} subtitle={t("common.connectionRetry")} title={t("common.openFailed")} /><BottomNav /></div>;
   const website = profile.websiteUrl ? [{ kind: "website" as const, value: profile.websiteUrl }] : [];
   return <div className="screen screen--with-nav">
     <ListHero className="company-hero">

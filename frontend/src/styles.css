@@ -2393,3 +2393,6 @@ html[data-desktop="true"] .browser-sign-in .ftue-screen__content { flex: 0 0 aut
 html[data-desktop="true"] .browser-sign-in .ftue-screen__layout > .ftue-primary-button { width: 100%; }
 html[data-desktop="true"] .browser-sign-in .ftue-screen__title { font-size: 2.75rem; }
 html[data-desktop="true"] .browser-sign-in .price-tag-number { font-size: 4rem; min-width: 10rem; }
+
+/* Settings on a computer: the theme and atlas switches are as wide as their three short words, not the whole column. */
+html[data-desktop="true"] .settings-row--stacked > .language-switcher { width: 100%; max-width: 28rem; }
