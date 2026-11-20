@@ -8,14 +8,51 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
+      # React and its types move together: half of the pair on its own never builds.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
       dev-tools:
         dependency-type: development
+    # Major versions that are a migration of their own, taken by hand as a planned package (status.md, 2026-11-20):
+    # React 19 breaks types and one catalog test in the Mini App; Tailwind 4, TypeScript 7, Vitest 5 and jsdom 31
+    # fail the build of all three web apps.
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "jsdom"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: nuget
     directory: "/"
     schedule:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # MediatR 13 and later are no longer Apache-2.0: RPL-1.5 (publish your own source) or a paid licence key.
+      # The project stays on 12.x; moving on is a product decision, not a version bump.
+      - dependency-name: "MediatR"
+        update-types: ["version-update:semver-major"]
+      # The project targets .NET 9 with EF Core 9; the tool and the runtime-tied packages stay on the 9 line.
+      - dependency-name: "dotnet-ef"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Extensions.Logging.Abstractions"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

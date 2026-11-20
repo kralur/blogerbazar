@@ -112,6 +112,14 @@ _Последнее обновление: 2026-11-10, D64 этап C1 (режи�
   **Владельцу после выкладки:** `Administration__TelegramUserIds` в Railway должен содержать его id; проверить недавние
   смены телефонов в журнале (дыра вебхука); 2FA, бэкапы Postgres, `Database__ApplyMigrationsOnStartup=true`; прогон
   `docs/launch-check.md`.
+- **Обновление зависимостей, пакет K (2026-11-20, review, backend + frontend + CI, без решения в decisions.md):**
+  взято: AWSSDK.S3 4.0.104.2, coverlet.collector 10.1.0, FluentValidation.DependencyInjectionExtensions 12.2.0;
+  GitHub Actions checkout 7, setup-node 7, setup-dotnet 6; восемь минорных dev-инструментов фронта (vite 8.3,
+  plugin-react 6.3, testing-library, autoprefixer, postcss, Playwright 1.65). Отложено и закрыто в Dependabot
+  (`.github/dependabot.yml`, игнор мажорных): MediatR 13+ (лицензия RPL-1.5 или платный ключ, остаёмся на 12.x под
+  Apache-2.0), dotnet-ef 10 и Microsoft.Extensions.Logging.Abstractions 10 (проект на .NET 9 / EF Core 9), React 19
+  (10 ошибок типов в Mini App и падает тест фильтров каталога), Tailwind 4, TypeScript 7, Vitest 5, jsdom 31 (не
+  собираются все три фронта). React и его типы объединены в одну группу Dependabot.
 - **D66 демо-карточки (2026-11-10, без миграции):** включаются переменной API `DemoData__Enabled=true`, удаляются
   `false`. Проверено на локальной Postgres: 40 блогеров, 10 бренд-фейсов, 15 компаний, 30 кампаний появились без
   контактов; после `false` удалены вместе со сделками, отзывами и избранным, настоящая компания осталась.
