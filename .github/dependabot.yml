@@ -53,6 +53,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "Microsoft.Extensions.Logging.Abstractions"
         update-types: ["version-update:semver-major"]
+      # AWSSDK.S3 4.1 brings System.IO.Hashing 11, which says it does not support .NET 9 and is not tested on it;
+      # photo uploads go through this SDK. Patches of 4.0 still come; 4.1 waits for the move to .NET 10.
+      - dependency-name: "AWSSDK.S3"
+        versions: [">= 4.1.0"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
