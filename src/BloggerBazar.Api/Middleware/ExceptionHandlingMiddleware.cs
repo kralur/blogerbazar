@@ -8,11 +8,26 @@ namespace BloggerBazar.Api.Middleware;
 
 public sealed class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddleware> logger, RequestDelegate next)
 {
+    public const int ClientClosedRequest = 499;
+
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
             await next(context);
+        }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // The person left the screen or the app dropped the request (a new search letter, a closed sheet): nobody
+            // reads an answer. Not a server error, so no 500, no error in the log and nothing for the error-spike
+            // alert (D60). 499 is the usual mark for "the client closed the request". A cancellation that is not the
+            // client's (a timeout inside the server) still falls through to the 500 below.
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = ClientClosedRequest;
+            }
+
+            logger.LogInformation("Request cancelled by the client on {Path}", context.Request.Path);
         }
         catch (ValidationException exception)
         {

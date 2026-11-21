@@ -86,6 +86,8 @@ npm run i18n:audit
 - Ошибки: `ExceptionHandlingMiddleware` → ProblemDetails с `code`.
   `UnauthorizedAccessException` → 403, `InvalidOperationException` с «not found» → 404,
   прочие `InvalidOperationException` → 409, `ValidationException` → 422.
+  Запрос, оборванный клиентом (`OperationCanceledException` при `RequestAborted`) → 499 без тела: не ошибка сервера,
+  в лог как Information, в счётчик всплесков (D60) не идёт. Отмена не от клиента (внутренний таймаут) остаётся 500.
 - Существующие enum в JSON — **числа** (`int Status`); не менять. **Новые** semantic поля —
   `string` с фиксированным набором camelCase-значений (D26). Глобальный `JsonStringEnumConverter`
   не подключать — сломает текущий frontend.
