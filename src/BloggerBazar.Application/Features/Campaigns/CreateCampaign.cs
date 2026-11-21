@@ -8,7 +8,7 @@ using MediatR;
 
 namespace BloggerBazar.Application.Features.Campaigns;
 
-public sealed record CreateCampaignCommand(long TelegramUserId, string Title, string Description, string? City, IReadOnlyCollection<string> Categories, IReadOnlyCollection<string>? Requirements, int? BudgetFrom, int? BudgetTo, DateTime? Deadline, bool PublishImmediately) : IRequest<CampaignDto>;
+public sealed record CreateCampaignCommand(long TelegramUserId, string Title, string Description, string? City, IReadOnlyCollection<string> Categories, IReadOnlyCollection<string>? Requirements, int? BudgetFrom, int? BudgetTo, DateTime? Deadline, bool PublishImmediately, DateTime? ScheduledPublishAtUtc = null) : IRequest<CampaignDto>;
 
 public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCommand>
 {
@@ -27,6 +27,12 @@ public sealed class CreateCampaignValidator : AbstractValidator<CreateCampaignCo
         RuleFor(command => command.BudgetTo).GreaterThanOrEqualTo(command => command.BudgetFrom!.Value).When(command => command.BudgetFrom.HasValue && command.BudgetTo.HasValue);
         // A campaign cannot be created already expired; the deadline day itself is allowed (same rule as offers).
         RuleFor(command => command.Deadline).GreaterThan(_ => DateTime.UtcNow.AddDays(-1)).When(command => command.Deadline.HasValue);
+        // D69: a new campaign is published now, planned for later, or kept as a draft; never both now and later.
+        RuleFor(command => command.ScheduledPublishAtUtc).Null().When(command => command.PublishImmediately)
+            .WithMessage("A campaign published now cannot also be planned for later.");
+        RuleFor(command => command.ScheduledPublishAtUtc!.Value).Must(at => CampaignSchedule.IsAllowed(at, DateTime.UtcNow))
+            .When(command => command.ScheduledPublishAtUtc.HasValue)
+            .WithMessage("The publication time must be between a minute and 60 days from now.");
     }
 }
 
@@ -47,6 +53,12 @@ public sealed class CreateCampaignHandler(IBusinessProfileRepository businesses,
         if (command.PublishImmediately)
         {
             campaign.Publish();
+        }
+        else if (command.ScheduledPublishAtUtc.HasValue)
+        {
+            var publishAtUtc = command.ScheduledPublishAtUtc.Value.ToUniversalTime();
+            CampaignSchedule.EnsureCanSchedule(campaign, publishAtUtc);
+            campaign.SchedulePublication(publishAtUtc);
         }
 
         await campaigns.AddAsync(campaign, cancellationToken);

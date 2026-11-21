@@ -24,6 +24,8 @@ import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { replaceHistoryRoute } from "../navigation/hashNavigation";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
+import { CampaignScheduleFields, scheduleReady, type ScheduleValue } from "../components/CampaignSchedule";
+import { defaultSchedule, formatScheduled, tashkentToUtc } from "../lib/campaignSchedule";
 
 // Page by page (owner, 2026-11-20): 12 cards on a computer, 10 on a phone.
 const pageSize = listPageSize();
@@ -71,6 +73,9 @@ export function Campaigns() {
   useScrollRestoration("campaigns");
   const [categories, setCategories] = useState<string[]>([]);
   const [form, setForm] = useState(initialForm);
+  // D69: publish now or plan for a Tashkent day and time; the campaign waits as a draft until then.
+  const [later, setLater] = useState(false);
+  const [schedule, setSchedule] = useState<ScheduleValue>(() => defaultSchedule());
   const [createOpen, setCreateOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -249,8 +254,11 @@ export function Campaigns() {
   };
 
   const updateForm = (key: keyof typeof initialForm) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((previous) => ({ ...previous, [key]: event.target.value }));
+  const deadlineIso = form.deadline ? new Date(`${form.deadline}T23:59:59`).toISOString() : undefined;
   const create = async () => {
     if (saving || !form.title.trim() || !form.description.trim() || !form.categories.length) return;
+    const plannedAt = later ? tashkentToUtc(schedule.day, schedule.time) : null;
+    if (later && (!plannedAt || !scheduleReady(schedule, deadlineIso))) return;
     // Checked before sending: a server error used to be the only sign, and it was hidden behind the form.
     const from = normalizeNumericInput(form.budgetFrom);
     const to = normalizeNumericInput(form.budgetTo);
@@ -261,16 +269,19 @@ export function Campaigns() {
     }
     try {
       setSaving(true);
-      const created = await createCampaign({ title: form.title.trim(), description: form.description.trim(), city: form.city || undefined, categories: form.categories, requirements: form.requirements.split(",").map((item) => item.trim()).filter(Boolean), deadline: form.deadline ? new Date(`${form.deadline}T23:59:59`).toISOString() : undefined, budgetFrom: normalizeNumericInput(form.budgetFrom) || undefined, budgetTo: normalizeNumericInput(form.budgetTo) || undefined, publishImmediately: true });
+      const created = await createCampaign({ title: form.title.trim(), description: form.description.trim(), city: form.city || undefined, categories: form.categories, requirements: form.requirements.split(",").map((item) => item.trim()).filter(Boolean), deadline: deadlineIso, budgetFrom: normalizeNumericInput(form.budgetFrom) || undefined, budgetTo: normalizeNumericInput(form.budgetTo) || undefined, publishImmediately: !plannedAt, scheduledPublishAtUtc: plannedAt?.toISOString() });
       haptic.success();
       setCreateOpen(false);
       setForm(initialForm);
+      setLater(false);
+      setSchedule(defaultSchedule());
+      const message = plannedAt ? t("campaigns.scheduled", { date: formatScheduled(created?.scheduledPublishAtUtc ?? plannedAt.toISOString(), language) }) : t("campaigns.created");
       setToastTone("success");
-      setToast(t("campaigns.created"));
+      setToast(message);
       refreshCatalog();
       // From My campaigns: the new campaign replaces the catalog step, so Back returns to My campaigns; its page shows the toast.
       if (openedFromMyCampaigns.current && created?.id) {
-        sessionStorage.setItem(myCampaignsFeedbackKey, t("campaigns.created"));
+        sessionStorage.setItem(myCampaignsFeedbackKey, message);
         replaceHistoryRoute(`#/my-campaign/${created.id}`);
       }
       openedFromMyCampaigns.current = false;
@@ -305,7 +316,7 @@ export function Campaigns() {
       </>}
     </section>
     <CampaignFiltersSheet categories={categories} error={filterError} filters={draftFilters} onApply={applyFilters} onClose={closeFilters} onReset={resetCatalog} onSetFilter={setDraft} open={filtersOpen} />
-    <Modal id="campaign-create-sheet" onClose={() => { const back = openedFromMyCampaigns.current; openedFromMyCampaigns.current = false; setCreateOpen(false); if (back) window.history.back(); }} open={createOpen} title={t("campaigns.newTitle")}><div className="campaign-create-form grid gap-3"><Input className="campaign-create-form__input" label={t("campaigns.name")} maxLength={150} onChange={updateForm("title")} placeholder={t("campaigns.namePlaceholder")} required value={form.title} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.description")} maxLength={3000} onChange={updateForm("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /><CategoryMultiSelect onChange={(categories) => setForm((current) => ({ ...current, categories }))} required value={form.categories} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.requirements")} maxLength={1000} onChange={updateForm("requirements")} placeholder={t("campaigns.requirementsPlaceholder")} value={form.requirements} /><RegionSelect onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} value={form.city} /><Input className="campaign-create-form__input" label={t("campaigns.deadline")} min={localDay()} onChange={updateForm("deadline")} type="date" value={form.deadline} /><div className="campaign-create-form__budget-grid"><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setForm((current) => ({ ...current, budgetFrom: formatNumericInput(event.target.value) }))} placeholder="200 000" value={form.budgetFrom} /><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setForm((current) => ({ ...current, budgetTo: formatNumericInput(event.target.value) }))} placeholder="1 000 000" value={form.budgetTo} /></div><Button aria-busy={saving} className="campaign-create-form__submit" disabled={saving || !form.title.trim() || !form.description.trim() || !form.categories.length} onClick={create} type="button">{saving ? t("campaigns.publishing") : t("campaigns.publish")}</Button></div></Modal>
+    <Modal id="campaign-create-sheet" onClose={() => { const back = openedFromMyCampaigns.current; openedFromMyCampaigns.current = false; setCreateOpen(false); if (back) window.history.back(); }} open={createOpen} title={t("campaigns.newTitle")}><div className="campaign-create-form grid gap-3"><Input className="campaign-create-form__input" label={t("campaigns.name")} maxLength={150} onChange={updateForm("title")} placeholder={t("campaigns.namePlaceholder")} required value={form.title} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.description")} maxLength={3000} onChange={updateForm("description")} placeholder={t("campaigns.descriptionPlaceholder")} required value={form.description} /><CategoryMultiSelect onChange={(categories) => setForm((current) => ({ ...current, categories }))} required value={form.categories} /><Textarea className="campaign-create-form__textarea" label={t("campaigns.requirements")} maxLength={1000} onChange={updateForm("requirements")} placeholder={t("campaigns.requirementsPlaceholder")} value={form.requirements} /><RegionSelect onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} value={form.city} /><Input className="campaign-create-form__input" label={t("campaigns.deadline")} min={localDay()} onChange={updateForm("deadline")} type="date" value={form.deadline} /><div className="campaign-create-form__budget-grid"><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetFrom")} onChange={(event) => setForm((current) => ({ ...current, budgetFrom: formatNumericInput(event.target.value) }))} placeholder="200 000" value={form.budgetFrom} /><Input className="campaign-create-form__input" inputMode="numeric" label={t("campaigns.budgetTo")} onChange={(event) => setForm((current) => ({ ...current, budgetTo: formatNumericInput(event.target.value) }))} placeholder="1 000 000" value={form.budgetTo} /></div><div className="campaign-create-form__when" role="group" aria-label={t("schedule.whenAria")}>{([false, true] as const).map((option) => <button aria-pressed={later === option} className={`campaign-create-form__when-choice${later === option ? " choice-selected" : ""}`} key={String(option)} onClick={() => setLater(option)} type="button">{t(option ? "schedule.later" : "schedule.now")}</button>)}</div>{later && <CampaignScheduleFields deadline={deadlineIso} onChange={setSchedule} value={schedule} />}<Button aria-busy={saving} className="campaign-create-form__submit" disabled={saving || !form.title.trim() || !form.description.trim() || !form.categories.length || (later && !scheduleReady(schedule, deadlineIso))} onClick={create} type="button">{saving ? t(later ? "schedule.saving" : "campaigns.publishing") : t(later ? "schedule.submit" : "campaigns.publish")}</Button></div></Modal>
     <Toast message={toast} tone={toastTone} />
     <BottomNav />
   </div>;

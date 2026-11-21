@@ -171,6 +171,21 @@ describe("Campaign catalog", () => {
     expect(modal.querySelector(".campaign-create-form__submit")).toBeInTheDocument();
   });
 
+  it("D69: the create form can plan the publication for a Tashkent day and time", async () => {
+    renderCampaigns();
+    await screen.findByText("Coffee launch");
+    fireEvent.click(screen.getByRole("button", { name: translate("campaigns.createAria", undefined, "ru") }));
+
+    expect(screen.getByRole("button", { name: translate("schedule.now", undefined, "ru") })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText(translate("schedule.time", undefined, "ru"))).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: translate("schedule.later", undefined, "ru"), pressed: false }));
+
+    expect(screen.getByText(translate("schedule.day", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByText(translate("schedule.time", undefined, "ru"))).toBeInTheDocument();
+    expect(screen.getByTestId("campaign-modal").querySelector(".campaign-create-form__submit")).toHaveTextContent(translate("schedule.submit", undefined, "ru"));
+  });
+
   it("keeps empty budget and deadline filters out of the default request and uses the localized any placeholder", async () => {
     renderCampaigns();
     await screen.findByText("Coffee launch");

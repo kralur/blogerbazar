@@ -89,7 +89,7 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     public async Task<ActionResult<CampaignDto>> Create(CreateCampaignRequest request, CancellationToken cancellationToken)
     {
         var actor = GetTelegramUser();
-        var campaign = await sender.Send(new CreateCampaignCommand(actor.Id, request.Title, request.Description, request.City, request.Categories, request.Requirements, request.BudgetFrom, request.BudgetTo, request.Deadline, request.PublishImmediately), cancellationToken);
+        var campaign = await sender.Send(new CreateCampaignCommand(actor.Id, request.Title, request.Description, request.City, request.Categories, request.Requirements, request.BudgetFrom, request.BudgetTo, request.Deadline, request.PublishImmediately, request.ScheduledPublishAtUtc), cancellationToken);
         return StatusCode(StatusCodes.Status201Created, campaign);
     }
 
@@ -122,6 +122,28 @@ public sealed class CampaignsController(ISender sender, ITelegramWebAppValidator
     {
         var actor = GetTelegramUser();
         return Ok(await sender.Send(new ReopenCampaignCommand(campaignId, actor.Id), cancellationToken));
+    }
+
+    // D69: plan when a draft or closed campaign goes to the catalog, or drop the plan.
+    [HttpPost("mine/{campaignId:guid}/schedule")]
+    [BrowserSessionAllowed]
+    [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<CampaignDto>> Schedule(Guid campaignId, ScheduleCampaignRequest request, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new ScheduleCampaignCommand(campaignId, actor.Id, request.PublishAtUtc), cancellationToken));
+    }
+
+    [HttpDelete("mine/{campaignId:guid}/schedule")]
+    [BrowserSessionAllowed]
+    [ProducesResponseType<CampaignDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CampaignDto>> CancelSchedule(Guid campaignId, CancellationToken cancellationToken)
+    {
+        var actor = GetTelegramUser();
+        return Ok(await sender.Send(new CancelCampaignScheduleCommand(campaignId, actor.Id), cancellationToken));
     }
 
     [HttpDelete("mine/{campaignId:guid}")]

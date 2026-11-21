@@ -249,6 +249,7 @@ public sealed class BloggerBazarDbContext(DbContextOptions<BloggerBazarDbContext
         campaign.Property(entity => entity.Deadline);
         campaign.HasOne(entity => entity.Business).WithMany(entity => entity.Campaigns).HasForeignKey(entity => entity.BusinessId).OnDelete(DeleteBehavior.Cascade);
         campaign.HasIndex(entity => new { entity.Status, entity.IsPromoted });
+        campaign.HasIndex(entity => entity.ScheduledPublishAtUtc).HasFilter("\"ScheduledPublishAtUtc\" IS NOT NULL");
 
         var application = modelBuilder.Entity<CampaignApplication>();
         application.ToTable("campaign_applications", table => table.HasCheckConstraint("CK_campaign_applications_single_creator", SingleCreatorCheck));

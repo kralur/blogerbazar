@@ -28,7 +28,8 @@ public sealed record MyCampaignItemDto(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
     int ApplicationsCount,
-    int PendingApplicationsCount = 0);
+    int PendingApplicationsCount = 0,
+    DateTime? ScheduledPublishAtUtc = null);
 
 public sealed record MyCampaignDetailsDto(
     Guid Id,
@@ -45,7 +46,8 @@ public sealed record MyCampaignDetailsDto(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
     int ApplicationsCount,
-    int PendingApplicationsCount = 0);
+    int PendingApplicationsCount = 0,
+    DateTime? ScheduledPublishAtUtc = null);
 
 public sealed class SearchMyCampaignsValidator : AbstractValidator<SearchMyCampaignsQuery>
 {

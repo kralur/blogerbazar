@@ -1114,6 +1114,15 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .campaign-create-form select { width: 100%; max-width: 100%; min-width: 0; }
 .campaign-create-form__textarea { overflow-wrap: anywhere; }
 .campaign-create-form__budget-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; width: 100%; min-width: 0; }
+/* D69: publish now or plan for a Tashkent day and time. */
+.campaign-create-form__when { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.campaign-create-form__when-choice { min-height: 2.75rem; padding: .625rem .75rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); font-size: .875rem; font-weight: 700; }
+.campaign-schedule-fields__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; min-width: 0; }
+.campaign-schedule-fields__row > * { min-width: 0; }
+.campaign-schedule-fields__hint, .campaign-schedule-fields__error { margin: 0; font-size: .8125rem; line-height: 1.45; }
+.campaign-schedule-fields__hint { color: var(--bb-text-secondary); }
+.campaign-schedule-fields__error { color: var(--bb-error-text); font-weight: 600; }
+.my-campaign-details__scheduled { margin: 1rem 0 0; padding: .875rem 1rem; border: 1px solid var(--bb-accent); border-radius: var(--bb-radius-card); background: var(--bb-accent-subtle); color: var(--bb-text); font-size: .875rem; font-weight: 600; line-height: 1.45; }
 .campaign-create-form__submit { width: 100%; max-width: 100%; min-width: 0; }
 
 .campaign-catalog-card { display: block; overflow: hidden; padding: 1rem; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); text-decoration: none; transition: border-color 150ms ease, transform 150ms ease; }

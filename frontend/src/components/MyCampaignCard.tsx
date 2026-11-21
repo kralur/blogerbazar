@@ -6,6 +6,7 @@ import { CampaignActionsMenu, type CampaignMenuResult } from "./CampaignActionsM
 import { Badge, Icon } from "./ui";
 import { useIsDesktop } from "../lib/desktopLayout";
 import { compactBudgetRange } from "./details/DetailBlocks";
+import { formatScheduled } from "../lib/campaignSchedule";
 
 export function MyCampaignCard({ campaign, onMenuResult }: { campaign: MyCampaign; onMenuResult?: (result: CampaignMenuResult) => void }) {
   const { language, t } = useI18n();
@@ -15,6 +16,10 @@ export function MyCampaignCard({ campaign, onMenuResult }: { campaign: MyCampaig
     ? `${figure(campaign.minBudget)} – ${figure(campaign.maxBudget)} ${t("currency.uzs")}`
     : formatBudgetRange(campaign.minBudget, campaign.maxBudget);
   const deadline = campaign.deadline ? formatDate(campaign.deadline) : t("myCampaigns.deadlineNotSpecified");
+  // D69: a planned draft or closed campaign says when it goes out instead of when it was last edited.
+  const scheduled = campaign.status === 0 || campaign.status === 2 ? campaign.scheduledPublishAtUtc ?? null : null;
+  const statusLabel = scheduled ? t("schedule.badge") : campaignStatusLabel(campaign.status, t);
+  const scheduledLabel = scheduled ? t("schedule.planned", { date: formatScheduled(scheduled, language) }) : null;
 
   const desktop = useIsDesktop();
   // On a computer (the website) the card is the catalog's campaign tile, so My campaigns and Campaigns look alike:
@@ -25,14 +30,14 @@ export function MyCampaignCard({ campaign, onMenuResult }: { campaign: MyCampaig
       <a aria-label={t("myCampaigns.openAria", { title: campaign.title })} className="campaign-catalog-card" href={`#/my-campaign/${campaign.id}`}>
         <div className="campaign-catalog-card__identity">
           <div className="campaign-catalog-card__heading">
-            <div className="campaign-catalog-card__name-row"><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge></div>
+            <div className="campaign-catalog-card__name-row"><Badge tone={campaignStatusTone(campaign.status)}>{statusLabel}</Badge></div>
             <h2>{campaign.title}</h2>
           </div>
         </div>
         {(campaign.isPromoted || campaign.categories.length > 0) && <div className="campaign-catalog-card__categories">{campaign.isPromoted && <span className="catalog-card__promoted">{t("card.promoted")}</span>}{campaign.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div>}
         <p className="campaign-catalog-card__requirements">
           <span className="catalog-tile__fact my-campaign-card__applications"><Icon aria-hidden="true" name="briefcase" />{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span>
-          <span className="catalog-tile__fact">{t("myCampaigns.updated", { date: formatShortDate(campaign.updatedAtUtc, language) })}</span>
+          <span className="catalog-tile__fact">{scheduledLabel ?? t("myCampaigns.updated", { date: formatShortDate(campaign.updatedAtUtc, language) })}</span>
         </p>
         <dl className="campaign-catalog-card__facts">
           {campaign.city && <div><dt>{t("common.city")}</dt><dd>{cityLabel(campaign.city, language)}</dd></div>}
@@ -50,13 +55,13 @@ export function MyCampaignCard({ campaign, onMenuResult }: { campaign: MyCampaig
     <a aria-label={t("myCampaigns.openAria", { title: campaign.title })} className="my-campaign-card__link" href={`#/my-campaign/${campaign.id}`}>
     <div className="my-campaign-card__header">
       <div className="my-campaign-card__budget"><strong>{budget ?? t("myCampaigns.budgetNotSpecified")}</strong></div>
-      <Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>
+      <Badge tone={campaignStatusTone(campaign.status)}>{statusLabel}</Badge>
     </div>
     <h2>{campaign.title}</h2>
     <p className="my-campaign-card__meta">{[campaign.city ? cityLabel(campaign.city, language) : null, deadline].filter(Boolean).join(" · ")}</p>
     {(campaign.isPromoted || campaign.categories.length > 0) && <div className="my-campaign-card__categories">{campaign.isPromoted && <span className="catalog-card__promoted">{t("card.promoted")}</span>}{campaign.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category, language)}</span>)}</div>}
     <div className="my-campaign-card__facts">
-      <span>{t("myCampaigns.updated", { date: formatDate(campaign.updatedAtUtc) })}</span>
+      <span>{scheduledLabel ?? t("myCampaigns.updated", { date: formatDate(campaign.updatedAtUtc) })}</span>
       <span className="my-campaign-card__applications"><Icon aria-hidden="true" name="briefcase" />{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span>
     </div>
     </a>

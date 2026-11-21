@@ -583,6 +583,9 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
+                    b.Property<DateTime?>("ScheduledPublishAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -597,6 +600,9 @@ namespace BloggerBazar.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BusinessId");
+
+                    b.HasIndex("ScheduledPublishAtUtc")
+                        .HasFilter("\"ScheduledPublishAtUtc\" IS NOT NULL");
 
                     b.HasIndex("Status", "IsPromoted");
 
