@@ -70,6 +70,9 @@ updates:
       # Serilog.AspNetCore follows the runtime line too: 11 brings Microsoft.Extensions 11 into a .NET 10 process.
       - dependency-name: "Serilog.AspNetCore"
         update-types: ["version-update:semver-major"]
+      # So does Swashbuckle: 11 needs Microsoft.OpenApi 3, and ASP.NET Core 10 accepts only 2.x (restore fails, NU1107).
+      - dependency-name: "Swashbuckle.AspNetCore"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
