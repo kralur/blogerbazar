@@ -975,9 +975,6 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 
 .catalog-search__controls,
 .catalog-search__sheet-actions,
-.catalog-blogger-card__identity,
-.catalog-blogger-card__name-row,
-.catalog-blogger-card__facts,
 .catalog-search__chips {
   display: flex;
   align-items: center;
@@ -991,7 +988,6 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .catalog-search__filter-button:focus-visible,
 .catalog-search__chip:focus-visible,
 .catalog-search__reset-all:focus-visible,
-.catalog-brand-face-card__link:focus-visible,
 .catalog-favorite-button:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
 .catalog-search__searchbar { margin-top: 1rem; }
 .catalog-search .catalog-search__search-control { border: 1px solid var(--bb-border); border-radius: .75rem; background: var(--bb-surface); box-shadow: none; color: var(--bb-text); }
@@ -1074,19 +1070,6 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .catalog-search__state p { max-width: 20rem; margin: 0; color: var(--bb-text-secondary); font-size: .875rem; line-height: 1.45; }
 .catalog-search__end { margin: .25rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; text-align: center; }
 
-.catalog-blogger-card { overflow: hidden; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); }
-.catalog-blogger-card__link { display: block; padding: 1rem; color: inherit; text-decoration: none; }
-.catalog-blogger-card__identity { align-items: flex-start; gap: .75rem; padding-right: 2.75rem; }
-.catalog-blogger-card__name-row { gap: .5rem; min-width: 0; }
-.catalog-blogger-card__name-row strong { overflow: hidden; font-size: 1rem; font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-blogger-card__identity p { overflow: hidden; margin: .25rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-blogger-card__categories { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .625rem; }
-.catalog-blogger-card__categories span { padding: .25rem .5rem; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; }
-.catalog-blogger-card__facts { gap: .5rem; margin-top: 1rem; padding-top: .875rem; border-top: 1px solid var(--bb-border); }
-.catalog-blogger-card__facts > div { min-width: 0; flex: 1; }
-.catalog-blogger-card__facts span { display: block; overflow: hidden; color: var(--bb-text-secondary); font-size: .625rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-blogger-card__facts strong,
-.catalog-blogger-card__facts .font-extrabold { display: block; overflow: hidden; margin-top: .2rem; color: var(--bb-text); font-size: .8125rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 
 .catalog-avatar__image { border: 1px solid var(--bb-border) !important; background: var(--bb-surface-secondary) !important; color: var(--bb-text-secondary); }
 .catalog-avatar__verified { width: 1.25rem !important; height: 1.25rem !important; border: 2px solid var(--bb-surface) !important; background: var(--bb-accent) !important; box-shadow: none !important; color: var(--bb-accent-text) !important; }
@@ -1097,24 +1080,10 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 /* Saved: the brand lime, like every selected thing in the app, so a saved author is seen at a glance. */
 .catalog-favorite-button--saved,
 .catalog-favorite-button--saved:hover,
-.catalog-blogger-card__save .catalog-favorite-button--saved,
 .catalog-tile__save .catalog-favorite-button--saved,
 .detail-hero .catalog-favorite-button--saved { border-color: var(--bb-accent); background: var(--bb-accent); color: var(--bb-accent-text); }
 .catalog-favorite-button:disabled { cursor: wait; opacity: .55; }
 
-.catalog-brand-face-card { position: relative; overflow: hidden; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); color: var(--bb-text); }
-.catalog-brand-face-card__link { display: block; padding: 1rem; color: inherit; text-decoration: none; }
-.catalog-brand-face-card__identity { display: flex; align-items: flex-start; gap: .75rem; padding-right: 2.75rem; }
-.catalog-brand-face-card__favorite { position: absolute; top: 1rem; right: 1rem; }
-.catalog-brand-face-card__heading { min-width: 0; flex: 1; }
-.catalog-brand-face-card__name-row { display: flex; align-items: center; gap: .5rem; min-width: 0; }
-.catalog-brand-face-card__name-row strong { overflow: hidden; min-width: 0; color: var(--bb-text); font-size: 1rem; font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-brand-face-card__heading p { overflow: hidden; margin: .25rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-brand-face-card__chips { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .75rem; }
-.catalog-brand-face-card__chips span { max-width: 100%; overflow: hidden; padding: .25rem .5rem; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-brand-face-card__price { display: grid; gap: .2rem; margin-top: 1rem; padding-top: .875rem; border-top: 1px solid var(--bb-border); }
-.catalog-brand-face-card__price span { color: var(--bb-text-secondary); font-size: .6875rem; }
-.catalog-brand-face-card__price strong { overflow: hidden; color: var(--bb-text); font-size: .875rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Phase 3C-B: Campaign catalog uses the same neutral primitives without changing other screens. */
 .campaign-catalog .catalog-search__search-control { min-width: 0; }
@@ -1157,15 +1126,9 @@ html[data-telegram-theme] .ftue-primary-button:disabled:focus-visible {
 .campaign-catalog-card__name-row strong { overflow: hidden; min-width: 0; color: var(--bb-text-secondary); font-size: .8125rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
 .campaign-catalog-card h2 { display: -webkit-box; overflow: hidden; margin: .35rem 0 0; color: var(--bb-text); font-size: 1rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 /* Shared card details (R2b): promotion lives in the chip row so it never collides with the favorite button. */
-.catalog-blogger-card__categories .catalog-card__promoted,
 .campaign-catalog-card__categories .catalog-card__promoted,
-.catalog-brand-face-card__chips .catalog-card__promoted,
 .my-campaign-card__categories .catalog-card__promoted { border-color: var(--bb-accent); background: var(--bb-accent-subtle); color: var(--bb-text); font-weight: 800; }
 .catalog-card--rail { height: 100%; }
-.catalog-blogger-card__facts > div:nth-child(2) { flex: .7; }
-.catalog-blogger-card__facts > div:nth-child(3) { flex: 1.5; }
-.catalog-blogger-card.catalog-card--rail .catalog-blogger-card__link,
-.catalog-brand-face-card.catalog-card--rail .catalog-brand-face-card__link { height: 100%; }
 .campaign-catalog-card__categories { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .75rem; }
 .campaign-catalog-card__categories span { max-width: 100%; overflow: hidden; padding: .25rem .5rem; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .campaign-catalog-card__requirements { display: -webkit-box; overflow: hidden; margin: .75rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -1702,8 +1665,6 @@ html[data-telegram-theme="dark"] {
 
 /* Stage 2 of "Bazar" (D62): display titles on every screen, campaigns as price tags, prices in the display face. */
 .page-header__title { font-family: var(--bb-display); font-size: 1.375rem; font-weight: 700; letter-spacing: -.01em; }
-.catalog-blogger-card__facts strong,
-.catalog-blogger-card__facts .font-extrabold { font-family: var(--bb-display); font-size: .875rem; font-weight: 700; }
 .campaign-catalog-card { position: relative; padding-top: 1.375rem; border-radius: .375rem .375rem 1rem 1rem; }
 .campaign-catalog-card::before { content: ""; position: absolute; top: 0; left: 50%; width: 2px; height: .875rem; background: var(--bb-saffron); transform: translateX(-50%); }
 .campaign-catalog-card::after { content: ""; position: absolute; top: .5rem; left: 50%; width: .625rem; height: .625rem; border: 2px solid var(--bb-border); border-radius: 50%; background: var(--bb-background); transform: translateX(-50%); }
@@ -1907,19 +1868,31 @@ html .ftue-screen--atlas .ftue-primary-button:disabled { border-color: rgba(255,
 .tag-state__card .ds-state__subtitle { max-width: none; margin: .375rem 0 0; color: #4A5675; font-size: .8125rem; line-height: 1.4; }
 .tag-state .catalog-search__primary-button { min-width: 12rem; }
 
-/* Bloggers in Search and Favorites as rows, like the Home lists. */
-.catalog-blogger-card { min-width: 0; overflow: visible; border: 0; border-bottom: 1px solid var(--bb-border); border-radius: 0; background: transparent; }
-.catalog-blogger-card__link { display: flex; align-items: center; gap: .75rem; padding: .875rem 2.75rem .875rem 0; }
-.catalog-blogger-card__body { flex: 1 1 auto; min-width: 0; }
-.catalog-blogger-card__meta { overflow: hidden; margin: .2rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-blogger-card__categories { margin-top: .4rem; }
-.catalog-blogger-card__price { flex: none; max-width: 40%; text-align: right; }
-.catalog-blogger-card__price strong { display: block; font-family: var(--bb-display); font-size: 1.0625rem; font-weight: 700; line-height: 1.1; white-space: nowrap; }
-.catalog-blogger-card__price span { display: block; color: var(--bb-text-secondary); font-size: .6875rem; line-height: 1.3; }
-.catalog-blogger-card__save { position: absolute; top: 50%; right: -.375rem; transform: translateY(-50%); }
-.catalog-blogger-card__save .catalog-favorite-button { width: 2.25rem; height: 2.25rem; background: transparent; }
-.catalog-search__results:has(> .catalog-blogger-card) { gap: 0; }
-.catalog-search__results > .catalog-blogger-card:last-of-type { border-bottom: 0; }
+/* One card for a person (a blogger or a brand face) on Home, in Search and in Saved: a row with the photo, the name,
+   the facts, the tags, the price on the right and the save button. The website shows people as tiles instead. */
+.person-card { position: relative; min-width: 0; border-bottom: 1px solid var(--bb-border); color: var(--bb-text); }
+.person-card__link { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: .75rem; padding: .875rem 2.75rem .875rem 0; color: inherit; text-decoration: none; }
+.person-card__link:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
+.person-card__link:active { background: var(--bb-surface-secondary); }
+.person-card__body { min-width: 0; }
+.person-card__name-row { display: flex; min-width: 0; align-items: center; gap: .5rem; }
+.person-card__name-row strong { overflow: hidden; min-width: 0; font-size: 1rem; font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
+/* Two lines at most: on a narrow phone one line cut the followers off. A long word breaks instead of sticking out
+   (a 320 px screen leaves the facts about ten letters a line). */
+.person-card__facts { display: -webkit-box; overflow: hidden; margin: .2rem 0 0; color: var(--bb-text-secondary); font-size: .8125rem; line-height: 1.35; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* The tags run to the edge of the card, under the save button, which sits level with the first row. */
+.person-card__tags { display: flex; grid-column: 2 / -1; flex-wrap: wrap; gap: .375rem; margin-top: .5rem; margin-right: -2.75rem; }
+.person-card__tags span { max-width: 100%; overflow: hidden; padding: .25rem .5rem; border: 1px solid var(--bb-border); border-radius: .5rem; background: var(--bb-surface-secondary); color: var(--bb-text-secondary); font-size: .6875rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.person-card__tags .catalog-card__promoted { border-color: var(--bb-accent); background: var(--bb-accent-subtle); color: var(--bb-text); font-weight: 800; }
+.person-card__price { grid-column: 3; max-width: 9.5rem; text-align: right; }
+.person-card__price strong { display: block; font-family: var(--bb-display); font-size: 1.0625rem; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+.person-card__price span { display: block; color: var(--bb-text-secondary); font-size: .6875rem; line-height: 1.3; }
+/* Level with the photo and the price, whatever the number of tag lines under them. */
+.person-card__save { position: absolute; top: 2.5rem; right: -.375rem; transform: translateY(-50%); }
+.person-card__save .catalog-favorite-button { width: 2.25rem; height: 2.25rem; background: transparent; }
+.person-card__save .catalog-favorite-button--saved { border-color: var(--bb-accent); background: var(--bb-accent); color: var(--bb-accent-text); }
+.catalog-search__results:has(> .person-card) { gap: 0; }
+:is(.catalog-search__results, .home-list) > .person-card:last-of-type { border-bottom: 0; }
 
 /* My campaigns as price tags, like the catalog: budget first and large, status beside it. */
 .my-campaign-card { padding-top: 1.375rem; border-radius: .375rem .375rem 1rem 1rem; overflow: visible; }
@@ -2239,9 +2212,6 @@ html[data-desktop="true"] .catalog-search__results .my-campaign-card__facts { ma
 html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__requirements,
 html[data-desktop="true"] .catalog-search__results .campaign-catalog-card__categories:last-of-type { margin-bottom: 1rem; }
 html[data-desktop="true"] .campaign-catalog-card__fact--budget dd { font-size: 1.125rem; }
-html[data-desktop="true"] .catalog-search__results > .catalog-brand-face-card > .catalog-brand-face-card__link { display: flex; height: 100%; flex-direction: column; }
-html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__price { margin-top: auto; }
-html[data-desktop="true"] .catalog-search__results .catalog-brand-face-card__chips { margin-bottom: 1rem; }
 
 /* Home picks on a computer: the catalog tiles in even rows. */
 html[data-desktop="true"] .home-list:has(> .catalog-tile, > .campaign-catalog-card) { gap: 1rem; align-items: stretch; }
@@ -2268,19 +2238,6 @@ html[data-desktop="true"] .list-hero .my-campaigns__controls > * { flex: 0 0 17r
 
 /* The catalog on a computer: each blogger is a tile, not a phone row. The facts get two full lines instead of one cut
    line, the price sits under a rule at the bottom, tiles in a row share one height. */
-html[data-desktop="true"] .catalog-search__results:has(> .catalog-blogger-card) { gap: 1rem; align-items: stretch; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card { display: flex; border: 1px solid var(--bb-border); border-radius: 1rem; background: var(--bb-surface); }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card:last-of-type { border-bottom: 1px solid var(--bb-border); }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__link { display: grid; flex: 1; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 1fr auto; align-items: start; column-gap: .875rem; padding: 1rem 1rem 1rem 1rem; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__body { padding-right: 2.25rem; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__name-row strong { font-size: 1.0625rem; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__meta { display: -webkit-box; margin-top: .3rem; overflow: hidden; font-size: .875rem; line-height: 1.45; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__categories { margin-top: .625rem; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__price { display: flex; grid-column: 1 / -1; grid-row: 3; max-width: none; align-items: baseline; gap: .375rem; margin-top: .875rem; padding-top: .75rem; border-top: 1px solid var(--bb-border); text-align: left; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__price strong { font-size: 1.25rem; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__price span { font-size: .8125rem; }
-html[data-desktop="true"] .catalog-search__results > .catalog-blogger-card .catalog-blogger-card__save { top: .75rem; right: .75rem; transform: none; }
-html[data-desktop="true"] .catalog-search__results > .catalog-brand-face-card { height: 100%; }
 
 /* Two-column pages (DetailLayout): the content on the left, the page's actions and key facts in a panel on the right
    that stays in view while the page scrolls. Below 1200 px the panel comes first, above the content. */

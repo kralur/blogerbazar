@@ -4,6 +4,7 @@ import { Avatar } from "./ui";
 import { FavoriteButton } from "./FavoriteButton";
 import { platformLabel } from "../lib/platforms";
 import { useIsDesktop } from "../lib/desktopLayout";
+import { PersonCard } from "./PersonCard";
 
 export type BloggerCardData = {
   id: string;
@@ -27,7 +28,7 @@ export type BloggerCardData = {
   isPromoted?: boolean;
 };
 
-// One blogger card for Home rails, Search and Favorites; facts the API did not send are omitted, not shown as "—".
+// One blogger card for Home, Search and Saved; facts the API did not send are omitted, not shown as a dash.
 export function BloggerCard({ blogger, variant = "default" }: { blogger: BloggerCardData; variant?: "default" | "home" }) {
   const { t } = useI18n();
   const desktop = useIsDesktop();
@@ -63,14 +64,18 @@ export function BloggerCard({ blogger, variant = "default" }: { blogger: Blogger
     </article>;
   }
 
-  // D63: one row per blogger, like the Home lists: photo, name, the facts in one line, the price on the right.
-  return <article className={`catalog-blogger-card card-enter relative${variant === "home" ? " catalog-card--rail" : ""}`}><a aria-label={t("home.openBlogger", { name: blogger.name })} className="catalog-blogger-card__link" href={`#/blogger/${blogger.id}`}>
-    <Avatar name={blogger.name} priority={variant === "home"} size="sm" src={blogger.avatarUrl} variant="catalog" />
-    <div className="catalog-blogger-card__body">
-      <div className="catalog-blogger-card__name-row"><strong>{blogger.name}</strong></div>
-      <p className="catalog-blogger-card__meta">{facts}</p>
-      {(blogger.isPromoted || blogger.categories.length > 0) && <div className="catalog-blogger-card__categories">{blogger.isPromoted && <span className="catalog-card__promoted">{t("card.promoted")}</span>}{blogger.categories.slice(0, 2).map((category) => <span key={category}>{categoryLabel(category)}</span>)}</div>}
-    </div>
-    {priceFrom != null && <div className="catalog-blogger-card__price"><span>{t("card.priceFrom")}</span><strong>{formatNumber(priceFrom)}</strong><span>{t("currency.uzs")}</span></div>}
-  </a><FavoriteButton bloggerId={blogger.id} className="catalog-blogger-card__save" /></article>;
+  return <PersonCard
+    ariaLabel={t("home.openBlogger", { name: blogger.name })}
+    avatarUrl={blogger.avatarUrl}
+    facts={facts}
+    href={`#/blogger/${blogger.id}`}
+    name={blogger.name}
+    price={priceFrom != null ? formatNumber(priceFrom) : null}
+    priceLabel={t("card.priceFrom")}
+    priceUnit={t("currency.uzs")}
+    priority={variant === "home"}
+    promotedLabel={blogger.isPromoted ? t("card.promoted") : null}
+    save={<FavoriteButton bloggerId={blogger.id} className="person-card__save" />}
+    tags={blogger.categories.slice(0, 2).map((category) => categoryLabel(category))}
+  />;
 }

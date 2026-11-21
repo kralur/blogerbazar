@@ -67,7 +67,9 @@ describe("Brand Face catalog in Search", () => {
     expect(api.getBrandFaceCatalog).toHaveBeenCalledTimes(1);
     expect(api.getBrandFaceCatalog).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 10, sort: "promoted" }), expect.any(AbortSignal));
     expect(screen.getByText(translate("search.promoted", undefined, "ru"))).toBeInTheDocument();
-    expect(screen.getByText((_, element) => element?.textContent?.replace(/\u00a0/g, " ") === "250 000 сум")).toBeInTheDocument();
+    // One card for people: the price is a figure with the unit under it, like on a blogger.
+    const price = document.querySelector(".catalog-search:not([hidden]) .person-card__price")!;
+    expect(price.textContent?.replace(/\u00a0/g, " ")).toBe(`${translate("common.price", undefined, "ru")}250 000${translate("currency.uzs", undefined, "ru")}`);
     expect(screen.queryByRole("button", { name: /favorite/i })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: translate("search.openBrandFaceAria", { name: "Dilnoza" }, "ru") })).toHaveAttribute("href", "#/brand-face-detail/face-a");
   });
@@ -169,10 +171,11 @@ describe("Brand Face catalog in Search", () => {
     expect(activeCatalog).not.toHaveTextContent("Amina");
   });
 
-  it("shows a localized missing price instead of a fake zero", async () => {
+  it("leaves a missing price out instead of showing a fake zero", async () => {
     api.getBrandFaceCatalog.mockResolvedValue({ ...brandFacePage, items: [{ ...brandFacePage.items[0], collaborationPrice: null, isPromoted: false }] });
     renderSearch("#/search?type=brand-face");
-    expect(await screen.findByText(translate("search.priceNotSpecified", undefined, "ru"))).toBeInTheDocument();
+    expect(await screen.findByText("Dilnoza")).toBeInTheDocument();
+    expect(document.querySelector(".catalog-search:not([hidden]) .person-card__price")).toBeNull();
     expect(screen.queryByText(/0 сум/)).not.toBeInTheDocument();
   });
 
