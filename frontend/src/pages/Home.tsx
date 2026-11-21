@@ -270,7 +270,6 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   }, [isPreview, load]);
   useProfileDataRefresh(load);
   const [activityReloadKey, setActivityReloadKey] = useState(0);
-  const homeDesktop = useIsDesktop();
   useScreenRefresh(() => { setActivityReloadKey((key) => key + 1); load(); });
 
   // "Waiting for your decision" is re-read when Home is shown again and after an accept, reject or review elsewhere,
@@ -291,9 +290,9 @@ export function Home({ role, initialData, initialError = false, initialLoading =
   const forYou = useRecommendations(!isPreview, activityReloadKey);
   const me = useOwnProfile(resolvedRole, !isPreview, activityReloadKey);
   const forYouCount = forYou ? forYou.campaigns.length + forYou.bloggers.length + forYou.brandFaces.length : 0;
-  // Home shows a taste of each list (owner, 2026-11-20): one row of three on a computer, six to swipe on a phone;
-  // "See all" opens the full list page by page.
-  const railLimit = homeDesktop ? 3 : 6;
+  // Home shows a taste of each list: three in every section, on a phone and on a computer (owner, 2026-11-21; it was
+  // six on a phone until the person card grew taller than the old short row). "See all" opens the full list.
+  const railLimit = 3;
   const forYouRail = forYou && forYouCount > 0 && <HomeSection actionHref={forYou.audience === "business" ? "#/search" : "#/campaigns"} title={t(forYou.audience === "business" ? "home.forYouBusiness" : "home.forYou")}>
     {[
       ...forYou.campaigns.map((campaign) => <CampaignRow campaign={campaign} key={campaign.id} />),

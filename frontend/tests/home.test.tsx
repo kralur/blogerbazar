@@ -96,6 +96,20 @@ describe("Home", () => {
     expect(await screen.findByRole("region", { name: ru("home.forYouBusiness") })).toHaveTextContent("Fitting blogger");
   });
 
+  it("shows three cards in a section and leaves the rest to See all", async () => {
+    const many = Array.from({ length: 6 }, (_, index) => ({ ...response.topRatedBloggers[0], id: `top-${index}`, name: `Top blogger ${index + 1}` }));
+    const faces = Array.from({ length: 5 }, (_, index) => ({ ...response.newBrandFaces[0], id: `face-${index}`, name: `Brand face ${index + 1}` }));
+    api.getMarketplaceHome.mockResolvedValue({ ...response, topRatedBloggers: many, newBrandFaces: faces });
+    renderHome("Business");
+    await waitForData();
+
+    const topRated = screen.getByRole("region", { name: ru("home.topRated") });
+    expect([...topRated.querySelectorAll('a[href^="#/blogger/"]')].map((link) => link.textContent)).toEqual(["Top blogger 1", "Top blogger 2", "Top blogger 3"]);
+    const brandFaces = screen.getByRole("region", { name: ru("home.newBrandFaces") });
+    expect(brandFaces.querySelectorAll('a[href^="#/brand-face-detail/"]')).toHaveLength(3);
+    expect(topRated.querySelector('a[href="#/search"]')).not.toBeNull();
+  });
+
   it("puts creator search first for Business and drops the hero and marketplace statistics", async () => {
     const user = userEvent.setup();
     renderHome("Business");
