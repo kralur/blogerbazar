@@ -27,7 +27,7 @@ import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { RequestRow } from "../components/RequestRow";
 import { CounterpartyRow } from "../components/CounterpartyRow";
-import { formatShortDate, formatCurrency } from "../lib/currency";
+import { formatNumber, formatShortDate } from "../lib/currency";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { ActionBadge, notifyActionCountsChanged, useActionCounts } from "../features/actionCounts/ActionCountsProvider";
 import { ApiError, getApiErrorMessage } from "../api/client";
@@ -193,7 +193,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
         offersLoading ? <RequestListSkeleton label={t("offers.loading")} /> : offersFailed ? <div className="mt-5"><ErrorState onRetry={loadOffers} subtitle={t("offers.errorSubtitle")} title={t("offers.errorTitle")} /></div> : !offers.length ? <div className="mt-8"><EmptyState action={isCreator ? undefined : { label: t("favorites.findBloggers"), href: "#/search" }} icon="send" subtitle={t(isCreator ? "offers.emptyBloggerSubtitle" : "offers.emptyBusinessSubtitle")} title={t("offers.emptyTitle")} /></div> : (
           <div className="request-list">
             {waitingFirst(offers, (offer) => offer.canRespond).map((offer) => (
-              <RequestRow action={offer.canRespond ? t("requests.awaitingYourAnswer") : null} href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, language)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} title={`${t(offerFormatLabelKey(offer.format))}${offer.offeredBudget != null ? ` · ${formatCurrency(offer.offeredBudget)}` : ""}`} />
+              <RequestRow action={offer.canRespond ? t("requests.awaitingYourAnswer") : null} href={`#${offerRoute(offer.id)}`} imageUrl={offer.counterpartyImageUrl} key={offer.id} meta={formatDate(offer.createdAtUtc, language)} name={offer.counterpartyName} status={<Badge tone={offerStateTone(offer.state)}>{t(offerStateLabelKey(offer.state))}</Badge>} price={offer.offeredBudget != null ? formatNumber(offer.offeredBudget) : null} priceLabel={t("common.budget")} priceUnit={t("currency.uzs")} title={t(offerFormatLabelKey(offer.format))} />
             ))}
           </div>
         )

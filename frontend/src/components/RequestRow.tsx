@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
-import { Avatar, Icon } from "./ui";
+import { PersonCard } from "./PersonCard";
 
-// One row for applications, offers and deals: who, what, status and when.
+// One row for applications, offers and deals: who, what, status and when. It is the same card as a person in Search
+// (owner, 2026-11-21): the status opens the tag row, the price sits on the right when the row has one.
 // A row that waits for the viewer shows that as a marked line instead of the date, so the tab badge has a visible match.
-export function RequestRow({ href, onClick, ariaLabel, name, imageUrl, title, meta, status, action }: {
+export function RequestRow({ href, onClick, ariaLabel, name, imageUrl, title, meta, status, action, tags, priceLabel, price, priceUnit }: {
   href?: string;
   onClick?: () => void;
   ariaLabel?: string;
@@ -13,17 +14,23 @@ export function RequestRow({ href, onClick, ariaLabel, name, imageUrl, title, me
   meta?: string | null;
   status: ReactNode;
   action?: string | null;
+  tags?: string[];
+  priceLabel?: string;
+  price?: string | null;
+  priceUnit?: string;
 }) {
-  const content = <>
-    <Avatar name={name} size="sm" src={imageUrl} variant="catalog" />
-    <span className="request-row__body">
-      <span className="request-row__top"><strong>{name}</strong>{status}</span>
-      {title && <span className="request-row__title">{title}</span>}
-      {action ? <span className="request-row__action"><span aria-hidden="true" className="request-row__action-dot" />{action}</span> : meta && <span className="request-row__meta">{meta}</span>}
-    </span>
-    <Icon className="request-row__chevron" name="back" />
-  </>;
-  return href
-    ? <a aria-label={ariaLabel} className={action ? "request-row request-row--action" : "request-row"} href={href}>{content}</a>
-    : <button aria-label={ariaLabel} className={action ? "request-row request-row--action" : "request-row"} onClick={onClick} type="button">{content}</button>;
+  return <PersonCard
+    action={action}
+    ariaLabel={ariaLabel}
+    avatarUrl={imageUrl}
+    facts={[title, action ? null : meta].filter(Boolean).join(" · ")}
+    href={href}
+    name={name}
+    onClick={onClick}
+    price={price}
+    priceLabel={priceLabel}
+    priceUnit={priceUnit}
+    status={status}
+    tags={tags}
+  />;
 }
