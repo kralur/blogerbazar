@@ -1,3 +1,4 @@
+import { useSectionBack } from "../lib/desktopLayout";
 import { Pager, listPageSize } from "../components/catalog/Pager";
 import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { myCampaignsFeedbackKey } from "../components/CampaignActionsMenu";
@@ -64,6 +65,7 @@ function asCampaignCard(campaign: CampaignCatalogItem): CampaignCardData {
 
 export function Campaigns() {
   const { language, t } = useI18n();
+  const sectionBack = useSectionBack(t("nav.home"));
   const { haptic } = useTelegram();
   const active = useRootScreenVisibility();
   useScrollRestoration("campaigns");
@@ -283,7 +285,7 @@ export function Campaigns() {
 
   return <div aria-hidden={!active} className="campaign-catalog catalog-search screen screen--with-nav" hidden={!active}>
     <ListHero>
-    <PageHeader actions={canCreate ? <><a className="page-header__secondary" href="#/my-campaigns">{t("myCampaigns.open")}</a>{!isDefaultEmpty && <button aria-label={t("campaigns.createAria")} className="my-campaigns__create" onClick={() => setCreateOpen(true)} type="button"><Icon className="h-4 w-4" name="plus" />{t("campaigns.createShort")}</button>}</> : createCapability === "blogger" ? <a className="page-header__secondary" href="#/requests?tab=applications">{t("applications.title")}</a> : undefined} eyebrow={t("campaigns.eyebrow")} title={t("campaigns.title")} />
+    <PageHeader back={sectionBack} actions={canCreate ? <><a className="page-header__secondary" href="#/my-campaigns">{t("myCampaigns.open")}</a>{!isDefaultEmpty && <button aria-label={t("campaigns.createAria")} className="my-campaigns__create" onClick={() => setCreateOpen(true)} type="button"><Icon className="h-4 w-4" name="plus" />{t("campaigns.createShort")}</button>}</> : createCapability === "blogger" ? <a className="page-header__secondary" href="#/requests?tab=applications">{t("applications.title")}</a> : undefined} eyebrow={t("campaigns.eyebrow")} title={t("campaigns.title")} />
     <div className="catalog-search__searchbar"><SearchBar clearAriaLabel={t("campaigns.clearSearchAria")} className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder={t("campaigns.search")} value={query} /></div>
     <div className="catalog-search__controls">
       <button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("campaigns.filtersAria")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button>
