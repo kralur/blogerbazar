@@ -198,6 +198,22 @@ public sealed class CampaignScheduleTests
     }
 
     [Fact]
+    public async Task A_plan_of_a_blocked_owner_is_dropped_without_publishing_or_a_message()
+    {
+        var now = new DateTime(2026, 11, 22, 6, 0, 0, DateTimeKind.Utc);
+        var due = new DueScheduledCampaign(Guid.NewGuid(), "Blocked", now.AddMinutes(-1), null, 555, CompanyActive: false);
+        var repository = new DueRepository(due);
+        var bot = new SpyBotClient();
+
+        var published = await new PublishScheduledCampaignsHandler(repository, null, bot).Handle(new PublishScheduledCampaignsCommand(now), CancellationToken.None);
+
+        Assert.Equal(0, published);
+        Assert.Empty(repository.Published);
+        Assert.Equal([due.Id], repository.Dropped);
+        Assert.Empty(bot.NotifiedChats);
+    }
+
+    [Fact]
     public async Task A_plan_the_owner_changed_meanwhile_is_left_alone_and_nobody_is_told()
     {
         var now = new DateTime(2026, 11, 22, 6, 0, 0, DateTimeKind.Utc);

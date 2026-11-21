@@ -81,6 +81,31 @@ public sealed class ScheduledCampaignIntegrationTests(BloggerBazarApiFactory fac
     }
 
     [IntegrationFact]
+    public async Task An_owner_blocked_after_planning_does_not_get_the_campaign_published()
+    {
+        const long owner = 1_710_031;
+        await SeedCompanyAsync(owner, "Blocked later");
+        using var app = factory.CreateClientFor(owner);
+        var at = DateTime.UtcNow.AddHours(2);
+        var created = await app.PostAsJsonAsync("/api/campaigns", new { title = "Planned", description = "Text", categories = new[] { "food" }, publishImmediately = false, scheduledPublishAtUtc = at });
+        var campaignId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<BloggerBazarDbContext>();
+            var user = await dbContext.PlatformUsers.SingleAsync(candidate => candidate.TelegramUserId == owner);
+            user.SetBlocked(true);
+            await dbContext.SaveChangesAsync();
+        }
+
+        await RunJobAsync(at.AddMinutes(1));
+
+        Assert.Equal(CampaignStatus.Draft, await StatusAsync(campaignId));
+        using var check = factory.Services.CreateScope();
+        Assert.Null(await check.ServiceProvider.GetRequiredService<BloggerBazarDbContext>().Campaigns.AsNoTracking()
+            .Where(campaign => campaign.Id == campaignId).Select(campaign => campaign.ScheduledPublishAtUtc).SingleAsync());
+    }
+
+    [IntegrationFact]
     public async Task A_time_in_the_past_is_rejected()
     {
         const long owner = 1_710_021;
