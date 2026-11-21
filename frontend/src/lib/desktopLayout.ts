@@ -34,3 +34,9 @@ export function useDesktopLayout(enabled: boolean) {
 // tests that render a page on its own.
 export const DesktopLayoutContext = createContext(false);
 export const useIsDesktop = () => useContext(DesktopLayoutContext);
+
+// The website's main sections (Search, Campaigns, Requests, Profile) get a back button like every other page
+// (owner, 2026-11-21); it returns where the user came from, Home after a direct link. The phone keeps its tabs.
+export function useSectionBack(label: string) {
+  return useIsDesktop() ? { href: "#/", label } : undefined;
+}

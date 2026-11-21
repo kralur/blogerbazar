@@ -15,7 +15,7 @@ import { ListHero } from "../components/ListHero";
 import { PageHeader } from "../components/PageHeader";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
 import { creatorProfileOutsideBrowser, isBrowserSession } from "../lib/browserSession";
-import { useIsDesktop } from "../lib/desktopLayout";
+import { useSectionBack, useIsDesktop } from "../lib/desktopLayout";
 import { DetailLayout } from "../components/DetailLayout";
 
 type SelectedRole = "blogger" | "brandFace" | "business";
@@ -51,6 +51,7 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
     return savedRole === "business" || savedRole === "brandFace" ? savedRole : "blogger";
   });
   const { language, t: translate } = useI18n();
+  const sectionBack = useSectionBack(translate("nav.home"));
   const t = (key: string, values?: Record<string, string | number>) => translate(
     key === "profile.requestsAndDeals" ? "requests.title" : key === "profile.requestsAndDealsSubtitle" ? "requests.emptyApplicationsSubtitle" : key,
     values
@@ -195,7 +196,7 @@ export function ProfileDashboard({ onMarketplaceRoleSelected }: { onMarketplaceR
   return (
     <div className="screen screen--with-nav space-y-5 px-4 pt-5">
       <ListHero className="profile-hero">
-      <PageHeader eyebrow={t("profile.eyebrow")} title={t("profile.title")} />
+      <PageHeader back={sectionBack} eyebrow={t("profile.eyebrow")} title={t("profile.title")} />
       <Card className="profile-hero__account flex items-center gap-4"><ProfileMediaPicker canRemove={Boolean(activeStoredImage)} compact currentUrl={activeStoredImage} disabled={!activeProfile || accountImageSaving || profileReadOnly} fallbackUrl={activeProfile ? undefined : telegramUser?.photo_url} name={activeProfile?.name || telegramUser?.first_name || t("profile.telegramUser")} onChange={(image) => void changeAccountImage(image)} pending={accountImagePending} /><div className="min-w-0"><div className="truncate text-lg font-extrabold">{activeProfile?.name || telegramUser?.first_name || t("profile.telegramUser")}</div><p className="mt-1 truncate text-sm text-brand-muted">{username}</p><Badge tone="blue">{t("profile.telegramAccount")}</Badge></div></Card>
       {!loading && !loadFailed && !inBrowser && <>
         <section className="profile-hero__roles"><h2>{t("profile.role")}</h2><div className="grid grid-cols-3 gap-3">

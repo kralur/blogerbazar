@@ -1,3 +1,4 @@
+import { useSectionBack } from "../../lib/desktopLayout";
 import { Pager, listPageSize } from "./Pager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { spokenLanguageLabelKey, spokenLanguages } from "../../lib/languages";
@@ -50,6 +51,7 @@ function filtersEqual(left: BrandFaceCatalogFilters, right: BrandFaceCatalogFilt
 
 export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; onSelectType: (type: "blogger" | "brand-face") => void }) {
   const { t } = useI18n();
+  const sectionBack = useSectionBack(t("nav.home"));
   const { haptic } = useTelegram();
   useScrollRestoration("search:brand-face", active);
   const initialCategory = hashCategory() ?? "";
@@ -175,7 +177,7 @@ export function BrandFaceCatalog({ active, onSelectType }: { active: boolean; on
 
   return <div aria-hidden={!active} className="catalog-search screen screen--with-nav" hidden={!active}>
     <ListHero>
-    <PageHeader eyebrow={t("search.eyebrow")} title={t("search.title")} />
+    <PageHeader back={sectionBack} eyebrow={t("search.eyebrow")} title={t("search.title")} />
     <CatalogTypeSegmentedControl onChange={onSelectType} value="brand-face" />
     <div className="catalog-search__searchbar"><SearchBar className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} placeholder={t("search.brandFacePlaceholder")} value={query} /></div>
     <div className="catalog-search__controls"><button aria-controls={filterSheetId} aria-expanded={filtersOpen} aria-label={t("search.filters")} className="catalog-search__filter-button" onClick={openFilters} type="button"><Icon name="filter" /><span>{t("search.filters")}</span></button><label className="catalog-search__sort"><span>{t("search.sort")}</span><select aria-label={t("search.sort")} onChange={(event) => changeSort(event.target.value as BrandFaceCatalogSort)} value={appliedFilters.sort ?? "promoted"}>{sortOptions(t).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>

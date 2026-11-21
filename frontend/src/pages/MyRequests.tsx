@@ -1,3 +1,4 @@
+import { useSectionBack } from "../lib/desktopLayout";
 import { useBusinessCanOperate } from "../hooks/useBusinessCanOperate";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -45,6 +46,7 @@ function awaitsAnswer(request: MyCampaignApplication) {
 
 export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: MarketplaceRole }) {
   const { language, t } = useI18n();
+  const sectionBack = useSectionBack(t("nav.home"));
   // A team viewer (D64) sees the company's applications without Accept / Reject.
   const canOperate = useBusinessCanOperate(activeMarketplaceRole === "Business");
   useScrollRestoration("requests");
@@ -180,7 +182,7 @@ export function MyRequests({ activeMarketplaceRole }: { activeMarketplaceRole?: 
   return (
     <div className="screen screen--with-nav">
       <ListHero>
-      <PageHeader actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
+      <PageHeader back={sectionBack} actions={view === "deals" ? <button aria-label={t("requests.dateFilter")} className="page-header__icon-button" onClick={() => setDateFilterOpen(true)} type="button"><Icon name="calendar" /></button> : undefined} eyebrow={t("requests.eyebrow")} title={t("requests.title")} />
 
       <div aria-label={t("requests.title")} className="catalog-search__segments catalog-search__segments--three" role="group">
         {([["applications", t("requests.applications"), actionCounts.applications], ["offers", t("offers.tab"), actionCounts.offers], ["deals", t("requests.deals"), actionCounts.reviews + actionCounts.newDeals]] as const).map(([value, label, count]) => <button aria-pressed={view === value} className={`catalog-search__segment${view === value ? " catalog-search__segment--selected" : ""}`} key={value} onClick={() => setView(value)} type="button"><span>{label}</span>{view === value && count === 0 && <span aria-hidden="true" className="catalog-search__segment-indicator">✓</span>}<ActionBadge count={count} label={t("requests.actionBadge", { count })} /></button>)}

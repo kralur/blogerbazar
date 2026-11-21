@@ -1,3 +1,4 @@
+import { useSectionBack } from "../lib/desktopLayout";
 import { Pager, listPageSize } from "../components/catalog/Pager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getBloggers, getCategories, type BloggerSearchFilters } from "../api/marketplace";
@@ -74,6 +75,7 @@ export function BloggerSearch() {
 
 function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectType: (type: CatalogType) => void }) {
   const { t } = useI18n();
+  const sectionBack = useSectionBack(t("nav.home"));
   const { haptic } = useTelegram();
   useScrollRestoration("search:blogger", active);
   const initialHash = hashSearch();
@@ -199,7 +201,7 @@ function BloggerCatalog({ active, onSelectType }: { active: boolean; onSelectTyp
 
   return <div aria-hidden={!active} className="catalog-search screen screen--with-nav" hidden={!active}>
     <ListHero>
-    <PageHeader eyebrow={t("search.eyebrow")} title={t("search.title")} />
+    <PageHeader back={sectionBack} eyebrow={t("search.eyebrow")} title={t("search.title")} />
     <CatalogTypeSegmentedControl onChange={onSelectType} value="blogger" />
     <div className="catalog-search__searchbar"><SearchBar className="catalog-search__search-control" onChange={(event) => setQuery(event.target.value)} placeholder={t("search.placeholder")} value={query} /></div>
     <div className="catalog-search__controls">
