@@ -89,16 +89,11 @@ function HomeRow({ href, avatarUrl, avatarName, name, meta, price, unit, neutral
 // Millions are shown short (13.2 mln), so a big budget leaves room for the title; smaller sums stay exact.
 const rowAmount = (value: number) => value >= 1_000_000 ? formatCompactNumber(value) : formatNumber(value);
 
-// On a computer (the website) the Home picks use the same tiles as the catalog, so a blogger looks the same everywhere.
+// A person on Home is the same card as in Search and Saved (owner, 2026-11-21): the row in Telegram, the tile on the
+// website.
 function BloggerRow({ blogger }: { blogger: BloggerCardData }) {
-  const { language, t } = useI18n();
   const desktop = useIsDesktop();
-  if (desktop) return <BloggerCard blogger={blogger} />;
-  const meta = [cityLabel(blogger.city, language), ...blogger.categories.slice(0, 2).map((category) => categoryLabel(category, language))].join(", ");
-  const [price, unit] = blogger.reelsPrice ? [rowAmount(blogger.reelsPrice), t("home.row.perReels")]
-    : blogger.storiesPrice ? [rowAmount(blogger.storiesPrice), t("home.row.perStories")]
-      : blogger.priceFrom ? [t("home.row.from", { amount: rowAmount(blogger.priceFrom) }), t("currency.uzs")] : [null, undefined];
-  return <HomeRow avatarName={blogger.name} avatarUrl={blogger.avatarUrl} href={`#/blogger/${blogger.id}`} meta={meta} name={blogger.name} price={price} unit={unit} />;
+  return <BloggerCard blogger={blogger} variant={desktop ? "default" : "home"} />;
 }
 
 function CampaignRow({ campaign }: { campaign: CampaignCardData }) {
@@ -112,11 +107,8 @@ function CampaignRow({ campaign }: { campaign: CampaignCardData }) {
 }
 
 function BrandFaceRow({ profile }: { profile: BrandFaceRow }) {
-  const { language, t } = useI18n();
   const desktop = useIsDesktop();
-  if (desktop) return <BrandFaceCard profile={profile} />;
-  const meta = [cityLabel(profile.city, language), ...profile.categories.slice(0, 2).map((category) => categoryLabel(category, language))].join(", ");
-  return <HomeRow avatarName={profile.name} avatarUrl={profile.avatarUrl} href={`#/brand-face-detail/${profile.id}`} meta={meta} name={profile.name} price={profile.collaborationPrice ? rowAmount(profile.collaborationPrice) : null} unit={t("home.row.collaboration")} />;
+  return <BrandFaceCard profile={profile} variant={desktop ? "default" : "home"} />;
 }
 
 function HomeEmptyAction({ href, title, description }: { href: string; title: string; description: string }) {
