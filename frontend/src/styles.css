@@ -2134,6 +2134,14 @@ html[data-desktop="true"] {
   /* The free space on each side of the content column, so lapis bands can reach the window's edges. */
   --desktop-outside: max(0px, calc((100vw - var(--desktop-nav-width) - var(--desktop-content-width)) / 2));
 }
+/* Very wide screens: list pages (catalogs, Home) get a wider column, so the grids show 4 cards in a row
+   (12 per page = 3 full rows). Detail pages keep their width; long text lines read worse. */
+@media (min-width: 1800px) {
+  html[data-desktop="true"] .screen:has(.list-hero, .home-hero):not(:has(.detail-layout)) {
+    --desktop-content-width: 90rem;
+    --desktop-outside: max(0px, calc((100vw - var(--desktop-nav-width) - var(--desktop-content-width)) / 2));
+  }
+}
 html[data-desktop="true"] body { background: var(--bb-background); }
 html[data-desktop="true"] .app-shell { max-width: none; box-shadow: none; overflow-x: clip; }
 html[data-desktop="true"] .app-shell:not(.app-shell--first-run) { padding-left: var(--desktop-nav-width); }
