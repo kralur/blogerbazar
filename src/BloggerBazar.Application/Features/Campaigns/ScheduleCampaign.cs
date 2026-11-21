@@ -105,6 +105,13 @@ public sealed class PublishScheduledCampaignsHandler(
         foreach (var due in await campaigns.ListDueScheduledAsync(command.NowUtc, BatchSize, cancellationToken))
         {
             var route = $"/my-campaign/{due.Id}";
+            // A blocked or deleted owner account cannot publish by hand either; the plan is dropped without a message.
+            if (!due.CompanyActive)
+            {
+                await campaigns.TryDropScheduleAsync(due.Id, due.ScheduledPublishAtUtc, command.NowUtc, cancellationToken);
+                continue;
+            }
+
             if (due.Deadline.HasValue && due.Deadline.Value.Date < command.NowUtc.Date)
             {
                 if (await campaigns.TryDropScheduleAsync(due.Id, due.ScheduledPublishAtUtc, command.NowUtc, cancellationToken))

@@ -19,7 +19,8 @@ public interface ICampaignRepository
     Task<IReadOnlyList<DueScheduledCampaign>> ListDueScheduledAsync(DateTime nowUtc, int take, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<DueScheduledCampaign>>([]);
 
-    // Publishes only while the plan is unchanged (same time, still a draft or closed); false when the owner changed it first.
+    // Publishes only while the plan is unchanged (same time, still a draft or closed) and the owner's account is still active;
+    // false when the owner changed it first or the account was blocked meanwhile.
     Task<bool> TryPublishScheduledAsync(Guid id, DateTime scheduledAtUtc, DateTime nowUtc, CancellationToken cancellationToken) =>
         Task.FromResult(false);
 
@@ -28,4 +29,5 @@ public interface ICampaignRepository
         Task.FromResult(false);
 }
 
-public sealed record DueScheduledCampaign(Guid Id, string Title, DateTime ScheduledPublishAtUtc, DateTime? Deadline, long OwnerTelegramUserId);
+// CompanyActive: the company owner's account is neither blocked nor deleted (a blocked account cannot publish by hand either).
+public sealed record DueScheduledCampaign(Guid Id, string Title, DateTime ScheduledPublishAtUtc, DateTime? Deadline, long OwnerTelegramUserId, bool CompanyActive = true);

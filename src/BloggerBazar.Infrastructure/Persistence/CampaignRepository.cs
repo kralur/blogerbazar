@@ -54,11 +54,14 @@ internal sealed class CampaignRepository(BloggerBazarDbContext dbContext) : ICam
                 && !campaign.Business.IsDeleted)
             .OrderBy(campaign => campaign.ScheduledPublishAtUtc)
             .Take(take)
-            .Select(campaign => new DueScheduledCampaign(campaign.Id, campaign.Title, campaign.ScheduledPublishAtUtc!.Value, campaign.Deadline, campaign.Business.TelegramUserId))
+            .Select(campaign => new DueScheduledCampaign(campaign.Id, campaign.Title, campaign.ScheduledPublishAtUtc!.Value, campaign.Deadline, campaign.Business.TelegramUserId,
+                !dbContext.PlatformUsers.Any(user => user.TelegramUserId == campaign.Business.TelegramUserId && (user.IsBlocked || user.IsDeleted))))
             .ToListAsync(cancellationToken);
 
     public async Task<bool> TryPublishScheduledAsync(Guid id, DateTime scheduledAtUtc, DateTime nowUtc, CancellationToken cancellationToken) =>
         await Unchanged(id, scheduledAtUtc)
+            // Checked in the same statement as the publication, so a block cannot slip in between.
+            .Where(campaign => !dbContext.PlatformUsers.Any(user => user.TelegramUserId == campaign.Business.TelegramUserId && (user.IsBlocked || user.IsDeleted)))
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(campaign => campaign.Status, CampaignStatus.Published)
                 .SetProperty(campaign => campaign.ScheduledPublishAtUtc, (DateTime?)null)
