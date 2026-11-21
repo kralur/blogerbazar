@@ -65,6 +65,7 @@ public sealed class BloggerBazarApiFactory : WebApplicationFactory<Program>, IAs
         builder.UseSetting("Database:ApplyMigrationsOnStartup", "false");
         builder.UseSetting("DevelopmentData:Seed", "false");
         builder.UseSetting("DealReminders:Enabled", "false");
+        builder.UseSetting("ScheduledCampaigns:Enabled", "false");
         builder.UseSetting("Telegram:BotToken", BotToken);
         builder.UseSetting("Telegram:WebhookSecret", "integration-webhook-secret");
         // Web admin on, with room for every sign-in of a test class (the test server has no client address).

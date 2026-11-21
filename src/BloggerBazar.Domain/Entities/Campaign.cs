@@ -36,6 +36,8 @@ public sealed class Campaign
     public DateTime? Deadline { get; private set; }
     public bool IsPromoted { get; private set; }
     public CampaignStatus Status { get; private set; }
+    // D69: when set, a draft or closed campaign goes to the catalog at this moment (a background job publishes it).
+    public DateTime? ScheduledPublishAtUtc { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
     public IReadOnlyCollection<CampaignApplication> Applications { get; private set; } = new List<CampaignApplication>();
@@ -51,21 +53,37 @@ public sealed class Campaign
         Title = title; Description = description; Categories = categories.ToList(); Requirements = requirements?.ToList() ?? []; BudgetFrom = budgetFrom; BudgetTo = budgetTo; City = city; Deadline = deadline; UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    // Any status change ends a planned publication: publishing now, closing, or an admin's decision.
     public void Publish()
     {
         Status = CampaignStatus.Published;
+        ScheduledPublishAtUtc = null;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
     public void Archive()
     {
         Status = CampaignStatus.Archived;
+        ScheduledPublishAtUtc = null;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
     public void SetStatus(CampaignStatus status)
     {
         Status = status;
+        ScheduledPublishAtUtc = null;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void SchedulePublication(DateTime publishAtUtc)
+    {
+        ScheduledPublishAtUtc = publishAtUtc;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void CancelScheduledPublication()
+    {
+        ScheduledPublishAtUtc = null;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

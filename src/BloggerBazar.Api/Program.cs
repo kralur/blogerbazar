@@ -196,6 +196,10 @@ try
     {
         builder.Services.AddHostedService<PlatformVerificationWorker>();
     }
+    if (builder.Configuration.GetValue("ScheduledCampaigns:Enabled", true))
+    {
+        builder.Services.AddHostedService<ScheduledCampaignWorker>();
+    }
     builder.Services.AddCors(options => options.AddPolicy("mini-app", policy =>
     {
         var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];

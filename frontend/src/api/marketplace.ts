@@ -101,6 +101,8 @@ export type MyCampaign = {
   applicationsCount: number;
   // Applications still waiting for accept or reject; absent from an older API.
   pendingApplicationsCount?: number;
+  // D69: when a draft or closed campaign goes to the catalog by itself; absent or null when not planned.
+  scheduledPublishAtUtc?: string | null;
 };
 export type MyCampaignsResponse = { items: MyCampaign[]; total: number; page: number; pageSize: number; hasMore: boolean };
 export type MyCampaignDetails = MyCampaign & { description: string; requirements: string[] };
@@ -130,6 +132,7 @@ export type CampaignMutationResponse = {
   status: MyCampaignStatus;
   applicationsCount: number;
   createdAtUtc: string;
+  scheduledPublishAtUtc?: string | null;
 };
 
 type ApiBlogger = {
@@ -589,6 +592,14 @@ export async function reopenMyCampaign(id: string, signal?: AbortSignal): Promis
   return api<CampaignMutationResponse>(`/api/campaigns/mine/${id}/reopen`, { method: "POST", signal });
 }
 
+export async function scheduleMyCampaign(id: string, publishAtUtc: string, signal?: AbortSignal): Promise<CampaignMutationResponse> {
+  return api<CampaignMutationResponse>(`/api/campaigns/mine/${id}/schedule`, { method: "POST", body: JSON.stringify({ publishAtUtc }), signal });
+}
+
+export async function cancelMyCampaignSchedule(id: string, signal?: AbortSignal): Promise<CampaignMutationResponse> {
+  return api<CampaignMutationResponse>(`/api/campaigns/mine/${id}/schedule`, { method: "DELETE", signal });
+}
+
 export async function deleteMyCampaign(id: string, signal?: AbortSignal): Promise<void> {
   await api<void>(`/api/campaigns/mine/${id}`, { method: "DELETE", signal });
 }
@@ -1031,6 +1042,7 @@ export async function createCampaign(input: {
   budgetTo?: number;
   deadline?: string;
   publishImmediately: boolean;
+  scheduledPublishAtUtc?: string;
 }) {
-  return api<{ id?: string } | null>("/api/campaigns", { method: "POST", body: JSON.stringify(input) });
+  return api<{ id?: string; scheduledPublishAtUtc?: string | null } | null>("/api/campaigns", { method: "POST", body: JSON.stringify(input) });
 }

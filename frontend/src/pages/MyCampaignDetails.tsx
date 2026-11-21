@@ -16,6 +16,8 @@ import { ChipList, DetailSection, FactGrid, compactBudgetRange } from "../compon
 import { ListHero } from "../components/ListHero";
 import { DetailLayout } from "../components/DetailLayout";
 import { useScreenRefresh } from "../hooks/useScreenRefresh";
+import { CampaignScheduleModal } from "../components/CampaignSchedule";
+import { formatScheduled } from "../lib/campaignSchedule";
 
 type DetailState = "not-found" | "denied" | "failed" | null;
 
@@ -29,6 +31,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
   const [closeOpen, setCloseOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [toast, setToast] = useState("");
   // A campaign just created from My campaigns opens here with its "published" message.
   useEffect(() => {
@@ -79,8 +82,9 @@ export function MyCampaignDetails({ id }: { id: string }) {
     setClosing(true);
     try {
       await closeMyCampaign(id);
-      setCampaign((current) => current ? { ...current, status: 2 } : current);
-      updateCachedMyCampaign(id, (current) => ({ ...current, status: 2 }));
+      // Any status change on the server also ends a planned publication (D69).
+      setCampaign((current) => current ? { ...current, status: 2, scheduledPublishAtUtc: null } : current);
+      updateCachedMyCampaign(id, (current) => ({ ...current, status: 2, scheduledPublishAtUtc: null }));
       removeCachedPublicDetail("campaign", id);
       setCloseOpen(false);
       setToast(t("myCampaignDetails.closed"));
@@ -108,7 +112,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
       window.location.hash = "#/my-campaigns";
       return;
     }
-    if (result.kind === "status") setCampaign((current) => current ? { ...current, status: result.status } : current);
+    if (result.kind === "status") setCampaign((current) => current ? { ...current, status: result.status, scheduledPublishAtUtc: null } : current);
     if (result.kind === "failed" && result.reload) void load();
     setToast(result.message);
   };
@@ -129,12 +133,29 @@ export function MyCampaignDetails({ id }: { id: string }) {
     }
   };
   const reopenBlocked = isPastDay(campaign.deadline);
+  // D69: a draft or closed campaign can wait for a planned moment; the job publishes it then.
+  const canSchedule = canOperate && (campaign.status === 0 || campaign.status === 2);
+  const scheduled = campaign.status === 0 || campaign.status === 2 ? campaign.scheduledPublishAtUtc ?? null : null;
+  const scheduleButton = canSchedule && <Button onClick={() => setScheduleOpen(true)} type="button" variant="secondary">{t(scheduled ? "schedule.change" : "schedule.action")}</Button>;
+  const onScheduleDone = (result: { scheduledPublishAtUtc: string | null; message: string } | { failed: string; reload?: boolean }) => {
+    setScheduleOpen(false);
+    if ("failed" in result) {
+      setToast(result.failed);
+      if (result.reload) void load();
+      return;
+    }
+    const scheduledPublishAtUtc = result.scheduledPublishAtUtc;
+    setCampaign((current) => current ? { ...current, scheduledPublishAtUtc } : current);
+    updateCachedMyCampaign(id, (current) => ({ ...current, scheduledPublishAtUtc }));
+    notifyCampaignDataChanged();
+    setToast(scheduledPublishAtUtc ? t("schedule.saved", { date: formatScheduled(scheduledPublishAtUtc, language) }) : result.message);
+  };
   const budget = compactBudgetRange(campaign.minBudget, campaign.maxBudget, t("currency.uzs"));
   const canManage = campaign.status !== 2;
   // D63, package G: the lapis head holds the state, the budget large, the title and the facts as tags; the inbox and the text below.
   return <div className="campaign-management-screen my-campaign-details screen screen--with-nav">
     <ListHero className="detail-hero">
-      <PageHeader actions={<><Badge tone={campaignStatusTone(campaign.status)}>{campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}{canOperate && <CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} />}</>} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
+      <PageHeader actions={<><Badge tone={campaignStatusTone(campaign.status)}>{scheduled ? t("schedule.badge") : campaignStatusLabel(campaign.status, t)}</Badge>{campaign.isPromoted && <span className="detail-promoted">{t("card.promoted")}</span>}{canOperate && <CampaignActionsMenu campaign={campaign} onResult={onMenuResult} showApplications={false} />}</>} back={{ href: "#/my-campaigns", label: t("myCampaignDetails.backAria") }} />
       <p className="detail-hero__price">{budget ?? t("myCampaigns.budgetNotSpecified")}</p>
       {budget && <p className="detail-hero__price-unit">{t("common.budget")}</p>}
       <h1 className="detail-hero__title">{campaign.title}</h1>
@@ -147,6 +168,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
       ]} />
     </ListHero>
     <DetailLayout top={<>
+    {scheduled && <p className="my-campaign-details__scheduled" role="status">{t("schedule.plannedNote", { date: formatScheduled(scheduled, language) })}</p>}
     {campaign.status === 1 && isPastDay(campaign.deadline) && <p className="campaign-details__expired" role="status">{t("myCampaignDetails.expiredNote")}</p>}
     {canManage && campaign.applicationsCount === 0 && <div className="my-campaign-details__inbox my-campaign-details__inbox--empty" role="status"><span><strong>{t("applications.emptyTitle")}</strong><span>{t("myCampaignDetails.noApplicationsHint")}</span></span></div>}
     {campaign.applicationsCount > 0 && <a aria-label={t("applications.openInboxAria", { title: campaign.title })} className="my-campaign-details__inbox" href={`#/my-campaign-applications/${id}`}><span><strong>{t("applications.openInbox")}</strong><span>{campaignApplicationsLabel(campaign.applicationsCount, language, t)}</span></span><Icon className="my-campaign-details__inbox-chevron" name="back" /></a>}
@@ -158,12 +180,13 @@ export function MyCampaignDetails({ id }: { id: string }) {
         event.preventDefault();
         navigateWithHistoryOrigin(window.location.hash, `#/my-campaign-edit/${id}`);
       }}>{t("myCampaignDetails.edit")}</a>
+      {campaign.status === 0 && scheduleButton}
       <Button aria-label={t("myCampaignDetails.closeAria", { title: campaign.title })} onClick={() => setCloseOpen(true)} type="button" variant="danger">{t("myCampaignDetails.close")}</Button>
       </>}
       {/* The owner sees the campaign the way bloggers see it in the catalog. */}
       {campaign.status === 1 && <a className="my-campaign-details__edit my-campaign-details__public" href={`#/campaign/${id}`}>{t("myCampaignDetails.viewPublic")}</a>}
     </section>}
-    {campaign.status === 2 && canOperate && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}><Button aria-busy={reopening} disabled={reopening || reopenBlocked} onClick={() => void reopen()} type="button">{t("campaignMenu.reopen")}</Button></section>}
+    {campaign.status === 2 && canOperate && <section className="my-campaign-details__actions" aria-label={t("myCampaignDetails.actionsAria")}><Button aria-busy={reopening} disabled={reopening || reopenBlocked} onClick={() => void reopen()} type="button">{t("campaignMenu.reopen")}</Button>{scheduleButton}</section>}
     {campaign.status === 2 && <p className="my-campaign-details__closed-hint">{t(reopenBlocked ? "campaignMenu.reopenExpired" : "myCampaignDetails.closedHintSide")}</p>}
     </>}>
     <DetailSection title={t("myCampaignDetails.description")}><Card><p className="whitespace-pre-line text-sm leading-6 text-brand-muted">{campaign.description}</p></Card></DetailSection>
@@ -174,6 +197,7 @@ export function MyCampaignDetails({ id }: { id: string }) {
       <p className="text-sm leading-6 text-brand-muted">{t("myCampaignDetails.closeDescription")}</p>
       <div className="mt-5 modal-actions"><Button disabled={closing} onClick={() => setCloseOpen(false)} type="button" variant="secondary">{t("common.cancel")}</Button><Button aria-busy={closing} disabled={closing} onClick={closeCampaign} type="button" variant="danger">{closing ? t("myCampaignDetails.closing") : t("myCampaignDetails.close")}</Button></div>
     </Modal>
+    {canSchedule && <CampaignScheduleModal campaignId={campaign.id} current={scheduled} deadline={campaign.deadline} onClose={() => setScheduleOpen(false)} onDone={onScheduleDone} open={scheduleOpen} />}
     <Toast message={toast} tone="success" />
     <BottomNav />
   </div>;

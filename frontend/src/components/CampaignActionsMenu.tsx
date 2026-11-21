@@ -35,7 +35,8 @@ export function CampaignActionsMenu({ campaign, onResult, showApplications = tru
   };
 
   const changeStatus = (status: MyCampaignStatus) => {
-    updateCachedMyCampaign(campaign.id, (current) => ({ ...current, status }));
+    // The server ends a planned publication on any status change (D69).
+    updateCachedMyCampaign(campaign.id, (current) => ({ ...current, status, scheduledPublishAtUtc: null }));
     removeCachedPublicDetail("campaign", campaign.id);
     notifyCampaignDataChanged();
   };

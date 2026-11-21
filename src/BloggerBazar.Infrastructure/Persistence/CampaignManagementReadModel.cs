@@ -87,7 +87,8 @@ internal static class CampaignManagementProjection
             campaign.UpdatedAtUtc,
             campaign.Applications.Count,
             // Sent or viewed: the business still has to accept or reject it.
-            campaign.Applications.Count(application => application.Status == CampaignApplicationStatus.Sent || application.Status == CampaignApplicationStatus.Viewed)));
+            campaign.Applications.Count(application => application.Status == CampaignApplicationStatus.Sent || application.Status == CampaignApplicationStatus.Viewed),
+            campaign.ScheduledPublishAtUtc));
 
     internal static IQueryable<MyCampaignDetailsDto> Details(IQueryable<Campaign> query) =>
         query.Select(campaign => new MyCampaignDetailsDto(
@@ -106,5 +107,6 @@ internal static class CampaignManagementProjection
             campaign.UpdatedAtUtc,
             campaign.Applications.Count,
             // Sent or viewed: the business still has to accept or reject it.
-            campaign.Applications.Count(application => application.Status == CampaignApplicationStatus.Sent || application.Status == CampaignApplicationStatus.Viewed)));
+            campaign.Applications.Count(application => application.Status == CampaignApplicationStatus.Sent || application.Status == CampaignApplicationStatus.Viewed),
+            campaign.ScheduledPublishAtUtc));
 }

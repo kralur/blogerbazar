@@ -21,6 +21,17 @@ internal static class BotMessages
         $"Новый отклик от {bloggerName} на кампанию «{campaignTitle}».",
         $"{bloggerName} «{campaignTitle}» kampaniyasiga javob yubordi.") with { Button = ApplicationsButton };
 
+    internal static readonly BotText OpenCampaignButton = new("Открыть кампанию", "Kampaniyani ochish");
+
+    // D69: the planned publication went out, or could not (the campaign's deadline had passed by then).
+    public static BotText ScheduledCampaignPublished(string campaignTitle) => Bilingual(
+        $"Кампания «{campaignTitle}» опубликована по расписанию. Блогеры уже видят её в каталоге.",
+        $"«{campaignTitle}» kampaniyasi reja bo‘yicha e’lon qilindi. Blogerlar uni katalogda ko‘rmoqda.") with { Button = OpenCampaignButton };
+
+    public static BotText ScheduledCampaignNotPublished(string campaignTitle) => Bilingual(
+        $"Кампанию «{campaignTitle}» не опубликовали по расписанию: срок кампании уже прошёл. Измените срок и опубликуйте её снова.",
+        $"«{campaignTitle}» kampaniyasi reja bo‘yicha e’lon qilinmadi: kampaniya muddati o‘tib ketgan. Muddatni o‘zgartiring va qayta e’lon qiling.") with { Button = OpenCampaignButton };
+
     public static BotText CampaignApplicationRejected(string campaignTitle) => Bilingual(
         $"Ваш отклик на кампанию «{campaignTitle}» отклонён.",
         $"«{campaignTitle}» kampaniyasiga javobingiz rad etildi.");
