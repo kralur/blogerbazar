@@ -14,8 +14,8 @@ describe("BloggerCard", () => {
     const { container } = render(<I18nProvider><BloggerCard blogger={{ ...blogger, isPromoted: true }} /></I18nProvider>);
 
     const promoted = screen.getByText(ru("card.promoted"));
-    expect(promoted.closest(".catalog-blogger-card__categories")).not.toBeNull();
-    expect(container.querySelector(".catalog-blogger-card__name-row")).not.toHaveTextContent(ru("card.promoted"));
+    expect(promoted.closest(".person-card__tags")).not.toBeNull();
+    expect(container.querySelector(".person-card__name-row")).not.toHaveTextContent(ru("card.promoted"));
   });
 
   it("shows the lowest known price as a starting price and omits unknown facts", () => {
@@ -32,9 +32,9 @@ describe("BloggerCard", () => {
     expect(screen.queryByText("-")).not.toBeInTheDocument();
   });
 
-  it("uses the same layout on Home rails", () => {
+  it("is the same card on Home as in Search", () => {
     const { container } = render(<I18nProvider><BloggerCard blogger={blogger} variant="home" /></I18nProvider>);
-    expect(container.querySelector(".catalog-blogger-card.catalog-card--rail")).not.toBeNull();
+    expect(container.querySelector(".person-card")).not.toBeNull();
     expect(screen.getByRole("link", { name: translate("home.openBlogger", { name: "Madina" }, "ru") })).toHaveAttribute("href", "#/blogger/blogger-a");
   });
 });
